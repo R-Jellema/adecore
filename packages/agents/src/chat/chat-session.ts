@@ -1705,7 +1705,13 @@ export class ChatSession {
             return;
         }
         const pending = this.watchStart(turnId);
-        const backend = this.ensureBackend();
+        let backend: Promise<ChatBackend>;
+        try {
+            backend = this.ensureBackend();
+        } catch (error) {
+            // What the host prepares for a launch (its folders, its instructions) can throw too; the turn already opened, so it fails.
+            backend = Promise.reject(error instanceof Error ? error : new Error(String(error)));
+        }
         const generation = this.generation;
         void Promise.all([backend, this.turnReady, this.options.save?.()])
             .then(([started]) => {

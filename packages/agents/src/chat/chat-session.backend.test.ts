@@ -831,3 +831,26 @@ describe('restarting the agent session', () => {
         await run.session.dispose();
     });
 });
+
+test('a launch the host fails to prepare ends the opened turn with the reason, and the next message starts again', async () => {
+    let broken = true;
+    const run = rig({
+        instructions: () => {
+            if (broken) {
+                throw new Error('No space left on device');
+            }
+            return null;
+        }
+    });
+    expect(() => run.session.send('first')).not.toThrow();
+    await flush();
+    expect(run.session.info.activeTurnId).toBeNull();
+    expect(run.session.thread.list().filter((item) => item.kind === 'turn')).toMatchObject([{ state: 'error' }]);
+    expect(JSON.stringify(run.session.thread.list())).toContain('No space left on device');
+
+    broken = false;
+    run.session.send('second');
+    await flush();
+    expect(run.sent.map((input) => input.text)).toEqual(['second']);
+    await run.session.dispose();
+});
