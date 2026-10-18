@@ -116,6 +116,8 @@ export interface LimitResumeHooks {
 
 // Claude Code names a session about six seconds after its first prompt, and a first turn can run for minutes.
 const TITLE_RECHECK_MS = 10_000;
+// Well inside the 60 seconds a client gives a request; the steer itself goes on after it.
+const STEER_ANSWER_MS = 15_000;
 
 export interface ChatSendExtras {
     uiChoice?: ChatUiChoiceOrigin;
@@ -544,9 +546,37 @@ export class ChatSession {
             return queued;
         }
         this.steering.add(message.id);
+        const steer = this.steer(message, text, extras, backend.steerTurn.bind(backend), turnId, queued);
+        // Claude takes a steer only between tool calls, so a long command would outlast the client's request.
+        const clock = this.options.clock ?? systemClock;
+        let timer: unknown = null;
+        const waited = new Promise<null>((resolve) => {
+            timer = clock.setTimeout(() => resolve(null), STEER_ANSWER_MS);
+        });
+        try {
+            const answer = await Promise.race([steer, waited]);
+            if (answer !== null) {
+                return answer;
+            }
+            // Still in the queue until it is taken; a later failure pauses the queue as it does now.
+            steer.catch(() => undefined);
+            return queued;
+        } finally {
+            clock.clearTimeout(timer);
+        }
+    }
+
+    private async steer(
+        message: ChatQueuedMessage,
+        text: string,
+        extras: ChatSendExtras,
+        steerTurn: NonNullable<ChatBackend['steerTurn']>,
+        turnId: string,
+        queued: { queued: boolean; turnId: string }
+    ): Promise<{ queued: boolean; turnId: string }> {
         try {
             const references = this.options.references?.(extras.chats) ?? { ids: extras.chats ?? [], note: null };
-            const accepted = await backend.steerTurn({
+            const accepted = await steerTurn({
                 promptId: message.id,
                 text,
                 preamble: references.note,

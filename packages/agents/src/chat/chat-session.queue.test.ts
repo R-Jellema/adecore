@@ -589,3 +589,43 @@ test('an end-of-turn message cannot start while another steer still awaits accep
     expect(run.sent.map((input) => input.text)).toEqual(['original', 'next task']);
     await run.session.dispose();
 });
+
+test('a steer Claude takes only after a long command answers the send in time, and is recorded once it is taken', async () => {
+    const clock = new ManualClock();
+    const run = rig({ clock });
+    const acceptance = Promise.withResolvers<boolean>();
+    run.backend.steerTurn = () => acceptance.promise;
+    run.session.send('original');
+    await flush();
+    const original = run.session.info.activeTurnId!;
+    const sending = run.session.sendInput('followup', { delivery: 'steer' });
+    await flush();
+    clock.advance(15_000);
+    expect(await sending).toMatchObject({ queued: true });
+    expect(run.session.info.queue?.map((entry) => entry.text)).toEqual(['followup']);
+
+    acceptance.resolve(true);
+    await flush();
+    expect(run.session.info.queue).toEqual([]);
+    expect(run.session.thread.list().filter((item) => item.kind === 'user' && item.text === 'followup')).toMatchObject([{ turnId: original }]);
+    await run.session.dispose();
+});
+
+test('a steer refused after the send was answered keeps the message and pauses the queue', async () => {
+    const clock = new ManualClock();
+    const run = rig({ clock });
+    const acceptance = Promise.withResolvers<boolean>();
+    run.backend.steerTurn = () => acceptance.promise;
+    run.session.send('original');
+    await flush();
+    const sending = run.session.sendInput('followup', { delivery: 'steer' });
+    await flush();
+    clock.advance(15_000);
+    await sending;
+
+    acceptance.reject(new Error('Claude ended its turn without taking your message'));
+    await flush();
+    expect(run.session.info.queue?.map((entry) => entry.text)).toEqual(['followup']);
+    expect(run.session.info.queuePaused).toBe(true);
+    await run.session.dispose();
+});
