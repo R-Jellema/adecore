@@ -247,6 +247,34 @@ test('Claude acknowledges steering on replay without replacing the original prom
     await fake.exit();
 });
 
+test('Claude withdraws a steer it has not taken in when the person stops, so it does not run after the Stop', async () => {
+    const frames: Array<Record<string, unknown>> = [];
+    const fake = pipe(() => ({
+        onLine: (line) => {
+            frames.push(JSON.parse(line));
+        }
+    }));
+    const backend = new ClaudeBackend({ ...launch, spawn: fake.spawn }, { onEvent: () => undefined });
+    await backend.start();
+    backend.sendTurn({ promptId: 'original', text: 'start', preamble: null, attachments: [], mentions: [], skills: [] });
+    const withdrawn = backend.steerTurn({ promptId: 'late', text: 'change direction', preamble: null, attachments: [], mentions: [], skills: [] });
+    const taken = backend.steerTurn({ promptId: 'early', text: 'also this', preamble: null, attachments: [], mentions: [], skills: [] });
+    await flush();
+
+    backend.interrupt();
+    await flush();
+    const cancels = frames.filter((frame) => frame.type === 'control_request' && (frame.request as { subtype?: string }).subtype === 'cancel_async_message');
+    expect(cancels.map((frame) => (frame.request as { message_uuid?: string }).message_uuid)).toEqual(['late', 'early']);
+
+    fake.out({ type: 'control_response', response: { subtype: 'success', request_id: 'cancel-steer-late', response: { cancelled: true } } });
+    // The CLI had already taken this one in, so its echo still decides.
+    fake.out({ type: 'control_response', response: { subtype: 'success', request_id: 'cancel-steer-early', response: { cancelled: false } } });
+    fake.out({ type: 'user', uuid: 'early', parent_tool_use_id: null, message: { role: 'user', content: [] } });
+    expect(await withdrawn).toBe(false);
+    expect(await taken).toBe(true);
+    await fake.exit();
+});
+
 test('Claude rejects an unacknowledged steer when its transport dies', async () => {
     const fake = pipe();
     const backend = new ClaudeBackend({ ...launch, spawn: fake.spawn }, { onEvent: () => undefined });

@@ -9,6 +9,8 @@ import { buildUserMessage } from './input.ts';
 // Claude may echo a steer only once a slow tool returns, so a running turn sets no deadline; after the turn ended, a message
 // it still holds opens the next turn at once or never arrives.
 const STEER_GRACE_MS = 30_000;
+// The request id of a `cancel_async_message` that withdraws a steer, followed by its uuid.
+const CANCEL_STEER = 'cancel-steer-';
 
 export interface ClaudeBackendOptions {
     // Tools the CLI runs without asking, in every mode, as `--allowedTools` patterns (`Bash(git status)`).
@@ -116,6 +118,10 @@ export class ClaudeBackend implements ChatBackend {
         this.interrupted = true;
         this.protocol.noteInterrupt();
         this.write({ type: 'control_request', request_id: `interrupt-${Date.now()}`, request: { subtype: 'interrupt' } });
+        // A steer the CLI has not taken in survives a plain interrupt and would run after the Stop; it goes back to the queue instead.
+        for (const promptId of this.steers.keys()) {
+            this.write({ type: 'control_request', request_id: `${CANCEL_STEER}${promptId}`, request: { subtype: 'cancel_async_message', message_uuid: promptId } });
+        }
     }
 
     stopTask(taskId: string): void {
@@ -193,6 +199,9 @@ export class ClaudeBackend implements ChatBackend {
             return;
         }
         const echoed = typeof frame === 'object' && frame !== null ? (frame as Record<string, unknown>) : null;
+        if (echoed?.type === 'control_response' && this.cancelledSteer(echoed.response)) {
+            return;
+        }
         if (echoed?.type === 'user' && typeof echoed.uuid === 'string' && echoed.parent_tool_use_id == null) {
             this.steers.get(echoed.uuid)?.resolve(true);
             this.steers.delete(echoed.uuid);
@@ -220,6 +229,26 @@ export class ClaudeBackend implements ChatBackend {
         } catch (error) {
             this.failed(error);
         }
+    }
+
+    /* Whether this answers a withdrawn steer; one the CLI no longer held (already taken in) still waits for its echo. */
+    private cancelledSteer(response: unknown): boolean {
+        if (typeof response !== 'object' || response === null) {
+            return false;
+        }
+        const { request_id: requestId, response: body } = response as { request_id?: unknown; response?: unknown };
+        if (typeof requestId !== 'string' || !requestId.startsWith(CANCEL_STEER)) {
+            return false;
+        }
+        const promptId = requestId.slice(CANCEL_STEER.length);
+        if (typeof body === 'object' && body !== null && (body as { cancelled?: unknown }).cancelled === true) {
+            this.steers.get(promptId)?.resolve(false);
+            this.steers.delete(promptId);
+            if (this.steers.size === 0) {
+                this.clearSteerTimer();
+            }
+        }
+        return true;
     }
 
     private awaitSteers(): void {
