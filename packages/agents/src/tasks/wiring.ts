@@ -181,8 +181,14 @@ export function wireTasks(deps: TaskWiringDeps): TaskWiring {
         coordinator,
         recover: async () => {
             for (const task of deps.tasks.all()) {
-                if (task.status === 'open') {
+                if (task.status !== 'open') {
+                    continue;
+                }
+                // One child whose record this version cannot read must not keep every later task from recovering.
+                try {
                     await recoverOpen(task);
+                } catch (e) {
+                    console.error(`Recovering task ${task.id} failed:`, errorText(e));
                 }
             }
             await coordinator.settled();

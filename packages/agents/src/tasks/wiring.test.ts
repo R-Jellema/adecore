@@ -26,6 +26,7 @@ let changed: Task[];
 let watchers: Array<{ check(): boolean; resolve(): void }>;
 let clock: ManualClock;
 let claude: InProcessCli;
+let unreadable: Set<string>;
 
 /* Settles once `check` holds, looked at after every chat event and every task written; no clock is involved. */
 function until(check: () => boolean): Promise<void> {
@@ -57,9 +58,17 @@ beforeEach(async () => {
     clock = new ManualClock();
     changed = [];
     watchers = [];
+    unreadable = new Set();
+    const chats = host.chats;
     wiring = wireTasks({
         tasks,
-        chats: host.chats,
+        // A child whose record this version cannot read, as after a downgrade, fails where the real store would.
+        chats: new Proxy(chats, {
+            get: (target, key) =>
+                key === 'storedBackground'
+                    ? (chatId: string) => (unreadable.has(chatId) ? Promise.reject(new Error(`chat ${chatId} is unreadable`)) : target.storedBackground(chatId))
+                    : Reflect.get(target, key, target)
+        }),
         outbox: {
             list: () => outbox.list(),
             enqueue: (projectId, target, work, notBefore) => worker.enqueue(projectId, target, work, notBefore),
@@ -217,4 +226,15 @@ test('a task whose child runs on another machine wakes the parent once, from the
     await worker.settled();
     expect(tasks.get(task.id)).toMatchObject({ status: 'done', machine: 'machine-b', result });
     expect(turnsOf('lead')).toHaveLength(1);
+});
+
+test('recovery goes on past a task whose child cannot be read, and still owes the turn of a later task', async () => {
+    unreadable.add('broken');
+    await tasks.open({ projectId: 'project', parentId: 'lead', childId: 'broken', title: 'Broken', prompt: 'never read', requiresTaskTurn: true }, clock.now());
+    const later = await tasks.open({ projectId: 'project', parentId: 'lead', childId: 'child', title: 'Docs', prompt: 'write the docs', requiresTaskTurn: true }, clock.now());
+
+    await wiring.recover();
+    await until(() => turnsOf('child').some((turn) => (turn.taskIds ?? []).includes(later.id)));
+    await worker.settled();
+    expect(tasks.get(later.id)).toMatchObject({ status: 'done', result: { text: 'echo: write the docs' } });
 });
