@@ -131,6 +131,8 @@ export class ThreadProjector {
     private readonly backgroundCalls = new Set<string>();
     // Agents a subagent opened whose call never reached the stream (a grandchild's own); only drill-in shows them.
     private readonly unplacedCalls = new Set<string>();
+    // The row of an earlier process an agent woke under, by the ref of its own call in this one: its frames still name that call.
+    private readonly wokenRows = new Map<string, string>();
     // The stretch of thinking still open: its item, and which refs already streamed into it.
     private thinking: { id: string; refs: Set<string>; last: string | null } | null = null;
 
@@ -610,7 +612,8 @@ export class ThreadProjector {
     }
 
     private subagent(generation: number, ref: string): ChatSubagentItem | null {
-        const item = this.thread.get(this.itemId(generation, ref));
+        const id = this.itemId(generation, ref);
+        const item = this.thread.get(id) ?? this.thread.get(this.wokenRows.get(id) ?? '');
         return item?.kind === 'subagent' ? item : null;
     }
 
@@ -719,6 +722,10 @@ export class ThreadProjector {
         }
         // A settled agent that starts again under another call was woken by a message, and works on in the background.
         const resumed = event.resumed === true || (item.status !== 'running' && item.toolUseId !== event.ref);
+        const ownCall = this.itemId(generation, item.toolUseId);
+        if (resumed && item.id !== ownCall) {
+            this.wokenRows.set(ownCall, item.id);
+        }
         events.push(
             this.thread.upsert({
                 ...item,

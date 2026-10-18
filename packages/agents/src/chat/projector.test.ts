@@ -538,6 +538,30 @@ describe('subagents', () => {
         expect(thread.get('1:toolu_agent')).toMatchObject({ status: 'done', result: 'BANANA', summary: 'said banana', finishedAt: expect.any(Number) });
     });
 
+    test('a subagent woken after its CLI started again writes into the row it had, not into nothing', () => {
+        const { thread, projector } = setup();
+        const first = (...events: BackendEvent[]) => events.flatMap((event) => projector.project(1, event));
+        const second = (...events: BackendEvent[]) => events.flatMap((event) => projector.project(2, event));
+        first(
+            { type: 'tool.started', ref: 'toolu_agent', name: 'Agent', input: { description: 'Get a word' }, parentRef: null },
+            { type: 'task.started', ref: 'toolu_agent', taskId: 'a522', description: 'Get a word', subagentType: null, prompt: null, background: false },
+            { type: 'text.done', ref: 'msg_1:t0', text: 'APPLE', parentRef: 'toolu_agent' },
+            { type: 'task.done', ref: 'toolu_agent', taskId: 'a522', summary: null, ok: true },
+            { type: 'tool.done', ref: 'toolu_agent', output: 'APPLE', state: 'done' }
+        );
+        // A new process, as after a restart or a change of model, wakes the agent with a message.
+        second(
+            { type: 'tool.started', ref: 'toolu_send', name: 'SendMessage', input: { to: 'a522' }, parentRef: null },
+            { type: 'task.started', ref: 'toolu_send', taskId: 'a522', description: 'Get a word', subagentType: null, prompt: null, background: true },
+            { type: 'tool.started', ref: 'toolu_read', name: 'Read', input: {}, parentRef: 'toolu_agent' },
+            { type: 'text.done', ref: 'msg_1:t0', text: 'BANANA', parentRef: 'toolu_agent' },
+            { type: 'task.done', ref: 'toolu_send', taskId: 'a522', summary: 'said banana', ok: true }
+        );
+        expect(thread.get('1:toolu_agent')).toMatchObject({ status: 'done', result: 'BANANA', summary: 'said banana' });
+        expect(thread.get('2:toolu_read')).toMatchObject({ kind: 'tool', parentToolUseId: 'toolu_agent', turnId: 'turn-1' });
+        expect(thread.get('2:toolu_agent')).toBeUndefined();
+    });
+
     test('a subagent that works past the cap keeps the beginning and says it was cut', () => {
         const { thread, project } = setup();
         project({ type: 'tool.started', ref: 'toolu_agent', name: 'Agent', input: {}, parentRef: null });
