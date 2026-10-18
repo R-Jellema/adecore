@@ -120,7 +120,11 @@ export class ClaudeBackend implements ChatBackend {
         this.write({ type: 'control_request', request_id: `interrupt-${Date.now()}`, request: { subtype: 'interrupt' } });
         // A steer the CLI has not taken in survives a plain interrupt and would run after the Stop; it goes back to the queue instead.
         for (const promptId of this.steers.keys()) {
-            this.write({ type: 'control_request', request_id: `${CANCEL_STEER}${promptId}`, request: { subtype: 'cancel_async_message', message_uuid: promptId } });
+            this.write({
+                type: 'control_request',
+                request_id: `${CANCEL_STEER}${promptId}`,
+                request: { subtype: 'cancel_async_message', message_uuid: promptId }
+            });
         }
     }
 
