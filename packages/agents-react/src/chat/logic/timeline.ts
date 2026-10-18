@@ -506,8 +506,10 @@ export function deriveTimelineRows(items: ChatItem[], options: TimelineOptions):
         // The closing answer stays visible; the work after the last input folds behind the label.
         const finalAssistant = lastAssistantRow(work);
         const before = finalAssistant ? work.slice(0, work.indexOf(finalAssistant)) : work;
-        // Images remain a turn's visible result, and a workflow may still be running after its turn ends.
-        const standing = before.filter((row) => isImageRow(row) || (row.kind === 'workflow' && row.tool.state === 'running'));
+        // Images remain a turn's visible result, and a workflow or a background subagent may still be running after its turn ends.
+        const standing = before.filter(
+            (row) => isImageRow(row) || (row.kind === 'workflow' && row.tool.state === 'running') || (row.kind === 'subagent' && row.item.status === 'running')
+        );
         const folded = before.filter((row) => !standing.includes(row));
         const expanded = options.expandedTurns.has(turnId);
         if (folded.length > 0) {

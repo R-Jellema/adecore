@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { ChatItem, ChatToolItem, ChatTurnItem } from '@adecore/agent-contracts';
+import type { ChatItem, ChatSubagentItem, ChatToolItem, ChatTurnItem } from '@adecore/agent-contracts';
 import { notResumedNote } from '@adecore/agent-contracts';
 import type { CommandLook } from '../../host';
 import { agentTurnLabel, deriveTimelineRows, findSubagentBranch, isBlock, summarizeGroup, summarizeTurn, turnLabel } from './timeline';
@@ -332,6 +332,42 @@ describe('deriveTimelineRows', () => {
         expect(deriveTimelineRows(items('done'), options).map((row) => row.kind)).toEqual(['user', 'turn-fold', 'assistant']);
         const unfolded = deriveTimelineRows(items('done'), { ...options, expandedTurns: new Set(['t1']) });
         expect(unfolded.map((row) => row.kind)).toEqual(['user', 'turn-fold', 'work', 'workflow', 'work', 'assistant']);
+    });
+
+    test('a background subagent stays out of the fold of its settled turn until it ends', () => {
+        const subagent = (status: ChatSubagentItem['status']): ChatSubagentItem => ({
+            id: 'sa1',
+            kind: 'subagent',
+            createdAt: 3,
+            turnId: 't1',
+            toolUseId: 'toolu_agent',
+            description: 'Watch the build',
+            subagentType: 'general-purpose',
+            prompt: 'watch it',
+            background: true,
+            status,
+            startedAt: 3,
+            finishedAt: status === 'running' ? null : 9,
+            summary: null,
+            result: null,
+            usage: null,
+            lastTool: null,
+            itemsTruncated: false
+        });
+        const items = (status: ChatSubagentItem['status']): ChatItem[] => [
+            thread[0]!,
+            thread[1]!,
+            tool('r1', 'Read', { file_path: 'a.ts' }),
+            subagent(status),
+            { id: 'a1', kind: 'assistant', createdAt: 5000, turnId: 't1', text: 'It runs in the background.', streaming: false }
+        ];
+        expect(deriveTimelineRows(items('running'), options).map((row) => [row.kind, row.id])).toEqual([
+            ['user', 'u1'],
+            ['turn-fold', 'fold-t1'],
+            ['subagent', 'sa1'],
+            ['assistant', 'a1']
+        ]);
+        expect(deriveTimelineRows(items('done'), options).map((row) => row.kind)).toEqual(['user', 'turn-fold', 'assistant']);
     });
 });
 
