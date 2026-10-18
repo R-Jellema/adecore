@@ -231,7 +231,10 @@ test('a task whose child runs on another machine wakes the parent once, from the
 test('recovery goes on past a task whose child cannot be read, and still owes the turn of a later task', async () => {
     unreadable.add('broken');
     await tasks.open({ projectId: 'project', parentId: 'lead', childId: 'broken', title: 'Broken', prompt: 'never read', requiresTaskTurn: true }, clock.now());
-    const later = await tasks.open({ projectId: 'project', parentId: 'lead', childId: 'child', title: 'Docs', prompt: 'write the docs', requiresTaskTurn: true }, clock.now());
+    const later = await tasks.open(
+        { projectId: 'project', parentId: 'lead', childId: 'child', title: 'Docs', prompt: 'write the docs', requiresTaskTurn: true },
+        clock.now()
+    );
 
     await wiring.recover();
     await until(() => turnsOf('child').some((turn) => (turn.taskIds ?? []).includes(later.id)));
