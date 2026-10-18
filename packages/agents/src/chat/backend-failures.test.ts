@@ -319,6 +319,30 @@ test('Codex sends native steering with the exact active turn id', async () => {
     await backend.dispose();
 });
 
+test('Codex leaves a steer it refuses during a compact turn to wait, instead of failing the send', async () => {
+    const fake = inProcess((io) => {
+        const program = fakeCodexWith({})(io);
+        return {
+            onLine: (line) => {
+                const frame = JSON.parse(line);
+                if (frame.method === 'turn/steer') {
+                    io.out({ id: frame.id, error: { code: -32600, message: 'cannot steer a compact turn' } });
+                    return;
+                }
+                program.onLine(line);
+            }
+        };
+    });
+    const backend = new CodexBackend({ ...launch, selection: codexProvider.catalog.normalize(undefined), spawn: fake.spawn }, { onEvent: () => undefined });
+    await backend.start();
+    backend.sendTurn({ text: 'slow', preamble: null, attachments: [], mentions: [], skills: [] });
+    await flush();
+    expect(await backend.steerTurn({ text: 'after the fold', preamble: null, attachments: [], mentions: [], skills: [] })).toBe(false);
+    backend.interrupt();
+    await flush();
+    await backend.dispose();
+});
+
 test('Codex gives up on an app-server that never answers its handshake, and ends it', async () => {
     jest.useFakeTimers();
     const fake = inProcess(() => ({ onLine: () => undefined }));

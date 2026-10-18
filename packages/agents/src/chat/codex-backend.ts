@@ -338,7 +338,8 @@ export class CodexBackend implements ChatBackend {
             return true;
         } catch (error) {
             const rejected = error instanceof Error && error.name === 'CodexRpcError';
-            if (rejected && /no active turn|not.*active|turn.*mismatch|expected.*turn|method not found/i.test(error.message)) {
+            // A compact or review turn takes no steer (codex 0.162: "cannot steer a compact turn"); the message waits for the next turn.
+            if (rejected && /no active turn|not.*active|turn.*mismatch|expected.*turn|method not found|cannot steer|not steerable/i.test(error.message)) {
                 return false;
             }
             throw error;
