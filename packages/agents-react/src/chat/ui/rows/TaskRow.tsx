@@ -11,6 +11,7 @@ import { useChatScope } from '../../../scope';
 import { useChats } from '../../../state/chats';
 import { useProviders } from '../../../state/providers';
 import { taskRowStateOf, type TaskRowState } from '../../subagent-list';
+import { ROW_GUTTER } from '../icons';
 
 const DOT: Record<TaskRowState, string> = {
     running: 'bg-status-running',
@@ -40,7 +41,7 @@ function StateLine({ state, task }: { state: TaskRowState; task: SubagentTask | 
     const until = state === 'paused' ? task?.paused?.until : undefined;
     const now = useNow(60_000, until === undefined);
     return (
-        <span className={clsx('truncate text-xs', STATE_TONE[state])}>
+        <span className={clsx('truncate text-2xs', STATE_TONE[state])}>
             {until === undefined ? t(`rows.task.${state}`) : t('rows.task.pausedUntil', { time: formatMoment(until, now) })}
         </span>
     );
@@ -70,10 +71,10 @@ export function TaskRow({ item, task, open, onPress }: { item: ChatSubagentItem;
     const finishedAt = task === null ? item.finishedAt : (task.settledAt ?? item.finishedAt);
     const settled = state === 'done' || state === 'failed' || state === 'cancelled';
     return (
-        <button className="-mx-1 mb-0.5 flex w-[calc(100%+8px)] items-center gap-2.5 rounded-md px-1 py-1 text-left hover:bg-surface-hover" onClick={onPress}>
-            <span className="relative grid size-7 shrink-0 place-items-center rounded-full bg-surface-raised text-text">
+        <button className="-mx-1 mb-0.5 flex w-[calc(100%+8px)] items-start gap-2 rounded-md px-1 py-1 text-left hover:bg-surface-hover" onClick={onPress}>
+            <span className={clsx(ROW_GUTTER, 'relative text-text')}>
                 {provider === undefined ? <Icon icon={Bot} size={14} /> : <AgentIcon kind={provider} size={14} />}
-                <span className={clsx('absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full ring-2 ring-surface', DOT[state])} />
+                <span className={clsx('absolute -right-0.75 bottom-0 size-2 rounded-full ring-2 ring-surface', DOT[state])} />
             </span>
             <span className="flex min-w-0 grow flex-col">
                 <span data-find-field="summary" className="truncate text-xs font-medium text-text">
@@ -81,11 +82,13 @@ export function TaskRow({ item, task, open, onPress }: { item: ChatSubagentItem;
                 </span>
                 <StateLine state={state} task={task} />
             </span>
-            {(state === 'running' || state === 'waiting') && startedAt > 0 && <Elapsed startedAt={startedAt} />}
-            {settled && startedAt > 0 && finishedAt !== null && finishedAt >= startedAt && (
-                <span className="shrink-0 text-xs text-text-faint tabular-nums">{formatElapsedShort(finishedAt - startedAt)}</span>
-            )}
-            <Icon icon={ChevronRight} size={12} className={clsx('shrink-0 text-text-faint transition-transform', open && 'rotate-90')} />
+            <span className="flex h-5 shrink-0 items-center gap-2">
+                {(state === 'running' || state === 'waiting') && startedAt > 0 && <Elapsed startedAt={startedAt} />}
+                {settled && startedAt > 0 && finishedAt !== null && finishedAt >= startedAt && (
+                    <span className="shrink-0 text-xs text-text-faint tabular-nums">{formatElapsedShort(finishedAt - startedAt)}</span>
+                )}
+                <Icon icon={ChevronRight} size={12} className={clsx('shrink-0 text-text-faint transition-transform', open && 'rotate-90')} />
+            </span>
         </button>
     );
 }

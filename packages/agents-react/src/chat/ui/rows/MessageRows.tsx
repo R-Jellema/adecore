@@ -381,7 +381,7 @@ export function ThinkingRow({ chatId, item: derived }: { chatId: string; item: C
                 )}
             </button>
             {shown && text !== '' && (
-                <div data-find-field="text" className="mt-1 border-l border-border pl-2.5 select-text">
+                <div data-find-field="text" className="mt-1 ml-1.75 border-l border-border pl-4 select-text">
                     {reveal.active ? (
                         <div className="text-sm whitespace-pre-wrap text-text-faint">
                             <FadingWords text={reveal.text} />
@@ -535,7 +535,7 @@ export function ApprovalHistoryRow({ item }: { item: ChatApprovalItem }) {
             <span className={clsx(ROW_GUTTER, item.decision === 'deny' && 'text-status-error')}>{DECISION_ICON[item.decision]}</span>
             <span className={clsx(item.decision === 'deny' && 'text-status-error')}>{t(`rows.approval.${item.decision}`)}</span>
             <span className="text-text-muted">{item.toolName}</span>
-            <span className="min-w-0 truncate font-mono">
+            <span className="min-w-0 truncate font-mono text-code">
                 {toolSummaryIsPath(item.toolName, item.input) ? (
                     <MiddleTruncate text={toolSummary(item.toolName, item.input)} />
                 ) : (

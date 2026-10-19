@@ -162,7 +162,7 @@ export function ToggleLine({
             {look !== undefined ? (
                 <>
                     {look.run.detail !== '' && (
-                        <span data-find-field="summary" className="min-w-0 truncate font-mono text-text-faint">
+                        <span data-find-field="summary" className="min-w-0 truncate font-mono text-code text-text-faint">
                             <LookDetail run={look.run} chatId={look.chatId} />
                         </span>
                     )}
@@ -170,7 +170,7 @@ export function ToggleLine({
                 </>
             ) : (
                 detail && (
-                    <span data-find-field="summary" className="min-w-0 truncate font-mono text-text-faint">
+                    <span data-find-field="summary" className="min-w-0 truncate font-mono text-code text-text-faint">
                         {command ? <ShellCommand command={detail} /> : path ? <MiddleTruncate text={detail} /> : detail}
                     </span>
                 )
