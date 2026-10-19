@@ -163,10 +163,20 @@ export function TabsList({ className, children, start, end, after, variant = 'li
         return () => observer.disconnect();
     });
 
-    // A picked tab that scrolled out of sight comes back into it, wherever it was picked from.
+    // A picked tab that scrolled out of sight comes back into it, wherever it was picked from. Only the strip
+    // moves: `scrollIntoView` would scroll every ancestor too, such as a thread that holds a block of tabs.
     useEffect(() => {
-        if (scrolls) {
-            list.current?.querySelector('[aria-selected="true"]')?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+        const row = list.current;
+        const tab = row?.querySelector<HTMLElement>('[aria-selected="true"]');
+        if (!scrolls || !row || !tab) {
+            return;
+        }
+        const strip = row.getBoundingClientRect();
+        const picked = tab.getBoundingClientRect();
+        if (picked.left < strip.left) {
+            row.scrollLeft -= strip.left - picked.left;
+        } else if (picked.right > strip.right) {
+            row.scrollLeft += picked.right - strip.right;
         }
     }, [scrolls, value]);
 
