@@ -88,7 +88,7 @@ export function EntityListRenderer({ node, children }: UiRendererProps<UiProps<'
         );
     }
     return (
-        <KeyValueList.Root divided={count >= DIVIDED_FROM} className="chat-ui-nodes rounded-xl bg-ui-tile px-3 py-2">
+        <KeyValueList.Root divided={count >= DIVIDED_FROM} className="chat-ui-nodes chat-ui-flat rounded-xl bg-ui-tile px-3 py-2">
             {children}
         </KeyValueList.Root>
     );
@@ -162,7 +162,7 @@ export function TableRenderer({ node, context }: UiRendererProps<UiProps<'Table'
     const shown = all ? rows : rows.slice(0, UI_TABLE_ROWS);
     return (
         <div className="flex flex-col items-start gap-1.5">
-            <div className="max-h-80 w-full overflow-auto rounded-xl bg-ui-tile px-1.5 pb-1.5">
+            <div className="chat-ui-flat max-h-80 w-full overflow-auto rounded-xl bg-ui-tile px-1.5 pb-1.5">
                 <table
                     aria-label={t('blocks.table.label', { columns: columns.map((column) => column.title).join(', ') })}
                     className={clsx(

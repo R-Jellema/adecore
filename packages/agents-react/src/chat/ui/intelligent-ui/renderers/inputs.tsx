@@ -70,7 +70,9 @@ export function ItemRenderer({ node, children }: UiRendererProps<UiProps<'Item'>
 export function SwitchRenderer({ node, children, context }: UiRendererProps<UiProps<'Switch'>>) {
     const binding = bindingOf(node, context);
     return (
-        <div className={clsx('flex min-h-11 items-center justify-between gap-3 rounded-xl bg-ui-tile px-3 py-2 text-xs', !node.complete && PENDING)}>
+        <div
+            className={clsx('chat-ui-flat flex min-h-11 items-center justify-between gap-3 rounded-xl bg-ui-tile px-3 py-2 text-xs', !node.complete && PENDING)}
+        >
             <span className="min-w-0 font-medium text-text">{children}</span>
             <Switch
                 checked={binding?.value ?? node.props.value}
@@ -97,7 +99,7 @@ export function SliderRenderer({ node, context }: UiRendererProps<UiProps<'Slide
             unit={uiWithUnit('', unit)}
             label={uiNodeLabel(node)}
             disabled={binding === null}
-            className={clsx('rounded-xl bg-ui-tile p-3', !node.complete && PENDING)}
+            className={clsx('chat-ui-flat rounded-xl bg-ui-tile p-3', !node.complete && PENDING)}
         />
     );
 }

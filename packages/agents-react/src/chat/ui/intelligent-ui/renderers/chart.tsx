@@ -442,7 +442,7 @@ function DrawnChart({
     const values = useMemo(() => uiChartValues(data), [data]);
     const { kind } = chart;
     return (
-        <figure className="flex flex-col gap-2.5 rounded-xl bg-ui-tile p-3.5">
+        <figure className="chat-ui-flat flex flex-col gap-2.5 rounded-xl bg-ui-tile p-3.5">
             {chart.series.length > 1 && <Legend chart={chart} />}
             {kind !== 'stacked' && unitApart(unit) && <p className="text-xs text-text-faint">{unit}</p>}
             <div ref={measure} role="img" aria-label={chartSummary(values, unit, t)} className="relative">

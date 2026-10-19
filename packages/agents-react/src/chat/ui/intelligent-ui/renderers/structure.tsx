@@ -76,7 +76,7 @@ export function SectionRenderer({ node, children, context }: UiRendererProps<UiP
                 />
                 <span className="min-w-0 truncate">{node.props.title}</span>
             </button>
-            <div id={contentId} hidden={!open} className="chat-ui-nodes flex flex-col gap-3 pr-3 pb-3 pl-8.5">
+            <div id={contentId} hidden={!open} className="chat-ui-section-body chat-ui-nodes flex flex-col gap-3 pr-3 pb-3 pl-8.5">
                 {children}
             </div>
         </section>

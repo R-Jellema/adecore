@@ -20,9 +20,9 @@ const SourceNumbers = createContext<ReadonlyMap<string, number>>(new Map());
 export function CodeBlockRenderer({ node }: UiRendererProps<UiProps<'CodeBlock'>>) {
     const { language } = node.props;
     return (
-        <div className="chat-ui-code flex flex-col rounded-xl bg-ui-tile p-1.5">
+        <div className="chat-ui-code chat-ui-flat flex flex-col rounded-xl bg-ui-tile p-1.5">
             {language !== undefined && language !== '' && (
-                <div className="flex px-1.5 pt-0.5 pb-1.5">
+                <div className="chat-ui-flat-inner flex px-1.5 pt-0.5 pb-1.5">
                     <span className="rounded-md bg-ui-inset px-1.5 font-mono text-2xs text-text shadow-[inset_0_0_0_1px_var(--border)]">{language}</span>
                 </div>
             )}
@@ -251,8 +251,8 @@ export function SourcesRenderer({ node, children }: UiRendererProps<UiProps<'Sou
     const numbers = new Map(uiChildrenOf(node, 'Source').map((source, index) => [source.id, index + 1]));
     return (
         <SourceNumbers value={numbers}>
-            <section aria-labelledby={headingId} className="flex flex-col rounded-xl bg-ui-tile p-1.5">
-                <span id={headingId} className="px-1.5 pt-0.5 pb-1 text-2xs font-medium text-text-muted">
+            <section aria-labelledby={headingId} className="chat-ui-flat flex flex-col rounded-xl bg-ui-tile p-1.5">
+                <span id={headingId} className="chat-ui-flat-inner px-1.5 pt-0.5 pb-1 text-2xs font-medium text-text-muted">
                     {t('blocks.sources')}
                 </span>
                 <ol className="chat-ui-nodes flex flex-col">{children}</ol>
@@ -334,13 +334,16 @@ export function SourceRenderer({ node, context }: UiRendererProps<UiProps<'Sourc
                 }
             >
                 {openUrl === undefined ? (
-                    <span tabIndex={domainCut ? 0 : undefined} className="flex min-h-8 items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-2xs">
+                    <span
+                        tabIndex={domainCut ? 0 : undefined}
+                        className="chat-ui-flat-inner flex min-h-8 items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-2xs"
+                    >
                         {face}
                     </span>
                 ) : (
                     <button
                         type="button"
-                        className="flex min-h-8 w-full items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-left text-2xs hover:bg-text/4"
+                        className="chat-ui-flat-inner flex min-h-8 w-full items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-left text-2xs hover:bg-text/4"
                         onClick={() => openUrl(url)}
                     >
                         {face}

@@ -68,7 +68,7 @@ export function SummaryRenderer({ node, children }: UiRendererProps<UiProps<'Sum
 export function CalloutRenderer({ node, children }: UiRendererProps<UiProps<'Callout'>>) {
     const { tone, title } = node.props;
     return (
-        <div className="flex items-start gap-3 rounded-xl bg-ui-tile p-3 text-xs">
+        <div className="chat-ui-flat flex items-start gap-3 rounded-xl bg-ui-tile p-3 text-xs">
             <span aria-hidden className={clsx('grid size-7 shrink-0 place-items-center rounded-lg', UI_TONE_SURFACE[tone], UI_TONE_TEXT[tone])}>
                 <Icon icon={UI_TONE_ICONS[tone]} size={14} />
             </span>
@@ -98,7 +98,7 @@ export function ProgressRenderer({ node, children, context }: UiRendererProps<Ui
         value === undefined ? null : limit === 100 ? formatPercent(value) : t('blocks.progress.of', { value: formatNumber(value), max: formatNumber(limit) });
     const label = uiNodeLabel(node);
     return (
-        <div className="flex flex-col gap-2 rounded-xl bg-ui-tile p-3">
+        <div className="chat-ui-flat flex flex-col gap-2 rounded-xl bg-ui-tile p-3">
             <div className="flex items-baseline justify-between gap-3 text-xs">
                 <span className="min-w-0 text-text">{children}</span>
                 {reading !== null ? (
@@ -147,7 +147,7 @@ export function StepRenderer({ node, children, context }: UiRendererProps<UiProp
 }
 
 export function TimelineRenderer({ children }: UiRendererProps<UiProps<'Timeline'>>) {
-    return <ol className="chat-ui-nodes flex flex-col rounded-xl bg-ui-tile px-3 py-1.5">{children}</ol>;
+    return <ol className="chat-ui-nodes chat-ui-flat flex flex-col rounded-xl bg-ui-tile px-3 py-1.5">{children}</ol>;
 }
 
 /* A row of the tile: the time, a dot in the tone, the title, and a short detail as a tag at the end or a longer one under the title. */

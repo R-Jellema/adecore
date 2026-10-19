@@ -13,8 +13,8 @@ export type UiFallbackProblem = { kind: 'unknown'; component: string } | { kind:
 export function UiFallbackPart({ fallback, problem }: { fallback: string; problem: UiFallbackProblem }) {
     const { t } = useTranslation('agent-chat');
     return (
-        <div className="flex flex-col gap-1.5 rounded-xl bg-ui-tile p-1.5">
-            <span className="flex items-center gap-1.5 px-1.5 pt-0.5 text-2xs text-text-muted">
+        <div className="chat-ui-flat flex flex-col gap-1.5 rounded-xl bg-ui-tile p-1.5">
+            <span className="chat-ui-flat-inner flex items-center gap-1.5 px-1.5 pt-0.5 text-2xs text-text-muted">
                 <Icon icon={Info} size={12} className="shrink-0" />
                 {problem.kind === 'unknown' ? t('blocks.unknownComponent', { component: problem.component }) : t('blocks.renderFailed')}
             </span>
