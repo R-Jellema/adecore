@@ -336,14 +336,14 @@ export function SourceRenderer({ node, context }: UiRendererProps<UiProps<'Sourc
                 {openUrl === undefined ? (
                     <span
                         tabIndex={domainCut ? 0 : undefined}
-                        className="chat-ui-flat-inner flex min-h-8 items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-2xs"
+                        className="chat-ui-flat-inner flex min-h-8 items-start gap-2.5 rounded-lg px-1.5 py-1.5 text-2xs"
                     >
                         {face}
                     </span>
                 ) : (
                     <button
                         type="button"
-                        className="chat-ui-flat-inner flex min-h-8 w-full items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-left text-2xs hover:bg-text/4"
+                        className="chat-ui-flat-inner flex min-h-8 w-full items-start gap-2.5 rounded-lg px-1.5 py-1.5 text-left text-2xs hover:bg-text/4"
                         onClick={() => openUrl(url)}
                     >
                         {face}

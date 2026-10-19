@@ -122,8 +122,8 @@ export function StepRenderer({ node, children, context }: UiRendererProps<UiProp
     const { state, detail } = node.props;
     const quiet = state === 'pending' || state === 'skipped';
     return (
-        <li className="flex min-h-10 items-center gap-3 rounded-xl bg-ui-tile px-3 py-2 text-xs">
-            <span className={clsx('grid size-4 shrink-0 place-items-center', STEP_TONES[state])}>
+        <li className="flex min-h-10 items-start gap-3 rounded-xl bg-ui-tile px-3 py-2.5 text-xs">
+            <span className={clsx('mt-0.5 grid size-4 shrink-0 place-items-center', STEP_TONES[state])}>
                 {state === 'running' ? (
                     isLive(context) ? (
                         <Spinner size={14} />

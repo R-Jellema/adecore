@@ -55,13 +55,13 @@ export function ItemRenderer({ node, children }: UiRendererProps<UiProps<'Item'>
     return (
         <div
             className={clsx(
-                'flex min-h-10 items-center gap-3 rounded-xl bg-ui-tile px-3 py-2 text-xs text-text',
+                'flex min-h-10 items-start gap-3 rounded-xl bg-ui-tile px-3 py-2.5 text-xs text-text',
                 checked && 'ring-2 ring-accent ring-inset',
                 list.enabled && 'hover:bg-surface-active'
             )}
             onClick={toggleRow}
         >
-            <Checkbox checked={checked} onCheckedChange={() => list.toggle(value)} label={uiNodeLabel(node)} disabled={!list.enabled} />
+            <Checkbox className="mt-0.5" checked={checked} onCheckedChange={() => list.toggle(value)} label={uiNodeLabel(node)} disabled={!list.enabled} />
             <div className="min-w-0 grow">{children}</div>
         </div>
     );
