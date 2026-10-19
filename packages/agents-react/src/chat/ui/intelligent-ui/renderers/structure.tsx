@@ -51,7 +51,7 @@ export function SectionsRenderer({ node, children, context }: UiRendererProps<Ui
     );
 }
 
-/* Arrives open until the person folds a section of the set themselves; the content starts under the title. */
+/* Arrives open until the person folds a section of the set themselves; the content keeps one margin on both sides. */
 export function SectionRenderer({ node, children, context }: UiRendererProps<UiProps<'Section'>>) {
     const fold = useContext(SectionsContext);
     const [open, setOpen] = useBlockLocal(context, node.id, () => !fold.touched);
@@ -76,7 +76,7 @@ export function SectionRenderer({ node, children, context }: UiRendererProps<UiP
                 />
                 <span className="min-w-0 truncate">{node.props.title}</span>
             </button>
-            <div id={contentId} hidden={!open} className="chat-ui-section-body chat-ui-nodes flex flex-col gap-3 pr-3 pb-3 pl-8.5">
+            <div id={contentId} hidden={!open} className="chat-ui-section-body chat-ui-nodes flex flex-col gap-3 px-3 pb-3">
                 {children}
             </div>
         </section>

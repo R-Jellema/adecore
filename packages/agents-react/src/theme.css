@@ -256,8 +256,8 @@
 .chat-code { position: relative; min-height: 38px; border-radius: 8px; border: 1px solid var(--border); background: var(--chat-code-bg); overflow: hidden; }
 /* A code block in an intelligent UI block is a card inset in its tile. */
 .chat-ui-code .chat-code { background: var(--chat-ui-inset); }
-/* Inside a Section the section is the tile. A tile that only frames its parts goes flat, so they line up with
-   the title, and a card among them takes the inset ground so it still reads as one. Unlayered, so it outweighs
+/* Inside a Section the section is the tile. A tile that only frames its parts goes flat, so they keep the
+   section's own margin, and a card among them takes the inset ground so it still reads as one. Unlayered, so it outweighs
    the utilities it overrides. */
 .chat-ui-section-body .bg-ui-tile { background-color: var(--chat-ui-inset); }
 .chat-ui-section-body .chat-ui-flat { background-color: transparent; padding: 0; }
