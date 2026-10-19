@@ -98,7 +98,7 @@ const EXAMPLES = [
     '$rows = [{name: "Core"}, {name: "Client"}]\n<EntityList><Each items={$rows} as="row"><Entry label={row.name}>Ready</Entry></Each></EntityList>',
     '<Image generated="latest" alt="A rabbit"/><Steps><Step state="done">Built</Step><Step state="pending">Review</Step></Steps>',
     '<Timeline><Event at="14:02" tone="warning" detail="p95 above 2 s">Alert fired</Event><Event at="2026-10-14T14:09:00Z">Rolled back</Event></Timeline>',
-    '<Gallery><Image attachment="a1" alt="Login">Before</Image><Image attachment="a2" alt="Home"/></Gallery><Compare before="a1" after="a2" beforeLabel="Old">Header</Compare>',
+    '<Gallery><Image attachment="a1" alt="Login">Before</Image><Image attachment="a2" alt="Home"/></Gallery><Compare before="a1" after="a2" beforeLabel="Old">Header</Compare><Model attachment="m1" alt="Bracket">The bracket</Model>',
     '$q = "ada"\n$kind = "bug"\n<TextField value={$q} maxLength={32} placeholder="Name">Who</TextField><Select value={$kind}><Option value="bug">Bug</Option><Option value="idea">Idea</Option></Select>'
 ];
 
@@ -112,9 +112,10 @@ describe('streaming compiler', () => {
             expect(evaluated.nodes.length).toBeGreaterThan(0);
             expect(compiled.fallback).not.toBe('');
         }
-        expect(Object.keys(UI_CATALOG)).toHaveLength(44);
+        expect(Object.keys(UI_CATALOG)).toHaveLength(45);
         expect(uiCatalogText()).toContain('Image(attachment?, generated?, alt?)');
         expect(uiCatalogText()).toContain('Button(action, disabled?)');
+        expect(uiCatalogText()).toContain('Model(attachment, alt?)');
     });
 
     test('every prefix is bounded and retains stable nodes after their tag arrives', () => {
@@ -363,6 +364,8 @@ describe('open wire and agent text', () => {
         expect(uiFallbackText(text, [{ ...block('<Summary>Invalid range</Summary>'), start: 200, end: 210 }])).toBe(text);
         expect(uiCompactCatalog()).toContain('Slider: value,min,max,step?,unit?');
         expect(uiReferenceText()).toContain('Image accepts a chat attachment');
+        expect(uiReferenceText()).toContain('never on your own after writing or changing one');
+        expect(uiSessionNote()).toContain('Model only when the person asks to see one.');
         expect(uiSessionNote()).toContain('@Filter(list,row,predicate)');
         expect(uiSessionNote().length).toBeLessThan(2400);
     });

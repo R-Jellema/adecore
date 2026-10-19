@@ -19,7 +19,7 @@ export const UI_GROUPS = {
     structure: { description: 'Organize distinct topics.', rules: 'Use Tabs for alternatives and Sections for independent topics.' },
     content: {
         description: 'Include code, attachments and sources.',
-        rules: 'Image accepts a chat attachment or generated="latest", never a URL or a local path. Gallery and Compare take chat attachments too. The host says how to attach a file of your own.'
+        rules: 'Image accepts a chat attachment or generated="latest", never a URL or a local path. Gallery and Compare take chat attachments too. Model takes a chat attachment of a model file, and is shown only when the person asks to see a model, never on your own after writing or changing one. The host says how to attach a file of your own.'
     },
     places: {
         description: 'Show places on a map the host draws.',
@@ -117,6 +117,13 @@ export const UI_CATALOG = {
         group: 'content',
         description: 'Two chat attachments in one frame with a handle to wipe between them; children are the caption.',
         schema: z.strictObject({ before: name, after: name, beforeLabel: text.optional(), afterLabel: text.optional() }),
+        text: 'caption'
+    },
+    Model: {
+        group: 'content',
+        description: 'A 3D model from a chat attachment that a person can orbit and zoom; children are the caption.',
+        schema: z.strictObject({ attachment: name, alt: text.optional() }),
+        needs: 'attachment',
         text: 'caption'
     },
     Map: {

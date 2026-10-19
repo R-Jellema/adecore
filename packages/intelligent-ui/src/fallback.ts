@@ -56,6 +56,8 @@ export function uiNodeFallback(type: string, props: Readonly<Record<string, unkn
             return children;
         case 'Image':
             return `[Image: ${uiPlainText(props.alt ?? props.attachment ?? props.generated ?? 'unavailable')}]${children}\n`;
+        case 'Model':
+            return `[Model: ${uiPlainText(props.alt ?? props.attachment ?? 'unavailable')}]${children.trim() ? ` ${children.trim()}` : ''}\n`;
     }
     const path = given(props.path) && given(props.line) ? `${uiPlainText(props.path)}:${uiPlainText(props.line)}` : props.path;
     const target = path ?? props.sha ?? (type === 'Node' ? props.id : undefined);

@@ -195,6 +195,30 @@ describe('Gallery and Compare', () => {
     });
 });
 
+describe('Model', () => {
+    test('names one attachment and never takes an address or a path', () => {
+        const ok = block('<Model attachment="m1" alt="Bracket">The printed bracket</Model>');
+        expect(ok.diagnostics).toEqual([]);
+        expect(evaluateUiBlock(ok).nodes[0].props).toEqual({ attachment: 'm1', alt: 'Bracket' });
+        expect(problems('<Model alt="Bracket"/>').errors).toEqual(['Model:invalid_props']);
+        expect(problems('<Model attachment=""/>').errors).toEqual(['Model:invalid_props']);
+        expect(problems('<Model generated="latest"/>')).toEqual({ diagnostics: ['refused_prop', 'invalid_props'], errors: ['Model:invalid_props'] });
+        expect(problems('<Model attachment="m1" src="https://example.com/a.stl"/>').diagnostics).toEqual(['refused_prop']);
+        expect(problems('<Model attachment="m1" path="/tmp/a.stl"/>').diagnostics).toEqual(['refused_prop']);
+    });
+
+    test('falls back to its alt or its attachment, then the caption', () => {
+        expect(block('<Model attachment="m1" alt="Bracket">The printed bracket</Model>').fallback).toBe('[Model: Bracket] The printed bracket');
+        expect(block('<Model attachment="m1"/>').fallback).toBe('[Model: m1]');
+    });
+
+    test('is listed with its required attachment and its caption', () => {
+        expect(UI_CATALOG.Model.group).toBe('content');
+        expect(UI_CATALOG.Model.needs).toBe('attachment');
+        expect(UI_CATALOG.Model.text).toBe('caption');
+    });
+});
+
 describe('TextField and Select', () => {
     const FORM =
         '$name = "Ada"\n$kind = "bug"\n<TextField value={$name} maxLength={8} placeholder="Your name">Name</TextField>' +

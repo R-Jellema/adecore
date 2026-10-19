@@ -1,6 +1,6 @@
 # Content
 
-Include code, attachments and sources. Nothing here loads an address or reads a path: an image is an attachment the chat already holds, and a source opens only when a person clicks it. `Image`, `Gallery` and `Compare` take attachments of the chat only; how an agent attaches a file of its own is the host's to tell it.
+Include code, attachments and sources. Nothing here loads an address or reads a path: an image is an attachment the chat already holds, and a source opens only when a person clicks it. `Image`, `Gallery`, `Compare` and `Model` take attachments of the chat only; how an agent attaches a file of its own is the host's to tell it.
 
 <Demo src="intelligent-ui/content" />
 
@@ -62,6 +62,21 @@ Two attachments in one frame, with a handle between them that a person drags or 
 ```
 
 The frame takes the shape of the `before` image. With one attachment gone, the other shows alone and says so; with both gone the frame says why. The position of the handle is the renderer's own and is not state of the block. Its fallback is `[Compare: Old a1, New a2] caption`.
+
+## Model
+
+A 3D model from a chat attachment that a person can orbit and zoom. Its children are the caption. An agent shows one only when the person asks to see a model, never on its own after it wrote or changed one.
+
+| Prop         | Type   | Required | Notes                                      |
+| ------------ | ------ | -------- | ------------------------------------------ |
+| `attachment` | string | Yes      | The id of an attachment of the chat        |
+| `alt`        | string | No       | The text for a screen reader               |
+
+```ui
+<Model attachment="bracket" alt="Mounting bracket">The bracket after the wall was made thicker</Model>
+```
+
+The host draws the model; the catalog knows no file format. A host without a view of its own shows the model as a row with its name and caption. Its fallback is `[Model: Mounting bracket] caption`.
 
 ## Sources and Source
 
