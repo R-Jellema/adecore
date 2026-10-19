@@ -68,8 +68,8 @@ const LITERAL_PARENTS = new Set(['CodeBlock', 'Tag', 'Choice', 'Item', 'Switch',
 
 /* Parents that stack their children, where a run of text and inline nodes is one paragraph. */
 const PARAGRAPHS: Readonly<Record<string, string>> = {
-    [BLOCK]: 'px-2 text-xs text-text',
-    Tab: 'px-2 text-xs text-text',
+    [BLOCK]: 'text-xs text-text',
+    Tab: 'text-xs text-text',
     Section: 'text-xs text-text-muted'
 };
 
@@ -198,7 +198,7 @@ function ProseLink({ href, children }: { href?: string; children?: ReactNode }) 
 
 const PROSE_COMPONENTS: Components = {
     p: ({ children }) => children,
-    code: ({ children }) => <code className="rounded-sm bg-surface-sunken px-1 py-px font-mono text-code">{children}</code>,
+    code: ({ children }) => <code className="rounded-sm bg-ui-tile px-1 py-px font-mono text-code">{children}</code>,
     a: ({ href, children }) => <ProseLink href={href}>{children}</ProseLink>,
     span: ({ node, children, className }) =>
         node?.properties['data-ui-citation'] !== undefined ? (

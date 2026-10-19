@@ -52,7 +52,7 @@ test.skipIf(typeof document === 'undefined')('a text field keeps what is typed u
         await act(async () => type(input(), 'Grace Hopper'));
         expect(input().value).toBe('Grace H');
         await act(async () => type(input(), 'Ada L'));
-        const [send] = [...element.querySelectorAll<HTMLButtonElement>('button')].filter((button) => button.querySelector('.lucide-arrow-right'));
+        const [send] = [...element.querySelectorAll<HTMLButtonElement>('[role="group"][aria-label="Choices"] button')];
         await act(async () => send!.click());
         expect(sent).toEqual([{ $name: 'Ada L' }]);
         expect(input().disabled).toBe(true);

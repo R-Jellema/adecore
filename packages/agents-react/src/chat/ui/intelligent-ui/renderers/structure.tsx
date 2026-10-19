@@ -22,7 +22,7 @@ export function TabsRenderer({ node, children, context }: UiRendererProps<UiProp
     const value = picked !== null && tabs.some((tab) => tab.id === picked) ? picked : (tabs[0]?.id ?? null);
     return (
         <Tabs.Root value={value} onValueChange={(next) => setPicked(String(next))} className="flex flex-col gap-3">
-            <Tabs.List className="px-2">
+            <Tabs.List variant="pill" overflow="scroll" className="rounded-xl bg-ui-tile p-0.75">
                 {tabs.map((tab) => (
                     <Tabs.Tab key={tab.id} value={tab.id} data-ui-reveal={tab.id}>
                         {tab.props.title}
@@ -46,7 +46,7 @@ export function SectionsRenderer({ node, children, context }: UiRendererProps<Ui
     const [touched, setTouched] = useBlockLocal(context, node.id, () => false);
     return (
         <SectionsContext value={{ touched, touch: () => setTouched(true) }}>
-            <div className="chat-ui-nodes flex flex-col divide-y divide-border-soft">{children}</div>
+            <div className="chat-ui-nodes flex flex-col gap-1.5">{children}</div>
         </SectionsContext>
     );
 }
@@ -57,13 +57,13 @@ export function SectionRenderer({ node, children, context }: UiRendererProps<UiP
     const [open, setOpen] = useBlockLocal(context, node.id, () => !fold.touched);
     const contentId = useId();
     return (
-        <section>
+        <section className="rounded-xl bg-ui-tile">
             <button
                 type="button"
                 data-ui-reveal={node.id}
                 aria-expanded={open}
                 aria-controls={contentId}
-                className="flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-sm font-medium text-text hover:bg-surface-hover"
+                className="flex min-h-10 w-full items-center gap-2 rounded-xl px-3 text-left text-xs font-medium text-text hover:bg-text/4"
                 onClick={() => {
                     fold.touch();
                     setOpen(!open);
@@ -76,7 +76,7 @@ export function SectionRenderer({ node, children, context }: UiRendererProps<UiP
                 />
                 <span className="min-w-0 truncate">{node.props.title}</span>
             </button>
-            <div id={contentId} hidden={!open} className="chat-ui-nodes flex flex-col gap-3 pt-1 pr-2 pb-2 pl-7.5">
+            <div id={contentId} hidden={!open} className="chat-ui-nodes flex flex-col gap-3 pr-3 pb-3 pl-8.5">
                 {children}
             </div>
         </section>

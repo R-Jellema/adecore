@@ -193,7 +193,7 @@ describe('choices', () => {
         const choiceId = nodes.find((node) => node.type === 'Choices')!.children.find((node) => node.type === 'Choice')!.id;
         const sent = markup(REVIEW, { onChoose: () => undefined, answer: { choiceId, state: 'sent' } });
         expect(sent).toContain('Sent');
-        expect(sent).toContain('bg-accent-soft');
+        expect(sent).toContain('ring-accent');
         expect(sent).toContain('opacity-50');
         expect(markup(REVIEW, { onChoose: () => undefined, answer: { choiceId, state: 'queued' } })).toContain('Queued');
         const failed = markup(REVIEW, { onChoose: () => undefined, failedChoiceId: choiceId });
@@ -209,8 +209,10 @@ describe('long text', () => {
         expect(step).toContain('flex-wrap');
         expect(step).toContain(long);
         const summary = markup(`<Summary badge="${long}">Result of the research</Summary>`);
-        expect(summary).toContain(`<p class="w-full text-xs wrap-anywhere text-text-muted">${long}</p>`);
-        expect(markup('<Summary badge="Draft">Release overview</Summary>')).not.toContain('<p class');
+        expect(summary).toContain(`<p class="text-2xs font-medium wrap-anywhere text-text-muted">${long}</p>`);
+        expect(markup('<Summary badge="Draft">Release overview</Summary>')).toContain(
+            '<p class="text-2xs font-medium wrap-anywhere text-text-muted">Draft</p>'
+        );
     });
 });
 
@@ -262,7 +264,7 @@ describe('local inputs', () => {
     test('a text field is a labeled input that stops at its limit and counts only when it nears it', () => {
         const field = (value: string, extra = '') => `$q = "${value}"\n<TextField value={$q} maxLength={10} placeholder="Name"${extra}>Who</TextField>`;
         const html = markup(field('Ada'));
-        expect(html).toMatch(/<label for="[^"]+" class="text-sm text-text-muted">Who<\/label>/);
+        expect(html).toMatch(/<label for="[^"]+" class="px-0.5 text-2xs text-text-muted">Who<\/label>/);
         expect(html).toContain('maxLength="10"');
         expect(html).toContain('placeholder="Name"');
         expect(html).toContain('value="Ada"');
@@ -334,7 +336,6 @@ describe('text and status', () => {
         expect(html).toContain(`>${formatDayClock(new Date(2026, 9, 14, 14, 14))}</time>`);
         expect(html).toContain(`>${formatDayClock(new Date(Date.UTC(2026, 9, 14, 12, 20)))}</time>`);
         expect(html).toContain('text-status-needs-you');
-        expect(html).toContain('group-last/event:hidden');
         const previous = setFormatSource(Object.assign(fakeFormatSource(), { region: () => 'nl-NL' }) as FormatSource);
         try {
             expect(uiEventTime('14:02')).toBe('14:02');
@@ -384,7 +385,7 @@ describe('text and status', () => {
     test('a stat says how it changed without coloring it unless it has a tone', () => {
         const html = markup('<Stats><Stat label="Cold start" value={1.42} previous={1.9} unit="s"/></Stats>');
         expect(html).toContain('25% from 1.9 s');
-        expect(html).toContain('text-text-faint');
+        expect(html).toContain('bg-text/7 text-text-muted');
         expect(markup('<Stats><Stat label="Tests" value={3} previous={0} tone="danger"/></Stats>')).toContain('text-status-error');
     });
 
@@ -398,11 +399,11 @@ describe('text and status', () => {
             }
         });
         expect(asked.map(([, prop]) => prop)).toEqual(['value']);
-        expect(changed).toMatch(/<span class="text-text chat-ui-changed text-lg font-semibold tabular-nums">4<\/span>/);
+        expect(changed).toMatch(/<span class="text-text chat-ui-changed max-w-full truncate text-lg font-semibold tabular-nums">4<\/span>/);
         expect(changed).toContain('100% from 2');
         expect(markup(source, { liveValue: () => ({ previous: 4.001, changed: true, stale: false }) })).not.toContain('chat-ui-changed');
         const stale = markup(source, { liveValue: () => ({ changed: true, stale: true }) });
-        expect(stale).toContain('text-text-muted text-lg');
+        expect(stale).toContain('text-text-muted max-w-full truncate text-lg');
         expect(stale).not.toContain('chat-ui-changed');
         expect(markup(source)).not.toContain('chat-ui-changed');
     });
@@ -644,7 +645,7 @@ describe('content', () => {
         expect(html).toContain('aria-label="3 images"');
         expect(html).toContain('src="blob:a1"');
         expect(html).toContain('aspect-ratio:1');
-        expect(html).toContain('<figcaption class="text-xs wrap-anywhere text-text-muted">First screen</figcaption>');
+        expect(html).toContain('<figcaption class="px-0.5 text-2xs wrap-anywhere text-text-muted">First screen</figcaption>');
         expect(html).toContain('>Never made</figcaption>');
         expect(html).toContain('>Home</figcaption>');
         expect(markup('<Gallery><Image attachment="a1"/></Gallery>')).toContain('aria-label="1 image"');

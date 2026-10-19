@@ -44,7 +44,7 @@ test('the muted text token reads at 4.5 to 1 on the block in both themes, which 
 
 test('the time and description of an event are muted text, never the faint token', () => {
     const document = drawn('<Timeline><Event at="14:02" detail="Took the node out">Alert fired</Event><Event at="soon">Rolled back</Event></Timeline>');
-    const small = [...document.querySelectorAll('li time, li span.text-xs, li div.text-xs')];
+    const small = [...document.querySelectorAll('li time, li span.text-2xs, li div.text-2xs')];
     expect(small.map((element) => element.textContent)).toEqual(['02:02 PM', 'Took the node out', 'soon']);
     for (const element of small) {
         expect(element.className).toContain('text-text-muted');
@@ -52,10 +52,10 @@ test('the time and description of an event are muted text, never the faint token
     }
 });
 
-test('a text field sits sunken in its block and its count is muted text', () => {
+test('a text field sits on a tile in its block and its count is muted text', () => {
     const document = drawn('$q = "abcdefgh"\n<TextField value={$q} maxLength={10}>Name</TextField>');
     const input = document.querySelector('input')!;
     expect(input.className).toContain('field');
-    expect(input.className).toContain('bg-surface-sunken');
+    expect(input.className).toContain('bg-ui-tile');
     expect(document.querySelector('[id$="-count"]')?.className).toContain('text-text-muted');
 });

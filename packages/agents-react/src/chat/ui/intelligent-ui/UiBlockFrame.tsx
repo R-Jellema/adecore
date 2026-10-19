@@ -1,9 +1,10 @@
-import { useId, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import type { UiViewNode } from '@adecore/intelligent-ui';
 import { Info, Lock, Radio, TriangleAlert } from 'lucide-react';
-import { Icon, Skeleton, Spinner, Tooltip, useTickingText } from '@adecore/ui';
+import { Icon, KEY_SHORTCUTS, matchesShortcut, Skeleton, Spinner, Tooltip, useTickingText } from '@adecore/ui';
+import { useChatHost } from '../../../host';
 import { formatAgo, formatMoment } from '@adecore/ui/format';
 import { uiBlockHead, uiReasonText } from './node-text';
 import { UiHeadContext, type UiLiveStatus } from './render-context';
@@ -48,7 +49,7 @@ function LivePart({ live }: { live: UiLiveStatus }) {
     ) : live.state === 'refused' ? (
         <Icon icon={Lock} size={12} />
     ) : (
-        <Icon icon={Radio} size={12} className="text-status-idle" />
+        <Icon icon={Radio} size={12} className="text-positive" />
     );
     const words =
         live.state === 'failed'
@@ -81,10 +82,7 @@ function LivePart({ live }: { live: UiLiveStatus }) {
     return hint === null ? body : <Tooltip label={hint}>{body}</Tooltip>;
 }
 
-/*
- * The line under a block, only when it has something to say: live, answered, noted or drawn as
- * text, in that order. A hairline of the soft border runs the full width of the card over it.
- */
+/* The line under a block, only when it has something to say: live, answered, noted or drawn as text, in that order. */
 function UiBlockFooter({ live = null, answered = null, fixes = NO_FIXES, shownAsText = null }: UiBlockFooterProps) {
     const { t } = useTranslation('agent-chat');
     const [fixesOpen, setFixesOpen] = useState(false);
@@ -93,7 +91,7 @@ function UiBlockFooter({ live = null, answered = null, fixes = NO_FIXES, shownAs
         return null;
     }
     return (
-        <div className="-mx-2.25 mt-2.25 -mb-2.25 flex flex-col gap-1.5 border-t border-border-soft px-4.25 py-2 text-xs text-text-faint">
+        <div className="flex flex-col gap-1.5 text-2xs text-text-faint">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 {live !== null && <LivePart live={live} />}
                 {answered !== null && (
@@ -189,16 +187,28 @@ function useRisingFloor(active: boolean): [RefObject<HTMLDivElement | null>, num
 }
 
 /*
- * The card of one block, with its footer. Named by its Summary and busy while it streams, but never
+ * The band of one block, with its footer. Named by its Summary and busy while it streams, but never
  * live: reading out every compile would be noise. A node fades in as it arrives, without a stagger,
  * and for a person who asked for less motion it only fades; a node inside another only fades
  * (`chat-ui-nodes`). Until the first node a skeleton holds the place of the head.
  */
 export function UiBlockFrame({ nodes, phase, children, className, ...footer }: UiBlockFrameProps) {
     const { t } = useTranslation('agent-chat');
+    const host = useChatHost();
     const streaming = phase === 'streaming';
     const head = uiBlockHead(nodes);
     const [ref, floor] = useRisingFloor(streaming);
+    // Only while the focus is inside the block, so the composer keeps the same keys for sending.
+    const pickPrimary = (event: KeyboardEvent<HTMLDivElement>): void => {
+        if (!matchesShortcut(KEY_SHORTCUTS.modEnter, event, host.isApplePlatform())) {
+            return;
+        }
+        const primary = event.currentTarget.querySelector<HTMLButtonElement>('[data-ui-primary-choice]');
+        if (primary !== null) {
+            event.preventDefault();
+            primary.click();
+        }
+    };
     return (
         <UiHeadContext value={head?.id ?? null}>
             <div
@@ -206,13 +216,16 @@ export function UiBlockFrame({ nodes, phase, children, className, ...footer }: U
                 role="group"
                 aria-label={head === null || head.label === '' ? t('blocks.label') : head.label}
                 aria-busy={streaming || undefined}
-                className={clsx('flex min-h-11 flex-col rounded-2xl border border-border bg-surface-raised p-2.25', className)}
+                className={clsx('chat-ui-band flex min-h-11 flex-col', className)}
                 style={streaming && floor > 0 ? { minHeight: floor } : undefined}
+                onKeyDown={pickPrimary}
             >
-                <div className="flex flex-col gap-3 *:transition-[opacity,translate] *:duration-160 *:ease-out *:starting:opacity-0 motion-safe:*:starting:translate-y-0.5">
-                    {nodes.length === 0 && streaming ? <Skeleton className="mx-2 my-1 w-2/5" /> : children}
+                <div className="flex flex-col gap-3 py-5">
+                    <div className="flex flex-col gap-3.5 *:transition-[opacity,translate] *:duration-160 *:ease-out *:starting:opacity-0 motion-safe:*:starting:translate-y-0.5">
+                        {nodes.length === 0 && streaming ? <Skeleton className="my-1 w-2/5" /> : children}
+                    </div>
+                    <UiBlockFooter {...footer} />
                 </div>
-                <UiBlockFooter {...footer} />
             </div>
         </UiHeadContext>
     );

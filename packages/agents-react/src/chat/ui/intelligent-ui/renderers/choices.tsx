@@ -1,9 +1,10 @@
 import { useId, useState } from 'react';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { uiChoiceLabel, type UiProps } from '@adecore/intelligent-ui';
-import { DisabledReason, Icon, Spinner, Tooltip } from '@adecore/ui';
+import { DisabledReason, formatShortcut, Icon, KEY_SHORTCUTS, Spinner, Tooltip } from '@adecore/ui';
+import { useChatHost } from '../../../../host';
 import type { UiRendererProps } from '../render-context';
 import { UiFallbackPart } from '../UiFallbackPart';
 import { useLater } from '../use-later';
@@ -17,7 +18,7 @@ export function ChoicesRenderer({ children, context }: UiRendererProps<UiProps<'
     const { t } = useTranslation('agent-chat');
     const [streamed] = useState(context.phase === 'streaming');
     return (
-        <div role="group" aria-label={t('blocks.choices')} className="chat-ui-nodes flex flex-col gap-1.5">
+        <div role="group" aria-label={t('blocks.choices')} className="chat-ui-nodes flex flex-wrap items-start gap-2">
             {children}
             <span className="sr-only" role="status">
                 {streamed && context.phase === 'final' ? t('blocks.choice.ready') : ''}
@@ -27,13 +28,15 @@ export function ChoicesRenderer({ children, context }: UiRendererProps<UiProps<'
 }
 
 /*
- * A row that shows what it sends: the label, and under it the context the agent receives. It stays
+ * A button that shows what it sends: the label, and under it the context the agent receives. It stays
  * closed while the reply streams, once the block is answered and without a host to send it, and
  * remains focusable then so a screen reader hears why. A finished Choice the host would refuse for
- * its label is no row at all, but its text.
+ * its label is no button at all, but its text. The primary one says the key that picks it while the
+ * focus is in the block (`UiBlockFrame`).
  */
 export function ChoiceRenderer({ node, children, context }: UiRendererProps<UiProps<'Choice'>>) {
     const { t } = useTranslation('agent-chat');
+    const host = useChatHost();
     const descriptionId = useId();
     const { context: detail, primary, disabled } = node.props;
     const { answer, onChoose } = context;
@@ -52,16 +55,22 @@ export function ChoiceRenderer({ node, children, context }: UiRendererProps<UiPr
           ? ((disabled === true ? null : context.choiceReason) ?? t('blocks.choice.unavailable'))
           : null;
     const described = detail !== undefined && detail !== '';
+    const strong = primary === true;
 
-    const row = (
+    const button = (
         <button
             type="button"
             aria-disabled={closed || undefined}
             aria-describedby={described ? descriptionId : undefined}
+            aria-keyshortcuts={strong && !closed ? 'Meta+Enter Control+Enter' : undefined}
+            data-ui-primary-choice={strong && !closed ? '' : undefined}
             className={clsx(
-                'flex w-full items-start gap-2 rounded-md border px-2 py-1.5 text-left transition-[opacity,scale,background-color] duration-150 motion-reduce:transition-none',
-                chosen ? 'border-accent bg-accent-soft' : failed ? 'border-status-error bg-surface-hover' : 'border-border bg-surface-hover',
-                !closed && 'hover:bg-surface-active active:scale-99',
+                'flex max-w-full min-h-9.5 items-center gap-2.5 rounded-xl px-4 py-2 text-left text-xs transition-[opacity,scale,background-color,filter] duration-150 motion-reduce:transition-none',
+                strong ? 'bg-accent text-accent-text' : 'bg-ui-tile text-text',
+                chosen && 'ring-2 ring-accent ring-offset-2 ring-offset-surface',
+                failed && 'ring-2 ring-status-error',
+                !closed && (strong ? 'hover:brightness-110' : 'hover:bg-surface-active'),
+                !closed && 'active:scale-99',
                 waiting ? 'opacity-60' : closed && !chosen && 'opacity-50'
             )}
             onClick={() => {
@@ -70,17 +79,21 @@ export function ChoiceRenderer({ node, children, context }: UiRendererProps<UiPr
                 }
             }}
         >
-            <Icon icon={ArrowRight} size={14} className={clsx('mt-1 shrink-0', primary === true ? 'text-accent' : 'text-text-faint')} />
-            <span className="flex min-w-0 grow flex-col">
-                <span className="text-sm font-semibold wrap-anywhere text-text">{children}</span>
+            <span className="flex min-w-0 flex-col">
+                <span className={clsx('wrap-anywhere', strong ? 'font-semibold' : 'font-medium')}>{children}</span>
                 {described && (
-                    <span id={descriptionId} className="line-clamp-2 text-xs wrap-anywhere text-text-muted">
+                    <span id={descriptionId} className={clsx('line-clamp-2 text-2xs wrap-anywhere', strong ? 'text-accent-text/80' : 'text-text-muted')}>
                         {detail}
                     </span>
                 )}
             </span>
+            {strong && !closed && (
+                <kbd aria-hidden className="shrink-0 rounded-md bg-accent-text/18 px-1.5 font-sans text-2xs font-medium">
+                    {formatShortcut(KEY_SHORTCUTS.modEnter, host.isApplePlatform())}
+                </kbd>
+            )}
             {chosen && (
-                <span className="mt-0.5 flex shrink-0 items-center gap-1 text-xs text-accent">
+                <span className={clsx('flex shrink-0 items-center gap-1 text-2xs', strong ? 'text-accent-text' : 'text-accent')}>
                     {slow ? <Spinner size={12} /> : <Icon icon={Check} size={12} />}
                     {answer.state === 'queued' ? t('blocks.choice.queued') : t('blocks.choice.sent')}
                 </span>
@@ -89,16 +102,16 @@ export function ChoiceRenderer({ node, children, context }: UiRendererProps<UiPr
     );
 
     return (
-        <div className="flex flex-col gap-1">
+        <div className="flex max-w-full flex-col gap-1">
             {reason !== null ? (
-                <DisabledReason reason={reason}>{row}</DisabledReason>
+                <DisabledReason reason={reason}>{button}</DisabledReason>
             ) : described && detail.length > LONG_CONTEXT ? (
-                <Tooltip label={detail}>{row}</Tooltip>
+                <Tooltip label={detail}>{button}</Tooltip>
             ) : (
-                row
+                button
             )}
             {failed && (
-                <p role="alert" className="px-2 text-xs text-status-error">
+                <p role="alert" className="px-1 text-2xs text-status-error">
                     {t('blocks.choice.failed')}
                 </p>
             )}

@@ -7,7 +7,7 @@ import { Icon, Meter, Pill, Spinner } from '@adecore/ui';
 import { formatNumber, formatPercent } from '@adecore/ui/format';
 import { UiHeadContext, type UiRenderContext, type UiRendererProps } from '../render-context';
 import { uiEventTime, uiNodeLabel } from '../node-text';
-import { UI_TONE_ICONS, UI_TONE_PILL, UI_TONE_SURFACE, UI_TONE_TEXT } from '../tones';
+import { UI_STEP_PILL, UI_TONE_FILL, UI_TONE_ICONS, UI_TONE_PILL, UI_TONE_SURFACE, UI_TONE_TEXT } from '../tones';
 
 type StepState = UiProps<'Step'>['state'];
 
@@ -26,43 +26,54 @@ const STEP_TONES: Readonly<Record<StepState, string>> = {
     skipped: 'text-text-faint'
 };
 
+/* A detail longer than this reads as a sentence, which a tag cannot wrap. */
+const DETAIL_AS_TAG = 24;
+
 /* Whether the block still changes: while it streams, or while it reads live data. Only then does anything spin. */
 function isLive(context: UiRenderContext): boolean {
     return context.phase === 'streaming' || (context.live !== undefined && context.live !== null && context.live.state !== 'refused');
 }
 
-/* A badge longer than this is a sentence, which a tag cannot wrap; it stands under the title as text instead. */
-const BADGE_AS_TAG = 32;
-
-/* The head of the block when it is the first node, a subheading without an icon further down. */
+/*
+ * A tile in its tone; the badge stands under the title in the tone's color. The head of the block
+ * carries its icon in a square of its own, a Summary further down is a subheading without one. The
+ * icon is the ground's ink in the dark theme, where its tones are too light for white.
+ */
 export function SummaryRenderer({ node, children }: UiRendererProps<UiProps<'Summary'>>) {
     const headId = useContext(UiHeadContext);
     const head = headId === undefined || headId === node.id;
     const { tone, badge } = node.props;
-    const tag = badge !== undefined && badge !== '' && badge.length <= BADGE_AS_TAG;
+    const shown = tone ?? 'neutral';
     return (
-        <div className="flex items-start gap-2 px-2">
-            {head && tone !== undefined && <Icon icon={UI_TONE_ICONS[tone]} size={16} className={clsx('mt-0.75 shrink-0', UI_TONE_TEXT[tone])} />}
-            <div className="flex min-w-0 grow flex-wrap items-start gap-x-2 gap-y-1">
-                <div className="max-w-full min-w-0 grow basis-48 text-sm font-semibold text-balance wrap-break-word text-text">{children}</div>
-                {tag && (
-                    <Pill shape="tag" tone={tone === undefined ? 'muted' : UI_TONE_PILL[tone]}>
-                        {badge}
-                    </Pill>
+        <div className={clsx('flex items-center gap-3 rounded-xl p-3', tone === undefined ? 'bg-ui-tile' : UI_TONE_SURFACE[tone])}>
+            {head && (
+                <span
+                    aria-hidden
+                    className={clsx('grid size-8.5 shrink-0 place-items-center rounded-lg text-accent-text dark:text-surface', UI_TONE_FILL[shown])}
+                >
+                    <Icon icon={UI_TONE_ICONS[shown]} size={16} />
+                </span>
+            )}
+            <div className="flex min-w-0 grow flex-col gap-0.5">
+                <div className="text-base font-semibold text-balance wrap-break-word text-text">{children}</div>
+                {badge !== undefined && badge !== '' && (
+                    <p className={clsx('text-2xs font-medium wrap-anywhere', tone === undefined ? 'text-text-muted' : UI_TONE_TEXT[tone])}>{badge}</p>
                 )}
-                {!tag && badge !== undefined && badge !== '' && <p className="w-full text-xs wrap-anywhere text-text-muted">{badge}</p>}
             </div>
         </div>
     );
 }
 
+/* A quiet tile whatever its tone: only the square of its icon wears the tone. */
 export function CalloutRenderer({ node, children }: UiRendererProps<UiProps<'Callout'>>) {
     const { tone, title } = node.props;
     return (
-        <div className={clsx('flex gap-2 rounded-md p-2 text-sm', UI_TONE_SURFACE[tone])}>
-            <Icon icon={UI_TONE_ICONS[tone]} size={16} className={clsx('mt-0.75 shrink-0', UI_TONE_TEXT[tone])} />
-            <div className="min-w-0 grow">
-                {title !== undefined && title !== '' && <div className="font-medium text-text">{title}</div>}
+        <div className="flex items-start gap-3 rounded-xl bg-ui-tile p-3 text-xs">
+            <span aria-hidden className={clsx('grid size-7 shrink-0 place-items-center rounded-lg', UI_TONE_SURFACE[tone], UI_TONE_TEXT[tone])}>
+                <Icon icon={UI_TONE_ICONS[tone]} size={14} />
+            </span>
+            <div className="min-w-0 grow pt-1">
+                {title !== undefined && title !== '' && <div className="font-semibold text-text">{title}</div>}
                 <div className="text-text-muted">{children}</div>
             </div>
         </div>
@@ -87,7 +98,7 @@ export function ProgressRenderer({ node, children, context }: UiRendererProps<Ui
         value === undefined ? null : limit === 100 ? formatPercent(value) : t('blocks.progress.of', { value: formatNumber(value), max: formatNumber(limit) });
     const label = uiNodeLabel(node);
     return (
-        <div className="flex flex-col gap-1 px-2">
+        <div className="flex flex-col gap-2 rounded-xl bg-ui-tile p-3">
             <div className="flex items-baseline justify-between gap-3 text-xs">
                 <span className="min-w-0 text-text">{children}</span>
                 {reading !== null ? (
@@ -102,16 +113,16 @@ export function ProgressRenderer({ node, children, context }: UiRendererProps<Ui
 }
 
 export function StepsRenderer({ children }: UiRendererProps<UiProps<'Steps'>>) {
-    return <ol className="chat-ui-nodes flex flex-col px-2">{children}</ol>;
+    return <ol className="chat-ui-nodes flex flex-col gap-1.5">{children}</ol>;
 }
 
-/* A running step spins only while the block is live; in a quiet block it is a still dot. */
+/* A tile per step with its state in words at the end. A running step spins only while the block is live; in a quiet block it is a still dot. */
 export function StepRenderer({ node, children, context }: UiRendererProps<UiProps<'Step'>>) {
     const { t } = useTranslation('agent-chat');
     const { state, detail } = node.props;
     const quiet = state === 'pending' || state === 'skipped';
     return (
-        <li className="flex min-h-7 items-center gap-2 text-sm">
+        <li className="flex min-h-10 items-center gap-3 rounded-xl bg-ui-tile px-3 py-2 text-xs">
             <span className={clsx('grid size-4 shrink-0 place-items-center', STEP_TONES[state])}>
                 {state === 'running' ? (
                     isLive(context) ? (
@@ -123,21 +134,23 @@ export function StepRenderer({ node, children, context }: UiRendererProps<UiProp
                     <Icon icon={STEP_ICONS[state]} size={14} />
                 )}
             </span>
-            <span className="sr-only">{t(`blocks.step.${state}`)}</span>
             {/* A short detail stays beside the title; one that does not fit beside it takes the line under it. */}
-            <span className="flex min-w-0 grow flex-wrap items-baseline justify-between gap-x-2">
-                <span className={clsx('max-w-full min-w-0 grow basis-48 wrap-break-word', quiet ? 'text-text-faint' : 'text-text')}>{children}</span>
-                {detail !== undefined && detail !== '' && <span className="max-w-full text-xs wrap-anywhere text-text-faint tabular-nums">{detail}</span>}
+            <span className="flex min-w-0 grow flex-wrap items-baseline gap-x-2">
+                <span className={clsx('max-w-full min-w-0 font-medium wrap-break-word', quiet ? 'text-text-muted' : 'text-text')}>{children}</span>
+                {detail !== undefined && detail !== '' && <span className="max-w-full text-2xs wrap-anywhere text-text-muted tabular-nums">{detail}</span>}
             </span>
+            <Pill shape="tag" size="sm" tone={UI_STEP_PILL[state]} className="shrink-0">
+                {t(`blocks.step.${state}`)}
+            </Pill>
         </li>
     );
 }
 
 export function TimelineRenderer({ children }: UiRendererProps<UiProps<'Timeline'>>) {
-    return <ol className="chat-ui-nodes flex flex-col px-2">{children}</ol>;
+    return <ol className="chat-ui-nodes flex flex-col rounded-xl bg-ui-tile px-3 py-1.5">{children}</ol>;
 }
 
-/* Each row draws its own stretch of the line, down to the next dot, so a row that failed to draw leaves the others whole. */
+/* A row of the tile: the time, a dot in the tone, the title, and a short detail as a tag at the end or a longer one under the title. */
 export function EventRenderer({ node, children }: UiRendererProps<UiProps<'Event'>>) {
     const { t } = useTranslation('agent-chat');
     const { at, detail } = node.props;
@@ -145,22 +158,28 @@ export function EventRenderer({ node, children }: UiRendererProps<UiProps<'Event
     const time = uiEventTime(at);
     // A neutral dot says nothing the title does not, and a detail is part of what the row says.
     const label = [time, uiNodeLabel(node), tone === 'neutral' ? '' : t(`blocks.event.tone.${tone}`), detail ?? ''].filter((part) => part !== '').join(', ');
+    const described = detail !== undefined && detail !== '';
+    const tagged = described && detail.length <= DETAIL_AS_TAG;
     return (
-        <li aria-label={label} className="group/event relative flex min-h-7 gap-3 pb-3 last:pb-0">
-            <span aria-hidden className={clsx('mt-1 size-2 shrink-0 rounded-full bg-current', UI_TONE_TEXT[tone])} />
-            <span aria-hidden className="absolute top-3.5 bottom-0 left-0.75 w-px bg-border group-last/event:hidden" />
+        <li aria-label={label} className="flex min-h-9 items-start gap-3 py-2 text-xs">
+            {/* A time nobody could read stays as written and is no `dateTime` for a machine to read. */}
+            {parseUiEventTime(at) === null ? (
+                <span className="w-24 shrink-0 text-2xs leading-5 wrap-anywhere text-text-muted tabular-nums">{time}</span>
+            ) : (
+                <time dateTime={at} className="w-24 shrink-0 text-2xs leading-5 text-text-muted tabular-nums">
+                    {time}
+                </time>
+            )}
+            <span aria-hidden className={clsx('mt-1.5 size-2 shrink-0 rounded-full bg-current', tone === 'neutral' ? 'text-text-faint' : UI_TONE_TEXT[tone])} />
             <div className="flex min-w-0 grow flex-col gap-0.5">
-                {/* A time nobody could read stays as written and is no `dateTime` for a machine to read. */}
-                {parseUiEventTime(at) === null ? (
-                    <span className="text-xs wrap-anywhere text-text-muted tabular-nums">{time}</span>
-                ) : (
-                    <time dateTime={at} className="text-xs text-text-muted tabular-nums">
-                        {time}
-                    </time>
-                )}
-                <div className="text-sm wrap-break-word text-text">{children}</div>
-                {detail !== undefined && detail !== '' && <div className="text-xs wrap-anywhere text-text-muted">{detail}</div>}
+                <div className="wrap-break-word text-text">{children}</div>
+                {described && !tagged && <div className="text-2xs wrap-anywhere text-text-muted">{detail}</div>}
             </div>
+            {tagged && (
+                <Pill shape="tag" size="sm" tone={UI_TONE_PILL[tone]} className="shrink-0">
+                    {detail}
+                </Pill>
+            )}
         </li>
     );
 }

@@ -34,8 +34,8 @@ function NumberChip({ number, selected }: { number: number; selected: boolean })
         <span
             aria-hidden
             className={clsx(
-                'mt-px flex size-5 shrink-0 items-center justify-center rounded-full text-xs tabular-nums',
-                selected ? 'bg-accent text-accent-text' : 'bg-map-marker text-map-marker-text'
+                'mt-px flex size-5 shrink-0 items-center justify-center rounded-md text-2xs font-semibold tabular-nums',
+                selected ? 'bg-accent text-accent-text' : 'bg-ui-inset text-text'
             )}
         >
             {number}
@@ -50,7 +50,7 @@ function PlaceRow({ listed, number, selected, onPick }: { listed: ListedPlace; n
         <>
             <NumberChip number={number} selected={selected} />
             <span className="flex min-w-0 grow flex-col gap-0.5">
-                <span className="text-sm wrap-break-word text-text">{listed.name}</span>
+                <span className="text-xs font-medium wrap-break-word text-text">{listed.name}</span>
                 {detail !== undefined && detail !== '' && <span className="text-xs wrap-break-word text-text-muted">{detail}</span>}
                 {address !== undefined && address !== '' && <span className="text-xs wrap-break-word text-text-faint">{address}</span>}
                 {listed.point === undefined && <span className="text-xs text-text-faint">{t('blocks.map.lookingUp')}</span>}
@@ -58,13 +58,18 @@ function PlaceRow({ listed, number, selected, onPick }: { listed: ListedPlace; n
             </span>
         </>
     );
-    const row = 'flex w-full min-h-8 items-start gap-2 rounded-md px-2 py-1.5 text-left';
+    const row = 'flex h-full w-full min-h-12 items-start gap-2.5 rounded-xl bg-ui-tile px-3 py-2 text-left';
     return (
         <li>
             {onPick === null ? (
-                <div className={clsx(row, selected && 'bg-surface-hover')}>{body}</div>
+                <div className={clsx(row, selected && 'ring-2 ring-accent ring-inset')}>{body}</div>
             ) : (
-                <button type="button" aria-pressed={selected} className={clsx(row, 'hover:bg-surface-hover', selected && 'bg-surface-hover')} onClick={onPick}>
+                <button
+                    type="button"
+                    aria-pressed={selected}
+                    className={clsx(row, 'hover:bg-surface-active', selected && 'ring-2 ring-accent ring-inset')}
+                    onClick={onPick}
+                >
                     {body}
                 </button>
             )}
@@ -150,7 +155,7 @@ function MapFrame({ markers, source, selected, onPick }: FrameProps) {
     }
     return (
         <>
-            <div ref={setElement} className="relative h-50 overflow-hidden rounded-lg border border-border bg-surface-sunken @min-[420px]:h-60">
+            <div ref={setElement} className="relative h-50 overflow-hidden rounded-xl bg-ui-tile @min-[420px]:h-60">
                 {body}
                 {waiting && (
                     <div className="pointer-events-none absolute inset-0 grid place-items-center">
@@ -200,9 +205,9 @@ export function MapRenderer({ node, children, context }: UiRendererProps<UiProps
         <MapFrame markers={markers} source={null} selected={selectedId} onPick={onPick} />
     );
     return (
-        <div className={clsx('@container flex flex-col gap-1.5 px-2', !node.complete && PENDING)}>
+        <div className={clsx('@container flex flex-col gap-1.5', !node.complete && PENDING)}>
             {frame}
-            <ol aria-label={t('blocks.map.label', { count: places.length })} className="flex flex-col">
+            <ol aria-label={t('blocks.map.label', { count: places.length })} className="grid gap-1.5 @min-[420px]:grid-cols-2">
                 {places.map((listed, index) => {
                     const { value } = listed.node.props;
                     return (
@@ -216,9 +221,7 @@ export function MapRenderer({ node, children, context }: UiRendererProps<UiProps
                     );
                 })}
             </ol>
-            {node.omitted !== undefined && node.omitted > 0 && (
-                <p className="px-2 text-xs text-text-faint">{t('blocks.map.omitted', { count: node.omitted })}</p>
-            )}
+            {node.omitted !== undefined && node.omitted > 0 && <p className="text-2xs text-text-faint">{t('blocks.map.omitted', { count: node.omitted })}</p>}
             {/* A place the catalog refused draws as its text, which is all its node renders. */}
             <div className="chat-ui-nodes flex flex-col gap-1.5 empty:hidden">{children}</div>
         </div>

@@ -30,6 +30,11 @@
     /* The two grounds of the map a page draws without tiles. */
     --map-land: #f2f1ed;
     --map-water: #d3dde5;
+    /* The parts of an intelligent UI block: a tile on the thread's ground, a card inset in a tile, and the hatch of its band. */
+    /* The design's #f0f0f3 kept muted text under 4.5 to 1; this is the nearest gray that keeps it there. */
+    --chat-ui-tile: #f4f4f6;
+    --chat-ui-inset: #ffffff;
+    --chat-ui-hatch: #e2e2e7;
 }
 
 [data-theme="dark"] {
@@ -51,6 +56,9 @@
     --chart-6: #008300;
     --map-land: #2c3135;
     --map-water: #1a2026;
+    --chat-ui-tile: #1a1a1e;
+    --chat-ui-inset: #131316;
+    --chat-ui-hatch: #26262c;
 }
 
 /* Output and diffs take the terminal's colors when the app loads `@adecore/terminal/terminal.css`,
@@ -82,6 +90,8 @@
     --color-chat-added: var(--chat-added);
     --color-chat-removed: var(--chat-removed);
     --color-map-marker: var(--map-marker);
+    --color-ui-tile: var(--chat-ui-tile);
+    --color-ui-inset: var(--chat-ui-inset);
     --color-map-marker-text: var(--map-marker-text);
 }
 
@@ -155,6 +165,24 @@
     @media (prefers-reduced-motion: reduce) {
         .chat-ui-changed { animation: none; }
     }
+    /*
+     * A block stands in a band across the whole thread, hatched above and below, with its tiles at the
+     * reading width. The thread's scroller is the container the band measures, so a block anywhere
+     * else keeps the width of its column.
+     */
+    .chat-scroll { container-type: inline-size; }
+    .chat-ui-band { position: relative; padding-block: 14px; }
+    .chat-ui-band::before, .chat-ui-band::after {
+        content: "";
+        position: absolute;
+        inset-inline: 0;
+        height: 14px;
+        border-block: 1px solid var(--border);
+        background-image: repeating-linear-gradient(-45deg, var(--chat-ui-hatch) 0 1px, transparent 1px 7px);
+    }
+    .chat-ui-band::before { top: 0; }
+    .chat-ui-band::after { bottom: 0; }
+    .chat-scroll .chat-ui-band::before, .chat-scroll .chat-ui-band::after { inset-inline: calc(50% - 50cqw); }
     /* A source row a citation revealed. The row only takes focus from code, since its own button takes a click. */
     .chat-ui-source:focus { animation: chat-flash 1600ms ease-out both; }
     /* A visual still on its way says so only once it takes long enough to be noticed. */
@@ -225,6 +253,8 @@
 
 /* A code block is shiki's own `<pre>`, which brings a background of its own to override. */
 .chat-code { position: relative; min-height: 38px; border-radius: 8px; border: 1px solid var(--border); background: var(--chat-code-bg); overflow: hidden; }
+/* A code block in an intelligent UI block is a card inset in its tile. */
+.chat-ui-code .chat-code { background: var(--chat-ui-inset); }
 .chat-code pre { margin: 0; padding: round(0.625rem, 1px) round(0.75rem, 1px); overflow: auto; user-select: text; background: transparent !important; font-family: var(--font-mono); font-size: var(--text-code); line-height: var(--text-code--line-height); }
 .chat-code code { font-family: inherit; }
 .chat-code-actions { position: absolute; top: 4px; right: 4px; border-radius: 6px; background: var(--surface-raised); color: var(--text-muted); box-shadow: 0 0 0 1px var(--border); }

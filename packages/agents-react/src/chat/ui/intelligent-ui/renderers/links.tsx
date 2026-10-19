@@ -4,11 +4,14 @@ import { useTranslation } from 'react-i18next';
 import { FileDiff, GitCommitHorizontal, SquareDashed } from 'lucide-react';
 import type { UiProps } from '@adecore/intelligent-ui';
 import { FileIcon, Icon, Tooltip } from '@adecore/ui';
-import { CHIP_IN_MESSAGE, MENTION_TONE } from '../../chips';
+import { CHIP_IN_MESSAGE } from '../../chips';
 import { uiReasonText } from '../node-text';
 import type { UiLink, UiLinkTarget, UiRenderContext, UiRendererProps } from '../render-context';
 
 const PLAIN: UiLink = { state: 'plain' };
+
+/* A link in a block is a quiet card on its tile, unlike a mention in a message, which wears the accent. */
+const UI_CHIP = 'bg-ui-inset font-mono text-text shadow-[inset_0_0_0_1px_var(--border)]';
 
 function baseName(path: string): string {
     const trimmed = path.replace(/\/+$/, '');
@@ -96,11 +99,11 @@ export function UiLinkChip({ target, context }: { target: UiLinkTarget; context:
     const { openLink } = context;
     const chip =
         openLink === undefined ? (
-            <span className={clsx(CHIP_IN_MESSAGE, MENTION_TONE, 'transition-opacity duration-120 starting:opacity-0')}>{face}</span>
+            <span className={clsx(CHIP_IN_MESSAGE, UI_CHIP, 'transition-opacity duration-120 starting:opacity-0')}>{face}</span>
         ) : (
             <button
                 type="button"
-                className={clsx(CHIP_IN_MESSAGE, MENTION_TONE, 'transition-opacity duration-120 hover:brightness-95 starting:opacity-0')}
+                className={clsx(CHIP_IN_MESSAGE, UI_CHIP, 'transition-opacity duration-120 hover:bg-surface-hover starting:opacity-0')}
                 onClick={() => openLink(target)}
             >
                 {face}
@@ -115,7 +118,7 @@ function LinkRow({ target, context, described, children }: { target: UiLinkTarge
         return <UiLinkChip target={target} context={context} />;
     }
     return (
-        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 px-2 text-sm">
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-xs">
             <span className="max-w-full min-w-0">
                 <UiLinkChip target={target} context={context} />
             </span>

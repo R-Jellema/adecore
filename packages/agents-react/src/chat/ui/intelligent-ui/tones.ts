@@ -35,3 +35,21 @@ export const UI_TONE_PILL: Readonly<Record<UiTone, NonNullable<PillProps['tone']
     warning: 'needsYou',
     danger: 'error'
 };
+
+/* The tone at full strength, for the square that carries the icon of a Summary. */
+export const UI_TONE_FILL: Readonly<Record<UiTone, string>> = {
+    neutral: 'bg-text-muted',
+    info: 'bg-status-running',
+    success: 'bg-positive',
+    warning: 'bg-status-needs-you',
+    danger: 'bg-status-error'
+};
+
+/* The tag at the end of a step, in words, so a state never rests on its icon alone. */
+export const UI_STEP_PILL: Readonly<Record<'done' | 'running' | 'pending' | 'failed' | 'skipped', NonNullable<PillProps['tone']>>> = {
+    done: 'idle',
+    running: 'accent',
+    pending: 'muted',
+    failed: 'error',
+    skipped: 'muted'
+};

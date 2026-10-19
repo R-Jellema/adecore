@@ -18,10 +18,18 @@ const SourceNumbers = createContext<ReadonlyMap<string, number>>(new Map());
 
 /* Plain text in the same measure until the node closes, so highlighting never makes it jump. */
 export function CodeBlockRenderer({ node }: UiRendererProps<UiProps<'CodeBlock'>>) {
+    const { language } = node.props;
     return (
-        <CodeStreamingContext.Provider value={!node.complete}>
-            <CodeBlock code={uiNodeText(node).replace(/^\n|\n$/g, '')} lang={node.props.language ?? 'text'} />
-        </CodeStreamingContext.Provider>
+        <div className="chat-ui-code flex flex-col rounded-xl bg-ui-tile p-1.5">
+            {language !== undefined && language !== '' && (
+                <div className="flex px-1.5 pt-0.5 pb-1.5">
+                    <span className="rounded-md bg-ui-inset px-1.5 font-mono text-2xs text-text shadow-[inset_0_0_0_1px_var(--border)]">{language}</span>
+                </div>
+            )}
+            <CodeStreamingContext.Provider value={!node.complete}>
+                <CodeBlock code={uiNodeText(node).replace(/^\n|\n$/g, '')} lang={language ?? 'text'} />
+            </CodeStreamingContext.Provider>
+        </div>
     );
 }
 
@@ -50,7 +58,7 @@ function AttachedImage({
     const host = useChatHost();
     const source = host.attachments.useUrl(scopeId, chatId, attachmentId);
     if (!cell) {
-        return <ImageThumb source={source} alt={alt} className="max-h-70 max-w-full object-contain" />;
+        return <ImageThumb source={source} alt={alt} className="max-h-70 max-w-full rounded-xl object-contain" />;
     }
     return (
         <>
@@ -77,7 +85,7 @@ export function ImageRenderer({ node, children, context }: UiRendererProps<UiPro
             ) : (
                 <AttachedImage scopeId={context.scopeId} chatId={context.chatId} attachmentId={attachment} alt={name} cell={cell} unnamed={caption === ''} />
             )}
-            {caption !== '' && <figcaption className={cell ? 'text-xs wrap-anywhere text-text-muted' : 'px-2 text-xs text-text-muted'}>{children}</figcaption>}
+            {caption !== '' && <figcaption className="px-0.5 text-2xs wrap-anywhere text-text-muted">{children}</figcaption>}
             {cell && caption === '' && attachment === undefined && (
                 <figcaption className="text-xs wrap-anywhere text-text-faint">{alt ?? t('blocks.image.unavailable')}</figcaption>
             )}
@@ -90,7 +98,7 @@ export function GalleryRenderer({ node, children }: UiRendererProps<UiProps<'Gal
     const { t } = useTranslation('agent-chat');
     return (
         <GalleryContext value>
-            <div role="group" aria-label={t('blocks.gallery.label', { count: uiChildrenOf(node, 'Image').length })} className="@container px-2">
+            <div role="group" aria-label={t('blocks.gallery.label', { count: uiChildrenOf(node, 'Image').length })} className="@container">
                 <div className="chat-ui-nodes grid grid-cols-2 gap-2 @min-[420px]:grid-cols-3">{children}</div>
             </div>
         </GalleryContext>
@@ -129,7 +137,7 @@ export function CompareRenderer({ node, children, context }: UiRendererProps<UiP
         body = (
             // The frame keeps the picture's shape inside its tallest height: past it the width follows, so a portrait picture is not letterboxed.
             <div
-                className="relative max-h-96 overflow-hidden rounded-lg border border-border bg-surface-sunken"
+                className="relative max-h-96 overflow-hidden rounded-xl bg-ui-tile"
                 style={{ aspectRatio: aspect, width: `min(100%, ${COMPARE_MAX_HEIGHT * aspect}px)` }}
             >
                 <Wipe
@@ -163,14 +171,14 @@ export function CompareRenderer({ node, children, context }: UiRendererProps<UiP
         body = (
             <>
                 <ImageThumb source={shown.source} alt={shown.name} className="max-h-70 max-w-full object-contain" />
-                <span className="px-2 text-xs text-text-faint">{t('blocks.compare.missing')}</span>
+                <span className="text-2xs text-text-faint">{t('blocks.compare.missing')}</span>
             </>
         );
     }
     return (
-        <figure className="flex flex-col items-start gap-1.5 px-2">
+        <figure className="flex w-full flex-col items-start gap-1.5">
             {body}
-            {caption !== '' && <figcaption className="text-xs text-text-muted">{children}</figcaption>}
+            {caption !== '' && <figcaption className="px-0.5 text-2xs text-text-muted">{children}</figcaption>}
         </figure>
     );
 }
@@ -204,7 +212,7 @@ export function ModelRenderer({ node, children, context }: UiRendererProps<UiPro
     let body: ReactNode;
     if (View !== undefined && source.url !== null) {
         body = (
-            <div role="group" aria-label={label} className="relative h-80 w-full overflow-hidden rounded-lg border border-border bg-surface-sunken">
+            <div role="group" aria-label={label} className="relative h-80 w-full overflow-hidden rounded-xl bg-ui-tile">
                 <ErrorBoundary label={t('blocks.model.crashed')} resetKeys={[attachment, source.url]} compact>
                     <View
                         scopeId={context.scopeId}
@@ -219,10 +227,10 @@ export function ModelRenderer({ node, children, context }: UiRendererProps<UiPro
             </div>
         );
     } else if (View !== undefined && source.failure === null) {
-        body = <div aria-busy="true" aria-label={label} className="h-80 w-full rounded-lg border border-border bg-surface-sunken" />;
+        body = <div aria-busy="true" aria-label={label} className="h-80 w-full rounded-xl bg-ui-tile" />;
     } else {
         body = (
-            <div className="flex w-full min-w-0 items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs">
+            <div className="flex w-full min-w-0 items-center gap-2 rounded-xl bg-ui-tile px-3 py-2 text-xs">
                 <Icon icon={Box} size={14} className="shrink-0 text-text-muted" />
                 <span className="min-w-0 truncate text-text">{alt ?? attachment}</span>
                 <span className="ml-auto shrink-0 text-text-faint">{source.failure === null ? t('blocks.model.label') : t('blocks.model.unavailable')}</span>
@@ -230,9 +238,9 @@ export function ModelRenderer({ node, children, context }: UiRendererProps<UiPro
         );
     }
     return (
-        <figure className="flex flex-col items-start gap-1.5 px-2">
+        <figure className="flex w-full flex-col items-start gap-1.5">
             {body}
-            {caption !== '' && <figcaption className="text-xs text-text-muted">{children}</figcaption>}
+            {caption !== '' && <figcaption className="px-0.5 text-2xs text-text-muted">{children}</figcaption>}
         </figure>
     );
 }
@@ -243,8 +251,8 @@ export function SourcesRenderer({ node, children }: UiRendererProps<UiProps<'Sou
     const numbers = new Map(uiChildrenOf(node, 'Source').map((source, index) => [source.id, index + 1]));
     return (
         <SourceNumbers value={numbers}>
-            <section aria-labelledby={headingId} className="flex flex-col">
-                <span id={headingId} className="px-2 pb-1 text-xs font-medium text-text-muted">
+            <section aria-labelledby={headingId} className="flex flex-col rounded-xl bg-ui-tile p-1.5">
+                <span id={headingId} className="px-1.5 pt-0.5 pb-1 text-2xs font-medium text-text-muted">
                     {t('blocks.sources')}
                 </span>
                 <ol className="chat-ui-nodes flex flex-col">{children}</ol>
@@ -305,10 +313,12 @@ export function SourceRenderer({ node, context }: UiRendererProps<UiProps<'Sourc
     const [measureDomain, domainCut] = useTruncated<HTMLSpanElement>();
     const face = (
         <>
-            <span className="w-5 shrink-0 self-start text-right text-text-faint tabular-nums">{number}</span>
-            <span className="min-w-0 grow wrap-anywhere text-text">{title}</span>
-            <span ref={measureDomain} className="max-w-1/2 min-w-0 shrink-0 self-start truncate text-text-faint">
-                {uiUrlDomain(url)}
+            <span className="grid size-5 shrink-0 place-items-center rounded-md bg-ui-inset text-2xs font-semibold text-text tabular-nums">{number}</span>
+            <span className="flex min-w-0 grow flex-col">
+                <span className="font-medium wrap-anywhere text-text">{title}</span>
+                <span ref={measureDomain} className="truncate text-text-muted">
+                    {uiUrlDomain(url)}
+                </span>
             </span>
         </>
     );
@@ -324,13 +334,13 @@ export function SourceRenderer({ node, context }: UiRendererProps<UiProps<'Sourc
                 }
             >
                 {openUrl === undefined ? (
-                    <span tabIndex={domainCut ? 0 : undefined} className="flex min-h-8 items-start gap-2 rounded-md px-2 py-2 text-xs">
+                    <span tabIndex={domainCut ? 0 : undefined} className="flex min-h-8 items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-2xs">
                         {face}
                     </span>
                 ) : (
                     <button
                         type="button"
-                        className="flex min-h-8 w-full items-start gap-2 rounded-md px-2 py-2 text-left text-xs hover:bg-surface-hover"
+                        className="flex min-h-8 w-full items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-left text-2xs hover:bg-text/4"
                         onClick={() => openUrl(url)}
                     >
                         {face}

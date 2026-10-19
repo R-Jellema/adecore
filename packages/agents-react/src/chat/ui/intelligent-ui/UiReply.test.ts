@@ -95,7 +95,7 @@ test('keeps headings, lists, images and raw addresses out of prose', () => {
 
 test('joins a run of text and inline nodes into one padded paragraph between the cards of the block', () => {
     const markup = drawn('Before <Tag>t</Tag> after\n<Steps><Step state="done">One</Step></Steps>\n  ');
-    expect(markup).toMatch(/<div class="px-2 text-xs text-text">Before <span[^>]*>.*<\/span> after\s*<\/div><ol class="chat-ui-nodes/);
+    expect(markup).toMatch(/<div class="text-xs text-text">Before <span[^>]*>.*<\/span> after\s*<\/div><ol class="chat-ui-nodes/);
 });
 
 test('sets prose and cards a block gap apart and draws no part for the newline between two fences', () => {

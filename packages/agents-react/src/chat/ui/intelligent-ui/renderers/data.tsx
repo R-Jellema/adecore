@@ -1,18 +1,24 @@
+import { createContext, useContext } from 'react';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { ArrowDown, ArrowRight, ArrowUp } from 'lucide-react';
 import type { UiProps } from '@adecore/intelligent-ui';
-import { Button, Icon, KeyValueList, Pill } from '@adecore/ui';
+import { Button, Icon, KeyValueList, Pill, Tooltip } from '@adecore/ui';
 import { formatBytes, formatDuration, formatMoment, formatNumber, formatPercent, formatRounded } from '@adecore/ui/format';
 import { useBlockLocal } from '../block-local';
 import { uiChildrenOf, uiWithUnit } from '../node-text';
 import type { UiLiveValue, UiRendererProps } from '../render-context';
 import { isNumericColumn, UI_TABLE_ROWS, uiTableCell, uiTableColumns, type UiTableCell, type UiTableColumn } from '../table-data';
-import { UI_TONE_TEXT } from '../tones';
+import { UI_TONE_PILL } from '../tones';
 import { UiFallbackPart } from '../UiFallbackPart';
 
 /* EntityList draws a hairline between its rows from this many on. */
 const DIVIDED_FROM = 7;
+
+/* Up to this many entries an EntityList is a row of tiles; a longer one is a list in one tile. */
+const TILED_UP_TO = 4;
+
+const EntityTiles = createContext(false);
 
 /*
  * A number that live readings keep up to date. Keyed by its text, so a value that changed mounts
@@ -31,7 +37,7 @@ export function StatsRenderer({ children }: UiRendererProps<UiProps<'Stats'>>) {
     return <div className="chat-ui-nodes grid grid-cols-[repeat(auto-fit,minmax(128px,1fr))] gap-2">{children}</div>;
 }
 
-/* The arrow and the number say which way a value went; only a tone says whether that is good. */
+/* The arrow and the number say which way a value went; only a tone says whether that is good. The tag says the change, its tooltip from what. */
 export function StatRenderer({ node, context }: UiRendererProps<UiProps<'Stat'>>) {
     const { t } = useTranslation('agent-chat');
     const { label, value, previous, unit, tone } = node.props;
@@ -41,36 +47,63 @@ export function StatRenderer({ node, context }: UiRendererProps<UiProps<'Stat'>>
     const from = previous === undefined ? '' : uiWithUnit(formatRounded(previous, 2), unit);
     // A change from zero has no percentage.
     const percent = change === null || previous === undefined || previous === 0 ? null : formatPercent(Math.abs((change / previous) * 100));
+    const said = percent === null ? t('blocks.stat.from', { previous: from }) : t('blocks.stat.change', { change: percent, previous: from });
     return (
-        <div className="flex min-w-0 flex-col gap-0.5 rounded-md bg-surface-hover px-2 py-1.5">
-            <span className="truncate text-xs text-text-muted">{label}</span>
+        <div className="flex min-w-0 flex-col items-start gap-1.5 rounded-xl bg-ui-tile p-3">
+            <span className="max-w-full truncate text-2xs text-text-muted">{label}</span>
             <LiveFigure
                 text={uiWithUnit(formatRounded(value, 2), unit)}
                 previous={typeof live?.previous === 'number' ? uiWithUnit(formatRounded(live.previous, 2), unit) : undefined}
                 live={live}
-                className="text-lg font-semibold tabular-nums"
+                className="max-w-full truncate text-lg font-semibold tabular-nums"
             />
             {change !== null && (
-                <span className={clsx('flex items-center gap-1 text-xs tabular-nums', tone === undefined ? 'text-text-faint' : UI_TONE_TEXT[tone])}>
-                    <Icon icon={arrow} size={12} className="shrink-0" />
-                    <span className="min-w-0 truncate">
-                        {percent === null ? t('blocks.stat.from', { previous: from }) : t('blocks.stat.change', { change: percent, previous: from })}
+                <Tooltip label={said}>
+                    <span tabIndex={0} className="max-w-full rounded-md">
+                        <Pill
+                            shape="tag"
+                            size="sm"
+                            tone={tone === undefined ? 'muted' : UI_TONE_PILL[tone]}
+                            icon={<Icon icon={arrow} size={12} className="shrink-0" />}
+                        >
+                            <span aria-hidden className="tabular-nums">
+                                {percent ?? from}
+                            </span>
+                            <span className="sr-only">{said}</span>
+                        </Pill>
                     </span>
-                </span>
+                </Tooltip>
             )}
         </div>
     );
 }
 
 export function EntityListRenderer({ node, children }: UiRendererProps<UiProps<'EntityList'>>) {
+    const count = uiChildrenOf(node, 'Entry').length;
+    if (count <= TILED_UP_TO) {
+        return (
+            <EntityTiles value>
+                <div className="chat-ui-nodes grid grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2">{children}</div>
+            </EntityTiles>
+        );
+    }
     return (
-        <KeyValueList.Root divided={uiChildrenOf(node, 'Entry').length >= DIVIDED_FROM} className="chat-ui-nodes px-2">
+        <KeyValueList.Root divided={count >= DIVIDED_FROM} className="chat-ui-nodes rounded-xl bg-ui-tile px-3 py-2">
             {children}
         </KeyValueList.Root>
     );
 }
 
 export function EntryRenderer({ node, children }: UiRendererProps<UiProps<'Entry'>>) {
+    const tiled = useContext(EntityTiles);
+    if (tiled) {
+        return (
+            <div className="flex min-w-0 flex-col gap-0.5 rounded-xl bg-ui-tile px-3 py-2">
+                <span className="truncate text-2xs text-text-muted">{node.props.label}</span>
+                <span className="text-2xs font-semibold wrap-break-word text-text">{children}</span>
+            </div>
+        );
+    }
     return (
         <KeyValueList.Item>
             <KeyValueList.Name>{node.props.label}</KeyValueList.Name>
@@ -129,19 +162,23 @@ export function TableRenderer({ node, context }: UiRendererProps<UiProps<'Table'
     const shown = all ? rows : rows.slice(0, UI_TABLE_ROWS);
     return (
         <div className="flex flex-col items-start gap-1.5">
-            <div className="max-h-80 w-full overflow-auto rounded-md border border-border-soft">
+            <div className="max-h-80 w-full overflow-auto rounded-xl bg-ui-tile px-1.5 pb-1.5">
                 <table
                     aria-label={t('blocks.table.label', { columns: columns.map((column) => column.title).join(', ') })}
-                    className="w-full border-collapse text-xs tabular-nums"
+                    className={clsx(
+                        'w-full border-separate border-spacing-0 text-xs tabular-nums',
+                        '[&_tbody_tr:first-child_td:first-child]:rounded-tl-lg [&_tbody_tr:first-child_td:last-child]:rounded-tr-lg',
+                        '[&_tbody_tr:last-child_td:first-child]:rounded-bl-lg [&_tbody_tr:last-child_td:last-child]:rounded-br-lg'
+                    )}
                 >
-                    <thead className="sticky top-0 z-1 bg-surface-hover">
+                    <thead className="sticky top-0 z-1 bg-ui-tile">
                         <tr>
                             {columns.map((column) => (
                                 <th
                                     key={column.key}
                                     scope="col"
                                     className={clsx(
-                                        'h-8 px-2 font-medium whitespace-nowrap text-text-muted',
+                                        'h-8 px-2 text-2xs font-medium whitespace-nowrap text-text-muted',
                                         isNumericColumn(column) ? 'text-right' : 'text-left'
                                     )}
                                 >
@@ -153,11 +190,16 @@ export function TableRenderer({ node, context }: UiRendererProps<UiProps<'Table'
                     <tbody>
                         {shown.map((row, index) => (
                             // Rows only ever grow at the end while a block streams, so the place of a row is a stable key.
-                            <tr key={index} className="border-t border-border-soft">
-                                {columns.map((column) => (
+                            <tr key={index}>
+                                {columns.map((column, at) => (
                                     <td
                                         key={column.key}
-                                        className={clsx('h-8 px-2 text-text', isNumericColumn(column) ? 'text-right whitespace-nowrap' : 'text-left')}
+                                        className={clsx(
+                                            'h-9 bg-ui-inset px-2 text-text',
+                                            index > 0 && 'border-t border-border-soft',
+                                            at === 0 && 'font-medium',
+                                            isNumericColumn(column) ? 'text-right whitespace-nowrap' : 'text-left'
+                                        )}
                                     >
                                         <Cell
                                             value={row[column.key]}

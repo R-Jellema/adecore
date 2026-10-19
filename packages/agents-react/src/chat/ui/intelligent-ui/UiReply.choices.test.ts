@@ -46,8 +46,7 @@ test.skipIf(typeof document === 'undefined')('no row of a choice the host refuse
     const element = document.createElement('div');
     document.body.append(element);
     const root = createRoot(element);
-    const rows = (key: string) =>
-        [...element.querySelectorAll<HTMLButtonElement>(`[data-reply="${key}"] button`)].filter((button) => button.querySelector('.lucide-arrow-right'));
+    const rows = (key: string) => [...element.querySelectorAll<HTMLButtonElement>(`[data-reply="${key}"] [role="group"][aria-label="Choices"] button`)];
     try {
         await act(async () =>
             root.render(
@@ -78,6 +77,49 @@ test.skipIf(typeof document === 'undefined')('no row of a choice the host refuse
         await act(async () => root.unmount());
         element.remove();
         Object.defineProperty(globalThis, 'IntersectionObserver', { configurable: true, writable: true, value: observer });
+    }
+});
+
+test.skipIf(typeof document === 'undefined')('Mod+Enter picks the primary choice only while the focus is in its block', async () => {
+    const text = '```ui\n$on = false\n<Switch value={$on}>Notify</Switch>\n<Choices><Choice primary>Go</Choice><Choice>Stay</Choice></Choices>\n```';
+    const blocks = compileUi(text, { id: 'keys', final: true });
+    for (const block of blocks) {
+        block.revision = 'revision';
+    }
+    const sent: string[] = [];
+    const host: Partial<ChatHost> = {
+        isApplePlatform: () => true,
+        intelligentUi: {
+            sendChoice: async (_scope, payload) => {
+                sent.push(resolveUiChoice(blocks[0]!, payload.choiceId, payload.values).label);
+                return 'sent';
+            }
+        }
+    };
+    const element = document.createElement('div');
+    document.body.append(element);
+    const root = createRoot(element);
+    const press = async (target: EventTarget) =>
+        act(async () => {
+            target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', metaKey: true, bubbles: true, cancelable: true }));
+        });
+    try {
+        await act(async () =>
+            root.render(
+                createElement(
+                    ChatHostProvider,
+                    { host },
+                    createElement(UiReply, { text, blocks, context: { scopeId: 'keys', chatId: 'chat', itemId: 'item', phase: 'final' } })
+                )
+            )
+        );
+        await press(document.body);
+        expect(sent).toEqual([]);
+        await press(element.querySelector('[role="switch"]')!);
+        expect(sent).toEqual(['Go']);
+    } finally {
+        await act(async () => root.unmount());
+        element.remove();
     }
 });
 

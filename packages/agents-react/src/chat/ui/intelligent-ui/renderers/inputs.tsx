@@ -23,7 +23,7 @@ const ChecklistContext = createContext<ChecklistState>({ values: [], enabled: fa
 function ChecklistGroup({ pending, children }: { pending: boolean; children: ReactNode }) {
     const { t } = useTranslation('agent-chat');
     return (
-        <div role="group" aria-label={t('blocks.checklist')} className={clsx('chat-ui-nodes flex flex-col', pending && PENDING)}>
+        <div role="group" aria-label={t('blocks.checklist')} className={clsx('chat-ui-nodes flex flex-col gap-1.5', pending && PENDING)}>
             {children}
         </div>
     );
@@ -42,10 +42,11 @@ export function ChecklistRenderer({ node, children, context }: UiRendererProps<U
     );
 }
 
-/* The whole row is the label; a link inside it keeps its own click and checks nothing. */
+/* The whole tile is the label, ringed in the accent while checked; a link inside it keeps its own click and checks nothing. */
 export function ItemRenderer({ node, children }: UiRendererProps<UiProps<'Item'>>) {
     const list = useContext(ChecklistContext);
     const { value } = node.props;
+    const checked = list.values.includes(value);
     const toggleRow = (event: MouseEvent<HTMLDivElement>): void => {
         if (list.enabled && !(event.target as Element).closest('button, a')) {
             list.toggle(value);
@@ -53,10 +54,14 @@ export function ItemRenderer({ node, children }: UiRendererProps<UiProps<'Item'>
     };
     return (
         <div
-            className={clsx('flex min-h-8 items-center gap-2 rounded-md px-2 text-sm text-text', list.enabled && 'hover:bg-surface-hover')}
+            className={clsx(
+                'flex min-h-10 items-center gap-3 rounded-xl bg-ui-tile px-3 py-2 text-xs text-text',
+                checked && 'ring-2 ring-accent ring-inset',
+                list.enabled && 'hover:bg-surface-active'
+            )}
             onClick={toggleRow}
         >
-            <Checkbox checked={list.values.includes(value)} onCheckedChange={() => list.toggle(value)} label={uiNodeLabel(node)} disabled={!list.enabled} />
+            <Checkbox checked={checked} onCheckedChange={() => list.toggle(value)} label={uiNodeLabel(node)} disabled={!list.enabled} />
             <div className="min-w-0 grow">{children}</div>
         </div>
     );
@@ -65,8 +70,8 @@ export function ItemRenderer({ node, children }: UiRendererProps<UiProps<'Item'>
 export function SwitchRenderer({ node, children, context }: UiRendererProps<UiProps<'Switch'>>) {
     const binding = bindingOf(node, context);
     return (
-        <div className={clsx('flex min-h-7 items-center justify-between gap-3 px-2 text-sm', !node.complete && PENDING)}>
-            <span className="min-w-0 text-text">{children}</span>
+        <div className={clsx('flex min-h-11 items-center justify-between gap-3 rounded-xl bg-ui-tile px-3 py-2 text-xs', !node.complete && PENDING)}>
+            <span className="min-w-0 font-medium text-text">{children}</span>
             <Switch
                 checked={binding?.value ?? node.props.value}
                 onCheckedChange={(next) => binding?.onValueChange(next)}
@@ -92,7 +97,7 @@ export function SliderRenderer({ node, context }: UiRendererProps<UiProps<'Slide
             unit={uiWithUnit('', unit)}
             label={uiNodeLabel(node)}
             disabled={binding === null}
-            className={clsx('px-2', !node.complete && PENDING)}
+            className={clsx('rounded-xl bg-ui-tile p-3', !node.complete && PENDING)}
         />
     );
 }
@@ -108,7 +113,7 @@ export function SegmentedRenderer({ node, context }: UiRendererProps<UiProps<'Se
     const options = uiChildrenOf(node, 'Option').map((option, index) => ({ id: String(index), label: uiNodeLabel(option), value: option.props.value }));
     const picked = options.find((option) => option.value === current)?.id ?? '';
     return (
-        <div className={clsx('px-2', !node.complete && PENDING)}>
+        <div className={clsx(!node.complete && PENDING)}>
             <Segmented
                 value={picked}
                 options={options}
@@ -145,8 +150,8 @@ export function TextFieldRenderer({ node, children, context }: UiRendererProps<U
     const countId = `${id}-count`;
     const counting = value.length >= maxLength * COUNT_FROM;
     return (
-        <div className={clsx('flex flex-col gap-1 px-2', !node.complete && PENDING)}>
-            <label htmlFor={id} className="text-sm text-text-muted">
+        <div className={clsx('flex flex-col gap-1.5', !node.complete && PENDING)}>
+            <label htmlFor={id} className="px-0.5 text-2xs text-text-muted">
                 {children}
             </label>
             <Input
@@ -157,7 +162,7 @@ export function TextFieldRenderer({ node, children, context }: UiRendererProps<U
                 placeholder={placeholder}
                 disabled={binding === null}
                 aria-describedby={counting ? countId : undefined}
-                className="max-w-96 bg-surface-sunken"
+                className="border-transparent bg-ui-tile"
                 onChange={(event) => binding?.onValueChange(event.target.value)}
             />
             {counting && (
@@ -180,8 +185,8 @@ export function SelectRenderer({ node, context }: UiRendererProps<UiProps<'Selec
     const options = uiChildrenOf(node, 'Option').map((option, index) => ({ id: String(index), label: uiNodeLabel(option), value: option.props.value }));
     const label = uiOwnLabel(node);
     return (
-        <div className={clsx('flex flex-col items-start gap-1 px-2', !node.complete && PENDING)}>
-            {label !== '' && <span className="text-sm text-text-muted">{label}</span>}
+        <div className={clsx('flex flex-col items-start gap-1.5', !node.complete && PENDING)}>
+            {label !== '' && <span className="px-0.5 text-2xs text-text-muted">{label}</span>}
             <Select
                 value={options.find((option) => option.value === current)?.id ?? null}
                 items={options.map((option) => ({ value: option.id, label: option.label }))}
@@ -204,7 +209,7 @@ export function ButtonRenderer({ node, children, context }: UiRendererProps<UiPr
     const label = uiNodeLabel(node);
     const [measure, truncated] = useTruncated<HTMLSpanElement>();
     return (
-        <div className={clsx('px-2', !node.complete && PENDING)}>
+        <div className={clsx(!node.complete && PENDING)}>
             <Tooltip label={label} disabled={!truncated}>
                 <Button variant="secondary" size="sm" className="max-w-full" disabled={!enabled} onClick={() => node.onAction?.()}>
                     <span ref={measure} className="min-w-0 truncate">

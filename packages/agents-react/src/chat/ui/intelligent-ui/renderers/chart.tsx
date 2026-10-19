@@ -442,7 +442,7 @@ function DrawnChart({
     const values = useMemo(() => uiChartValues(data), [data]);
     const { kind } = chart;
     return (
-        <figure className="flex flex-col gap-2 px-2">
+        <figure className="flex flex-col gap-2.5 rounded-xl bg-ui-tile p-3.5">
             {chart.series.length > 1 && <Legend chart={chart} />}
             {kind !== 'stacked' && unitApart(unit) && <p className="text-xs text-text-faint">{unit}</p>}
             <div ref={measure} role="img" aria-label={chartSummary(values, unit, t)} className="relative">
@@ -475,7 +475,7 @@ export function ChartRenderer({ node, context }: UiRendererProps<UiProps<'Chart'
     const { kind, data, unit } = node.props;
     const chart = useMemo(() => (node.complete ? uiChartData(data, kind) : null), [node.complete, data, kind]);
     if (!node.complete) {
-        return <div aria-hidden className="mx-2 rounded-md bg-surface-hover" style={{ height: chartHeight(kind, data.length) }} />;
+        return <div aria-hidden className="rounded-xl bg-ui-tile" style={{ height: chartHeight(kind, data.length) }} />;
     }
     if (chart === null) {
         return <UiFallbackPart fallback={node.fallback} problem={{ kind: 'failed' }} />;
