@@ -34,6 +34,11 @@ function isLive(context: UiRenderContext): boolean {
     return context.phase === 'streaming' || (context.live !== undefined && context.live !== null && context.live.state !== 'refused');
 }
 
+/* A Summary and a Callout share one row: the icon in a square, and beside it text that centers on the square while it is shorter and starts at its top once it is taller. */
+const ICON_ROW = 'flex items-start gap-3 rounded-xl p-3';
+const ICON_SQUARE = 'grid size-8.5 shrink-0 place-items-center rounded-lg';
+const ICON_TEXT = 'flex min-h-8.5 min-w-0 grow flex-col justify-center gap-0.5';
+
 /*
  * A tile in its tone; the badge stands under the title in the tone's color. The head of the block
  * carries its icon in a square of its own, a Summary further down is a subheading without one. The
@@ -45,16 +50,13 @@ export function SummaryRenderer({ node, children }: UiRendererProps<UiProps<'Sum
     const { tone, badge } = node.props;
     const shown = tone ?? 'neutral';
     return (
-        <div className={clsx('flex items-start gap-3 rounded-xl p-3', tone === undefined ? 'bg-ui-tile' : UI_TONE_SURFACE[tone])}>
+        <div className={clsx(ICON_ROW, tone === undefined ? 'bg-ui-tile' : UI_TONE_SURFACE[tone])}>
             {head && (
-                <span
-                    aria-hidden
-                    className={clsx('grid size-8.5 shrink-0 place-items-center rounded-lg text-accent-text dark:text-surface', UI_TONE_FILL[shown])}
-                >
+                <span aria-hidden className={clsx(ICON_SQUARE, 'text-accent-text dark:text-surface', UI_TONE_FILL[shown])}>
                     <Icon icon={UI_TONE_ICONS[shown]} size={16} />
                 </span>
             )}
-            <div className="flex min-w-0 grow flex-col gap-0.5">
+            <div className={ICON_TEXT}>
                 <div className="text-base font-semibold text-balance wrap-break-word text-text">{children}</div>
                 {badge !== undefined && badge !== '' && (
                     <p className={clsx('text-2xs font-medium wrap-anywhere', tone === undefined ? 'text-text-muted' : UI_TONE_TEXT[tone])}>{badge}</p>
@@ -68,11 +70,11 @@ export function SummaryRenderer({ node, children }: UiRendererProps<UiProps<'Sum
 export function CalloutRenderer({ node, children }: UiRendererProps<UiProps<'Callout'>>) {
     const { tone, title } = node.props;
     return (
-        <div className="chat-ui-flat flex items-start gap-3 rounded-xl bg-ui-tile p-3 text-xs">
-            <span aria-hidden className={clsx('grid size-7 shrink-0 place-items-center rounded-lg', UI_TONE_SURFACE[tone], UI_TONE_TEXT[tone])}>
-                <Icon icon={UI_TONE_ICONS[tone]} size={14} />
+        <div className={clsx('chat-ui-flat bg-ui-tile text-xs', ICON_ROW)}>
+            <span aria-hidden className={clsx(ICON_SQUARE, UI_TONE_SURFACE[tone], UI_TONE_TEXT[tone])}>
+                <Icon icon={UI_TONE_ICONS[tone]} size={16} />
             </span>
-            <div className="min-w-0 grow pt-1">
+            <div className={ICON_TEXT}>
                 {title !== undefined && title !== '' && <div className="font-semibold text-text">{title}</div>}
                 <div className="text-text-muted">{children}</div>
             </div>

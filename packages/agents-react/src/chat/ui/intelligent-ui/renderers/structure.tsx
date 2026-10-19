@@ -22,7 +22,7 @@ export function TabsRenderer({ node, children, context }: UiRendererProps<UiProp
     const value = picked !== null && tabs.some((tab) => tab.id === picked) ? picked : (tabs[0]?.id ?? null);
     return (
         <Tabs.Root value={value} onValueChange={(next) => setPicked(String(next))} className="flex flex-col gap-3">
-            <Tabs.List variant="pill" overflow="scroll" className="rounded-xl bg-ui-tile p-0.75">
+            <Tabs.List variant="pill" overflow="scroll" className="w-fit max-w-full rounded-xl bg-ui-tile p-0.75">
                 {tabs.map((tab) => (
                     <Tabs.Tab key={tab.id} value={tab.id} data-ui-reveal={tab.id}>
                         {tab.props.title}
