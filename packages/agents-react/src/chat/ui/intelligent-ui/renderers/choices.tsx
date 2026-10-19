@@ -18,7 +18,7 @@ export function ChoicesRenderer({ children, context }: UiRendererProps<UiProps<'
     const { t } = useTranslation('agent-chat');
     const [streamed] = useState(context.phase === 'streaming');
     return (
-        <div role="group" aria-label={t('blocks.choices')} className="chat-ui-nodes flex flex-wrap items-start gap-2">
+        <div role="group" aria-label={t('blocks.choices')} className="chat-ui-nodes @container flex flex-wrap items-start gap-2">
             {children}
             <span className="sr-only" role="status">
                 {streamed && context.phase === 'final' ? t('blocks.choice.ready') : ''}
@@ -101,8 +101,9 @@ export function ChoiceRenderer({ node, children, context }: UiRendererProps<UiPr
         </button>
     );
 
+    // At most half the row less half the gap, so two long choices stand side by side and end on one edge; a narrow block gives each the row.
     return (
-        <div className="flex max-w-full flex-col gap-1">
+        <div className="flex max-w-full flex-col gap-1 @min-[420px]:max-w-[calc(50%-4px)]">
             {reason !== null ? (
                 <DisabledReason reason={reason}>{button}</DisabledReason>
             ) : described && detail.length > LONG_CONTEXT ? (
