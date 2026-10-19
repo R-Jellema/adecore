@@ -119,6 +119,8 @@ export interface ChatCoreHooks {
     instructionsFor?(chatId: string): string | null;
     /* What of the instructions a resumed thread hears again in front of its next prompt, for a CLI that ignores them on a resume. */
     resumeNoteFor?(chatId: string): string | null;
+    /* Instructions a resumed thread takes in again as a developer message, for a CLI that keeps those its thread started with; null when it holds them. */
+    resumeInstructionsFor?(chatId: string): string | null;
     /*
      * Folders outside its working directory a chat's agent may reach without asking, absolute. Asked
      * before every turn, so a host can hand one over for as long as it is needed: a change starts the
@@ -495,6 +497,7 @@ export class ChatCore {
             saveGeneratedImage: (ref, upload) => this.attachments.saveGenerated(payload.chatId, ref, upload),
             instructions: () => (this.hooks.instructionsFor ? this.hooks.instructionsFor(payload.chatId) : this.instructions),
             resumeNote: () => this.hooks.resumeNoteFor?.(payload.chatId) ?? null,
+            resumeInstructions: () => this.hooks.resumeInstructionsFor?.(payload.chatId) ?? null,
             folders: () => this.hooks.foldersFor?.(payload.chatId) ?? [],
             projectConfig: () => this.hooks.projectConfigFor?.(payload.chatId) ?? true,
             ...(promptNotes ? { promptNotes } : {}),

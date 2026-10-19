@@ -26,6 +26,8 @@ export const fakeCodexForks: Frame[] = [];
 export interface FakeCodexOptions {
     // How the note a host repeats in front of a resumed thread's first prompt starts; `pasted?` answers it back.
     resumeLead?: string;
+    // False answers `thread/inject_items` the way an app-server without it does.
+    injectItems?: boolean;
 }
 
 export function fakeCodexWith(options: FakeCodexOptions): FakeCli {
@@ -488,6 +490,22 @@ export function fakeCodexWith(options: FakeCodexOptions): FakeCli {
                         }
                     });
                     notify('thread/started', { thread });
+                    return;
+                }
+                case 'thread/inject_items': {
+                    if (options.injectItems === false) {
+                        out({ id, error: { code: -32601, message: 'unknown method thread/inject_items' } });
+                        return;
+                    }
+                    // The newest developer message is the one the model follows, so `note?` answers with it.
+                    const items = Array.isArray(params.items) ? (params.items as Frame[]) : [];
+                    for (const injected of items) {
+                        const content = Array.isArray(injected.content) ? (injected.content[0] as { text?: unknown } | undefined) : undefined;
+                        if (injected.role === 'developer' && typeof content?.text === 'string') {
+                            threadInstructions.set(String(params.threadId), content.text);
+                        }
+                    }
+                    out({ id, result: {} });
                     return;
                 }
                 case 'thread/fork': {

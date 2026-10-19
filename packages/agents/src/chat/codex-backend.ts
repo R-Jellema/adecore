@@ -81,7 +81,7 @@ export class CodexBackend implements ChatBackend {
     private imageWrites: Promise<void> | null = null;
     private transport: CodexTransport | null = null;
     private threadId = '';
-    // Codex 0.154 ignores developer instructions on `thread/resume` (measured), so the first prompt of a resumed process carries them.
+    // Codex ignores developer instructions on `thread/resume` (measured on 0.154 and 0.163), so the first prompt of a resumed process carries them.
     private contextPending: string | null = null;
     private imageInputSupported: boolean | null = null;
     /* A turn asked for that Codex has not named yet; `turn/interrupt` needs that name. */
@@ -148,7 +148,7 @@ export class CodexBackend implements ChatBackend {
         if (this.launch.resume) {
             try {
                 result = await transport.request('thread/resume', { threadId: this.launch.resume, excludeTurns: true, ...params });
-                this.contextPending = this.launch.resumeNote;
+                this.contextPending = await this.resumeContext(transport, this.launch.resume);
             } catch (error) {
                 // A refusal means the thread is gone from Codex's store and a fresh one keeps the chat usable; a silence or an exit says nothing about the thread.
                 if (!(error instanceof Error) || error.name !== 'CodexRpcError') {
@@ -170,6 +170,26 @@ export class CodexBackend implements ChatBackend {
         await this.readGoal(transport).catch(() => {
             // An app-server without goals, or with the feature turned off, has none to report.
         });
+    }
+
+    /*
+     * A developer message outranks the thread's first instructions, where a note in front of the prompt loses to
+     * them; an app-server without `thread/inject_items` gets the instructions in front of the prompt after all.
+     */
+    private async resumeContext(transport: CodexTransport, threadId: string): Promise<string | null> {
+        const instructions = this.launch.resumeInstructions ?? null;
+        if (instructions !== null) {
+            try {
+                const items = [{ type: 'message', role: 'developer', content: [{ type: 'input_text', text: instructions }] }];
+                await transport.request('thread/inject_items', { threadId, items });
+            } catch (error) {
+                if (!(error instanceof Error) || error.name !== 'CodexRpcError') {
+                    throw error;
+                }
+                return [instructions, this.launch.resumeNote].filter((part) => part !== null).join('\n\n');
+            }
+        }
+        return this.launch.resumeNote;
     }
 
     private async readGoal(transport: CodexTransport): Promise<ChatGoal | null> {

@@ -40,6 +40,9 @@ export interface BackendLaunch {
     // The part of it a resumed thread has to hear again in front of its next prompt, for a CLI that ignores new
     // instructions on a resume; null when there is nothing to repeat.
     resumeNote: string | null;
+    // Instructions a resumed thread takes in as a developer message, for a CLI that keeps the ones its thread started
+    // with; absent or null when the thread holds them already.
+    resumeInstructions?: string | null;
     // The goal the chat last knew of, which a CLI that takes it up again from its own transcript on a resume still works toward.
     goal?: ChatGoal;
     // Folders outside `cwd` the agent may reach without asking. Claude Code takes them as `--add-dir`; Codex's

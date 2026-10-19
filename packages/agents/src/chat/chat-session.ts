@@ -76,6 +76,7 @@ export interface ChatSessionOptions {
     // What the agent is told at the start of every process, and what of it a resumed thread hears again; see `BackendLaunch`.
     instructions?(): string | null;
     resumeNote?(): string | null;
+    resumeInstructions?(): string | null;
     // The folders beside the working directory, asked before every turn; a change starts the next turn in a new process.
     folders?(): readonly string[];
     // False runs the CLI without the configuration of the working folder; asked before every turn like the folders.
@@ -1876,6 +1877,7 @@ export class ChatSession {
             saveGeneratedImage: this.options.saveGeneratedImage,
             instructions: this.options.instructions?.() ?? null,
             resumeNote: this.options.resumeNote?.() ?? null,
+            resumeInstructions: this.options.resumeInstructions?.() ?? null,
             ...(info.goal === undefined ? {} : { goal: info.goal }),
             ...(folders.length > 0 ? { folders } : {}),
             ...(projectConfig ? {} : { projectConfig }),
