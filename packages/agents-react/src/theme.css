@@ -30,11 +30,12 @@
     /* The two grounds of the map a page draws without tiles. */
     --map-land: #f2f1ed;
     --map-water: #d3dde5;
-    /* The parts of an intelligent UI block: a tile on the thread's ground, a card inset in a tile, and the hatch of its band. */
-    /* The design's #f0f0f3 kept muted text under 4.5 to 1; this is the nearest gray that keeps it there. */
-    --chat-ui-tile: #f4f4f6;
-    --chat-ui-inset: #ffffff;
-    --chat-ui-hatch: #e2e2e7;
+    /* The parts of an intelligent UI block, from the tokens an app's palette sets: a tile on the thread's
+       ground, a card inset in a tile, and the hatch of its band. The tile mixes the ink in so lightly that
+       muted text keeps 4.5 to 1 on it; the design's #f0f0f3 did not. */
+    --chat-ui-tile: color-mix(in srgb, var(--text) 4.5%, var(--surface));
+    --chat-ui-inset: var(--surface);
+    --chat-ui-hatch: var(--separator);
 }
 
 [data-theme="dark"] {
@@ -56,9 +57,9 @@
     --chart-6: #008300;
     --map-land: #2c3135;
     --map-water: #1a2026;
-    --chat-ui-tile: #1a1a1e;
-    --chat-ui-inset: #131316;
-    --chat-ui-hatch: #26262c;
+    --chat-ui-tile: color-mix(in srgb, var(--text) 3%, var(--surface));
+    --chat-ui-inset: var(--surface);
+    --chat-ui-hatch: var(--separator);
 }
 
 /* Output and diffs take the terminal's colors when the app loads `@adecore/terminal/terminal.css`,
