@@ -338,7 +338,7 @@ test('a legacy result proves wake acceptance, while a failed durable save sends 
 
 for (const unknown of [false, true]) {
     test(`Claude window resets persist before the queue with an unknown window ${unknown}`, async () => {
-        const protocol = new ClaudeProtocol();
+        const protocol = new ClaudeProtocol(null, () => 1000);
         const owed: { at: number; resumeAt: number | undefined; queue: string[] }[] = [];
         let persisted: ChatInfo | null = null;
         const run = rig({

@@ -41,7 +41,7 @@ export class ClaudeBackend implements ChatBackend {
         this.launch = launch;
         this.host = host;
         this.allowedTools = options.allowedTools ?? [];
-        this.protocol = new ClaudeProtocol(launch.goal ?? null);
+        this.protocol = new ClaudeProtocol(launch.goal ?? null, launch.now);
     }
 
     get running(): boolean {

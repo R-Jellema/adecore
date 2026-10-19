@@ -87,7 +87,7 @@ function turnOf(items: readonly ChatItem[], id: string): Extract<ChatItem, { kin
 }
 
 describe('backend replacement with live work', () => {
-    for (const change of ['model', 'options', 'mode', 'account', 'folders'] as const) {
+    for (const change of ['model', 'options', 'mode', 'account', 'folders', 'auth'] as const) {
         test(`${change} waits for the child, its approval and Claude's final report`, async () => {
             const run = replacementRig();
             run.session.send('start research');
@@ -103,7 +103,11 @@ describe('backend replacement with live work', () => {
                 canAllowAlways: false,
                 background: true
             });
-            run.done();
+            if (change === 'auth') {
+                run.event({ type: 'turn.done', state: 'error', costUsd: 0, replaceProcess: true });
+            } else {
+                run.done();
+            }
             if (change === 'model') {
                 run.session.configure({ selection: { model: 'haiku', options: {} } });
             }
@@ -164,6 +168,45 @@ describe('backend replacement with live work', () => {
             await run.session.dispose();
         });
     }
+
+    test('the backend expires limits on the same clock that schedules their retry', async () => {
+        let now = 1000;
+        const run = replacementRig(claudeProvider, {
+            limitResume: { now: () => now, allowed: () => false, owe: async () => undefined, lapse: async () => undefined, owed: () => false }
+        });
+        run.session.send('first');
+        await flush();
+        expect(run.instances[0]!.launch.now?.()).toBe(1000);
+        now = 5000;
+        expect(run.instances[0]!.launch.now?.()).toBe(5000);
+        await run.session.dispose();
+    });
+
+    test('authentication failure replaces the idle process on the next send and resumes the native session', async () => {
+        const run = replacementRig();
+        const protocol = new ClaudeProtocol();
+        run.session.send('first');
+        await flush();
+        run.event({ type: 'session', agentSessionId: 'native-session', model: null });
+        protocol.handle({ type: 'assistant', error: 'authentication_failed', message: { content: [] } });
+        for (const event of protocol.handle({ type: 'result', is_error: true, result: 'Log in again' })) {
+            run.event(event);
+        }
+        expect(run.instances).toHaveLength(1);
+        expect(run.instances[0]!.stopped).toBe(false);
+        run.session.send('try with refreshed credentials');
+        await flush();
+        expect(run.instances).toHaveLength(2);
+        expect(run.instances[0]!.stopped).toBe(true);
+        expect(run.instances[1]!.launch.resume).toBe('native-session');
+        expect(run.instances[1]!.launch.generation).not.toBe(run.instances[0]!.launch.generation);
+        run.done();
+        run.session.send('one more');
+        await flush();
+        expect(run.instances).toHaveLength(2);
+        expect(run.instances[1]!.sent.map((input) => input.text)).toEqual(['try with refreshed credentials', 'one more']);
+        await run.session.dispose();
+    });
 
     for (const work of ['command', 'workflow'] as const) {
         test(`replacement waits for a ${work} and its native report`, async () => {

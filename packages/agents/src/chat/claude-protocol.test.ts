@@ -14,7 +14,7 @@ describe('ClaudeProtocol', () => {
     test.each(['task-notification', { kind: 'task-notification' }])(
         'a background result with origin %j cannot finish compact or clear its refusal',
         (origin) => {
-            const protocol = new ClaudeProtocol();
+            const protocol = new ClaudeProtocol(null, () => 0);
             protocol.beginPrompt('compact-prompt');
             protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status: 'rejected', resetsAt: 500 } });
             expect(
@@ -578,8 +578,119 @@ describe('ClaudeProtocol', () => {
         return protocol.handle({ type: 'result', subtype: 'success', is_error: true, api_error_status: 429, result: text, total_cost_usd: 0 });
     };
 
-    test('a turn a spent window of the plan refused ends with a usage limit and its reset', () => {
+    for (const error of ['authentication_failed', 'rate_limit', 'overloaded']) {
+        test(`only an explicit main-chain authentication failure replaces the process: ${error}`, () => {
+            const protocol = new ClaudeProtocol();
+            const done = refused(protocol, error, 'Please /login again')[0];
+            if (error === 'authentication_failed') {
+                expect(done).toHaveProperty('replaceProcess', true);
+            } else {
+                expect(done).not.toHaveProperty('replaceProcess');
+            }
+        });
+    }
+
+    test('child authentication errors and successful recovery do not replace the parent process', () => {
         const protocol = new ClaudeProtocol();
+        protocol.handle({ type: 'assistant', parent_tool_use_id: 'child', error: 'authentication_failed', message: { content: [] } });
+        expect(protocol.handle({ type: 'result', is_error: true })[0]).not.toHaveProperty('replaceProcess');
+        protocol.handle({ type: 'assistant', error: 'authentication_failed', message: { content: [] } });
+        expect(protocol.handle({ type: 'result', is_error: false })[0]).not.toHaveProperty('replaceProcess');
+        expect(protocol.handle({ type: 'result', is_error: true })[0]).not.toHaveProperty('replaceProcess');
+    });
+
+    test('sparse rejections preserve a future reset within a turn and across usage failures', () => {
+        const protocol = new ClaudeProtocol();
+        const reset = Math.ceil(Date.now() / 1000) + 600;
+        const rejection = (resetsAt?: number) =>
+            protocol.handle({
+                type: 'rate_limit_event',
+                rate_limit_info: { status: 'rejected', rateLimitType: 'five_hour', ...(resetsAt === undefined ? {} : { resetsAt }) }
+            });
+        protocol.beginPrompt('first');
+        rejection(reset);
+        rejection();
+        expect(refused(protocol, 'rate_limit', 'Usage limit')[0]).toHaveProperty('limit.resetsAt', reset * 1000);
+        protocol.beginPrompt('second');
+        rejection();
+        expect(refused(protocol, 'rate_limit', 'Usage limit')[0]).toHaveProperty('limit.resetsAt', reset * 1000);
+        protocol.beginPrompt('third');
+        expect(refused(protocol, 'rate_limit', 'Bare 429')[0]).toHaveProperty('limit', { kind: 'overload' });
+    });
+
+    for (const recovery of ['success', 'other-error', 'overload', 'allowed', 'overage', 'invalid', 'expired', 'new-process'] as const) {
+        test(`a cached reset cannot survive ${recovery}`, () => {
+            let protocol = new ClaudeProtocol();
+            const reset = Math.ceil(Date.now() / 1000) + 600;
+            const rejection = (extra: Record<string, unknown> = {}) =>
+                protocol.handle({
+                    type: 'rate_limit_event',
+                    rate_limit_info: { status: 'rejected', rateLimitType: 'five_hour', ...extra }
+                });
+            rejection({ resetsAt: reset });
+            refused(protocol, 'rate_limit', 'Usage limit');
+            protocol.beginPrompt('next');
+            if (recovery === 'success' || recovery === 'other-error') {
+                protocol.handle({ type: 'result', is_error: recovery === 'other-error' });
+            } else if (recovery === 'overload') {
+                refused(protocol, 'overloaded', 'Overloaded');
+            } else if (recovery === 'allowed') {
+                protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status: 'allowed', rateLimitType: 'five_hour' } });
+            } else if (recovery === 'overage') {
+                rejection({ isUsingOverage: true });
+            } else if (recovery === 'invalid') {
+                rejection({ resetsAt: -1 });
+            } else if (recovery === 'new-process') {
+                protocol = new ClaudeProtocol();
+            }
+            const clock = recovery === 'expired' ? jest.spyOn(Date, 'now').mockReturnValue(reset * 1000) : null;
+            try {
+                rejection();
+                const done = refused(protocol, 'rate_limit', 'Usage limit')[0];
+                expect(done).toHaveProperty('limit.kind', 'usage');
+                expect(done).not.toHaveProperty('limit.resetsAt');
+            } finally {
+                clock?.mockRestore();
+            }
+        });
+    }
+
+    test('a reset that expires before the result cannot schedule another retry', () => {
+        let now = 1000;
+        const protocol = new ClaudeProtocol(null, () => now);
+        protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status: 'rejected', rateLimitType: 'five_hour', resetsAt: 5 } });
+        now = 5000;
+        expect(refused(protocol, 'rate_limit', 'Usage limit')[0]).not.toHaveProperty('limit.resetsAt');
+    });
+
+    test('a cached reset in one window cannot hide an unknown current window', () => {
+        const protocol = new ClaudeProtocol();
+        protocol.handle({
+            type: 'rate_limit_event',
+            rate_limit_info: { status: 'rejected', rateLimitType: 'five_hour', resetsAt: Math.ceil(Date.now() / 1000) + 600 }
+        });
+        refused(protocol, 'rate_limit', 'Usage limit');
+        protocol.beginPrompt('next');
+        protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status: 'rejected', rateLimitType: 'five_hour' } });
+        protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status: 'rejected', rateLimitType: 'seven_day' } });
+        expect(refused(protocol, 'rate_limit', 'Usage limit')[0]).not.toHaveProperty('limit.resetsAt');
+    });
+
+    test('a different or unidentified sparse window cannot borrow a cached reset', () => {
+        const protocol = new ClaudeProtocol();
+        protocol.handle({
+            type: 'rate_limit_event',
+            rate_limit_info: { status: 'rejected', rateLimitType: 'five_hour', resetsAt: Math.ceil(Date.now() / 1000) + 600 }
+        });
+        refused(protocol, 'rate_limit', 'Usage limit');
+        protocol.beginPrompt('next');
+        protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status: 'rejected', rateLimitType: 'seven_day' } });
+        protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status: 'rejected' } });
+        expect(refused(protocol, 'rate_limit', 'Usage limit')[0]).not.toHaveProperty('limit.resetsAt');
+    });
+
+    test('a turn a spent window of the plan refused ends with a usage limit and its reset', () => {
+        const protocol = new ClaudeProtocol(null, () => 0);
         protocol.handle({
             type: 'rate_limit_event',
             rate_limit_info: { status: 'rejected', resetsAt: 1_789_000_000, rateLimitType: 'five_hour', utilization: 1 }
@@ -601,7 +712,7 @@ describe('ClaudeProtocol', () => {
     });
 
     test('an overloaded model, or a 429 the plan did not explain, is an overload without a reset', () => {
-        const protocol = new ClaudeProtocol();
+        const protocol = new ClaudeProtocol(null, () => 0);
         expect(refused(protocol, 'overloaded', 'API Error: Repeated 529 Overloaded errors')).toMatchObject([{ state: 'error', limit: { kind: 'overload' } }]);
         protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status: 'rejected', resetsAt: 1_789_000_000, rateLimitType: 'five_hour' } });
         protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status: 'allowed', resetsAt: 1_789_000_000, rateLimitType: 'five_hour' } });
@@ -610,7 +721,7 @@ describe('ClaudeProtocol', () => {
 
     for (const reverse of [false, true]) {
         test(`all refused windows use the latest reset with reverse order ${reverse}`, () => {
-            const protocol = new ClaudeProtocol();
+            const protocol = new ClaudeProtocol(null, () => 0);
             const windows = [
                 { status: 'rejected', rateLimitType: 'seven_day', resetsAt: 900 },
                 { status: 'rejected', rateLimitType: 'five_hour', resetsAt: 500 }
@@ -624,7 +735,7 @@ describe('ClaudeProtocol', () => {
 
     for (const resetsAt of [undefined, NaN, Infinity, -1, 0, 8.64e12]) {
         test(`an unknown or invalid window reset ${resetsAt} prevents a scheduled usage reset`, () => {
-            const protocol = new ClaudeProtocol();
+            const protocol = new ClaudeProtocol(null, () => 0);
             protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status: 'rejected', rateLimitType: 'seven_day', resetsAt } });
             protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status: 'rejected', rateLimitType: 'five_hour', resetsAt: 500 } });
             const done = refused(protocol, 'rate_limit', 'Usage limit')[0];
@@ -635,7 +746,7 @@ describe('ClaudeProtocol', () => {
 
     for (const status of ['allowed', 'allowed_warning', 'future_status']) {
         test(`a different ${status} window does not remove a refusal`, () => {
-            const protocol = new ClaudeProtocol();
+            const protocol = new ClaudeProtocol(null, () => 0);
             protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status: 'rejected', rateLimitType: 'seven_day', resetsAt: 900 } });
             protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status, rateLimitType: 'five_hour', resetsAt: 500 } });
             expect(refused(protocol, 'rate_limit', 'Usage limit')).toMatchObject([{ limit: { kind: 'usage', resetsAt: 900000 } }]);
@@ -643,7 +754,7 @@ describe('ClaudeProtocol', () => {
     }
 
     test('allowing a blocked window retains another window with an unknown reset', () => {
-        const protocol = new ClaudeProtocol();
+        const protocol = new ClaudeProtocol(null, () => 0);
         protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status: 'rejected', rateLimitType: 'seven_day' } });
         protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status: 'rejected', rateLimitType: 'five_hour', resetsAt: 500 } });
         protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status: 'allowed', rateLimitType: 'five_hour' } });
@@ -653,7 +764,7 @@ describe('ClaudeProtocol', () => {
     });
 
     test("a new prompt does not inherit another prompt's refused windows", () => {
-        const protocol = new ClaudeProtocol();
+        const protocol = new ClaudeProtocol(null, () => 0);
         protocol.beginPrompt('first');
         protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status: 'rejected', rateLimitType: 'seven_day', resetsAt: 900 } });
         protocol.beginPrompt('second');
@@ -662,7 +773,7 @@ describe('ClaudeProtocol', () => {
 
     for (const overage of [{ overageStatus: 'allowed' }, { overageStatus: 'allowed_warning' }, { isUsingOverage: true }, { overageInUse: true }]) {
         test(`overage ${JSON.stringify(overage)} permits only its own window`, () => {
-            const protocol = new ClaudeProtocol();
+            const protocol = new ClaudeProtocol(null, () => 0);
             protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status: 'rejected', rateLimitType: 'seven_day', resetsAt: 900 } });
             protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status: 'rejected', rateLimitType: 'five_hour', resetsAt: 500 } });
             protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status: 'rejected', rateLimitType: 'seven_day', ...overage } });
@@ -671,7 +782,7 @@ describe('ClaudeProtocol', () => {
     }
 
     test('a refused window on a turn that still answered is no limit', () => {
-        const protocol = new ClaudeProtocol();
+        const protocol = new ClaudeProtocol(null, () => 0);
         protocol.handle({ type: 'rate_limit_event', rate_limit_info: { status: 'rejected', resetsAt: 1_789_000_000, rateLimitType: 'five_hour' } });
         expect(protocol.handle({ type: 'result', subtype: 'success', is_error: false, total_cost_usd: 0 })).toEqual([
             { type: 'turn.done', state: 'done', costUsd: 0 }
@@ -679,7 +790,7 @@ describe('ClaudeProtocol', () => {
     });
 
     test('what a turn says about the plan leaves the chat as a limits event', () => {
-        const protocol = new ClaudeProtocol();
+        const protocol = new ClaudeProtocol(null, () => 0);
         expect(
             protocol.handle({ type: 'rate_limit_event', rate_limit_info: { rateLimitType: 'five_hour', utilization: 0.31, resetsAt: 1_789_000_000 } })
         ).toEqual([

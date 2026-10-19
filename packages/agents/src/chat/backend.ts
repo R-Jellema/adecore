@@ -35,6 +35,8 @@ export interface BackendLaunch {
     // How often this chat started a CLI; a protocol that numbers its own requests from zero
     // needs it to keep the ids of one process apart from those of the one before.
     generation: number;
+    // Shares the host clock with expiry checks when a test advances time by hand.
+    now?(): number;
     // What the agent is told once, at the start of a process: a system prompt, or a new thread's developer instructions.
     instructions: string | null;
     // The part of it a resumed thread has to hear again in front of its next prompt, for a CLI that ignores new
@@ -182,6 +184,8 @@ export type BackendEvent =
           error?: string;
           native?: { turnId?: string; lastUuid?: string };
           limit?: ChatTurnLimit;
+          // The next prompt needs fresh process credentials, once native work and requests have settled.
+          replaceProcess?: boolean;
       }
     // The CLI could not be reached or refused the request; the turn ends and the chat needs a new one.
     | { type: 'failed'; message: string; processAlive?: boolean }

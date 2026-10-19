@@ -170,6 +170,7 @@ export class ChatSession {
     private readonly options: ChatSessionOptions;
     private readonly projector: ThreadProjector;
     private backend: ChatBackend | null = null;
+    private replaceProcess = false;
     private starting: Promise<ChatBackend> | null = null;
     private pendingStart: { turnId: string; warning: unknown } | null = null;
     private sendAfterStop = false;
@@ -1805,7 +1806,8 @@ export class ChatSession {
     private requiresReplacement(): boolean {
         return (
             this.backend !== null &&
-            (JSON.stringify(this.info.selection) !== JSON.stringify(this.launchedSelection) ||
+            (this.replaceProcess ||
+                JSON.stringify(this.info.selection) !== JSON.stringify(this.launchedSelection) ||
                 this.info.runtimeMode !== this.launchedRuntimeMode ||
                 this.info.account !== this.launchedAccount ||
                 this.info.cwd !== this.launchedCwd ||
@@ -1874,6 +1876,7 @@ export class ChatSession {
             runtimeMode: info.runtimeMode,
             resume: info.agentSessionId,
             generation,
+            now: () => this.options.limitResume?.now() ?? (this.options.clock ?? systemClock).now(),
             saveGeneratedImage: this.options.saveGeneratedImage,
             instructions: this.options.instructions?.() ?? null,
             resumeNote: this.options.resumeNote?.() ?? null,
@@ -1897,6 +1900,7 @@ export class ChatSession {
         }
         const backend = made.backend;
         this.backend = backend;
+        this.replaceProcess = false;
         this.emit([this.thread.patchInfo({ running: true, effectiveRuntimeMode: undefined, permissionMode: undefined })]);
         let started: Promise<void>;
         try {
@@ -1979,6 +1983,9 @@ export class ChatSession {
             }
             if (event.promptId !== undefined) {
                 this.staleResults = 0;
+            }
+            if (event.replaceProcess === true) {
+                this.replaceProcess = true;
             }
             const promptId = event.promptId ?? this.submission?.input.promptId;
             if (promptId !== undefined) {

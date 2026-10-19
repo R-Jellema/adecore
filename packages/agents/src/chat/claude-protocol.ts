@@ -187,6 +187,7 @@ export function claudeGoalCheck(text: string, current: ChatGoal | null): ChatGoa
  * belongs to one process, so a resumed CLI that numbers its messages from the start gets its own.
  */
 export class ClaudeProtocol {
+    private readonly now: () => number;
     private promptId: string | null = null;
     private readonly pending = new Map<string, Pending>();
     private streamMessageId: string | null = null;
@@ -208,6 +209,8 @@ export class ClaudeProtocol {
     // Only main-chain errors classify the turn; each plan window can refuse it independently.
     private apiError: string | null = null;
     private readonly refusedWindows = new Map<string, number | null>();
+    // Sparse refusals can omit a reset; cached metadata alone must never classify a later 429.
+    private readonly refusedResets = new Map<string, number>();
 
     // The task each `stop_task` request named, so an error answer finds it again.
     private readonly stopRequests = new Map<string, string>();
@@ -221,8 +224,9 @@ export class ClaudeProtocol {
     // Background subagents still at work; Claude Code holds a goal's check until they report.
     private readonly backgroundAgents = new Set<string>();
 
-    constructor(goal: ChatGoal | null = null) {
+    constructor(goal: ChatGoal | null = null, now: () => number = () => Date.now()) {
         this.goal = goal;
+        this.now = now;
     }
 
     /* A stop is on its way; the turn it ends leaves the goal set but nobody working on it. */
@@ -245,6 +249,7 @@ export class ClaudeProtocol {
         this.promptId = promptId;
         this.apiError = null;
         this.refusedWindows.clear();
+        this.expireRefusedResets();
         this.lastUuid = null;
     }
 
@@ -765,6 +770,10 @@ export class ClaudeProtocol {
         const lastUuid = this.lastUuid;
         this.lastUuid = null;
         const limit = failed ? this.limit() : null;
+        const replaceProcess = failed && this.apiError === 'authentication_failed';
+        if (limit?.kind !== 'usage') {
+            this.refusedResets.clear();
+        }
         this.apiError = null;
         this.refusedWindows.clear();
         // Before the turn ends, so whoever settles work on that end already reads where the goal stands.
@@ -776,7 +785,8 @@ export class ClaudeProtocol {
             costUsd: num(frame.total_cost_usd),
             ...(failed ? { error: errors[0] ?? str(frame.result) ?? `The turn ended with ${str(frame.subtype) ?? 'an error'}` } : {}),
             ...(lastUuid === null ? {} : { native: { lastUuid } }),
-            ...(limit === null ? {} : { limit })
+            ...(limit === null ? {} : { limit }),
+            ...(replaceProcess ? { replaceProcess: true } : {})
         });
     }
 
@@ -784,14 +794,33 @@ export class ClaudeProtocol {
         if (!isRecord(info) || typeof info.status !== 'string') {
             return;
         }
-        const window = str(info.rateLimitType) ?? 'unknown';
+        this.expireRefusedResets();
+        const namedWindow = str(info.rateLimitType);
+        const window = namedWindow ?? 'unknown';
         const overageAllowed =
             info.overageStatus === 'allowed' || info.overageStatus === 'allowed_warning' || info.isUsingOverage === true || info.overageInUse === true;
         if (info.status === 'rejected' && !overageAllowed) {
             const resetsAt = typeof info.resetsAt === 'number' ? info.resetsAt * 1000 : NaN;
-            this.refusedWindows.set(window, Number.isFinite(resetsAt) && resetsAt > 0 && resetsAt < 8.64e15 ? resetsAt : null);
+            const validReset = Number.isFinite(resetsAt) && resetsAt > this.now() && resetsAt < 8.64e15 ? resetsAt : null;
+            const reset = validReset ?? (info.resetsAt === undefined && namedWindow ? (this.refusedResets.get(window) ?? null) : null);
+            this.refusedWindows.set(window, reset);
+            if (namedWindow && reset !== null && reset > this.now()) {
+                this.refusedResets.set(window, reset);
+            } else {
+                this.refusedResets.delete(window);
+            }
         } else if (info.status === 'allowed' || info.status === 'allowed_warning' || overageAllowed) {
             this.refusedWindows.delete(window);
+            this.refusedResets.delete(window);
+        }
+    }
+
+    private expireRefusedResets(): void {
+        const now = this.now();
+        for (const [window, reset] of this.refusedResets) {
+            if (reset <= now) {
+                this.refusedResets.delete(window);
+            }
         }
     }
 
@@ -804,7 +833,7 @@ export class ClaudeProtocol {
         if (this.refusedWindows.size > 0) {
             let resetsAt = 0;
             for (const reset of this.refusedWindows.values()) {
-                if (reset === null) {
+                if (reset === null || reset <= this.now()) {
                     return { kind: 'usage' };
                 }
                 resetsAt = Math.max(resetsAt, reset);
