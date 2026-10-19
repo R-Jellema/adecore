@@ -320,6 +320,9 @@
        same outline for something that takes focus without being a button, such as a row in a list. */
     .icon-btn:focus-visible, .menu-item:focus-visible, button:focus-visible, .focus-ring:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
     .menu-item:focus-visible { outline-offset: -2px; }
+    /* A container that only holds focus, a pane or a block a jump lands on, wears no ring: only what a person
+       operates does. A heading keeps it, since a prompt moves focus there to be read out. */
+    :where([tabindex='-1']:not(h1, h2, h3, h4, h5, h6)):focus-visible, .ade-split-pane:focus-visible, .ade-split-content:focus-visible { outline: none; }
     /* A card that holds a field, the composer's or a prompt's, wears the field's outline on its own edge. */
     .focus-ring-within:has(:focus-visible) { outline: 2px solid var(--accent); outline-offset: -1px; }
     /* Base UI moves DOM focus to the item the pointer hovers, and a browser keeps `:focus-visible`
@@ -796,7 +799,6 @@
         min-width: 0;
         border-bottom: 1px solid var(--separator);
     }
-    .ade-split-content { outline-offset: -2px; }
     .ade-split-view[data-dragging] > .ade-split-content { pointer-events: none; }
     .ade-split-divider {
         position: absolute;
