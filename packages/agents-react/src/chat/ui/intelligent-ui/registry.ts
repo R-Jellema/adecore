@@ -1,7 +1,7 @@
 import type { UiRenderers } from './render-context';
 import { ChartRenderer } from './renderers/chart';
 import { ChoiceRenderer, ChoicesRenderer } from './renderers/choices';
-import { CodeBlockRenderer, CompareRenderer, GalleryRenderer, ImageRenderer, SourceRenderer, SourcesRenderer } from './renderers/content';
+import { CodeBlockRenderer, CompareRenderer, GalleryRenderer, ImageRenderer, ModelRenderer, SourceRenderer, SourcesRenderer } from './renderers/content';
 import { EntityListRenderer, EntryRenderer, StatRenderer, StatsRenderer, TableRenderer } from './renderers/data';
 import {
     ButtonRenderer,
@@ -57,6 +57,7 @@ export const UI_RENDERERS: UiRenderers = {
     Image: ImageRenderer,
     Gallery: GalleryRenderer,
     Compare: CompareRenderer,
+    Model: ModelRenderer,
     Map: MapRenderer,
     Place: null,
     Sources: SourcesRenderer,

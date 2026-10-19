@@ -1,8 +1,9 @@
 import clsx from 'clsx';
 import { createContext, useContext, useId, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Box } from 'lucide-react';
 import type { UiProps } from '@adecore/intelligent-ui';
-import { Pill, PreviewCard, Tooltip, Wipe } from '@adecore/ui';
+import { ErrorBoundary, Icon, Pill, PreviewCard, Tooltip, Wipe } from '@adecore/ui';
 import { formatNumber } from '@adecore/ui/format';
 import { useChatHost } from '../../../../host';
 import { CodeBlock } from '../../CodeBlock';
@@ -184,6 +185,55 @@ function CompareChip({ side, label }: { side: 'left' | 'right'; label: string })
                 {label}
             </Pill>
         </span>
+    );
+}
+
+/*
+ * The host draws the model, since the chat knows no 3D format. The frame has a fixed height in the reply column,
+ * so a view that loads late never moves the thread. Without a view of the host, or without the bytes, the model
+ * stays a quiet row that names it.
+ */
+export function ModelRenderer({ node, children, context }: UiRendererProps<UiProps<'Model'>>) {
+    const { t } = useTranslation('agent-chat');
+    const host = useChatHost();
+    const { attachment, alt } = node.props;
+    const source = host.attachments.useUrl(context.scopeId, context.chatId, attachment);
+    const caption = uiNodeLabel(node);
+    const label = alt ?? (caption === '' ? t('blocks.model.label') : caption);
+    const View = host.ModelView;
+    let body: ReactNode;
+    if (View !== undefined && source.url !== null) {
+        body = (
+            <div role="group" aria-label={label} className="relative h-80 w-full overflow-hidden rounded-lg border border-border bg-surface-sunken">
+                <ErrorBoundary label={t('blocks.model.crashed')} resetKeys={[attachment, source.url]} compact>
+                    <View
+                        scopeId={context.scopeId}
+                        chatId={context.chatId}
+                        attachmentId={attachment}
+                        url={source.url}
+                        label={label}
+                        alt={alt}
+                        caption={caption}
+                    />
+                </ErrorBoundary>
+            </div>
+        );
+    } else if (View !== undefined && source.failure === null) {
+        body = <div aria-busy="true" aria-label={label} className="h-80 w-full rounded-lg border border-border bg-surface-sunken" />;
+    } else {
+        body = (
+            <div className="flex w-full min-w-0 items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs">
+                <Icon icon={Box} size={14} className="shrink-0 text-text-muted" />
+                <span className="min-w-0 truncate text-text">{alt ?? attachment}</span>
+                <span className="ml-auto shrink-0 text-text-faint">{source.failure === null ? t('blocks.model.label') : t('blocks.model.unavailable')}</span>
+            </div>
+        );
+    }
+    return (
+        <figure className="flex flex-col items-start gap-1.5 px-2">
+            {body}
+            {caption !== '' && <figcaption className="text-xs text-text-muted">{children}</figcaption>}
+        </figure>
     );
 }
 

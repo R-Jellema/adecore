@@ -77,3 +77,34 @@ test.skipIf(typeof document === 'undefined')('each picture of a comparison shows
         element.remove();
     }
 });
+
+test.skipIf(typeof document === 'undefined')('a model whose view throws says so in its frame and leaves the reply standing', async () => {
+    const text = '```ui\n<Summary>Done</Summary><Model attachment="m1">Bracket</Model>\n```';
+    const blocks = compileUi(text, { id: 'model', final: true });
+    const element = document.createElement('div');
+    document.body.append(element);
+    const root = createRoot(element);
+    const ModelView = (): never => {
+        throw new Error('No WebGL');
+    };
+    const error = console.error;
+    console.error = () => undefined;
+    try {
+        await act(async () =>
+            root.render(
+                createElement(
+                    ChatHostProvider,
+                    { host: { ...host, ModelView } },
+                    createElement(UiReply, { text, blocks, context: { scopeId: 'media', chatId: 'chat', itemId: 'item', phase: 'final' } })
+                )
+            )
+        );
+        expect(element.querySelector('[role="alert"]')?.textContent).toContain('This model failed to render');
+        expect(element.textContent).toContain('Done');
+        expect(element.querySelector('figcaption')?.textContent).toBe('Bracket');
+    } finally {
+        console.error = error;
+        await act(async () => root.unmount());
+        element.remove();
+    }
+});

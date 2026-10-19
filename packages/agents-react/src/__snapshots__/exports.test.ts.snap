@@ -47,6 +47,7 @@ exports[`the public API . exports these names 1`] = `
   "type TimelineFind",
   "type TimelineFindOptions",
   "type UiMapSource",
+  "type UiModelViewProps",
   "type VisualHost",
   "useChatHost",
   "useChatScope",

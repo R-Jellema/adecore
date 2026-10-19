@@ -2,7 +2,7 @@ import { afterEach, describe, expect, setSystemTime, test } from 'bun:test';
 import { createElement, Fragment, type ComponentType, type ReactElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { compileUiBlock, evaluateUiBlock, UI_CATALOG, UiState, type UiComponentName, type UiViewNode } from '@adecore/intelligent-ui';
-import { ChatHostProvider, type ChatHost } from '../../../host';
+import { ChatHostProvider, type ChatHost, type UiModelViewProps } from '../../../host';
 import { UiPageMemory } from './block-local';
 import { uiChartAxis, uiChartCharacter, uiChartData, uiChartRange, uiChartText, uiChartTextWidth, niceCeiling, UI_CHART_SERIES } from './chart-data';
 import i18next from 'i18next';
@@ -65,7 +65,7 @@ const REVIEW =
 describe('the registry of intelligent UI renderers', () => {
     test('accounts for every catalog name, and only those', () => {
         expect(Object.keys(UI_RENDERERS).sort()).toEqual(Object.keys(UI_CATALOG).sort());
-        expect(Object.keys(UI_RENDERERS)).toHaveLength(44);
+        expect(Object.keys(UI_RENDERERS)).toHaveLength(45);
         const empty = Object.entries(UI_RENDERERS)
             .filter(([, renderer]) => renderer === null)
             .map(([name]) => name)
@@ -648,6 +648,52 @@ describe('content', () => {
         expect(html).toContain('>Never made</figcaption>');
         expect(html).toContain('>Home</figcaption>');
         expect(markup('<Gallery><Image attachment="a1"/></Gallery>')).toContain('aria-label="1 image"');
+    });
+
+    test('a model is drawn by the host in a frame of fixed height, and stays a row without a view or its bytes', () => {
+        const source = '<Model attachment="m1" alt="Bracket">The printed bracket</Model>';
+        const urls: Record<string, { url: string | null; failure: string | null }> = {
+            m1: { url: 'blob:m1', failure: null },
+            gone: { url: null, failure: 'Gone' },
+            waiting: { url: null, failure: null }
+        };
+        const attachments: ChatHost['attachments'] = { useUrl: (_scope, _chat, id) => urls[id]!, read: () => Promise.reject(new Error('Not read here')) };
+        const seen: UiModelViewProps[] = [];
+        const ModelView = (props: UiModelViewProps) => {
+            seen.push(props);
+            return createElement('canvas', { 'data-model': props.url });
+        };
+        host = { attachments };
+        const row = markup(source);
+        expect(row).not.toContain('<canvas');
+        expect(row).toContain('>Bracket</span>');
+        expect(row).toContain('>3D model</span>');
+        expect(row).toContain('The printed bracket</figcaption>');
+        host = { attachments, ModelView };
+        const drawn = markup(source);
+        expect(drawn).toContain('data-model="blob:m1"');
+        expect(drawn).toContain('h-80');
+        expect(drawn).toContain('aria-label="Bracket"');
+        expect(drawn).toContain('The printed bracket</figcaption>');
+        expect(seen.at(-1)).toEqual({
+            scopeId: CONTEXT.scopeId,
+            chatId: CONTEXT.chatId,
+            attachmentId: 'm1',
+            url: 'blob:m1',
+            label: 'Bracket',
+            alt: 'Bracket',
+            caption: 'The printed bracket'
+        });
+        markup('<Model attachment="m1">The bracket</Model>');
+        expect(seen.at(-1)).toMatchObject({ label: 'The bracket', alt: undefined, caption: 'The bracket' });
+        const gone = markup('<Model attachment="gone"/>');
+        expect(gone).not.toContain('<canvas');
+        expect(gone).toContain('>gone</span>');
+        expect(gone).toContain('The model is not available');
+        const waiting = markup('<Model attachment="waiting"/>');
+        expect(waiting).toContain('aria-busy="true"');
+        expect(waiting).toContain('h-80');
+        expect(waiting).not.toContain('<canvas');
     });
 
     test('a comparison wipes between two attachments, labeled, and shows the one left when the other is gone', () => {

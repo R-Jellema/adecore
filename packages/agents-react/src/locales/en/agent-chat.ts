@@ -621,6 +621,11 @@ export default {
             label: 'Image',
             unavailable: 'The image is not available'
         },
+        model: {
+            label: '3D model',
+            unavailable: 'The model is not available',
+            crashed: 'This model failed to render'
+        },
         sources: 'Sources',
         citation: 'Source {{number}}: {{title}}',
         outsideProject: 'Outside the project, shown as text',

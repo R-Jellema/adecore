@@ -52,6 +52,21 @@ Markers are numbered like the list, the picked one is drawn in the accent, and c
 
 A visible block reads its live data at most once every ten seconds, and once more 300 ms after a person changes an input. Choices stay closed until the reading matches the inputs a person sees. [Live queries](/intelligent-ui/host/queries) and [links](/intelligent-ui/host/links) describe the backend side.
 
+## Models
+
+A `Model` asks the host for its view: `ChatHost.ModelView`, a component that gets `UiModelViewProps`. The chat knows no 3D format, so the host picks the viewer and reads the file.
+
+| Prop | What it is |
+| --- | --- |
+| `scopeId`, `chatId` | The chat the block is in. |
+| `attachmentId` | The attachment the block names. |
+| `url` | The attachment's bytes, as `attachments.useUrl` resolved them. |
+| `label` | What the model shows, for a screen reader: the block's `alt`, its caption, or a word for a 3D model. |
+| `alt` | The block's `alt`, when it gave one. |
+| `caption` | The caption as plain text, empty without one. |
+
+The view is drawn only once the attachment has a URL, inside a frame of 320 px high that fills the reply column, with the caption under it; the view fills the frame and draws no caption of its own. While the URL is on its way the frame stands empty, so a late view never moves the thread. A view that throws shows a message in its frame and leaves the rest of the reply standing. Without `ModelView`, or when the attachment is not available, the model is a row with its alt text (or the attachment id) and the caption.
+
 ## Custom renderers
 
 `UI_RENDERERS` maps every catalog component to a renderer. It is typed as `UiRenderers`, so a component added to the catalog fails the typecheck until it has an entry. `Show`, `Each`, `Column` and `Option` map to `null`: the evaluation resolves the first two, and a table and a segmented control read the last two from their own node.

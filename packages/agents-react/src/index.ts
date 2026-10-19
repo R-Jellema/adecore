@@ -15,6 +15,7 @@ export {
     type ReplyAuthor,
     type ChatHost,
     type UiMapSource,
+    type UiModelViewProps,
     type CommandLook,
     type CommandLookMatch,
     type CommandName,

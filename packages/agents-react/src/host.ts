@@ -261,6 +261,23 @@ export type UiMapSource =
     | { state: 'off'; reason: 'disabled' | 'signed-out' | 'unavailable' };
 
 /*
+ * What the host's view of a Model block gets. It is drawn only once the attachment has a URL, inside a frame
+ * of fixed height that the block sizes and captions itself, so the view fills its parent and draws no caption.
+ */
+export interface UiModelViewProps {
+    scopeId: string;
+    chatId: string;
+    attachmentId: string;
+    /* The attachment's bytes, as `attachments.useUrl` resolved them. */
+    url: string;
+    /* What the model shows, for a screen reader: the block's alt, its caption, or a word for a 3D model. */
+    label: string;
+    alt?: string;
+    /* The caption as plain text, empty without one. */
+    caption: string;
+}
+
+/*
  * What the app around the chat decides and the chat cannot, handed to the views by a `ChatHostProvider`.
  * Whatever an app leaves out keeps the default here, which is the chat without that part. One host may
  * serve several scopes, so a function that is about one host of chats is told its scope id.
@@ -313,6 +330,8 @@ export interface ChatHost {
     };
     /* The image a tool read, drawn under its row; null draws none. */
     ReadImage: ComponentType<{ path: string }> | null;
+    /* The 3D view of a Model block; left out, a model shows as a row with its name and caption. */
+    ModelView?: ComponentType<UiModelViewProps>;
     /* An image a reply's markdown names by a path on the host's machine, absolute or under the chat's cwd; left out, the `<img>` stays as written. */
     MarkdownImage?: ComponentType<{ path: string; alt: string }>;
     code: {

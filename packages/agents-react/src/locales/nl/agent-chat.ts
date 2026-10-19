@@ -621,6 +621,11 @@ export default {
             label: 'Afbeelding',
             unavailable: 'De afbeelding is niet beschikbaar'
         },
+        model: {
+            label: '3D-model',
+            unavailable: 'Het model is niet beschikbaar',
+            crashed: 'Dit model kon niet worden getekend'
+        },
         sources: 'Bronnen',
         citation: 'Bron {{number}}: {{title}}',
         outsideProject: 'Buiten het project, als tekst getoond',
