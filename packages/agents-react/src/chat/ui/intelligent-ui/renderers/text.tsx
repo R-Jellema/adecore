@@ -45,7 +45,7 @@ export function SummaryRenderer({ node, children }: UiRendererProps<UiProps<'Sum
     const { tone, badge } = node.props;
     const shown = tone ?? 'neutral';
     return (
-        <div className={clsx('flex items-center gap-3 rounded-xl p-3', tone === undefined ? 'bg-ui-tile' : UI_TONE_SURFACE[tone])}>
+        <div className={clsx('flex items-start gap-3 rounded-xl p-3', tone === undefined ? 'bg-ui-tile' : UI_TONE_SURFACE[tone])}>
             {head && (
                 <span
                     aria-hidden
