@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { expect, test } from 'bun:test';
 
 // A fresh process prevents another test's renderer imports from hiding an eager dependency.
@@ -8,11 +9,11 @@ test('importing the public diff views does not load Pierre or the legacy rendere
                 throw new Error('eager legacy renderer');
             });
         }});
-        await import(${JSON.stringify(new URL('../EditDiff.tsx', import.meta.url).pathname)});
-        await import(${JSON.stringify(new URL('../UnifiedDiff.tsx', import.meta.url).pathname)});
+        await import(${JSON.stringify(fileURLToPath(new URL('../EditDiff.tsx', import.meta.url)))});
+        await import(${JSON.stringify(fileURLToPath(new URL('../UnifiedDiff.tsx', import.meta.url)))});
         let blocked = false;
         try {
-            await import(${JSON.stringify(new URL('./LegacyEditDiff.tsx', import.meta.url).pathname)});
+            await import(${JSON.stringify(fileURLToPath(new URL('./LegacyEditDiff.tsx', import.meta.url)))});
         } catch (error) {
             blocked = String(error).includes('eager legacy renderer');
         }

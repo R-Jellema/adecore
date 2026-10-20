@@ -1,10 +1,11 @@
+import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'bun:test';
 import { Glob } from 'bun';
 import type { ComponentType } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { DemoFrame } from './.vitepress/theme/DemoFrame.tsx';
 
-const HERE = new URL('.', import.meta.url).pathname;
+const HERE = fileURLToPath(new URL('.', import.meta.url));
 
 const demos = [...new Glob('demos/**/*.tsx').scanSync(HERE)].filter((path) => !path.startsWith('demos/shared/')).sort();
 

@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Glob } from 'bun';
 import { describe, expect, test } from 'bun:test';
 
-const HERE = new URL('.', import.meta.url).pathname;
+const HERE = fileURLToPath(new URL('.', import.meta.url));
 
 // This file is left out: its samples below name modules on purpose.
 function sources(): { path: string; text: string }[] {

@@ -1,12 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Glob } from 'bun';
 import { describe, expect, test } from 'bun:test';
 // The docs workspace does not depend on the package, so the test reads its source and its zod directly.
 import { z } from '../packages/intelligent-ui/node_modules/zod';
 import { compileUi, evaluateUiBlock, UiState, type UiNode } from '../packages/intelligent-ui/src/index.ts';
 
-const HERE = new URL('.', import.meta.url).pathname;
+const HERE = fileURLToPath(new URL('.', import.meta.url));
 
 // The sources the examples on the pages read, with the arguments a host would accept for them.
 const QUERY_SCHEMAS = {

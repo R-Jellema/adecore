@@ -1,5 +1,6 @@
 import { $ } from 'bun';
 import opentype from 'opentype.js';
+import { fileURLToPath } from 'node:url';
 
 /*
  * Writes `src/seti-icons.ts` from Seti UI, the set VS Code ships as its default file icon theme. The
@@ -161,7 +162,7 @@ export const SETI_SPRITE_SHEET = ${JSON.stringify(sprite)};
 `;
 
 await Bun.write(OUTPUT, source);
-await $`${OXFMT.pathname} --write ${OUTPUT.pathname}`;
+await $`${fileURLToPath(OXFMT)} --write ${fileURLToPath(OUTPUT)}`;
 if (skipped.size > 0) {
     console.warn(`Not in the font, rules left out: ${[...skipped].join(', ')}.`);
 }

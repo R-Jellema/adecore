@@ -1,8 +1,9 @@
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Glob } from 'bun';
 import { describe, test } from 'bun:test';
 
-const HERE = new URL('.', import.meta.url).pathname;
+const HERE = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = join(HERE, '..');
 const PRELOAD = join(HERE, 'testing/dom/preload.ts');
 

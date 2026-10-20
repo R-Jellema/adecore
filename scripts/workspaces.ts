@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export interface PackageManifest {
     name: string;
@@ -21,7 +22,7 @@ export interface WorkspacePackage {
     manifest: PackageManifest;
 }
 
-export const repositoryRoot = new URL('../', import.meta.url).pathname;
+export const repositoryRoot = fileURLToPath(new URL('../', import.meta.url));
 
 export function discoverPackages(root = repositoryRoot): WorkspacePackage[] {
     return readdirSync(join(root, 'packages'), { withFileTypes: true })

@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { expect, it } from 'bun:test';
 
 /* How many Intl objects importing `entry` builds, counted in a process of its own so no earlier import hides one. */
@@ -26,5 +27,5 @@ function intlBuiltAtImport(entry: string): number {
 }
 
 it('builds no Intl object at import, nor does the document model it imports', () => {
-    expect(intlBuiltAtImport(new URL('./index.ts', import.meta.url).pathname)).toBe(0);
+    expect(intlBuiltAtImport(fileURLToPath(new URL('./index.ts', import.meta.url)))).toBe(0);
 });

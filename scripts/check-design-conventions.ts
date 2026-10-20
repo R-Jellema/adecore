@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { Glob } from 'bun';
 import { designProblemsIn, type DesignOptions } from './design-conventions.ts';
 
-const ROOT = new URL('../', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const packages: { directory: string; options: DesignOptions }[] = [
     {
         directory: 'packages/ui/src',

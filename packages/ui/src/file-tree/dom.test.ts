@@ -1,7 +1,8 @@
+import { fileURLToPath } from 'node:url';
 import { test } from 'bun:test';
 
-const ROOT = new URL('../../', import.meta.url).pathname;
-const PRELOAD = new URL('./testing/preload.ts', import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL('../../', import.meta.url));
+const PRELOAD = fileURLToPath(new URL('./testing/preload.ts', import.meta.url));
 const files = [
     'file-tree/interaction.test.tsx',
     'workspace/interaction.test.tsx',
