@@ -131,8 +131,8 @@ export function scheduledTask(spec: ServiceSpec): string {
         throw new Error('A scheduled task needs the user it starts for.');
     }
     const user = xmlText(spec.user);
+    // No XML declaration: schtasks decodes the file itself and refuses one that names an encoding.
     const lines = [
-        '<?xml version="1.0" encoding="UTF-8"?>',
         '<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">',
         '  <RegistrationInfo>',
         `    <Description>${xmlText(spec.description)}</Description>`,
