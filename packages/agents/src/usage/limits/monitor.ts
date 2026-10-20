@@ -212,10 +212,12 @@ export class UsageMonitor {
                 changed = true;
                 continue;
             }
+            // The next read is counted from when this one started, so a read that takes a few seconds does not push the tick of the clock past its time.
+            const startedAt = this.now();
             const result = await this.read(account);
             const failed = 'unavailable' in result && result.unavailable?.reason === 'failed';
             state.backoffMs = failed ? Math.min(MAX_BACKOFF_MS, state.backoffMs * 2) : PROBE_INTERVAL_MS;
-            state.nextAt = this.now() + state.backoffMs;
+            state.nextAt = startedAt + state.backoffMs;
             if (failed && state.published.windows.length > 0) {
                 // A pass that could not reach the CLI leaves the last good numbers where they are.
                 continue;

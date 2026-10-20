@@ -69,6 +69,28 @@ describe('the usage monitor', () => {
         monitor.stop();
     });
 
+    test('a read that takes a while is read again on the very next tick of the clock', async () => {
+        const MINUTE = 60_000;
+        let now = 0;
+        let passes = 0;
+        const monitor = new UsageMonitor({
+            providers: registry(['claude']),
+            now: () => now,
+            probe: async () => {
+                passes += 1;
+                // The read itself takes a few seconds.
+                now += 5_000;
+                return reading(0.1);
+            }
+        });
+        await monitor.refresh(false);
+        // The interval fires five minutes after the first pass started, which is before five minutes after it ended.
+        now = 5 * MINUTE;
+        await monitor.refresh(false);
+        expect(passes).toBe(2);
+        monitor.stop();
+    });
+
     test('two callers at once share one pass', async () => {
         let passes = 0;
         const monitor = new UsageMonitor({
