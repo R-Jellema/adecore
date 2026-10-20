@@ -98,7 +98,7 @@ const copyFrom = (from: string, name: string): string | null => {
 
 const findCopies = (): Copy[] => {
     const checkout = checkoutFolders();
-    const inside = (path: string): boolean => path === checkout[0] || path.startsWith(`${checkout[0]}/`);
+    const inside = (path: string): boolean => path === checkout[0] || path.startsWith(`${checkout[0]}${sep}`);
     // A run inside the checkout is the library's own; a node_modules above it belongs to no app.
     if (inside(realpathSync(process.cwd()))) {
         return [];
@@ -120,7 +120,7 @@ const findCopies = (): Copy[] => {
                 .filter((path) => existsSync(path))
                 .map((path) => realpathSync(path))
         );
-        return [...theirs].filter((real) => real !== ours).map((real) => ({ theirs: `${real}/`, ours: `${ours}/` }));
+        return [...theirs].filter((real) => real !== ours).map((real) => ({ theirs: `${real}${sep}`, ours: `${ours}${sep}` }));
     });
 };
 
