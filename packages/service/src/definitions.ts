@@ -5,12 +5,18 @@ export interface ServiceSpec {
     args: string[];
     environment: Record<string, string>;
     workingDirectory: string;
-    /* launchd only: where stdout and stderr go. systemd has the journal. */
+    /* launchd and the scheduled task: where stdout and stderr go. systemd has the journal. */
     logFile: string;
+    /* The scheduled task only, which needs it: the account it starts for at logon, as `DOMAIN\\name`. */
+    user?: string;
 }
 
 function xmlText(value: string): string {
     return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function xmlValue(text: string): string {
+    return text.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 }
 
 function plistString(value: string, indent: string): string {
@@ -92,6 +98,111 @@ export function systemdUnit(spec: ServiceSpec): string {
     return lines.join('\n');
 }
 
+// What cmd.exe reads as syntax outside quotes, and so escapes with a caret.
+const CMD_SPECIAL = /([()\][%!^"`<>&|;, *?])/g;
+
+function cmdEscaped(text: string): string {
+    return text.replace(CMD_SPECIAL, '^$1');
+}
+
+/* One argument as the C runtime splits a command line, escaped so cmd.exe passes it on as it is. */
+function cmdArgument(arg: string): string {
+    if (/[\r\n]/.test(arg)) {
+        throw new Error('A scheduled task cannot pass on a line break');
+    }
+    return cmdEscaped(`"${arg.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\*)$/, '$1$1')}"`);
+}
+
+/* The line cmd.exe runs: the environment, the program and the log it appends to. */
+function taskCommandLine(spec: ServiceSpec): string {
+    const variables = Object.entries(spec.environment).map(([name, value]) => `set ${cmdEscaped(`"${name}=${value}"`)}`);
+    const program = [cmdEscaped(spec.program), ...spec.args.map(cmdArgument)].join(' ');
+    return [...variables, `${program} >>${cmdEscaped(spec.logFile)} 2>&1`].join(' && ');
+}
+
+/*
+ * A scheduled task for one person, started at their logon in their own session without a stored
+ * password, and run again every minute so it comes back after a crash: a second instance is ignored
+ * while one runs, and RestartOnFailure only covers a start that failed. A task carries no environment
+ * of its own, so cmd.exe sets it, under a console without a window.
+ */
+export function scheduledTask(spec: ServiceSpec): string {
+    if (spec.user === undefined || spec.user === '') {
+        throw new Error('A scheduled task needs the user it starts for.');
+    }
+    const user = xmlText(spec.user);
+    const lines = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">',
+        '  <RegistrationInfo>',
+        `    <Description>${xmlText(spec.description)}</Description>`,
+        `    <URI>\\${xmlText(spec.label)}</URI>`,
+        '  </RegistrationInfo>',
+        '  <Triggers>',
+        '    <LogonTrigger>',
+        '      <Enabled>true</Enabled>',
+        `      <UserId>${user}</UserId>`,
+        '      <Repetition>',
+        '        <Interval>PT1M</Interval>',
+        '        <StopAtDurationEnd>false</StopAtDurationEnd>',
+        '      </Repetition>',
+        '    </LogonTrigger>',
+        '  </Triggers>',
+        '  <Principals>',
+        '    <Principal id="Author">',
+        `      <UserId>${user}</UserId>`,
+        '      <LogonType>InteractiveToken</LogonType>',
+        '      <RunLevel>LeastPrivilege</RunLevel>',
+        '    </Principal>',
+        '  </Principals>',
+        '  <Settings>',
+        '    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>',
+        '    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>',
+        '    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>',
+        '    <AllowHardTerminate>true</AllowHardTerminate>',
+        '    <StartWhenAvailable>true</StartWhenAvailable>',
+        '    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>',
+        '    <IdleSettings>',
+        '      <StopOnIdleEnd>false</StopOnIdleEnd>',
+        '      <RestartOnIdle>false</RestartOnIdle>',
+        '    </IdleSettings>',
+        '    <AllowStartOnDemand>true</AllowStartOnDemand>',
+        '    <Enabled>true</Enabled>',
+        '    <Hidden>false</Hidden>',
+        '    <RunOnlyIfIdle>false</RunOnlyIfIdle>',
+        '    <WakeToRun>false</WakeToRun>',
+        // The default ends a task after three days.
+        '    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>',
+        // The default, 7, runs a task below normal priority.
+        '    <Priority>5</Priority>',
+        '    <RestartOnFailure>',
+        '      <Interval>PT1M</Interval>',
+        '      <Count>999</Count>',
+        '    </RestartOnFailure>',
+        '  </Settings>',
+        '  <Actions Context="Author">',
+        '    <Exec>',
+        '      <Command>%SystemRoot%\\System32\\conhost.exe</Command>',
+        `      <Arguments>${xmlText(`--headless cmd.exe /d /s /c "${taskCommandLine(spec)}"`)}</Arguments>`,
+        `      <WorkingDirectory>${xmlText(spec.workingDirectory)}</WorkingDirectory>`,
+        '    </Exec>',
+        '  </Actions>',
+        '</Task>',
+        ''
+    ];
+    return lines.join('\r\n');
+}
+
+function scheduledTaskRunsProgram(definition: string, program: string): boolean {
+    const exec = definition.match(/<Exec>[\s\S]*?<\/Exec>/g);
+    if (exec?.length !== 1) {
+        return false;
+    }
+    const args = /<Arguments>([^<]*)<\/Arguments>/.exec(exec[0])?.[1];
+    const line = args === undefined ? undefined : /\/c "([\s\S]*)"$/.exec(xmlValue(args))?.[1];
+    return line !== undefined && (line.split(' && ').at(-1) ?? '').startsWith(`${cmdEscaped(program)} `);
+}
+
 /* Only keys of the outer plist dictionary identify the executable; nested environment keys are data. */
 function launchAgentProgram(definition: string): string | null {
     const xml = definition.replace(/<!--[\s\S]*?-->/g, '');
@@ -162,5 +273,8 @@ function systemdRunsProgram(definition: string, program: string): boolean {
  * Callers sharing a service identity can check executable ownership before replacing its definition.
  */
 export function definitionRunsProgram(definition: string, program: string): boolean {
+    if (/<Task[\s>]/.test(definition)) {
+        return scheduledTaskRunsProgram(definition, program);
+    }
     return definition.trimStart().startsWith('<') ? launchAgentProgram(definition) === xmlText(program) : systemdRunsProgram(definition, program);
 }

@@ -1,4 +1,4 @@
-import { dirname, join } from 'node:path';
+import { dirname, join, win32 } from 'node:path';
 
 export interface CommandResult {
     code: number;
@@ -18,7 +18,7 @@ export interface ServiceFiles {
 }
 
 export interface ServiceManager {
-    readonly kind: 'launchd' | 'systemd';
+    readonly kind: 'launchd' | 'systemd' | 'task-scheduler';
     /* The definition's file. */
     readonly path: string;
     isInstalled(): boolean;
@@ -168,6 +168,84 @@ export function systemdManager(options: SystemdOptions): ServiceManager {
             enable() {
                 expectSuccess(options.run('loginctl', ['enable-linger', options.user]), 'loginctl enable-linger');
             }
+        }
+    };
+}
+
+export interface TaskSchedulerOptions {
+    /* The name of the task, the label of the spec. */
+    taskName: string;
+    /* Where the definition is kept and registered from. */
+    definitionFile: string;
+    logFile: string;
+    run: CommandRunner;
+    files: ServiceFiles;
+    sleep(ms: number): Promise<void>;
+}
+
+/*
+ * A task in the person's own Task Scheduler library, registered with `schtasks` from a copy of the
+ * definition on disk. Creating one for oneself takes no admin. The task runs again every minute, so
+ * a stop also disables it, and a start enables it again.
+ */
+export function taskSchedulerManager(options: TaskSchedulerOptions): ServiceManager {
+    const path = options.definitionFile;
+    const name = options.taskName;
+    const schtasks = (...args: string[]): CommandResult => options.run('schtasks.exe', args);
+    const exists = (): boolean => schtasks('/Query', '/TN', name).code === 0;
+    // schtasks writes the state in the language of the system; PowerShell names it the same everywhere.
+    const isRunning = (): boolean =>
+        options
+            .run('powershell.exe', [
+                '-NoProfile',
+                '-NonInteractive',
+                '-Command',
+                `(Get-ScheduledTask -TaskPath '\\' -TaskName '${name.replace(/'/g, "''")}' -ErrorAction Stop).State`
+            ])
+            .stdout.trim() === 'Running';
+
+    const run = (): void => {
+        expectSuccess(schtasks('/Change', '/TN', name, '/ENABLE'), 'schtasks /Change /ENABLE');
+        expectSuccess(schtasks('/Run', '/TN', name), 'schtasks /Run');
+    };
+
+    return {
+        kind: 'task-scheduler',
+        path,
+        isInstalled: () => options.files.read(path) !== null && exists(),
+        read: () => options.files.read(path),
+        install(definition) {
+            // cmd.exe appends to the log but makes no folder for it, and the task ends at once without one.
+            options.files.makeDirectory(win32.dirname(options.logFile));
+            const previous = options.files.read(path);
+            if (previous !== definition) {
+                options.files.write(path, definition);
+            }
+            if (previous !== definition || !exists()) {
+                expectSuccess(schtasks('/Create', '/TN', name, '/XML', path, '/F'), 'schtasks /Create');
+            }
+            return previous !== null && previous !== definition;
+        },
+        start() {
+            run();
+        },
+        async restart() {
+            if (isRunning()) {
+                schtasks('/End', '/TN', name);
+                // A task that still counts as running ignores the next start.
+                for (let attempt = 0; attempt < 25 && isRunning(); attempt++) {
+                    await options.sleep(200);
+                }
+            }
+            run();
+        },
+        stop() {
+            schtasks('/Change', '/TN', name, '/DISABLE');
+            schtasks('/End', '/TN', name);
+        },
+        uninstall() {
+            schtasks('/Delete', '/TN', name, '/F');
+            options.files.remove(path);
         }
     };
 }

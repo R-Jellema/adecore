@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { launchdManager, systemdManager, type CommandResult, type ServiceFiles } from './manager.js';
+import { launchdManager, systemdManager, taskSchedulerManager, type CommandResult, type ServiceFiles } from './manager.js';
 
 function ok(stdout = ''): CommandResult {
     return { code: 0, stdout, stderr: '' };
@@ -180,5 +180,86 @@ describe('systemdManager', () => {
         expect(runner.calls).not.toContain('loginctl enable-linger bas');
         manager.linger?.enable();
         expect(runner.calls).toContain('loginctl enable-linger bas');
+    });
+});
+
+describe('taskSchedulerManager', () => {
+    const FILE = 'C:\\Users\\bas\\AppData\\Local\\Example\\worker.xml';
+    const QUERY = 'schtasks.exe /Query /TN Example Worker';
+    const CREATE = `schtasks.exe /Create /TN Example Worker /XML ${FILE} /F`;
+    const STATE = "powershell.exe -NoProfile -NonInteractive -Command (Get-ScheduledTask -TaskPath '\\' -TaskName 'Example Worker' -ErrorAction Stop).State";
+    const MISSING: CommandResult = { code: 1, stdout: '', stderr: 'ERROR: The system cannot find the file specified.' };
+
+    const create = (runner: ReturnType<typeof fakeRunner>, disk = memoryFiles()) =>
+        taskSchedulerManager({
+            taskName: 'Example Worker',
+            definitionFile: FILE,
+            logFile: 'C:\\Users\\bas\\AppData\\Local\\Example\\logs\\worker.log',
+            run: runner.run,
+            files: disk.api,
+            sleep: noSleep
+        });
+
+    test('registers the definition from its copy on disk, and again only when it changed or the task went', () => {
+        const runner = fakeRunner({ [QUERY]: [ok(), MISSING] });
+        const disk = memoryFiles();
+        const manager = create(runner, disk);
+        expect(manager.install('<Task/>')).toBe(false);
+        expect(disk.files.get(FILE)).toBe('<Task/>');
+        expect([...disk.directories]).toEqual(['C:\\Users\\bas\\AppData\\Local\\Example\\logs']);
+        expect(manager.install('<Task/>')).toBe(false);
+        expect(manager.install('<Task/>')).toBe(false);
+        expect(manager.install('<Task version="2"/>')).toBe(true);
+        expect(runner.calls).toEqual([CREATE, QUERY, QUERY, CREATE, CREATE]);
+    });
+
+    test('is installed only with the definition on disk and the task registered', () => {
+        const runner = fakeRunner({ [QUERY]: [ok(), MISSING] });
+        const disk = memoryFiles();
+        const manager = create(runner, disk);
+        expect(manager.isInstalled()).toBe(false);
+        disk.files.set(FILE, '<Task/>');
+        expect(manager.isInstalled()).toBe(true);
+        expect(manager.isInstalled()).toBe(false);
+    });
+
+    test('a start enables the task, which a stop disabled, and runs it', () => {
+        const runner = fakeRunner();
+        const manager = create(runner);
+        manager.start();
+        manager.stop();
+        expect(runner.calls).toEqual([
+            'schtasks.exe /Change /TN Example Worker /ENABLE',
+            'schtasks.exe /Run /TN Example Worker',
+            'schtasks.exe /Change /TN Example Worker /DISABLE',
+            'schtasks.exe /End /TN Example Worker'
+        ]);
+    });
+
+    test('restarts by ending the task, waiting until it no longer runs, then running it', async () => {
+        const runner = fakeRunner({ [STATE]: [ok('Running\r\n'), ok('Running\r\n'), ok('Ready\r\n')] });
+        await create(runner).restart();
+        expect(runner.calls).toEqual([
+            STATE,
+            'schtasks.exe /End /TN Example Worker',
+            STATE,
+            STATE,
+            'schtasks.exe /Change /TN Example Worker /ENABLE',
+            'schtasks.exe /Run /TN Example Worker'
+        ]);
+    });
+
+    test('a refused registration is an error that says why', () => {
+        const runner = fakeRunner({ [CREATE]: { code: 1, stdout: '', stderr: 'ERROR: Access is denied.' } });
+        expect(() => create(runner).install('<Task/>')).toThrow('schtasks /Create failed (1): ERROR: Access is denied.');
+    });
+
+    test('uninstalling deletes the task and its definition', () => {
+        const runner = fakeRunner();
+        const disk = memoryFiles();
+        disk.files.set(FILE, '<Task/>');
+        create(runner, disk).uninstall();
+        expect(disk.files.has(FILE)).toBe(false);
+        expect(runner.calls).toEqual(['schtasks.exe /Delete /TN Example Worker /F']);
     });
 });

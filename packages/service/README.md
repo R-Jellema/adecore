@@ -1,6 +1,6 @@
 # @adecore/service
 
-Definitions and managers for macOS launchd GUI jobs and Linux systemd user services, with everything they touch injected. The host supplies the identity, paths, environment, commands and files. Deciding who may install a service and which executable it runs stays with the host.
+Definitions and managers for macOS launchd GUI jobs, Linux systemd user services and Windows scheduled tasks at logon, with everything they touch injected. The host supplies the identity, paths, environment, commands and files. Deciding who may install a service and which executable it runs stays with the host.
 
 ```sh
 bun add @adecore/service

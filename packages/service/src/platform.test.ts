@@ -38,7 +38,22 @@ describe('platform selection', () => {
     test('does not create a manager on unsupported platforms', () => {
         expect(platformServiceManager('win32', options)).toBeNull();
         expect(platformServiceManager('freebsd', options)).toBeNull();
-        expect(() => serviceDefinition('win32', spec)).toThrow('unsupported');
+        expect(() => serviceDefinition('freebsd', spec)).toThrow('unsupported');
+    });
+    test('manages a scheduled task on Windows once it has the options for one', () => {
+        const manager = platformServiceManager('win32', {
+            ...options,
+            taskScheduler: {
+                taskName: 'Example Worker',
+                definitionFile: 'C:\\Users\\ada\\AppData\\Local\\Example\\worker.xml',
+                logFile: 'C:\\Users\\ada\\AppData\\Local\\Example\\worker.log',
+                run: () => ({ code: 0, stdout: '', stderr: '' }),
+                files: { read: () => null, write() {}, remove() {}, makeDirectory() {} },
+                sleep: async () => {}
+            }
+        });
+        expect(manager?.kind).toBe('task-scheduler');
+        expect(serviceDefinition('win32', { ...spec, user: 'PC\\ada' })).toContain('<UserId>PC\\ada</UserId>');
     });
     test('renders caller environment and description without adding product defaults', () => {
         expect(serviceDefinition('darwin', spec)).toContain('<key>WORKER_HOME</key>');

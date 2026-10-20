@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { definitionRunsProgram, launchAgentPlist, systemdUnit, type ServiceSpec } from './definitions.js';
+import { definitionRunsProgram, launchAgentPlist, scheduledTask, systemdUnit, type ServiceSpec } from './definitions.js';
 
 const MAC: ServiceSpec = {
     label: 'com.example.worker',
@@ -20,6 +20,67 @@ const LINUX: ServiceSpec = {
     workingDirectory: '/home/bas',
     logFile: '/home/bas/.config/Example/logs/daemon.log'
 };
+
+const WINDOWS: ServiceSpec = {
+    label: 'Example Worker',
+    description: 'Example worker',
+    program: 'C:\\Users\\bas\\AppData\\Local\\Programs\\Example\\resources\\bin\\worker.exe',
+    args: ['--port', '4210'],
+    environment: { WORKER_HOME: 'C:\\Users\\bas\\.worker', PATH: 'C:\\Program Files\\Git\\cmd;C:\\Windows\\System32' },
+    workingDirectory: 'C:\\Users\\bas',
+    logFile: 'C:\\Users\\bas\\AppData\\Local\\Example\\logs\\daemon.log',
+    user: 'DESKTOP-1\\bas'
+};
+
+function taskArguments(definition: string): string {
+    return /<Arguments>([^<]*)<\/Arguments>/.exec(definition)![1]!.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+}
+
+describe('scheduledTask', () => {
+    test('the task of a packaged app', () => {
+        expect(scheduledTask(WINDOWS)).toMatchSnapshot();
+    });
+
+    test('starts for the one user at logon, in their session, and never stores a password', () => {
+        const task = scheduledTask(WINDOWS);
+        expect(task).toContain('<LogonTrigger>\r\n      <Enabled>true</Enabled>\r\n      <UserId>DESKTOP-1\\bas</UserId>');
+        expect(task).toContain('<LogonType>InteractiveToken</LogonType>');
+        expect(task).toContain('<RunLevel>LeastPrivilege</RunLevel>');
+        expect(task).toContain('<ExecutionTimeLimit>PT0S</ExecutionTimeLimit>');
+        expect(task).toContain('<MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>');
+    });
+
+    test('sets the environment, runs the program and appends to the log under a console without a window', () => {
+        expect(taskArguments(scheduledTask(WINDOWS))).toBe(
+            '--headless cmd.exe /d /s /c "' +
+                'set ^"WORKER_HOME=C:\\Users\\bas\\.worker^" && ' +
+                'set ^"PATH=C:\\Program^ Files\\Git\\cmd^;C:\\Windows\\System32^" && ' +
+                'C:\\Users\\bas\\AppData\\Local\\Programs\\Example\\resources\\bin\\worker.exe ^"--port^" ^"4210^" ' +
+                '>>C:\\Users\\bas\\AppData\\Local\\Example\\logs\\daemon.log 2>&1"'
+        );
+    });
+
+    test('escapes what cmd.exe and XML would read as syntax', () => {
+        const task = scheduledTask({ ...WINDOWS, args: ['a "b" & c', '100%', 'C:\\dir\\'], environment: {}, workingDirectory: 'C:\\a&b' });
+        expect(taskArguments(task)).toContain('^"a^ \\^"b\\^"^ ^&^ c^" ^"100^%^" ^"C:\\dir\\\\^"');
+        expect(task).toContain('<WorkingDirectory>C:\\a&amp;b</WorkingDirectory>');
+    });
+
+    test('needs the user it starts for, and refuses a line break cmd.exe would cut at', () => {
+        expect(() => scheduledTask({ ...WINDOWS, user: undefined })).toThrow('needs the user');
+        expect(() => scheduledTask({ ...WINDOWS, args: ['a\nb'] })).toThrow('line break');
+    });
+
+    test('tells a task that runs a program from one that runs another', () => {
+        expect(definitionRunsProgram(scheduledTask(WINDOWS), WINDOWS.program)).toBe(true);
+        expect(definitionRunsProgram(scheduledTask({ ...WINDOWS, args: [] }), WINDOWS.program)).toBe(true);
+        expect(definitionRunsProgram(scheduledTask({ ...WINDOWS, program: `${WINDOWS.program}.old` }), WINDOWS.program)).toBe(false);
+        expect(definitionRunsProgram(scheduledTask({ ...WINDOWS, program: 'C:\\other.exe', args: [WINDOWS.program] }), WINDOWS.program)).toBe(false);
+        expect(definitionRunsProgram(scheduledTask({ ...WINDOWS, program: 'C:\\other.exe', environment: { WORKER: WINDOWS.program } }), WINDOWS.program)).toBe(
+            false
+        );
+    });
+});
 
 describe('launchAgentPlist', () => {
     test('the LaunchAgent of a packaged app', () => {

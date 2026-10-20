@@ -3,9 +3,9 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { CommandResult, ServiceFiles } from './manager.js';
 
-/* The real launchctl, systemctl and loginctl under a service manager, bounded so a hung one cannot hold up a quit. */
+/* The real launchctl, systemctl, loginctl and schtasks under a service manager, bounded so a hung one cannot hold up a quit. */
 export function runCommand(command: string, args: string[]): CommandResult {
-    const result = spawnSync(command, args, { encoding: 'utf8', timeout: 15_000, stdio: ['ignore', 'pipe', 'pipe'] });
+    const result = spawnSync(command, args, { encoding: 'utf8', timeout: 15_000, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true });
     return { code: result.status ?? 1, stdout: result.stdout ?? '', stderr: result.stderr || result.error?.message || '' };
 }
 

@@ -1,7 +1,7 @@
 {
   "name": "@adecore/service",
   "version": "0.0.0",
-  "description": "User service definitions and injectable launchd and systemd managers.",
+  "description": "User service definitions and injectable launchd, systemd and Task Scheduler managers.",
   "license": "FSL-1.1-MIT",
   "author": "Bas Milius",
   "repository": {

@@ -3,7 +3,7 @@
 A manager puts a definition on disk and starts, restarts and stops the service through the platform's own commands. Creating one runs nothing and registers nothing, so there is nothing to dispose.
 
 ```ts
-import { launchdManager, systemdManager, type ServiceManager } from '@adecore/service/manager';
+import { launchdManager, systemdManager, taskSchedulerManager, type ServiceManager } from '@adecore/service/manager';
 import { platformServiceManager } from '@adecore/service/platform';
 import { diskFiles, runCommand } from '@adecore/service/system';
 ```
@@ -12,7 +12,7 @@ import { diskFiles, runCommand } from '@adecore/service/system';
 
 | Member | |
 | --- | --- |
-| `kind` | `'launchd'` or `'systemd'`. |
+| `kind` | `'launchd'`, `'systemd'` or `'task-scheduler'`. |
 | `path` | Where the definition lives. |
 | `isInstalled()` | Whether a definition is on disk. It does not look at a running process. |
 | `read()` | The definition on disk, or `null`. |
@@ -59,15 +59,30 @@ Every member but `restart` is synchronous. A manager has no queue, lock or cance
 
 A user unit stops when the person's last session ends. `manager.linger?.enabled()` asks `loginctl show-user <user> --property=Linger --value` and is true only when it prints `yes`. `manager.linger?.enable()` runs `loginctl enable-linger <user>` and throws when that fails. Nothing calls it for you, and there is no way back through the package. It changes the person's account for every user service, so ask them first.
 
+## Task Scheduler
+
+`taskSchedulerManager(options)` registers the task in the root of the person's Task Scheduler library with `schtasks.exe`, from a copy of the definition it keeps at `definitionFile`. A task for oneself with an `InteractiveToken` takes no admin and stores no password.
+
+| `TaskSchedulerOptions` | |
+| --- | --- |
+| `taskName` | The name of the task, usually the label of the spec. |
+| `definitionFile` | Where the copy of the definition lives; `path` is this file. |
+| `logFile` | The log file of the spec. `install` creates its folder, since `cmd.exe` makes none and the task ends without it. |
+| `run` | A `CommandRunner`. |
+| `files` | A `ServiceFiles`. |
+| `sleep(ms)` | Resolves after `ms` milliseconds; `restart` waits with it. |
+
+`isInstalled` is true when the copy is on disk and `schtasks /Query` finds the task. `install` writes a changed copy and runs `schtasks /Create /XML /F` when the copy changed or the task is gone; it starts nothing. Since the task runs again every minute, `stop` runs `/Change /DISABLE` before `/End`, and `start` runs `/Change /ENABLE` before `/Run`: a stopped task stays stopped, also at the next logon, until something starts it. `restart` runs `/End`, waits until the task no longer runs (25 times 200ms at most), then starts it; it reads the state through `Get-ScheduledTask` in PowerShell, because `schtasks` writes it in the language of the system. `uninstall` runs `/Delete /F` and removes the copy, without checking the result. A deleted task cannot be stopped through the manager any more, so stop it first.
+
 ## Picking the platform
 
-`platformServiceManager(platform, { launchd, systemd })` returns the launchd manager on `darwin`, the systemd manager on `linux` and `null` elsewhere. `PlatformServiceOptions` needs both sets of options in full. Check for `null` before you call `serviceDefinition`, which throws on an unsupported platform.
+`platformServiceManager(platform, { launchd, systemd, taskScheduler })` returns the launchd manager on `darwin`, the systemd manager on `linux`, the Task Scheduler manager on `win32` when `taskScheduler` is given, and `null` elsewhere. `PlatformServiceOptions` needs the launchd and systemd options in full. Check for `null` before you call `serviceDefinition`, which throws on an unsupported platform.
 
 ## Adapters
 
 A `CommandRunner` is `(command, args) => CommandResult`, where `CommandResult` is `{ code, stdout, stderr }`. It is synchronous on purpose: a service is often stopped while the app quits, and quitting cannot wait on a promise. `ServiceFiles` has `read(path)`, which returns the text or `null`, `write(path, text)`, `remove(path)` and `makeDirectory(path)`, which creates every parent.
 
-`@adecore/service/system` holds the adapters that touch the machine. `runCommand` uses `spawnSync` without a shell, with stdin closed and a 15 second timeout per command; a missing exit code becomes `1` and a spawn error lands in `stderr`. `diskFiles` reads with `readFileSync`, creates the parent folder before it writes and removes a file with `force`. Its `read` returns `null` on any error, a missing permission included; pass a stricter adapter where that difference matters.
+`@adecore/service/system` holds the adapters that touch the machine. `runCommand` uses `spawnSync` without a shell, with stdin closed, no console window on Windows and a 15 second timeout per command; a missing exit code becomes `1` and a spawn error lands in `stderr`. `diskFiles` reads with `readFileSync`, creates the parent folder before it writes and removes a file with `force`. Its `read` returns `null` on any error, a missing permission included; pass a stricter adapter where that difference matters.
 
 ## Testing
 
