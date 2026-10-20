@@ -7,7 +7,7 @@ import { describe, expect, test } from 'bun:test';
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 
 function sources(): string[] {
-    return [...new Glob('**/*.{ts,tsx}').scanSync(HERE)];
+    return [...new Glob('**/*.{ts,tsx}').scanSync(HERE)].map((path) => path.replaceAll('\\', '/'));
 }
 
 /* Every module a file names, in a static import, an export or a lazy `import()`. */

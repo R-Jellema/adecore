@@ -9,6 +9,7 @@ const HERE = fileURLToPath(new URL('.', import.meta.url));
 // This file is left out: its samples below name modules on purpose.
 function sources(): { path: string; text: string }[] {
     return [...new Glob('**/*.ts').scanSync(HERE)]
+        .map((path) => path.replaceAll('\\', '/'))
         .filter((path) => path !== 'boundary.test.ts')
         .map((path) => ({ path, text: readFileSync(join(HERE, path), 'utf8') }));
 }

@@ -8,7 +8,9 @@ const HERE = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = join(HERE, '..');
 
 const sources = (): { path: string; text: string }[] =>
-    [...new Glob('**/*.{ts,tsx,css}').scanSync(HERE)].map((path) => ({ path, text: readFileSync(join(HERE, path), 'utf8') }));
+    [...new Glob('**/*.{ts,tsx,css}').scanSync(HERE)]
+        .map((path) => path.replaceAll('\\', '/'))
+        .map((path) => ({ path, text: readFileSync(join(HERE, path), 'utf8') }));
 
 describe('the boundary of the package', () => {
     test('the code and the readme never name an app that uses the package', () => {

@@ -12,7 +12,10 @@ interface Source {
     readonly text: string;
 }
 
-const sources = (): Source[] => [...new Glob('**/*.{ts,tsx,css,json}').scanSync(HERE)].map((path) => ({ path, text: readFileSync(join(HERE, path), 'utf8') }));
+const sources = (): Source[] =>
+    [...new Glob('**/*.{ts,tsx,css,json}').scanSync(HERE)]
+        .map((path) => path.replaceAll('\\', '/'))
+        .map((path) => ({ path, text: readFileSync(join(HERE, path), 'utf8') }));
 
 const isCode = ({ path }: Source): boolean => /\.tsx?$/.test(path) && !/\.test\.tsx?$/.test(path);
 

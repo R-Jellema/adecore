@@ -7,7 +7,7 @@ const HERE = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = join(HERE, '..');
 const PRELOAD = join(HERE, 'testing/dom/preload.ts');
 
-const files = [...new Glob('**/*.interaction.test.tsx').scanSync(HERE)].sort();
+const files = [...new Glob('**/*.interaction.test.tsx').scanSync(HERE)].map((path) => path.replaceAll('\\', '/')).sort();
 
 /*
  * The interaction tests need a DOM from the first import on (see `preload.ts`), which no other test in

@@ -66,7 +66,7 @@ export function exportedNames(file: string, seen = new Set<string>()): string[] 
 /* Every TypeScript entry point of every package that is published, a wildcard export expanded to its modules. */
 export function publishedEntries(): PublishedEntry[] {
     const entries: PublishedEntry[] = [];
-    for (const manifest of [...new Glob('packages/*/package.json').scanSync({ cwd: ROOT })].sort()) {
+    for (const manifest of [...new Glob('packages/*/package.json').scanSync({ cwd: ROOT })].map((path) => path.replaceAll('\\', '/')).sort()) {
         const json = JSON.parse(readFileSync(join(ROOT, manifest), 'utf8')) as { name: string; private?: boolean; exports?: Record<string, unknown> };
         if (json.private === true) {
             continue;
@@ -82,7 +82,9 @@ export function publishedEntries(): PublishedEntry[] {
                 continue;
             }
             const [before, after] = source.split('*') as [string, string];
-            for (const path of [...new Glob(source.replace('*', '**/*')).scanSync({ cwd: join(ROOT, folder) })].sort()) {
+            for (const path of [...new Glob(source.replace('*', '**/*')).scanSync({ cwd: join(ROOT, folder) })]
+                .map((path) => path.replaceAll('\\', '/'))
+                .sort()) {
                 if (!/\.test\.tsx?$/.test(path)) {
                     const module = relative(before, path).slice(0, -after.length);
                     entries.push({ pkg: json.name, entry: entry.replace('*', module), file: join(folder, path) });

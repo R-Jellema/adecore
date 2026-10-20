@@ -46,6 +46,7 @@ const packages: { directory: string; options: DesignOptions }[] = [
 let failures = 0;
 for (const { directory, options } of packages) {
     const sources = [...new Glob('**/*.{ts,tsx}').scanSync(join(ROOT, directory))]
+        .map((path) => path.replaceAll('\\', '/'))
         .filter((path) => !path.endsWith('.test.ts') && !path.endsWith('.test.tsx'))
         .sort()
         .map((path) => ({ path, text: readFileSync(join(ROOT, directory, path), 'utf8') }));

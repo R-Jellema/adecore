@@ -8,7 +8,7 @@ const HERE = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = join(HERE, '..');
 
 const sources = (): { path: string; text: string }[] =>
-    [...new Glob('**/*.ts').scanSync(HERE)].map((path) => ({ path, text: readFileSync(join(HERE, path), 'utf8') }));
+    [...new Glob('**/*.ts').scanSync(HERE)].map((path) => path.replaceAll('\\', '/')).map((path) => ({ path, text: readFileSync(join(HERE, path), 'utf8') }));
 
 describe('the boundary of the package', () => {
     test('the bridge never imports Electron, so a preload and a page can read it', () => {

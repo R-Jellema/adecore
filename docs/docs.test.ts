@@ -10,6 +10,7 @@ const SNAPSHOT = readFileSync(join(HERE, '../packages/ui/src/__snapshots__/expor
 
 function filesIn(pattern: string): { path: string; text: string }[] {
     return [...new Glob(pattern).scanSync({ cwd: HERE, dot: true })]
+        .map((path) => path.replaceAll('\\', '/'))
         .filter((path) => !/(^|\/)(node_modules|dist|cache)\//.test(path))
         .map((path) => ({ path, text: readFileSync(join(HERE, path), 'utf8') }));
 }

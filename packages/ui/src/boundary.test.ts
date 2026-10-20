@@ -8,7 +8,9 @@ const HERE = fileURLToPath(new URL('.', import.meta.url));
 const ROOT = join(HERE, '..');
 
 const sources = (): { path: string; text: string }[] =>
-    [...new Glob('**/*.{ts,tsx,css,json}').scanSync(HERE)].map((path) => ({ path, text: readFileSync(join(HERE, path), 'utf8') }));
+    [...new Glob('**/*.{ts,tsx,css,json}').scanSync(HERE)]
+        .map((path) => path.replaceAll('\\', '/'))
+        .map((path) => ({ path, text: readFileSync(join(HERE, path), 'utf8') }));
 
 /* What an app has and a library never reaches: an app's alias, a path out of `src`, or a package of an app. */
 const REACHES_OUT = /from ['"](?:@\/|~\/|(?:\.\.\/)+(?:\.\.\/|apps\/|packages\/)|@ruimte\/|@aftermotion\/|@command-center\/)/;
