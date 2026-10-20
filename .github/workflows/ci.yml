@@ -341,7 +341,7 @@ jobs:
     runs-on: ubuntu-latest
     name: ✅ Check, test and build
     if: ${{ always() }}
-    needs: [changes, verify, docs, helper-integration, helper, pack, packages]
+    needs: [changes, verify, windows, windows-helper, docs, helper-integration, helper, pack, packages]
     steps:
       - name: Check all results
         env:
