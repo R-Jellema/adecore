@@ -191,6 +191,7 @@ export const sidebar: DefaultTheme.SidebarMulti = {
             ['Host', '/agents/host'],
             ['Chats and turns', '/agents/chats'],
             ['Providers', '/agents/providers'],
+            ['ACP agents', '/agents/acp'],
             ['Accounts and usage', '/agents/accounts'],
             ['Coordination', '/agents/coordination'],
             ['Context commands', '/agents/context-commands'],

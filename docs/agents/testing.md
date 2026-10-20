@@ -11,6 +11,7 @@ Every fake comes from `@adecore/agents/testing`, except `memoryPortPair()`, whic
 | `inProcess(cli)`                | A `spawn` that runs a fake CLI in the process. `started` lists every run.            |
 | `fakeClaude`                    | Claude Code's stream-json protocol.                                                  |
 | `fakeCodex`, `fakeCodexWith`    | Codex's app-server protocol, the second with options.                                |
+| `fakeAcp`, `fakeAcpWith`        | An agent on the Agent Client Protocol, the second with options (`FakeAcpOptions`).   |
 | `memoryPortPair()`              | Two ends of a `FramePort` in one process; a frame arrives as a copy, a moment later. |
 | `ManualClock`                   | Time for the outbox that moves when you say.                                         |
 | `FakeWatch`, `EventLog`         | File changes you raise yourself, and a log of events to wait on.                     |

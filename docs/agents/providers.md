@@ -7,6 +7,8 @@ A provider is one agent CLI as the host knows it: its models, what it can do, ho
 | Claude Code | `claude -p` with stream-json in and out           | `CLAUDE_CONFIG_DIR`, else `~/.claude`       |
 | Codex       | `codex app-server`, JSON-RPC over stdio           | `CODEX_HOME`, else `~/.codex`               |
 
+An agent that speaks the Agent Client Protocol needs no backend of its own: [ACP agents](/agents/acp) makes it a provider from a spec.
+
 The CLI stays up between turns. Claude Code reports a file change as the text before and after and folds its context with a prompt; Codex reports unified diffs, streams tool output, folds its context natively and has questions that can wait, but reports no cost and takes no reason with a denial. `provider.list` answers each one's [capabilities](/agent-contracts/providers-and-accounts#providers): offer a control only when the capability is there. The test fixtures were captured from particular versions of each CLI; they show what the backends were built against, not a minimum version.
 
 ## The registry
