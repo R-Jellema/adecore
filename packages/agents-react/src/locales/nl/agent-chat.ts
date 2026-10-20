@@ -434,6 +434,8 @@ export default {
             search: 'Modellen zoeken',
             noProvider: 'Geen chat-CLI geïnstalleerd',
             noMatch: 'Geen modellen gevonden',
+            allGroup_one: 'Modellen ({{count}})',
+            allGroup_other: 'Modellen ({{count}})',
             legacyGroup_one: 'Legacy-modellen ({{count}})',
             legacyGroup_other: 'Legacy-modellen ({{count}})',
             legacy: 'Legacy',

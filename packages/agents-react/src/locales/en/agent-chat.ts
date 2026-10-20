@@ -434,6 +434,8 @@ export default {
             search: 'Search models',
             noProvider: 'No chat provider installed',
             noMatch: 'No models match',
+            allGroup_one: 'Models ({{count}})',
+            allGroup_other: 'Models ({{count}})',
             legacyGroup_one: 'Legacy models ({{count}})',
             legacyGroup_other: 'Legacy models ({{count}})',
             legacy: 'Legacy',
