@@ -44,6 +44,41 @@ function assistant(id: string, seconds: number, output: number): string {
 }
 
 describe('the usage scanner', () => {
+    test('reads the log of the API of Claude with its cache writes, and finds it again from the saved index', async () => {
+        const { home } = await workspace();
+        const folder = join(home, '..', 'claude-api', 'usage');
+        await mkdir(folder, { recursive: true });
+        // Anthropic reports the input apart from both cache kinds, and bills a write above it.
+        const line = JSON.stringify({
+            at: Date.parse('2026-10-20T09:00:00.000Z'),
+            model: 'claude-sonnet-5-5',
+            session: 's-1',
+            cwd: '/work/repo',
+            input: 120,
+            cacheRead: 9000,
+            cacheWrite: 400,
+            output: 250,
+            reasoning: 0
+        });
+        await writeFile(
+            join(folder, '2026-10.jsonl'),
+            `${line}
+`
+        );
+
+        const root = { provider: 'anthropic-claude-api', path: folder } as const;
+        const scanner = new UsageScanner(home, [root]);
+        expect((await scanner.scan()).roots).toEqual([{ provider: 'anthropic-claude-api', path: folder, status: 'ok', message: null }]);
+        expect(scanner.records().map((record) => [record.provider, record.totals])).toEqual([
+            ['anthropic-claude-api', { calls: 1, input: 120, cacheRead: 9000, cacheWrite: 400, cacheWrite1h: 0, output: 250, reasoning: 0 }]
+        ]);
+
+        // The index it saved still names the provider, so a restart reads nothing again.
+        const warm = new UsageScanner(home, [root]);
+        expect((await warm.scan()).changedFiles).toBe(0);
+        expect(warm.records().map((record) => record.provider)).toEqual(['anthropic-claude-api']);
+    });
+
     test('reads the log of a provider with no transcripts, and a call appended later once', async () => {
         const { home } = await workspace();
         const folder = join(home, '..', 'nanogpt', 'usage');

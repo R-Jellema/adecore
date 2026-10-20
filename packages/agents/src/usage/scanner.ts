@@ -12,7 +12,7 @@ import { cloneCodexState, codexMightCarryUsage, createCodexState, parseCodexLine
 import { usageRoots, type UsageRootPath } from './roots.ts';
 
 /* The providers whose usage is a log their host writes, each call a line, and not a transcript of a CLI's. */
-const API_LOGS: ReadonlySet<UsageProvider> = new Set(['nanogpt']);
+const API_LOGS: ReadonlySet<UsageProvider> = new Set(['nanogpt', 'anthropic-claude-api']);
 
 const HASH_CHUNK_BYTES = 65536;
 
