@@ -1,4 +1,4 @@
-import { dirname } from 'node:path';
+import { basename, dirname } from 'node:path';
 import { workflowAgentIdOf, type ChatInfo, type ChatItem, type ChatSubagentChangedEvent, type ChatSubagentResult } from '@adecore/agent-contracts';
 import { SYSTEM_WATCH, type DirectoryWatcher, type WatchSeams } from '../watch-seam.ts';
 import { findSubagentsDir, findWorkflowAgent, readSubagentMetas, TranscriptProjection, type SubagentMeta } from './claude-transcript.ts';
@@ -411,7 +411,7 @@ export class SubagentReader {
         for (const key of this.dirWatches.get(dir)?.keys ?? []) {
             const path = this.claudeFiles.get(key)?.path;
             // A platform that names no file could mean any of them.
-            if (filename === null || (path !== undefined && path.endsWith(`/${filename}`))) {
+            if (filename === null || (path !== undefined && basename(path) === filename)) {
                 this.markChanged(key);
             }
         }
