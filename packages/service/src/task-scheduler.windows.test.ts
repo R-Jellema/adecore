@@ -26,7 +26,10 @@ function processes(): string {
 describe.skipIf(!enabled)('a scheduled task on Windows', () => {
     test('starts with its environment, restarts, stops with what it started and goes', async () => {
         const folder = mkdtempSync(join(tmpdir(), 'task scheduler '));
-        const reports = join(folder, 'reports');
+        // Apart from the folder the task works in, so a report outlives a failed removal of that one.
+        const reports = mkdtempSync(join(tmpdir(), 'task-reports-'));
+        const steps: string[] = [];
+        const step = (name: string): void => void steps.push(`${Date.now()} ${name}`);
         const logFile = join(folder, 'log folder', 'worker.log');
         const taskName = `adecore-test-${process.pid}`;
         const value = 'a b & c %PATH% ^d! "e"';
@@ -35,7 +38,7 @@ describe.skipIf(!enabled)('a scheduled task on Windows', () => {
             [
                 "const { mkdirSync, writeFileSync } = require('node:fs');",
                 `mkdirSync(${JSON.stringify(reports)}, { recursive: true });`,
-                `writeFileSync(require('node:path').join(${JSON.stringify(reports)}, process.pid + '.json'), JSON.stringify({ pid: process.pid, value: process.env.EXAMPLE_VALUE, cwd: process.cwd() }));`,
+                `writeFileSync(require('node:path').join(${JSON.stringify(reports)}, process.pid + '.json'), JSON.stringify({ pid: process.pid, at: Date.now(), value: process.env.EXAMPLE_VALUE, cwd: process.cwd() }));`,
                 "console.log('worker started');",
                 'setInterval(() => undefined, 1000);',
                 ''
@@ -49,7 +52,7 @@ describe.skipIf(!enabled)('a scheduled task on Windows', () => {
             files: diskFiles,
             sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms))
         });
-        const started = (): Array<{ pid: number; value: string; cwd: string }> => {
+        const started = (): Array<{ pid: number; at: number; value: string; cwd: string }> => {
             try {
                 return readdirSync(reports).map((name) => JSON.parse(readFileSync(join(reports, name), 'utf8')));
             } catch {
@@ -70,7 +73,9 @@ describe.skipIf(!enabled)('a scheduled task on Windows', () => {
                     }
                 })();
                 const query = runCommand('schtasks.exe', ['/Query', '/TN', taskName, '/V', '/FO', 'LIST']);
-                throw new Error(`${what} did not happen.\nLog:\n${log}\nTask:\n${query.stdout}${query.stderr}\nProcesses:\n${processes()}`);
+                throw new Error(
+                    `${what} did not happen.\nLog:\n${log}\nTask:\n${query.stdout}${query.stderr}\nSteps:\n${steps.join('\n')}\nStarted:\n${JSON.stringify(started())}\nProcesses:\n${processes()}`
+                );
             }
         };
         try {
@@ -87,6 +92,7 @@ describe.skipIf(!enabled)('a scheduled task on Windows', () => {
             expect(manager.install(definition)).toBe(false);
             expect(manager.isInstalled()).toBe(true);
 
+            step('start');
             manager.start();
             await until(() => started().length === 1, 'The first start');
             const [first] = started();
@@ -94,17 +100,22 @@ describe.skipIf(!enabled)('a scheduled task on Windows', () => {
             expect(first!.cwd.toLowerCase()).toBe(folder.toLowerCase());
             expect(readFileSync(logFile, 'utf8')).toContain('worker started');
 
+            step('restart');
             await manager.restart();
+            step('restarted');
             await until(() => started().length === 2, 'The restart');
             await until(() => !alive(first!.pid), 'The end of the first worker');
             const second = started().find((report) => report.pid !== first!.pid)!;
             expect(alive(second.pid)).toBe(true);
 
+            step('stop');
             manager.stop();
             await until(() => !alive(second.pid), 'The stop');
+            step('stopped');
         } finally {
             manager.stop();
             manager.uninstall();
+            step('uninstalled');
             // The ended task lets go of its working folder a moment later.
             await until(() => {
                 try {
@@ -114,6 +125,7 @@ describe.skipIf(!enabled)('a scheduled task on Windows', () => {
                     return false;
                 }
             }, 'Removing the folder');
+            rmSync(reports, { recursive: true, force: true });
         }
         expect(manager.isInstalled()).toBe(false);
     }, 120_000);
