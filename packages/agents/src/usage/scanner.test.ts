@@ -54,9 +54,10 @@ describe('the usage scanner', () => {
                 model: 'z-ai/glm-5.3',
                 session: 's-1',
                 cwd: '/work/repo',
-                prompt: 1000,
-                cached: 0,
-                completion,
+                input: 1000,
+                cacheRead: 0,
+                cacheWrite: 0,
+                output: completion,
                 reasoning: 0
             })}\n`;
         await writeFile(join(folder, '2026-10.jsonl'), line(0, 100));

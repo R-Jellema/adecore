@@ -7,9 +7,12 @@ import { isNotFound, writeAtomic } from '../fs.ts';
 import { decodeIndex, encodeIndex, type IndexedFile, type UsageIndex } from './index-file.ts';
 import { foldByKey, type UsageRecord } from './record.ts';
 import { claudeMightCarryUsage, parseClaudeLine } from './readers/claude.ts';
-import { nanoGptMightCarryUsage, parseNanoGptLine } from './readers/nanogpt.ts';
+import { apiLogMightCarryUsage, parseApiLogLine } from './readers/api-log.ts';
 import { cloneCodexState, codexMightCarryUsage, createCodexState, parseCodexLine, type CodexParserState } from './readers/codex.ts';
 import { usageRoots, type UsageRootPath } from './roots.ts';
+
+/* The providers whose usage is a log their host writes, each call a line, and not a transcript of a CLI's. */
+const API_LOGS: ReadonlySet<UsageProvider> = new Set(['nanogpt']);
 
 const HASH_CHUNK_BYTES = 65536;
 
@@ -119,9 +122,9 @@ function parseChunk(text: string, provider: UsageProvider, from: number, state: 
                 }
                 continue;
             }
-            if (provider === 'nanogpt') {
-                if (nanoGptMightCarryUsage(line)) {
-                    const record = parseNanoGptLine(line);
+            if (API_LOGS.has(provider)) {
+                if (apiLogMightCarryUsage(line)) {
+                    const record = parseApiLogLine(line, provider);
                     if (record !== null) {
                         records.push(record);
                     }
