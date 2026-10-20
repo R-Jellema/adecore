@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { ChatAssistantItem, ChatToolItem, ChatTurnItem, ChatUserItem } from '@adecore/agent-contracts';
+import type { ChatAssistantItem, ChatToolItem, ChatTurnItem, ChatUserItem, ChatVisual } from '@adecore/agent-contracts';
 import type { TimelineRow } from '../../logic/timeline';
 import { replyHeader, rowRhythm } from './row-rhythm';
 
@@ -14,6 +14,9 @@ function prose(id: string): TimelineRow {
 }
 function call(id: string): TimelineRow {
     return { kind: 'work', id, tool: { id, kind: 'tool' } as ChatToolItem };
+}
+function visual(id: string): TimelineRow {
+    return { kind: 'visual', id, visual: { id } as ChatVisual };
 }
 
 describe('the gaps a row wears', () => {
@@ -30,6 +33,11 @@ describe('the gaps a row wears', () => {
     test('two rows of one rhythm sit tight against each other', () => {
         expect(rowRhythm(call('w2'), call('w1'))).toBe('');
         expect(rowRhythm(prose('a2'), prose('a1'))).toBe('');
+    });
+
+    test('the row under a visual gets the block gap', () => {
+        expect(rowRhythm(prose('a1'), visual('v1'))).toBe('pt-(--chat-block-gap)');
+        expect(rowRhythm(visual('v1'), prose('a1'))).toBe('');
     });
 
     // A question already carries the gap before it, and the row after one is its answer.
