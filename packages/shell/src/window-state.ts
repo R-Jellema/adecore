@@ -67,6 +67,29 @@ export interface WindowStateStorage {
     write(text: string): void;
 }
 
+// Windows refuses a rename while an indexer or a virus scanner holds the target; a few short retries cover it.
+const RENAME_RETRIES = 5;
+const RENAME_RETRY_MS = 40;
+
+function isTransient(e: unknown): boolean {
+    return typeof e === 'object' && e !== null && 'code' in e && (e.code === 'EPERM' || e.code === 'EBUSY' || e.code === 'EACCES');
+}
+
+export function renameRetrying(from: string, to: string, rename: (from: string, to: string) => void = renameSync): void {
+    for (let attempt = 0; ; attempt++) {
+        try {
+            rename(from, to);
+            return;
+        } catch (e) {
+            if (!isTransient(e) || attempt >= RENAME_RETRIES) {
+                throw e;
+            }
+            // A synchronous wait: the write runs in a timer of the main process and has no promise to wait on.
+            Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, RENAME_RETRY_MS);
+        }
+    }
+}
+
 /* A JSON file, written through a file beside it so a crash halfway leaves the last whole one. */
 export const fileStorage = (path: string): WindowStateStorage => ({
     read: () => {
@@ -78,7 +101,7 @@ export const fileStorage = (path: string): WindowStateStorage => ({
     },
     write: (text) => {
         writeFileSync(`${path}.tmp`, text);
-        renameSync(`${path}.tmp`, path);
+        renameRetrying(`${path}.tmp`, path);
     }
 });
 
