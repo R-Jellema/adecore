@@ -44,6 +44,37 @@ function assistant(id: string, seconds: number, output: number): string {
 }
 
 describe('the usage scanner', () => {
+    test('reads the log of a provider with no transcripts, and a call appended later once', async () => {
+        const { home } = await workspace();
+        const folder = join(home, '..', 'nanogpt', 'usage');
+        await mkdir(folder, { recursive: true });
+        const line = (seconds: number, completion: number): string =>
+            `${JSON.stringify({
+                at: Date.parse('2026-10-20T09:00:00.000Z') + seconds * 1000,
+                model: 'z-ai/glm-5.3',
+                session: 's-1',
+                cwd: '/work/repo',
+                prompt: 1000,
+                cached: 0,
+                completion,
+                reasoning: 0
+            })}\n`;
+        await writeFile(join(folder, '2026-10.jsonl'), line(0, 100));
+
+        const scanner = new UsageScanner(home, [{ provider: 'nanogpt', path: folder }]);
+        expect((await scanner.scan()).roots).toEqual([{ provider: 'nanogpt', path: folder, status: 'ok', message: null }]);
+        expect(scanner.records().map((record) => [record.provider, record.totals.input, record.totals.output])).toEqual([['nanogpt', 1000, 100]]);
+
+        await writeFile(join(folder, '2026-10.jsonl'), line(0, 100) + line(60, 250));
+        await scanner.scan();
+        expect(scanner.records().map((record) => record.totals.output)).toEqual([100, 250]);
+
+        // A fresh scanner starts from the index it saved, and the provider survives the round trip.
+        const warm = new UsageScanner(home, [{ provider: 'nanogpt', path: folder }]);
+        expect((await warm.scan()).changedFiles).toBe(0);
+        expect(warm.records().map((record) => record.provider)).toEqual(['nanogpt', 'nanogpt']);
+    });
+
     test('reads both roots, keeps the index and opens nothing on a second pass', async () => {
         const { home, claude, codex, roots } = await workspace();
         await writeFile(join(claude, 'a.jsonl'), assistant('msg_1', 0, 40) + assistant('msg_2', 5, 60));

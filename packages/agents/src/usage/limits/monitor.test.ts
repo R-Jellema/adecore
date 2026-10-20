@@ -164,3 +164,54 @@ describe('the usage monitor', () => {
         });
     });
 });
+
+describe('a plan the host reads itself', () => {
+    const reading = (used: number): ProbeResult => ({
+        plan: 'Subscription',
+        windows: [{ id: 'weekly_input', kind: 'weekly', label: 'Weekly', used, resetsAt: 2_000, durationMs: 7 * 24 * 60 * 60_000 }],
+        cost: null
+    });
+
+    test('answers for a provider with no CLI, without an environment or an installed check', async () => {
+        const probed: string[] = [];
+        const monitor = new UsageMonitor({
+            providers: registry([]),
+            probe: (kind) => {
+                probed.push(kind);
+                return Promise.resolve(reading(0));
+            },
+            plans: { nanogpt: () => Promise.resolve(reading(0.4)) }
+        });
+        await monitor.refresh(true);
+        expect(providerOf(monitor, 'nanogpt')).toMatchObject({ plan: 'Subscription', source: 'probe', unavailable: null });
+        expect(providerOf(monitor, 'nanogpt').windows[0]).toMatchObject({ id: 'weekly_input', used: 0.4 });
+        // The CLIs keep going through the probe, and the provider with a plan of its own never does.
+        expect(probed).not.toContain('nanogpt');
+        monitor.stop();
+    });
+
+    test('what it says is the whole story, a missing key included', async () => {
+        const monitor = new UsageMonitor({
+            providers: registry([]),
+            plans: { nanogpt: () => Promise.resolve({ unavailable: { reason: 'no-subscription', message: 'Add an API key in Settings' } }) }
+        });
+        await monitor.refresh(true);
+        expect(providerOf(monitor, 'nanogpt').unavailable).toEqual({ reason: 'no-subscription', message: 'Add an API key in Settings' });
+        monitor.stop();
+    });
+
+    test('a read that throws is a failed read and keeps the last good numbers', async () => {
+        let fail = false;
+        const monitor = new UsageMonitor({
+            providers: registry([]),
+            plans: {
+                nanogpt: () => (fail ? Promise.reject(new Error('offline')) : Promise.resolve(reading(0.4)))
+            }
+        });
+        await monitor.refresh(true);
+        fail = true;
+        await monitor.refresh(true);
+        expect(providerOf(monitor, 'nanogpt').windows[0]).toMatchObject({ used: 0.4 });
+        monitor.stop();
+    });
+});

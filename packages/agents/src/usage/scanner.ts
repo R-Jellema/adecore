@@ -1,12 +1,13 @@
 import { createHash, type Hash } from 'node:crypto';
 import { mkdir, open, readFile, readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
-import type { UsageRoot } from '@adecore/agent-contracts';
+import type { UsageProvider, UsageRoot } from '@adecore/agent-contracts';
 import { errorText } from '../error-text.ts';
 import { isNotFound, writeAtomic } from '../fs.ts';
 import { decodeIndex, encodeIndex, type IndexedFile, type UsageIndex } from './index-file.ts';
 import { foldByKey, type UsageRecord } from './record.ts';
 import { claudeMightCarryUsage, parseClaudeLine } from './readers/claude.ts';
+import { nanoGptMightCarryUsage, parseNanoGptLine } from './readers/nanogpt.ts';
 import { cloneCodexState, codexMightCarryUsage, createCodexState, parseCodexLine, type CodexParserState } from './readers/codex.ts';
 import { usageRoots, type UsageRootPath } from './roots.ts';
 
@@ -98,7 +99,7 @@ async function listJsonl(dir: string, out: string[] = []): Promise<string[]> {
  * after the last newline is a line still being written, so it is parsed for what it is worth and
  * read again next time. The Codex state is snapshotted before that tail for the same reason.
  */
-function parseChunk(text: string, provider: 'claude' | 'codex', from: number, state: CodexParserState | null): ParsedFile {
+function parseChunk(text: string, provider: UsageProvider, from: number, state: CodexParserState | null): ParsedFile {
     const end = text.lastIndexOf('\n');
     const whole = end === -1 ? '' : text.slice(0, end);
     const tail = text.slice(end + 1);
@@ -112,6 +113,15 @@ function parseChunk(text: string, provider: 'claude' | 'codex', from: number, st
             if (provider === 'claude') {
                 if (claudeMightCarryUsage(line)) {
                     const record = parseClaudeLine(line);
+                    if (record !== null) {
+                        records.push(record);
+                    }
+                }
+                continue;
+            }
+            if (provider === 'nanogpt') {
+                if (nanoGptMightCarryUsage(line)) {
+                    const record = parseNanoGptLine(line);
                     if (record !== null) {
                         records.push(record);
                     }
@@ -265,7 +275,7 @@ export class UsageScanner {
         return foldByKey(all);
     }
 
-    private async readFileInto(path: string, provider: 'claude' | 'codex', accountOf: AccountOf): Promise<boolean> {
+    private async readFileInto(path: string, provider: UsageProvider, accountOf: AccountOf): Promise<boolean> {
         const info = await stat(path);
         const known = this.index.get(path);
         if (known !== undefined && known.provider === provider && known.size === info.size && known.mtimeMs === info.mtimeMs) {

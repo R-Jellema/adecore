@@ -147,7 +147,7 @@ export function decodeIndex(text: string): UsageIndex {
     const accounts = Array.isArray(document.accounts) ? document.accounts : [];
     const name = (table: string[], at: number): string | null => (typeof table[at] === 'string' ? table[at] : null);
     for (const [path, file] of Object.entries(document.files ?? {})) {
-        if (file.p !== 'claude' && file.p !== 'codex') {
+        if (file.p !== 'claude' && file.p !== 'codex' && file.p !== 'nanogpt') {
             continue;
         }
         if (typeof file.s !== 'number' || typeof file.m !== 'number' || typeof file.o !== 'number' || file.o < 0 || !Array.isArray(file.r)) {
