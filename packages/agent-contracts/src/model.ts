@@ -33,6 +33,8 @@ export const ModelInfoSchema = z.object({
     slug: z.string().min(1),
     name: z.string(),
     badge: z.string().optional(),
+    // Who made the model, for a provider that offers many: the picker groups by it. Absent when the provider does not say.
+    vendor: z.string().optional(),
     legacy: z.boolean(),
     isDefault: z.boolean(),
     options: z.array(ModelOptionDescriptorSchema),
@@ -61,6 +63,7 @@ export const ModelCatalogEntrySchema = z.object({
     slug: ModelSlugSchema,
     name: z.string().min(1),
     badge: z.string().optional(),
+    vendor: z.string().optional(),
     profile: z.string().min(1),
     aliases: z.array(z.string().min(1)).optional(),
     legacy: z.boolean().optional(),

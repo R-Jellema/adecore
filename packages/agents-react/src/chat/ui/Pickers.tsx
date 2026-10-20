@@ -62,6 +62,7 @@ export function ModelPicker({
     const { t } = useTranslation('agent-chat');
     const [query, setQuery] = useState('');
     const [legacyOpen, setLegacyOpen] = useState(false);
+    const [expanded, setExpanded] = useState<ReadonlySet<AgentKind>>(new Set());
     const [index, setIndex] = useState(0);
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
@@ -72,7 +73,10 @@ export function ModelPicker({
     const grouped = providers.length > 1;
     const trimmed = query.trim().toLowerCase();
 
-    const entries = useMemo(() => pickerEntriesOf(providers, trimmed, legacyOpen), [providers, trimmed, legacyOpen]);
+    const entries = useMemo(
+        () => pickerEntriesOf(providers, trimmed, legacyOpen, expanded, { provider, model: selection.model }),
+        [providers, trimmed, legacyOpen, expanded, provider, selection.model]
+    );
     const scope = useContext(ChatScopeContext);
     const machine = host.useMachineLabel(scope?.id ?? '');
     const reported = useReportedModels(provider);
@@ -85,6 +89,7 @@ export function ModelPicker({
         if (!next) {
             setQuery('');
             setLegacyOpen(false);
+            setExpanded(new Set());
         }
         setIndex(0);
         onOpenChange(next);
@@ -101,6 +106,18 @@ export function ModelPicker({
         }
         if (entry.kind === 'legacy') {
             setLegacyOpen(true);
+            inputRef.current?.focus();
+            return;
+        }
+        if (entry.kind === 'all') {
+            const kind = entry.provider.kind;
+            setExpanded((now) => {
+                const next = new Set(now);
+                if (!next.delete(kind)) {
+                    next.add(kind);
+                }
+                return next;
+            });
             inputRef.current?.focus();
             return;
         }
@@ -165,6 +182,30 @@ export function ModelPicker({
                         </div>
                     )}
                     {entries.map((entry, i) => {
+                        if (entry.kind === 'all') {
+                            const before = entries[i - 1];
+                            const header = grouped && (before === undefined || before.kind === 'legacy' || before.provider.kind !== entry.provider.kind);
+                            return (
+                                <div key={`all-${entry.provider.kind}`}>
+                                    {header && (
+                                        <Menu.Label className="flex items-center gap-1.5">
+                                            <AgentIcon kind={entry.provider.kind} size={12} />
+                                            {entry.provider.name}
+                                        </Menu.Label>
+                                    )}
+                                    <button
+                                        data-active={i === index}
+                                        aria-expanded={entry.open}
+                                        className="cursor-row flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-xs text-text-muted"
+                                        onMouseEnter={() => setIndex(i)}
+                                        onClick={() => choose(entry)}
+                                    >
+                                        <Icon icon={entry.open ? ChevronDown : ChevronRight} size={12} />
+                                        {t('pickers.model.allGroup', { count: entry.count })}
+                                    </button>
+                                </div>
+                            );
+                        }
                         if (entry.kind === 'legacy') {
                             return (
                                 <button
@@ -180,7 +221,17 @@ export function ModelPicker({
                             );
                         }
                         const previous = entries[i - 1];
-                        const first = grouped && (previous === undefined || previous.kind !== 'model' || previous.provider.kind !== entry.provider.kind);
+                        // A provider's rows start where the one before it ended; its row that opens the rest belongs to it.
+                        const first = grouped && (previous === undefined || previous.kind === 'legacy' || previous.provider.kind !== entry.provider.kind);
+                        // The makers read as groups only where the whole list is shown, so a short list is not cut by labels.
+                        const vendorOpen = trimmed !== '' || expanded.has(entry.provider.kind);
+                        const vendorFirst =
+                            vendorOpen &&
+                            entry.model.vendor !== undefined &&
+                            (previous === undefined ||
+                                previous.kind !== 'model' ||
+                                previous.provider.kind !== entry.provider.kind ||
+                                previous.model.vendor !== entry.model.vendor);
                         const requirement = requirementOf(entry);
                         const next = entries[i + 1];
                         const lastOfGroup = next === undefined || next.kind !== 'model' || next.provider.kind !== entry.provider.kind;
@@ -193,6 +244,7 @@ export function ModelPicker({
                                         {entry.provider.name}
                                     </Menu.Label>
                                 )}
+                                {vendorFirst && <div className="px-2.5 pt-2 pb-0.5 text-xs font-medium text-text-faint">{entry.model.vendor}</div>}
                                 <button
                                     role="option"
                                     aria-selected={chosen}
