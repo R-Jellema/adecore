@@ -14,7 +14,7 @@ async function assets(directory: string): Promise<void> {
         if (entry.isDirectory()) {
             await assets(path);
         } else if (!/\.tsx?$/.test(path)) {
-            const target = path.replace(/^src\//, 'dist/');
+            const target = path.replace(/^src[\\/]/, 'dist/');
             await mkdir(dirname(target), { recursive: true });
             await copyFile(path, target);
         }
