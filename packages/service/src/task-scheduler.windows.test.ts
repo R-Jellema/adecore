@@ -100,7 +100,15 @@ describe.skipIf(!enabled)('a scheduled task on Windows', () => {
         } finally {
             manager.stop();
             manager.uninstall();
-            rmSync(folder, { recursive: true, force: true });
+            // The ended task lets go of its working folder a moment later.
+            await until(() => {
+                try {
+                    rmSync(folder, { recursive: true, force: true });
+                    return true;
+                } catch {
+                    return false;
+                }
+            }, 'Removing the folder');
         }
         expect(manager.isInstalled()).toBe(false);
     }, 120_000);
