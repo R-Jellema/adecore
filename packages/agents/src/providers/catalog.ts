@@ -41,6 +41,7 @@ export class ModelCatalog {
             slug: model.slug,
             name: model.name,
             badge: model.badge,
+            ...(model.vendor === undefined ? {} : { vendor: model.vendor }),
             legacy: model.legacy === true,
             isDefault: model.slug === this.data.defaultModel,
             options: this.profileOf(model.slug)?.options ?? [],

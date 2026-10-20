@@ -18,6 +18,21 @@ describe('ModelCatalog', () => {
         expect(models.find((model) => model.slug === 'claude-haiku-4-5')?.legacy).toBe(true);
     });
 
+    test('a model carries who made it when the catalog says so, and nothing when it does not', () => {
+        const own = new ModelCatalog({
+            updatedAt: '2026-10-20T00:00:00.000Z',
+            defaultModel: 'a/one',
+            profiles: { plain: { options: [], contextWindowTokens: {} } },
+            models: [
+                { slug: 'a/one', name: 'One', profile: 'plain', vendor: 'Acme' },
+                { slug: 'b/two', name: 'Two', profile: 'plain' }
+            ]
+        });
+        expect(own.list().map((model) => model.vendor)).toEqual(['Acme', undefined]);
+        expect('vendor' in own.list()[1]!).toBe(false);
+        expect(catalog.list().some((model) => model.vendor !== undefined)).toBe(false);
+    });
+
     test('fast mode is an option of the models that offer it, off by default', () => {
         const options = (slug: string) => catalog.list().find((model) => model.slug === slug)?.options ?? [];
         expect(options('claude-opus-5').find((option) => option.id === 'fastMode')).toMatchObject({ type: 'boolean', defaultValue: false });
