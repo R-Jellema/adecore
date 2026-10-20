@@ -10,6 +10,15 @@ const EVERY_CHANGE = 7;
 /* Folders whose files a server hears about only when a pattern of its own names the folder. */
 const SPARING_FOLDERS = ['node_modules', 'vendor', '.git'];
 
+/* A Windows path with forward slashes and its drive in capitals, so it compares with a pattern and a root however it was written. A POSIX path is left alone, a backslash being part of a name there. */
+function slashed(path: string): string {
+    if (!/^[A-Za-z]:[\\/]/.test(path) && !path.startsWith('\\\\')) {
+        return path;
+    }
+    const forward = path.replaceAll('\\', '/');
+    return /^[a-z]:/.test(forward) ? `${forward[0]!.toUpperCase()}${forward.slice(1)}` : forward;
+}
+
 function relativeTo(root: string, path: string): string | null {
     const prefix = root.endsWith('/') ? root : `${root}/`;
     return path.startsWith(prefix) ? path.slice(prefix.length) : null;
@@ -22,7 +31,7 @@ function patternOf(watcher: FileSystemWatcher): { base: string | undefined; patt
         return { base: undefined, pattern: globPattern };
     }
     const base = fileUriToPath(typeof globPattern.baseUri === 'string' ? globPattern.baseUri : globPattern.baseUri.uri);
-    return base === null ? null : { base, pattern: globPattern.pattern };
+    return base === null ? null : { base: slashed(base), pattern: globPattern.pattern };
 }
 
 /*
@@ -30,8 +39,9 @@ function patternOf(watcher: FileSystemWatcher): { base: string | undefined; patt
  * (or absolute), a relative pattern to its own base. A path inside `node_modules`, `vendor` or `.git` only
  * matches a pattern that names that folder, since `**` over a dependency tree is what a server never means.
  */
-export function watchesFile(watchers: readonly FileSystemWatcher[], root: string, path: string, type: FileChangeType): boolean {
-    const inProject = relativeTo(root, path);
+export function watchesFile(watchers: readonly FileSystemWatcher[], root: string, changed: string, type: FileChangeType): boolean {
+    const path = slashed(changed);
+    const inProject = relativeTo(slashed(root), path);
     const segments = (inProject ?? path).split('/');
     return watchers.some((watcher) => {
         if (((watcher.kind ?? EVERY_CHANGE) & (1 << (type - 1))) === 0) {
@@ -42,7 +52,7 @@ export function watchesFile(watchers: readonly FileSystemWatcher[], root: string
             return false;
         }
         const { base, pattern } = parts;
-        const subject = pattern.startsWith('/') ? path : base === undefined ? inProject : relativeTo(base, path);
+        const subject = pattern.startsWith('/') || /^[A-Za-z]:\//.test(pattern) ? path : base === undefined ? inProject : relativeTo(base, path);
         if (subject === null || !globMatch(subject, pattern)) {
             return false;
         }

@@ -50,6 +50,22 @@ describe('watchesFile', () => {
         expect(watchesFile([{ globPattern: '/work/app/**/*.lock' }], root, '/work/app/a/b.lock', 2)).toBe(true);
     });
 
+    it('matches a Windows path with either separator against a root, a base and an absolute pattern', () => {
+        const windows = 'C:\\work\\app';
+        expect(watchesFile([{ globPattern: '**/*.ts' }], windows, 'C:\\work\\app\\src\\a.ts', 2)).toBe(true);
+        expect(watchesFile([{ globPattern: 'src/*.ts' }], 'c:/work/app/', 'C:\\work\\app\\src\\a.ts', 2)).toBe(true);
+        expect(
+            watchesFile(
+                [{ globPattern: { baseUri: 'file:///c%3A/work/app/packages/ui', pattern: '**/*.css' } }],
+                windows,
+                'C:\\work\\app\\packages\\ui\\a.css',
+                2
+            )
+        ).toBe(true);
+        expect(watchesFile([{ globPattern: 'C:/work/app/**/*.lock' }], windows, 'C:\\work\\app\\a\\b.lock', 2)).toBe(true);
+        expect(watchesFile([{ globPattern: '**/*.ts' }], windows, 'C:\\work\\app\\node_modules\\x\\index.ts', 2)).toBe(false);
+    });
+
     it('keeps dependency folders and git internals out unless the pattern names them', () => {
         expect(watchesFile([{ globPattern: '**/*.ts' }], root, '/work/app/node_modules/x/index.ts', 2)).toBe(false);
         expect(watchesFile([{ globPattern: '**/*.php' }], root, '/work/app/vendor/acme/Thing.php', 1)).toBe(false);
