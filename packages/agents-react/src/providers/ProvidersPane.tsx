@@ -68,8 +68,9 @@ export function ProvidersPane({ target = null, detailOf, defaults = true }: Prov
     const loginBlocked = host.useLoginBlocked(scopeId);
     const [picked, setPicked] = useState<Picked | null>(() => (target === 'providers.apple' ? { kind: 'cli', cli: 'apple' } : null));
 
-    const installed = useMemo(() => providers.filter((provider) => provider.installed || provider.kind === 'apple'), [providers]);
-    const missing = useMemo(() => providers.filter((provider) => !provider.installed && provider.kind !== 'apple'), [providers]);
+    // A provider that never runs in a terminal is no CLI to install: it is turned on in its own detail, so it is always listed.
+    const installed = useMemo(() => providers.filter((provider) => provider.installed || !provider.capabilities.terminal), [providers]);
+    const missing = useMemo(() => providers.filter((provider) => !provider.installed && provider.capabilities.terminal), [providers]);
     const entriesOf = (kind: AgentKind): AccountEntry[] => accountsOfKind(accounts, kind);
     const canAddAccount = (kind: AgentKind): boolean => accounts?.loginCommands?.[kind] !== undefined;
 
@@ -120,7 +121,7 @@ export function ProvidersPane({ target = null, detailOf, defaults = true }: Prov
                 >
                     <CliMark kind={cli.kind} />
                     <span className="min-w-0 grow truncate text-xs font-medium text-text">{cli.name}</span>
-                    {cli.kind !== 'apple' && cli.version && <span className="shrink-0 font-mono text-code text-text-faint">{cli.version}</span>}
+                    {cli.capabilities.terminal && cli.version && <span className="shrink-0 font-mono text-code text-text-faint">{cli.version}</span>}
                 </ListRow>
                 {entries.map((entry) => {
                     const name = accountName(entry, cli.name);

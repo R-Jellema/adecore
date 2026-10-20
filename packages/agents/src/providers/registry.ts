@@ -94,6 +94,11 @@ export class ProviderRegistry {
         );
     }
 
+    /* The kinds this host offers, in the order every menu lists them. */
+    kinds(): AgentKind[] {
+        return this.providers.map((provider) => provider.kind);
+    }
+
     /* The provider of a kind, one this host does not offer included. */
     get(kind: AgentKind): ChatProvider {
         return this.providers.find((provider) => provider.kind === kind) ?? this.fallback(kind);

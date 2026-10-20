@@ -477,3 +477,15 @@ describe('ProviderAccountsService', () => {
         expect(() => service.watchLogin('nobody')).toThrow("The account 'nobody' is not available");
     });
 });
+
+describe('ProviderAccountsService kinds', () => {
+    test('holds a default account only for the CLIs the host offers', () => {
+        const service = new ProviderAccountsService({ home: NOWHERE, providers: { ...providers, kinds: () => ['claude', 'grok'] }, env, secrets: null });
+        expect(Object.keys(service.snapshot().accounts)).toEqual(['claude', 'grok']);
+    });
+
+    test('a host that names no kinds gets one for every kind this version knows', () => {
+        const service = new ProviderAccountsService({ home: NOWHERE, providers, env, secrets: null });
+        expect(Object.keys(service.snapshot().accounts)).toEqual(['claude', 'codex', 'gemini', 'copilot', 'apple']);
+    });
+});
