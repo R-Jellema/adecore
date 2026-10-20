@@ -231,8 +231,8 @@ describe('taskSchedulerManager', () => {
         expect(runner.calls).toEqual([
             'schtasks.exe /Change /TN Example Worker /ENABLE',
             'schtasks.exe /Run /TN Example Worker',
-            'schtasks.exe /Change /TN Example Worker /DISABLE',
-            'schtasks.exe /End /TN Example Worker'
+            'schtasks.exe /End /TN Example Worker',
+            'schtasks.exe /Change /TN Example Worker /DISABLE'
         ]);
     });
 

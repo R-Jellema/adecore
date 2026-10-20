@@ -240,8 +240,9 @@ export function taskSchedulerManager(options: TaskSchedulerOptions): ServiceMana
             run();
         },
         stop() {
-            schtasks('/Change', '/TN', name, '/DISABLE');
+            // schtasks ends no instance of a task that is disabled already.
             schtasks('/End', '/TN', name);
+            schtasks('/Change', '/TN', name, '/DISABLE');
         },
         uninstall() {
             schtasks('/Delete', '/TN', name, '/F');
