@@ -2,6 +2,7 @@ import { ErrorCodes, JsonRpcConnection, LspError, type RequestHandler } from './
 import { LspDocument } from './document.ts';
 import { createsTaken, deletesTaken, renamesTaken, type CreatedFile, type DeletedFile, type RenamedFile } from './file-operations.ts';
 import { globMatch } from './glob.ts';
+import { fileUriKey } from './uris.ts';
 import type { ResourceOperationKind } from './workspace-operations.ts';
 import type {
     ApplyWorkspaceEditParams,
@@ -173,11 +174,11 @@ export class LspSession {
         });
         this.connection.onNotification('textDocument/publishDiagnostics', (params) => {
             const diagnostics = params as PublishDiagnosticsParams;
-            const document = this.documents.get(diagnostics.uri);
+            const document = this.documents.get(fileUriKey(diagnostics.uri));
             if (!document || document.isClosed || (diagnostics.version !== undefined && diagnostics.version !== document.version)) {
                 return;
             }
-            this.emitDiagnostics(diagnostics);
+            this.emitDiagnostics({ ...diagnostics, uri: document.uri });
         });
         this.connection.onRequest('workspace/configuration', async (params) => {
             const { items } = params as { items: ConfigurationItem[] };
@@ -275,16 +276,16 @@ export class LspSession {
 
     openDocument(item: DocumentItem): LspDocument {
         this.assertReady();
-        if (this.documents.has(item.uri)) {
+        if (this.documents.has(fileUriKey(item.uri))) {
             throw new LspError(`Document already open: ${item.uri}`);
         }
         const document = new LspDocument(this, item);
-        this.documents.set(item.uri, document);
+        this.documents.set(fileUriKey(item.uri), document);
         return document;
     }
 
     getDocument(uri: string): LspDocument | undefined {
-        return this.documents.get(uri);
+        return this.documents.get(fileUriKey(uri));
     }
 
     /* The options the server gave a method, from its capabilities or a registration whose selector takes `document`. */
@@ -453,10 +454,10 @@ export class LspSession {
 
     /* Called by a document that closed, so its diagnostics go with it. */
     forgetDocument(document: LspDocument): void {
-        if (this.documents.get(document.uri) !== document) {
+        if (this.documents.get(fileUriKey(document.uri)) !== document) {
             return;
         }
-        this.documents.delete(document.uri);
+        this.documents.delete(fileUriKey(document.uri));
         this.emitDiagnostics({ uri: document.uri, diagnostics: [] });
     }
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'bun:test';
-import { fileUriToPath, pathToFileUri } from './uris.ts';
+import { fileUriKey, fileUriToPath, pathToFileUri } from './uris.ts';
 
 describe('file URIs', () => {
     it('encodes each segment of a POSIX path and decodes it again', () => {
@@ -33,5 +33,12 @@ describe('file URIs', () => {
         expect(uri).toBe('file:///tmp/a%5Cb.ts');
         expect(pathToFileUri('//tmp/a.ts')).toBe('file:////tmp/a.ts');
         expect(fileUriToPath(uri)).toBe('/tmp/a\\b.ts');
+    });
+
+    it('gives every way of writing a Windows drive one key, and leaves any other URI its own', () => {
+        expect(fileUriKey('file:///c%3A/work/My%20App/a.ts')).toBe('file:///C:/work/My%20App/a.ts');
+        expect(fileUriKey('file:///c:/work/a.ts')).toBe(fileUriKey('file:///C:/work/a.ts'));
+        expect(fileUriKey('file:///Users/bas/a.ts')).toBe('file:///Users/bas/a.ts');
+        expect(fileUriKey('untitled:1')).toBe('untitled:1');
     });
 });

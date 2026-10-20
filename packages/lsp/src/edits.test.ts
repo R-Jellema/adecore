@@ -119,6 +119,14 @@ describe('workspace edit planning', () => {
         expect(snapshots.get('file:///a')?.text).toBe('old');
     });
 
+    it('edits a Windows file however the server writes its drive, under the URI the snapshot has', () => {
+        const edit = { range: { start: origin, end: { line: 0, character: 3 } }, newText: 'new' };
+        const snapshots = new Map([['file:///C:/work/a.ts', { text: 'old', version: 1 }]]);
+        expect(planWorkspaceEdit({ changes: { 'file:///c%3A/work/a.ts': [edit] } }, snapshots)).toEqual([
+            { uri: 'file:///C:/work/a.ts', version: 1, before: 'old', text: 'new' }
+        ]);
+    });
+
     it('plans a file the edit creates with the text the edit after the create writes into it', () => {
         const created = 'file:///b.php';
         const snapshots = new Map([['file:///a.php', { text: 'class A {}', version: 4 }]]);

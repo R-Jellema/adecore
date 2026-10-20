@@ -242,6 +242,18 @@ describe('versioned language documents', () => {
         await session.shutdown();
     });
 
+    it('takes diagnostics for a Windows file under the way a server writes its drive, and reports them under the open URI', async () => {
+        const { session, transport } = await sessionWith();
+        const document = session.openDocument({ uri: 'file:///C:/work/main.ts', languageId: 'typescript', text: '' });
+        const observed: unknown[] = [];
+        session.onDiagnostics((params) => observed.push(params));
+        const diagnostic = { range: { start: origin, end: origin }, message: 'current' };
+        transport.emit({ jsonrpc: '2.0', method: 'textDocument/publishDiagnostics', params: { uri: 'file:///c%3A/work/main.ts', diagnostics: [diagnostic] } });
+        expect(observed).toEqual([{ uri: 'file:///C:/work/main.ts', diagnostics: [diagnostic] }]);
+        expect(session.getDocument('file:///c:/work/main.ts')).toBe(document);
+        await session.shutdown();
+    });
+
     it('holds a closing URI until didClose has been sent, so reopening cannot reorder lifecycle messages', async () => {
         const { session, transport } = await sessionWith({ hoverProvider: true });
         const item = { uri: 'file:///main.ts', languageId: 'typescript', text: '' };

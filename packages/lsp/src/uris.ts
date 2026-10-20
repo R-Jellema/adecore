@@ -38,3 +38,15 @@ export function fileUriToPath(uri: string): string | null {
     }
     return path;
 }
+
+/*
+ * One key for every way a URI can name the same Windows file: servers write the drive in either
+ * case, and some escape its colon (`file:///c%3A/...`). Any other URI is its own key.
+ */
+export function fileUriKey(uri: string): string {
+    const path = fileUriToPath(uri);
+    if (path === null || !/^[A-Za-z]:\\/.test(path)) {
+        return uri;
+    }
+    return pathToFileUri(`${path[0]!.toUpperCase()}${path.slice(1)}`);
+}

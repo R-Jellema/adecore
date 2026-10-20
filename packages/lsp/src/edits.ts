@@ -1,5 +1,6 @@
 import { ErrorCodes, LspError } from './connection.ts';
 import type { ContentChange, CreateFile, Position, TextEdit, WorkspaceEdit } from './protocol.ts';
+import { fileUriKey } from './uris.ts';
 
 export interface DocumentSnapshot {
     text: string;
@@ -195,21 +196,25 @@ export function minimalChange(before: string, after: string): ContentChange {
     };
 }
 
-function snapshotEdit(uri: string, snapshots: ReadonlyMap<string, DocumentSnapshot>): PlannedDocumentEdit {
-    const snapshot = snapshots.get(uri);
-    if (!snapshot) {
+// The snapshots by `fileUriKey`, each with the URI it was given under, which the plan keeps.
+type KeyedSnapshots = ReadonlyMap<string, { uri: string; snapshot: DocumentSnapshot }>;
+
+function snapshotEdit(uri: string, snapshots: KeyedSnapshots): PlannedDocumentEdit {
+    const found = snapshots.get(fileUriKey(uri));
+    if (!found) {
         throw new LspError(`Missing workspace snapshot: ${uri}`);
     }
-    return { uri, version: snapshot.version, before: snapshot.text, text: snapshot.text };
+    return { uri: found.uri, version: found.snapshot.version, before: found.snapshot.text, text: found.snapshot.text };
 }
 
 /* A file that is there already is refused, unless the create says to empty it or to leave it as it is. */
-function planCreate(change: CreateFile, snapshots: ReadonlyMap<string, DocumentSnapshot>, planned: Map<string, PlannedDocumentEdit>): void {
-    const existing = planned.get(change.uri) ?? (snapshots.has(change.uri) ? snapshotEdit(change.uri, snapshots) : null);
+function planCreate(change: CreateFile, snapshots: KeyedSnapshots, planned: Map<string, PlannedDocumentEdit>): void {
+    const key = fileUriKey(change.uri);
+    const existing = planned.get(key) ?? (snapshots.has(key) ? snapshotEdit(change.uri, snapshots) : null);
     if (existing === null) {
-        planned.set(change.uri, { uri: change.uri, version: null, before: '', text: '', created: true });
+        planned.set(key, { uri: change.uri, version: null, before: '', text: '', created: true });
     } else if (change.options?.overwrite) {
-        planned.set(change.uri, { ...existing, text: '' });
+        planned.set(key, { ...existing, text: '' });
     } else if (!change.options?.ignoreIfExists) {
         throw new LspError(`${change.uri} already exists`);
     }
@@ -220,6 +225,7 @@ function planCreate(change: CreateFile, snapshots: ReadonlyMap<string, DocumentS
  * files that are there; a file the edit creates is absent from it. A rename or delete needs the host's own handling and is refused.
  */
 export function planWorkspaceEdit(edit: WorkspaceEdit, snapshots: ReadonlyMap<string, DocumentSnapshot>): PlannedDocumentEdit[] {
+    const keyed: KeyedSnapshots = new Map([...snapshots].map(([uri, snapshot]) => [fileUriKey(uri), { uri, snapshot }]));
     const planned = new Map<string, PlannedDocumentEdit>();
     const changes = edit.documentChanges ?? Object.entries(edit.changes ?? {}).map(([uri, edits]) => ({ textDocument: { uri, version: null }, edits }));
     for (const change of changes) {
@@ -227,15 +233,16 @@ export function planWorkspaceEdit(edit: WorkspaceEdit, snapshots: ReadonlyMap<st
             if (change.kind !== 'create') {
                 throw new LspError(`A host file-operation handler is required for ${change.kind}`);
             }
-            planCreate(change, snapshots, planned);
+            planCreate(change, keyed, planned);
             continue;
         }
         const { uri, version } = change.textDocument;
-        const current = planned.get(uri) ?? snapshotEdit(uri, snapshots);
+        const key = fileUriKey(uri);
+        const current = planned.get(key) ?? snapshotEdit(uri, keyed);
         if (version !== null && current.version !== version) {
             throw new LspError(`Workspace edit version mismatch: ${uri}`, ErrorCodes.ContentModified);
         }
-        planned.set(uri, { ...current, text: applyTextEdits(current.text, change.edits) });
+        planned.set(key, { ...current, text: applyTextEdits(current.text, change.edits) });
     }
     return [...planned.values()];
 }
