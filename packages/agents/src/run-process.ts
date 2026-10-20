@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { killProcessTree } from './chat/chat-process.ts';
+import { spawnTarget } from './windows-command.ts';
 
 export interface ProcessResult {
     // Null when the process ended on a signal.
@@ -31,10 +32,12 @@ export function runProcess(command: readonly string[], options: RunProcessOption
             reject(new Error('No command to run'));
             return;
         }
-        const child = spawn(executable, args, {
+        const target = spawnTarget(executable, args, options.env === undefined ? {} : { env: options.env });
+        const child = spawn(target.file, target.args, {
             ...(options.cwd === undefined ? {} : { cwd: options.cwd }),
             ...(options.env === undefined ? {} : { env: options.env }),
             stdio: [options.stdin === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'],
+            windowsVerbatimArguments: target.windowsVerbatimArguments ?? false,
             // A group of its own, so ending the command also ends what it started; Windows ends the tree through `taskkill`.
             detached: process.platform !== 'win32',
             windowsHide: true

@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { Readable } from 'node:stream';
+import { spawnTarget } from '../windows-command.ts';
 
 /*
  * The part of a child process a chat backend talks to: lines in over stdin, lines out over stdout,
@@ -37,10 +38,12 @@ export function spawnChatProcess(options: ChatSpawnOptions): ChatProcess {
     if (command === undefined) {
         throw new Error('No command to start');
     }
-    const child = spawn(command, args, {
+    const target = spawnTarget(command, args, { env: options.env });
+    const child = spawn(target.file, target.args, {
         cwd: options.cwd,
         env: options.env,
         stdio: ['pipe', 'pipe', 'pipe'],
+        windowsVerbatimArguments: target.windowsVerbatimArguments ?? false,
         // A group of its own, so ending the chat also ends what its agent started (a dev server, a watcher).
         // On Windows that would open a console window of its own instead; `taskkill` reaches the tree there.
         detached: process.platform !== 'win32',
