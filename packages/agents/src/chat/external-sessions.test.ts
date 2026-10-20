@@ -2,11 +2,13 @@ import { describe, expect, test } from 'bun:test';
 import { claudeProjectSlug } from './claude-transcript.ts';
 import { listClaudeSessions, listCodexSessions, type SessionFs } from './external-sessions.ts';
 
-/* An in-memory tree: a path with content is a file, every parent of one is a folder. */
+/* An in-memory tree: a path with content is a file, every parent of one is a folder. Paths are kept with forward slashes, whatever the platform joins with. */
 function memoryFs(files: Record<string, { content: string; mtimeMs?: number }>) {
     const touched: string[] = [];
+    const posix = (path: string): string => path.replaceAll('\\', '/');
     const fs: SessionFs = {
-        readdir: async (path) => {
+        readdir: async (native) => {
+            const path = posix(native);
             touched.push(path);
             const prefix = `${path}/`;
             return [
@@ -17,12 +19,14 @@ function memoryFs(files: Record<string, { content: string; mtimeMs?: number }>) 
                 )
             ];
         },
-        stat: async (path) => {
+        stat: async (native) => {
+            const path = posix(native);
             touched.push(path);
             const file = files[path];
             return file === undefined ? null : { mtimeMs: file.mtimeMs ?? 1 };
         },
-        readHead: async (path) => {
+        readHead: async (native) => {
+            const path = posix(native);
             touched.push(path);
             return files[path]?.content ?? '';
         }

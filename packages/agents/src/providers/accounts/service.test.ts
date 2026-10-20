@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import type { AgentKind, ProviderAccounts, ProviderInfo } from '@adecore/agent-contracts';
 import type { AgentEvent } from '../../events.ts';
 import { providerFor } from '../registry.ts';
@@ -10,7 +10,10 @@ import type { ShadowHomeReport } from './shadow-home.ts';
 import { memorySecrets } from '../../testing/accounts.ts';
 import type { AccountReading } from './status.ts';
 
-const env = { HOME: '/home/bas', ANTHROPIC_API_KEY: 'sk-ant' };
+// Windows reads the home from USERPROFILE, joins with backslashes and resolves a rooted path onto a drive.
+const HOME = process.platform === 'win32' ? 'C:\\Users\\bas' : '/home/bas';
+const NOWHERE = resolve('/nowhere');
+const env = { HOME, USERPROFILE: HOME, ANTHROPIC_API_KEY: 'sk-ant' };
 const installed = new Set<AgentKind>(['claude', 'codex', 'copilot']);
 const providers = {
     list: async () => [...installed].map((kind) => ({ kind, installed: true }) as ProviderInfo),
@@ -79,7 +82,7 @@ describe('ProviderAccountsService', () => {
         dir = await mkdtemp(join(tmpdir(), 'ruimte-accounts-'));
         asked = [];
         answers = { claude: { signedIn: true, email: 'work@example.com', plan: 'max', organization: 'Work' } };
-        folders = new Set(['/home/bas/.claude_personal', '/home/bas/.codex', '/home/bas/.codex_personal']);
+        folders = new Set([join(HOME, '.claude_personal'), join(HOME, '.codex'), join(HOME, '.codex_personal')]);
         installs = [];
         shadows = [];
         shadowReport = { linked: [], unshared: [], sharedLogin: false };
@@ -104,9 +107,9 @@ describe('ProviderAccountsService', () => {
             email: 'work@example.com',
             plan: 'max',
             organization: 'Work',
-            home: '/home/bas/.claude'
+            home: join(HOME, '.claude')
         });
-        expect(stateOf(after, 'codex')).toMatchObject({ state: 'signed-out', home: '/home/bas/.codex' });
+        expect(stateOf(after, 'codex')).toMatchObject({ state: 'signed-out', home: join(HOME, '.codex') });
         expect(stateOf(after, 'gemini')?.state).toBe('not-found');
         expect(stateOf(after, 'copilot')?.state).toBe('ready');
         // The default accounts run in the daemon's own environment, key and all.
@@ -119,7 +122,7 @@ describe('ProviderAccountsService', () => {
 
     test('a saved account is written, answered as checking and then asked in its own folder', async () => {
         const service = await make();
-        answers['/home/bas/.claude_personal'] = { signedIn: true, email: 'me@example.com', plan: 'pro', organization: null };
+        answers[join(HOME, '.claude_personal')] = { signedIn: true, email: 'me@example.com', plan: 'pro', organization: null };
         const saved = await service.save({ claude_personal: { kind: 'claude', label: 'Personal', color: 'green', home: '~/.claude_personal' } });
         expect(stateOf(saved, 'claude_personal')?.state).toBe('checking');
         expect(events).toHaveLength(1);
@@ -129,18 +132,18 @@ describe('ProviderAccountsService', () => {
         expect(file.accounts.claude_personal).toEqual({ kind: 'claude', label: 'Personal', color: 'green', home: '~/.claude_personal' });
 
         const after = await service.refresh();
-        expect(stateOf(after, 'claude_personal')).toMatchObject({ state: 'ready', email: 'me@example.com', home: '/home/bas/.claude_personal' });
-        expect(asked).toContainEqual({ kind: 'claude', folder: '/home/bas/.claude_personal', apiKey: undefined });
-        expect(installs).toContain('claude /home/bas/.claude_personal');
+        expect(stateOf(after, 'claude_personal')).toMatchObject({ state: 'ready', email: 'me@example.com', home: join(HOME, '.claude_personal') });
+        expect(asked).toContainEqual({ kind: 'claude', folder: join(HOME, '.claude_personal'), apiKey: undefined });
+        expect(installs).toContain(`claude ${join(HOME, '.claude_personal')}`);
         expect(events.at(-1)).toEqual(after);
     });
 
     test('a folder that is not there is said without starting a CLI, and so is an account that is off', async () => {
         const service = await make();
-        folders.add('/nowhere');
+        folders.add(NOWHERE);
         await service.save({ claude_gone: { kind: 'claude', home: '/nowhere' }, claude_off: { kind: 'claude', home: '~/.claude_personal', enabled: false } });
         await service.refresh();
-        folders.delete('/nowhere');
+        folders.delete(NOWHERE);
         asked = [];
         installs = [];
         const after = await service.refresh();
@@ -157,13 +160,13 @@ describe('ProviderAccountsService', () => {
         shadowReport = { linked: [], unshared: ['config.toml'], sharedLogin: false };
         const after = await service.refresh();
         // The pass the save started and the refresh after it both prepare the same folders again.
-        expect(new Set(shadows)).toEqual(new Set(['/home/bas/.codex <- /home/bas/.codex_personal']));
-        expect(new Set(installs)).toEqual(new Set(['codex /home/bas/.codex']));
-        expect(asked).toContainEqual({ kind: 'codex', folder: '/home/bas/.codex_personal', apiKey: 'sk-ant' });
+        expect(new Set(shadows)).toEqual(new Set([`${join(HOME, '.codex')} <- ${join(HOME, '.codex_personal')}`]));
+        expect(new Set(installs)).toEqual(new Set([`codex ${join(HOME, '.codex')}`]));
+        expect(asked).toContainEqual({ kind: 'codex', folder: join(HOME, '.codex_personal'), apiKey: 'sk-ant' });
         expect(stateOf(after, 'codex_personal')).toMatchObject({
             state: 'signed-out',
-            home: '/home/bas/.codex_personal',
-            message: 'Not shared with /home/bas/.codex: config.toml'
+            home: join(HOME, '.codex_personal'),
+            message: `Not shared with ${join(HOME, '.codex')}: config.toml`
         });
 
         shadowReport = { linked: [], unshared: [], sharedLogin: true };
@@ -222,19 +225,19 @@ describe('ProviderAccountsService', () => {
         await service.save({ claude_personal: { kind: 'claude', label: 'Personal', home: '~/.claude_personal' } });
         expect(service.envFor('claude', undefined, env)).toBe(env);
         expect(service.envFor('claude', 'claude', env)).toBe(env);
-        expect(service.envFor('claude', 'claude_personal', env)).toEqual({ HOME: '/home/bas', CLAUDE_CONFIG_DIR: '/home/bas/.claude_personal' });
+        expect(service.envFor('claude', 'claude_personal', env)).toEqual({ HOME, USERPROFILE: HOME, CLAUDE_CONFIG_DIR: join(HOME, '.claude_personal') });
     });
 
     test('refuses an account it cannot start, and never falls back on the default one', async () => {
         const service = await make();
-        folders.add('/home/bas/.claude_gone');
+        folders.add(join(HOME, '.claude_gone'));
         await service.save({
             claude_personal: { kind: 'claude', label: 'Personal', home: '~/.claude_personal' },
             claude_gone: { kind: 'claude', label: 'Gone', home: '~/.claude_gone' },
             claude_off: { kind: 'claude', home: '~/.claude_personal', enabled: false },
             codex_personal: { kind: 'codex', home: '~/.codex_personal' }
         });
-        folders.delete('/home/bas/.claude_gone');
+        folders.delete(join(HOME, '.claude_gone'));
         const refusal = (kind: AgentKind, id: string): unknown => {
             try {
                 service.envFor(kind, id, env);
@@ -261,7 +264,7 @@ describe('ProviderAccountsService', () => {
         expect(service.canContinue('claude', undefined, 'claude')).toBe(true);
         expect(service.canContinue('claude', undefined, 'claude_personal')).toBe(false);
         expect(service.canContinue('codex', undefined, 'codex_personal')).toBe(true);
-        expect(service.transcriptFolder('claude', 'claude_personal')).toBe('/home/bas/.claude_personal');
+        expect(service.transcriptFolder('claude', 'claude_personal')).toBe(join(HOME, '.claude_personal'));
         expect(service.transcriptFolder('claude', 'nobody')).toBeNull();
     });
 
@@ -272,8 +275,8 @@ describe('ProviderAccountsService', () => {
             codex_personal: { kind: 'codex', home: '~/.codex', shadowHome: '~/.codex_personal' }
         });
         const snapshot = service.snapshot();
-        expect(stateOf(snapshot, 'claude_personal')?.transcripts).toBe('/home/bas/.claude_personal');
-        expect(stateOf(snapshot, 'codex_personal')?.home).toBe('/home/bas/.codex_personal');
+        expect(stateOf(snapshot, 'claude_personal')?.transcripts).toBe(join(HOME, '.claude_personal'));
+        expect(stateOf(snapshot, 'codex_personal')?.home).toBe(join(HOME, '.codex_personal'));
         expect(stateOf(snapshot, 'codex_personal')?.transcripts).toBe(stateOf(snapshot, 'codex')?.transcripts);
     });
 
@@ -283,7 +286,10 @@ describe('ProviderAccountsService', () => {
         const folder = join(dir, 'accounts', 'claude_personal');
         expect(created.id).toBe('claude_personal');
         expect(created.accounts.claude_personal).toEqual({ kind: 'claude', label: 'Personal', color: 'green', home: folder });
-        expect((await stat(folder)).mode & 0o777).toBe(0o700);
+        // Windows has no mode bits; the profile's ACL keeps the folder the person's there.
+        if (process.platform !== 'win32') {
+            expect((await stat(folder)).mode & 0o777).toBe(0o700);
+        }
         expect(installs).toContain(`claude ${folder}`);
         const file = JSON.parse(await readFile(join(dir, 'providers.json'), 'utf8'));
         expect(file.accounts.claude_personal.home).toBe(folder);
@@ -306,8 +312,8 @@ describe('ProviderAccountsService', () => {
         const service = await make();
         const created = await service.create({ kind: 'codex', label: 'Personal' });
         const folder = join(dir, 'accounts', 'codex_personal');
-        expect(created.accounts.codex_personal).toEqual({ kind: 'codex', label: 'Personal', home: '/home/bas/.codex', shadowHome: folder });
-        expect(shadows).toContain(`/home/bas/.codex <- ${folder}`);
+        expect(created.accounts.codex_personal).toEqual({ kind: 'codex', label: 'Personal', home: join(HOME, '.codex'), shadowHome: folder });
+        expect(shadows).toContain(`${join(HOME, '.codex')} <- ${folder}`);
         expect(service.canContinue('codex', undefined, 'codex_personal')).toBe(true);
     });
 
@@ -319,7 +325,7 @@ describe('ProviderAccountsService', () => {
     test('links an existing folder only when it is one, and never the folder of the default account', async () => {
         const service = await make();
         await expect(service.save({ claude_elsewhere: { kind: 'claude', home: '/nowhere' } })).rejects.toThrow('/nowhere is not a folder on this machine');
-        folders.add('/home/bas/.claude');
+        folders.add(join(HOME, '.claude'));
         await expect(service.save({ claude_same: { kind: 'claude', home: '~/.claude' } })).rejects.toThrow('the default Claude Code account');
         await expect(service.save({ codex_same: { kind: 'codex', home: '~/.codex_personal', shadowHome: '~/.codex' } })).rejects.toThrow(
             'the default Codex account'
@@ -350,8 +356,9 @@ describe('ProviderAccountsService', () => {
 
         // The login variables go first, so the key a person set is the one the CLI gets.
         expect(service.envFor('claude', 'claude_personal', env)).toEqual({
-            HOME: '/home/bas',
-            CLAUDE_CONFIG_DIR: '/home/bas/.claude_personal',
+            HOME,
+            USERPROFILE: HOME,
+            CLAUDE_CONFIG_DIR: join(HOME, '.claude_personal'),
             ANTHROPIC_BASE_URL: 'https://proxy.example',
             ANTHROPIC_API_KEY: 'sk-mine'
         });
@@ -443,7 +450,7 @@ describe('ProviderAccountsService', () => {
         const ask = answers;
         answers = new Proxy(ask, {
             get: (target, key) => {
-                if (key === '/home/bas/.claude_personal') {
+                if (key === join(HOME, '.claude_personal')) {
                     checks += 1;
                     return checks >= 3 ? { signedIn: true, email: 'me@example.com', plan: 'pro', organization: null } : undefined;
                 }
@@ -453,7 +460,7 @@ describe('ProviderAccountsService', () => {
         await service.watchLogin('claude_personal');
         expect(checks).toBe(3);
         expect(clock - start).toBe(9_000);
-        expect(asked.every((entry) => entry.folder === '/home/bas/.claude_personal')).toBe(true);
+        expect(asked.every((entry) => entry.folder === join(HOME, '.claude_personal'))).toBe(true);
         expect(stateOf(service.snapshot(), 'claude_personal')).toMatchObject({ state: 'ready', email: 'me@example.com' });
         expect(events.length).toBe(eventsBefore + 1);
     });

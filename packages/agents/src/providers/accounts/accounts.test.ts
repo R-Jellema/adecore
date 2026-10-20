@@ -1,9 +1,20 @@
+import { join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
 import type { AgentKind } from '@adecore/agent-contracts';
 import { providerFor } from '../registry.ts';
 import { accountEnv, accountFolder, accountProblem, canContinue, readAccount, withDefaults } from './accounts.ts';
 
-const env = { HOME: '/home/bas', PATH: '/bin', ANTHROPIC_API_KEY: 'sk-ant', CLAUDE_CODE_OAUTH_TOKEN: 'oat', OPENAI_API_KEY: 'sk-oai', CODEX_API_KEY: 'ck' };
+// Windows reads the home from USERPROFILE and joins with backslashes.
+const HOME = process.platform === 'win32' ? 'C:\\Users\\bas' : '/home/bas';
+const env = {
+    HOME,
+    USERPROFILE: HOME,
+    PATH: '/bin',
+    ANTHROPIC_API_KEY: 'sk-ant',
+    CLAUDE_CODE_OAUTH_TOKEN: 'oat',
+    OPENAI_API_KEY: 'sk-oai',
+    CODEX_API_KEY: 'ck'
+};
 function providerOf(kind: AgentKind) {
     return providerFor(kind);
 }
@@ -17,17 +28,17 @@ describe('accountEnv', () => {
 
     test('points Claude Code at the folder and drops what would sign it in over that login', () => {
         const next = accountEnv('claude_personal', { kind: 'claude', home: '~/.claude_personal' }, claude, env);
-        expect(next.CLAUDE_CONFIG_DIR).toBe('/home/bas/.claude_personal');
+        expect(next.CLAUDE_CONFIG_DIR).toBe(join(HOME, '.claude_personal'));
         expect(next.ANTHROPIC_API_KEY).toBeUndefined();
         expect(next.CLAUDE_CODE_OAUTH_TOKEN).toBeUndefined();
-        expect(next.HOME).toBe('/home/bas');
+        expect(next.HOME).toBe(HOME);
         expect(next.OPENAI_API_KEY).toBe('sk-oai');
         expect(env.ANTHROPIC_API_KEY).toBe('sk-ant');
     });
 
     test('starts Codex in the shadow home when there is one', () => {
         const next = accountEnv('codex_personal', { kind: 'codex', home: '~/.codex', shadowHome: '~/.codex_personal' }, codex, env);
-        expect(next.CODEX_HOME).toBe('/home/bas/.codex_personal');
+        expect(next.CODEX_HOME).toBe(join(HOME, '.codex_personal'));
         expect(next.OPENAI_API_KEY).toBeUndefined();
         expect(next.CODEX_API_KEY).toBeUndefined();
         expect(next.ANTHROPIC_API_KEY).toBe('sk-ant');
@@ -36,7 +47,7 @@ describe('accountEnv', () => {
 
 describe('accountFolder', () => {
     test('the default account follows the variable the daemon itself was given', () => {
-        expect(accountFolder('claude', { kind: 'claude' }, claude, env)).toBe('/home/bas/.claude');
+        expect(accountFolder('claude', { kind: 'claude' }, claude, env)).toBe(join(HOME, '.claude'));
         expect(accountFolder('codex', { kind: 'codex' }, codex, { ...env, CODEX_HOME: '/opt/codex' })).toBe('/opt/codex');
         expect(accountFolder('gemini', { kind: 'gemini' }, providerFor('gemini'), env)).toBe('');
     });
@@ -54,7 +65,7 @@ describe('accountProblem', () => {
         expect(accountProblem('claude_personal', { kind: 'claude' }, claude, env)).not.toBeNull();
         expect(accountProblem('claude_personal', { kind: 'claude', home: 'relative/folder' }, claude, env)).not.toBeNull();
         expect(accountProblem('claude_personal', { kind: 'claude', home: '~/.a', shadowHome: '~/.b' }, claude, env)).not.toBeNull();
-        expect(accountProblem('codex_personal', { kind: 'codex', home: '~/.codex', shadowHome: '/home/bas/.codex' }, codex, env)).not.toBeNull();
+        expect(accountProblem('codex_personal', { kind: 'codex', home: '~/.codex', shadowHome: join(HOME, '.codex') }, codex, env)).not.toBeNull();
     });
 
     test('lets a CLI without a folder variable keep a second account, which is then only unavailable', () => {

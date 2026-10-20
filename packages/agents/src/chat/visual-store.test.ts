@@ -32,8 +32,11 @@ describe('VisualStore', () => {
     test('keeps editable sources and previews beside the chat, separately from published attachments', async () => {
         const source = await store.writeSource('chat/1', 'chart.html', PAGE);
         expect(source).toBe(join(home, 'chats', 'chat%2F1.visuals', 'chart.html'));
-        expect((await stat(store.workspacePath('chat/1'))).mode & 0o777).toBe(0o700);
-        expect((await stat(source)).mode & 0o777).toBe(0o600);
+        // Windows has no mode bits; the profile's ACL keeps the files the person's there.
+        if (process.platform !== 'win32') {
+            expect((await stat(store.workspacePath('chat/1'))).mode & 0o777).toBe(0o700);
+            expect((await stat(source)).mode & 0o777).toBe(0o600);
+        }
         expect(await readFile(source, 'utf8')).toBe(PAGE);
         await store.writeSource('chat/1', 'chart.html', '<p>Updated</p>');
         const png = new Uint8Array([137, 80, 78, 71]);

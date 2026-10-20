@@ -7,7 +7,10 @@ import { DemoFrame } from './.vitepress/theme/DemoFrame.tsx';
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 
-const demos = [...new Glob('demos/**/*.tsx').scanSync(HERE)].filter((path) => !path.startsWith('demos/shared/')).sort();
+const demos = [...new Glob('demos/**/*.tsx').scanSync(HERE)]
+    .map((path) => path.replaceAll('\\', '/'))
+    .filter((path) => !path.startsWith('demos/shared/'))
+    .sort();
 
 describe('the demos', () => {
     // A static render runs no effect and opens no popup, but a demo that throws while it draws fails here before it fails on the site.

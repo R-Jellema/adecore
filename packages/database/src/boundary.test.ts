@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join, normalize } from 'node:path';
+import { join, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Glob } from 'bun';
 import { describe, expect, test } from 'bun:test';
@@ -46,7 +46,9 @@ describe('the boundary of the package', () => {
         const leaving = sources()
             .filter((source) => isCode(source) && inside('protocol')(source))
             .filter(({ path, text }) =>
-                specifiers(text).some((specifier) => !specifier.startsWith('.') || !normalize(join(dirname(path), specifier)).startsWith('protocol/'))
+                specifiers(text).some(
+                    (specifier) => !specifier.startsWith('.') || !posix.normalize(posix.join(posix.dirname(path), specifier)).startsWith('protocol/')
+                )
             )
             .map(({ path }) => path);
         expect(leaving).toEqual([]);

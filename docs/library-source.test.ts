@@ -3,7 +3,7 @@ import { librarySourceAliases } from './.vitepress/library-source.ts';
 
 function resolve(specifier: string): string | undefined {
     const alias = librarySourceAliases().find((entry) => entry.find.test(specifier));
-    return alias && specifier.replace(alias.find, alias.replacement);
+    return alias && specifier.replace(alias.find, alias.replacement).replaceAll('\\', '/');
 }
 
 test('docs resolve exact, nested, wildcard and asset source exports from workspace manifests', () => {

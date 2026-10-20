@@ -22,13 +22,13 @@ describe('codexRulesText', () => {
 
 describe('codexRulesPathIn', () => {
     test('names the file after the app, in the rules folder of a Codex home', () => {
-        expect(codexRulesPathIn('/home/a/.codex', rules)).toBe('/home/a/.codex/rules/aftermotion.rules');
-        expect(codexRulesPathIn('/home/a/.codex', { app: 'My App', commands: [] })).toBe('/home/a/.codex/rules/my-app.rules');
+        expect(codexRulesPathIn('/home/a/.codex', rules)).toBe(join('/home/a/.codex', 'rules', 'aftermotion.rules'));
+        expect(codexRulesPathIn('/home/a/.codex', { app: 'My App', commands: [] })).toBe(join('/home/a/.codex', 'rules', 'my-app.rules'));
     });
 
     test('finds the home in CODEX_HOME before HOME', () => {
         expect(defaultCodexHome({ CODEX_HOME: '/x/codex', HOME: '/home/a' })).toBe('/x/codex');
-        expect(defaultCodexHome({ HOME: '/home/a' })).toBe('/home/a/.codex');
+        expect(defaultCodexHome({ HOME: '/home/a', USERPROFILE: '/home/a' })).toBe(join('/home/a', '.codex'));
     });
 });
 
