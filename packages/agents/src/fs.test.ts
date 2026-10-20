@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { writeAtomic } from './fs.ts';
+import { removeFile, writeAtomic } from './fs.ts';
 
 let dir: string;
 
@@ -33,5 +33,27 @@ describe('writeAtomic', () => {
         const target = join(dir, 'icon.png');
         await writeAtomic(target, new Uint8Array([0x89, 0x50, 0x4e, 0x47]), 0o600, { durable: true });
         expect([...(await readFile(target))]).toEqual([0x89, 0x50, 0x4e, 0x47]);
+    });
+});
+
+describe('removeFile', () => {
+    const failing = (code: string) => async (): Promise<void> => {
+        throw Object.assign(new Error(code), { code });
+    };
+
+    test('counts EFAULT from a pending delete as removed', async () => {
+        await expect(removeFile(join(dir, 'record.json'), failing('EFAULT'))).resolves.toBeUndefined();
+    });
+
+    test('passes on every other error', async () => {
+        await expect(removeFile(join(dir, 'record.json'), failing('EACCES'))).rejects.toMatchObject({ code: 'EACCES' });
+    });
+
+    test('removes the file and leaves a missing one alone', async () => {
+        const target = join(dir, 'record.json');
+        await writeFile(target, '{}');
+        await removeFile(target);
+        await removeFile(target);
+        expect(await readdir(dir)).toEqual([]);
     });
 });

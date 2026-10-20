@@ -1,7 +1,7 @@
-import { mkdir, readdir, readFile, rm } from 'node:fs/promises';
+import { mkdir, readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { z } from 'zod';
-import { isNotFound, writeAtomic } from './fs.ts';
+import { isNotFound, removeFile, writeAtomic } from './fs.ts';
 import { KeyedSerializer } from './serializer.ts';
 
 // The id is a node id or a chat id a client chose, so it is encoded before it becomes a file name.
@@ -74,7 +74,7 @@ export class RecordDirectory<T> {
             }
             const record = this.keep === null ? parsed.data : this.keep(parsed.data);
             if (record === null) {
-                await rm(join(this.dir, name), { force: true });
+                await removeFile(join(this.dir, name));
                 continue;
             }
             this.records.set(this.idOf(record), record);
@@ -108,7 +108,7 @@ export class RecordDirectory<T> {
             await mkdir(this.dir, { recursive: true, mode: 0o700 });
             await this.writeFile(this.pathOf(id), JSON.stringify(record));
             if (!this.records.has(id)) {
-                await rm(this.pathOf(id), { force: true });
+                await removeFile(this.pathOf(id));
                 return false;
             }
             return true;
@@ -118,7 +118,7 @@ export class RecordDirectory<T> {
     /* Forgets a record here and now; its file follows. */
     remove(id: string): Promise<void> {
         this.records.delete(id);
-        return rm(this.pathOf(id), { force: true });
+        return removeFile(this.pathOf(id));
     }
 
     async prune(drop: (record: T) => boolean): Promise<void> {

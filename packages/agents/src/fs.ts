@@ -1,5 +1,5 @@
 import { renameSync, writeFileSync } from 'node:fs';
-import { open, rename, stat, writeFile } from 'node:fs/promises';
+import { open, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 
 // Windows can refuse a rename while a watcher or an indexer holds the target; a few short retries cover it.
@@ -106,6 +106,17 @@ export function writeAtomicSync(target: string, content: string | Uint8Array, mo
 
 export function isNotFound(e: unknown): boolean {
     return typeof e === 'object' && e !== null && 'code' in e && e.code === 'ENOENT';
+}
+
+// Bun on Windows fails a forced rm with EFAULT while another delete of the same file is pending; it goes either way.
+export async function removeFile(path: string, remove: (path: string, options: { force: true }) => Promise<void> = rm): Promise<void> {
+    try {
+        await remove(path, { force: true });
+    } catch (e) {
+        if (!(typeof e === 'object' && e !== null && 'code' in e && e.code === 'EFAULT')) {
+            throw e;
+        }
+    }
 }
 
 export async function fileExists(path: string): Promise<boolean> {
