@@ -50,9 +50,9 @@ describe('scheduledTask', () => {
         expect(task).toContain('<MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>');
     });
 
-    test('sets the environment, runs the program and appends to the log under a console without a window', () => {
+    test('sets the environment, runs the program and appends to the log through cmd.exe', () => {
         expect(taskArguments(scheduledTask(WINDOWS))).toBe(
-            '--headless cmd.exe /d /s /c "' +
+            '/d /s /c "' +
                 'set ^"WORKER_HOME=C:\\Users\\bas\\.worker^" && ' +
                 'set ^"PATH=C:\\Program^ Files\\Git\\cmd^;C:\\Windows\\System32^" && ' +
                 'C:\\Users\\bas\\AppData\\Local\\Programs\\Example\\resources\\bin\\worker.exe ^"--port^" ^"4210^" ' +

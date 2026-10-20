@@ -124,7 +124,7 @@ function taskCommandLine(spec: ServiceSpec): string {
  * A scheduled task for one person, started at their logon in their own session without a stored
  * password, and run again every minute so it comes back after a crash: a second instance is ignored
  * while one runs, and RestartOnFailure only covers a start that failed. A task carries no environment
- * of its own, so cmd.exe sets it, under a console without a window.
+ * of its own, so cmd.exe sets it and appends the output to the log.
  */
 export function scheduledTask(spec: ServiceSpec): string {
     if (spec.user === undefined || spec.user === '') {
@@ -182,8 +182,8 @@ export function scheduledTask(spec: ServiceSpec): string {
         '  </Settings>',
         '  <Actions Context="Author">',
         '    <Exec>',
-        '      <Command>%SystemRoot%\\System32\\conhost.exe</Command>',
-        `      <Arguments>${xmlText(`--headless cmd.exe /d /s /c "${taskCommandLine(spec)}"`)}</Arguments>`,
+        '      <Command>%SystemRoot%\\System32\\cmd.exe</Command>',
+        `      <Arguments>${xmlText(`/d /s /c "${taskCommandLine(spec)}"`)}</Arguments>`,
         `      <WorkingDirectory>${xmlText(spec.workingDirectory)}</WorkingDirectory>`,
         '    </Exec>',
         '  </Actions>',
