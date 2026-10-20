@@ -19,7 +19,7 @@ beforeEach(async () => {
     home = join(root, 'home');
     service = await testAccounts({
         home: root,
-        env: { HOME: home },
+        env: { HOME: home, USERPROFILE: home },
         accounts: {
             claude_work: { kind: 'claude', label: 'Work', color: 'blue', home: join(root, 'work') },
             claude_off: { kind: 'claude', label: 'Off', home: join(root, 'off'), enabled: false },
@@ -54,7 +54,7 @@ describe('the accounts of the usage page and the limits', () => {
     });
 
     test('reads the plan of every default account, and of another once it is on and signed in', async () => {
-        const limits = limitAccountsOf(service, nameOf, { HOME: home });
+        const limits = limitAccountsOf(service, nameOf, { HOME: home, USERPROFILE: home });
         expect(limits.list().map((account) => account.id)).toEqual(['claude', 'codex']);
         await service.refresh();
         expect(limits.list().map((account) => account.id)).toEqual(['claude', 'codex', 'claude_work', 'codex_work']);

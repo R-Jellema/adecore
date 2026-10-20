@@ -147,7 +147,7 @@ describe('ProviderAccountsService', () => {
         asked = [];
         installs = [];
         const after = await service.refresh();
-        expect(stateOf(after, 'claude_gone')).toMatchObject({ state: 'folder-missing', message: '/nowhere does not exist' });
+        expect(stateOf(after, 'claude_gone')).toMatchObject({ state: 'folder-missing', message: `${NOWHERE} does not exist` });
         expect(stateOf(after, 'claude_off')?.state).toBe('disabled');
         expect(asked.length).toBeGreaterThan(0);
         expect(asked.every((entry) => entry.folder === undefined)).toBe(true);
