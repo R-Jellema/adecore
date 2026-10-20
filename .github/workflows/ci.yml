@@ -112,6 +112,50 @@ jobs:
 
       - name: 🧪 Test
         run: bun run test
+        env:
+          ADECORE_TEST_TASK_SCHEDULER: '1'
+
+  windows-helper:
+    runs-on: windows-latest
+    name: 🪟 Database helper on Windows
+    needs: changes
+    if: needs.changes.outputs.helper == 'true'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: 👀 Checkout
+        uses: actions/checkout@v6
+      - name: 🍞 Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - name: 💾 Cache Bun packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-
+      - name: 📦️ Install dependencies
+        run: bun install --frozen-lockfile
+      - name: 🦀 Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: 💾 Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/database/helper
+      - name: 🦀 Build the database helper
+        run: bun run --cwd packages/database helper:build
+      # Where a release puts it, so the host finds it the way an install does.
+      - name: 📦 Place the helper in its package
+        run: |
+          mkdir -p packages/database-win32-x64/bin
+          cp packages/database/helper/target/release/adecore-database.exe packages/database-win32-x64/bin/
+          bun -e "import { helperPath } from './packages/database/src/host/index.ts'; const path = helperPath(); console.log(path); if (!path?.includes('database-win32-x64')) { process.exit(1); }"
+      - name: 🧪 Test the database client, host and helper
+        run: bun run test:helper
+        env:
+          ADECORE_REQUIRE_DATABASE_HELPER: '1'
 
   docs:
     runs-on: ubuntu-latest
