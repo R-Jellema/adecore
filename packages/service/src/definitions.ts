@@ -123,7 +123,7 @@ function taskCommandLine(spec: ServiceSpec): string {
 /*
  * A scheduled task for one person, started at their logon in their own session without a stored
  * password, and run again every minute so it comes back after a crash: a second instance is ignored
- * while one runs, and RestartOnFailure only covers a start that failed. A task carries no environment
+ * while one runs. RestartOnFailure is left out, since it also starts a task a stop ended. A task carries no environment
  * of its own, so cmd.exe sets it and appends the output to the log.
  */
 export function scheduledTask(spec: ServiceSpec): string {
@@ -175,10 +175,6 @@ export function scheduledTask(spec: ServiceSpec): string {
         '    <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>',
         // The default, 7, runs a task below normal priority.
         '    <Priority>5</Priority>',
-        '    <RestartOnFailure>',
-        '      <Interval>PT1M</Interval>',
-        '      <Count>999</Count>',
-        '    </RestartOnFailure>',
         '  </Settings>',
         '  <Actions Context="Author">',
         '    <Exec>',

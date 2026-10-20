@@ -41,10 +41,6 @@ exports[`scheduledTask the task of a packaged app 1`] = `
     <WakeToRun>false</WakeToRun>
     <ExecutionTimeLimit>PT0S</ExecutionTimeLimit>
     <Priority>5</Priority>
-    <RestartOnFailure>
-      <Interval>PT1M</Interval>
-      <Count>999</Count>
-    </RestartOnFailure>
   </Settings>
   <Actions Context="Author">
     <Exec>
