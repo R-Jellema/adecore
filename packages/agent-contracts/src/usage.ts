@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ProviderAccountIdSchema } from './provider-accounts.ts';
 
 /* The providers whose usage the daemon reads: the CLIs' transcripts, and the log of a subscription API it calls itself. A subset of `AgentKindSchema`: it grows with the readers. */
-export const UsageProviderSchema = z.enum(['claude', 'codex', 'nanogpt']);
+export const UsageProviderSchema = z.enum(['claude', 'codex', 'nanogpt', 'anthropic-claude-api']);
 export type UsageProvider = z.infer<typeof UsageProviderSchema>;
 export const USAGE_PROVIDERS = UsageProviderSchema.options;
 

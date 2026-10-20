@@ -14,7 +14,7 @@ const MAX_BACKOFF_MS = 60 * 60_000;
 /* An account other than the default one that nobody started a CLI under for this long is only read when a person asks. */
 const RECENT_USE_MS = 24 * 60 * 60_000;
 
-const PROVIDERS: readonly UsageProvider[] = ['claude', 'codex', 'nanogpt'];
+const PROVIDERS: readonly UsageProvider[] = ['claude', 'codex', 'nanogpt', 'anthropic-claude-api'];
 
 export type ProbeEnv = Record<string, string>;
 

@@ -8,6 +8,7 @@ import { decodeIndex, encodeIndex, type IndexedFile, type UsageIndex } from './i
 import { foldByKey, type UsageRecord } from './record.ts';
 import { claudeMightCarryUsage, parseClaudeLine } from './readers/claude.ts';
 import { nanoGptMightCarryUsage, parseNanoGptLine } from './readers/nanogpt.ts';
+import { anthropicClaudeApiMightCarryUsage, parseAnthropicClaudeApiLine } from './readers/anthropic-claude-api.ts';
 import { cloneCodexState, codexMightCarryUsage, createCodexState, parseCodexLine, type CodexParserState } from './readers/codex.ts';
 import { usageRoots, type UsageRootPath } from './roots.ts';
 
@@ -122,6 +123,15 @@ function parseChunk(text: string, provider: UsageProvider, from: number, state: 
             if (provider === 'nanogpt') {
                 if (nanoGptMightCarryUsage(line)) {
                     const record = parseNanoGptLine(line);
+                    if (record !== null) {
+                        records.push(record);
+                    }
+                }
+                continue;
+            }
+            if (provider === 'anthropic-claude-api') {
+                if (anthropicClaudeApiMightCarryUsage(line)) {
+                    const record = parseAnthropicClaudeApiLine(line);
                     if (record !== null) {
                         records.push(record);
                     }
