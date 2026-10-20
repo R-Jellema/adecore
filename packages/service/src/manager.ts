@@ -1,4 +1,5 @@
 import { posix, win32 } from 'node:path';
+import { scheduledTaskMarker } from './cmd-line.js';
 
 export interface CommandResult {
     code: number;
@@ -173,7 +174,7 @@ export function systemdManager(options: SystemdOptions): ServiceManager {
 }
 
 export interface TaskSchedulerOptions {
-    /* The name of the task, the label of the spec. */
+    /* The name of the task, which has to be the label of the spec: a stop finds the task's processes by it. */
     taskName: string;
     /* Where the definition is kept and registered from. */
     definitionFile: string;
@@ -204,6 +205,17 @@ export function taskSchedulerManager(options: TaskSchedulerOptions): ServiceMana
             ])
             .stdout.trim() === 'Running';
 
+    // Before `/End`, which leaves what the task's cmd.exe started running without a parent to find it by.
+    const endTree = (): void => {
+        const marker = scheduledTaskMarker(name).replace(/'/g, "''");
+        const script = [
+            'Get-CimInstance Win32_Process -Filter "Name=\'cmd.exe\'"',
+            `Where-Object { $_.CommandLine -and $_.CommandLine.Contains('${marker}') }`,
+            'ForEach-Object { taskkill.exe /PID $_.ProcessId /T /F | Out-Null }'
+        ].join(' | ');
+        options.run('powershell.exe', ['-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')]);
+    };
+
     const run = (): void => {
         expectSuccess(schtasks('/Change', '/TN', name, '/ENABLE'), 'schtasks /Change /ENABLE');
         expectSuccess(schtasks('/Run', '/TN', name), 'schtasks /Run');
@@ -231,6 +243,7 @@ export function taskSchedulerManager(options: TaskSchedulerOptions): ServiceMana
         },
         async restart() {
             if (isRunning()) {
+                endTree();
                 schtasks('/End', '/TN', name);
                 // A task that still counts as running ignores the next start.
                 for (let attempt = 0; attempt < 25 && isRunning(); attempt++) {
@@ -240,6 +253,7 @@ export function taskSchedulerManager(options: TaskSchedulerOptions): ServiceMana
             run();
         },
         stop() {
+            endTree();
             // schtasks ends no instance of a task that is disabled already.
             schtasks('/End', '/TN', name);
             schtasks('/Change', '/TN', name, '/DISABLE');

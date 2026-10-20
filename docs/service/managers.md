@@ -65,14 +65,14 @@ A user unit stops when the person's last session ends. `manager.linger?.enabled(
 
 | `TaskSchedulerOptions` | |
 | --- | --- |
-| `taskName` | The name of the task, usually the label of the spec. |
+| `taskName` | The name of the task, which has to be the label of the spec: a stop finds the task's processes by it. |
 | `definitionFile` | Where the copy of the definition lives; `path` is this file. |
 | `logFile` | The log file of the spec. `install` creates its folder, since `cmd.exe` makes none and the task ends without it. |
 | `run` | A `CommandRunner`. |
 | `files` | A `ServiceFiles`. |
 | `sleep(ms)` | Resolves after `ms` milliseconds; `restart` waits with it. |
 
-`isInstalled` is true when the copy is on disk and `schtasks /Query` finds the task. `install` writes a changed copy and runs `schtasks /Create /XML /F` when the copy changed or the task is gone; it starts nothing. Since the task runs again every minute, `stop` runs `/End` and then `/Change /DISABLE`, and `start` runs `/Change /ENABLE` before `/Run`: a stopped task stays stopped, also at the next logon, until something starts it. `restart` runs `/End`, waits until the task no longer runs (25 times 200ms at most), then starts it; it reads the state through `Get-ScheduledTask` in PowerShell, because `schtasks` writes it in the language of the system. `uninstall` runs `/Delete /F` and removes the copy, without checking the result. A deleted task cannot be stopped through the manager any more, so stop it first.
+`isInstalled` is true when the copy is on disk and `schtasks /Query` finds the task. `install` writes a changed copy and runs `schtasks /Create /XML /F` when the copy changed or the task is gone; it starts nothing. Since the task runs again every minute, `stop` ends the tree under the task's `cmd.exe` with `taskkill /T /F`, since `/End` ends that one process and leaves the program running, then runs `/End` and `/Change /DISABLE`, and `start` runs `/Change /ENABLE` before `/Run`: a stopped task stays stopped, also at the next logon, until something starts it. `restart` ends the tree the same way and runs `/End`, waits until the task no longer runs (25 times 200ms at most), then starts it; it reads the state through `Get-ScheduledTask` in PowerShell, because `schtasks` writes it in the language of the system. `uninstall` runs `/Delete /F` and removes the copy, without checking the result. A deleted task cannot be stopped through the manager any more, so stop it first.
 
 ## Picking the platform
 

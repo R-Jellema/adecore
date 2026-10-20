@@ -53,6 +53,7 @@ describe('scheduledTask', () => {
     test('sets the environment, runs the program and appends to the log through cmd.exe', () => {
         expect(taskArguments(scheduledTask(WINDOWS))).toBe(
             '/d /s /c "' +
+                'title Example^ Worker && ' +
                 'set ^"WORKER_HOME=C:\\Users\\bas\\.worker^" && ' +
                 'set ^"PATH=C:\\Program^ Files\\Git\\cmd^;C:\\Windows\\System32^" && ' +
                 'C:\\Users\\bas\\AppData\\Local\\Programs\\Example\\resources\\bin\\worker.exe ^"--port^" ^"4210^" ' +

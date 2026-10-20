@@ -189,6 +189,9 @@ describe('taskSchedulerManager', () => {
     const CREATE = `schtasks.exe /Create /TN Example Worker /XML ${FILE} /F`;
     const STATE = "powershell.exe -NoProfile -NonInteractive -Command (Get-ScheduledTask -TaskPath '\\' -TaskName 'Example Worker' -ErrorAction Stop).State";
     const MISSING: CommandResult = { code: 1, stdout: '', stderr: 'ERROR: The system cannot find the file specified.' };
+    const isEndTree = (call: string): boolean => call.startsWith('powershell.exe -NoProfile -NonInteractive -EncodedCommand ');
+    const END_TREE = 'end the tree';
+    const named = (calls: string[]) => calls.map((call) => (isEndTree(call) ? END_TREE : call));
 
     const create = (runner: ReturnType<typeof fakeRunner>, disk = memoryFiles()) =>
         taskSchedulerManager({
@@ -228,9 +231,10 @@ describe('taskSchedulerManager', () => {
         const manager = create(runner);
         manager.start();
         manager.stop();
-        expect(runner.calls).toEqual([
+        expect(named(runner.calls)).toEqual([
             'schtasks.exe /Change /TN Example Worker /ENABLE',
             'schtasks.exe /Run /TN Example Worker',
+            END_TREE,
             'schtasks.exe /End /TN Example Worker',
             'schtasks.exe /Change /TN Example Worker /DISABLE'
         ]);
@@ -239,14 +243,25 @@ describe('taskSchedulerManager', () => {
     test('restarts by ending the task, waiting until it no longer runs, then running it', async () => {
         const runner = fakeRunner({ [STATE]: [ok('Running\r\n'), ok('Running\r\n'), ok('Ready\r\n')] });
         await create(runner).restart();
-        expect(runner.calls).toEqual([
+        expect(named(runner.calls)).toEqual([
             STATE,
+            END_TREE,
             'schtasks.exe /End /TN Example Worker',
             STATE,
             STATE,
             'schtasks.exe /Change /TN Example Worker /ENABLE',
             'schtasks.exe /Run /TN Example Worker'
         ]);
+    });
+
+    test('ends the tree under the cmd.exe whose title is the task name, which schtasks /End leaves running', () => {
+        const runner = fakeRunner();
+        create(runner).stop();
+        const call = runner.calls.find(isEndTree)!;
+        const script = Buffer.from(call.split(' ').at(-1)!, 'base64').toString('utf16le');
+        expect(script).toContain("Name='cmd.exe'");
+        expect(script).toContain(".Contains('title Example^ Worker && ')");
+        expect(script).toContain('taskkill.exe /PID $_.ProcessId /T /F');
     });
 
     test('a refused registration is an error that says why', () => {

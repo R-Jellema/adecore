@@ -1,3 +1,5 @@
+import { cmdEscaped, scheduledTaskMarker } from './cmd-line.js';
+
 export interface ServiceSpec {
     label: string;
     description: string;
@@ -98,13 +100,6 @@ export function systemdUnit(spec: ServiceSpec): string {
     return lines.join('\n');
 }
 
-// What cmd.exe reads as syntax outside quotes, and so escapes with a caret.
-const CMD_SPECIAL = /([()\][%!^"`<>&|;, *?])/g;
-
-function cmdEscaped(text: string): string {
-    return text.replace(CMD_SPECIAL, '^$1');
-}
-
 /* One argument as the C runtime splits a command line, escaped so cmd.exe passes it on as it is. */
 function cmdArgument(arg: string): string {
     if (/[\r\n]/.test(arg)) {
@@ -113,11 +108,11 @@ function cmdArgument(arg: string): string {
     return cmdEscaped(`"${arg.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\*)$/, '$1$1')}"`);
 }
 
-/* The line cmd.exe runs: the environment, the program and the log it appends to. */
+/* The line cmd.exe runs: its title, the environment, the program and the log it appends to. */
 function taskCommandLine(spec: ServiceSpec): string {
     const variables = Object.entries(spec.environment).map(([name, value]) => `set ${cmdEscaped(`"${name}=${value}"`)}`);
     const program = [cmdEscaped(spec.program), ...spec.args.map(cmdArgument)].join(' ');
-    return [...variables, `${program} >>${cmdEscaped(spec.logFile)} 2>&1`].join(' && ');
+    return `${scheduledTaskMarker(spec.label)}${[...variables, `${program} >>${cmdEscaped(spec.logFile)} 2>&1`].join(' && ')}`;
 }
 
 /*
