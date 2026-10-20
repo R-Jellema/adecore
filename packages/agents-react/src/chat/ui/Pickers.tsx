@@ -244,7 +244,7 @@ export function ModelPicker({
                                         {entry.provider.name}
                                     </Menu.Label>
                                 )}
-                                {vendorFirst && <div className="px-2.5 pt-2 pb-0.5 text-xs font-medium text-text-faint">{entry.model.vendor}</div>}
+                                {vendorFirst && <Menu.Label>{entry.model.vendor}</Menu.Label>}
                                 <button
                                     role="option"
                                     aria-selected={chosen}
