@@ -1,4 +1,4 @@
-import { dirname, join, win32 } from 'node:path';
+import { posix, win32 } from 'node:path';
 
 export interface CommandResult {
     code: number;
@@ -63,7 +63,7 @@ export interface LaunchdOptions {
  * the bundle, where the login shell's PATH and a log path in the home cannot be written.
  */
 export function launchdManager(options: LaunchdOptions): ServiceManager {
-    const path = join(options.home, 'Library', 'LaunchAgents', `${options.label}.plist`);
+    const path = posix.join(options.home, 'Library', 'LaunchAgents', `${options.label}.plist`);
     const domain = `gui/${options.uid}`;
     const target = `${domain}/${options.label}`;
     const launchctl = (...args: string[]): CommandResult => options.run('/bin/launchctl', args);
@@ -80,7 +80,7 @@ export function launchdManager(options: LaunchdOptions): ServiceManager {
         read: () => options.files.read(path),
         install(definition) {
             // launchd opens the log but makes no folder for it, and a job whose log cannot open never starts.
-            options.files.makeDirectory(dirname(options.logFile));
+            options.files.makeDirectory(posix.dirname(options.logFile));
             const previous = options.files.read(path);
             if (previous !== definition) {
                 options.files.write(path, definition);
@@ -126,7 +126,7 @@ export interface SystemdOptions {
 /* A user unit under ~/.config/systemd/user, enabled for `default.target`. */
 export function systemdManager(options: SystemdOptions): ServiceManager {
     const unit = options.unitName;
-    const path = join(options.configHome, 'systemd', 'user', unit);
+    const path = posix.join(options.configHome, 'systemd', 'user', unit);
     const systemctl = (...args: string[]): CommandResult => options.run('systemctl', ['--user', ...args]);
 
     const reload = (): void => {
