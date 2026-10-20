@@ -10,12 +10,17 @@ import { diskFiles, runCommand } from './system.js';
 const enabled = process.platform === 'win32' && process.env.ADECORE_TEST_TASK_SCHEDULER === '1';
 
 function alive(pid: number): boolean {
-    try {
-        process.kill(pid, 0);
-        return true;
-    } catch {
-        return false;
-    }
+    return runCommand('tasklist.exe', ['/FI', `PID eq ${pid}`, '/NH', '/FO', 'CSV']).stdout.includes(`"${pid}"`);
+}
+
+// Every bun and cmd process with its parent, for a failure to show what is left running.
+function processes(): string {
+    return runCommand('powershell.exe', [
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        "Get-CimInstance Win32_Process -Filter \"Name='bun.exe' or Name='cmd.exe'\" | Format-Table ProcessId,ParentProcessId,CommandLine -AutoSize -Wrap | Out-String -Width 400"
+    ]).stdout;
 }
 
 describe.skipIf(!enabled)('a scheduled task on Windows', () => {
@@ -65,7 +70,7 @@ describe.skipIf(!enabled)('a scheduled task on Windows', () => {
                     }
                 })();
                 const query = runCommand('schtasks.exe', ['/Query', '/TN', taskName, '/V', '/FO', 'LIST']);
-                throw new Error(`${what} did not happen.\nLog:\n${log}\nTask:\n${query.stdout}${query.stderr}`);
+                throw new Error(`${what} did not happen.\nLog:\n${log}\nTask:\n${query.stdout}${query.stderr}\nProcesses:\n${processes()}`);
             }
         };
         try {
