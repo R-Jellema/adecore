@@ -1,6 +1,6 @@
-import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { UsageProvider } from '@adecore/agent-contracts';
+import { homeFolder } from '../home-folder.ts';
 
 export interface UsageRootPath {
     provider: UsageProvider;
@@ -14,7 +14,7 @@ const TRANSCRIPTS: Record<UsageProvider, string> = { claude: 'projects', codex: 
 
 /* The transcripts of the default accounts, found through the variables the CLIs themselves read. */
 export function usageRoots(env: Record<string, string | undefined> = process.env): UsageRootPath[] {
-    const home = env.HOME ?? homedir();
+    const home = homeFolder(env);
     return [
         { provider: 'claude', path: join(env.CLAUDE_CONFIG_DIR ?? join(home, '.claude'), TRANSCRIPTS.claude) },
         { provider: 'codex', path: join(env.CODEX_HOME ?? join(home, '.codex'), TRANSCRIPTS.codex) }

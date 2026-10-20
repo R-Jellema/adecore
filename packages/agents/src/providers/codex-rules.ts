@@ -1,8 +1,8 @@
 import { mkdir, readFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { errorText } from '../error-text.ts';
 import { isNotFound, writeAtomic } from '../fs.ts';
+import { homeFolder } from '../home-folder.ts';
 
 /*
  * The commands a host lets Codex run outside its sandbox without asking: the seatbelt of
@@ -33,7 +33,7 @@ export function codexRulesPathIn(folder: string, rules: CodexRules): string {
 }
 
 export function defaultCodexHome(env: Record<string, string | undefined> = process.env): string {
-    return env.CODEX_HOME ?? join(env.HOME ?? homedir(), '.codex');
+    return env.CODEX_HOME ?? join(homeFolder(env), '.codex');
 }
 
 /* Idempotent: a file that already says the same is left alone. */

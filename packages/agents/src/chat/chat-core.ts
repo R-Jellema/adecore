@@ -1,4 +1,3 @@
-import { homedir } from 'node:os';
 import { join } from 'node:path';
 import {
     ChatAttachmentUploadsSchema,
@@ -64,6 +63,7 @@ import { readableAssistantText } from './readable-text.ts';
 import { SubagentReader, type SubagentReaderOptions } from './subagent-reader.ts';
 import { ChatUiQueries, type ChatUiHost } from './ui-queries.ts';
 import type { VisualInput, VisualStore } from './visual-store.ts';
+import { homeFolder } from '../home-folder.ts';
 
 /* A turn that was running when the host went down, and the attempt that would take it up again. */
 export interface InterruptedRun {
@@ -442,7 +442,7 @@ export class ChatCore {
         const provider = this.providers.get(kind);
         const catalog = provider.catalog;
         const selection = catalog.normalize(stored?.info.selection ?? this.hooks.openingSelection?.(payload.chatId, kind) ?? payload.selection);
-        const cwd = stored?.info.cwd ?? payload.cwd ?? this.env.HOME ?? homedir();
+        const cwd = stored?.info.cwd ?? payload.cwd ?? homeFolder(this.env);
         await this.hooks.admit?.(payload.chatId, cwd);
         // A thread on disk keeps its account too. One it lost still opens, and says why on its next turn.
         // A new one without an account takes the person's pick for this CLI, which is refused rather than replaced when it went.

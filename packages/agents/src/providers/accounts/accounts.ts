@@ -1,8 +1,8 @@
-import { homedir } from 'node:os';
 import { isAbsolute, join, resolve } from 'node:path';
 import { AgentKindSchema, ProviderAccountSchema, type AgentKind, type ProviderAccount, type ProviderAccountMap } from '@adecore/agent-contracts';
 import type { ChatProvider } from '../provider.ts';
 import { DEFAULT_ACCOUNTS_HOST, variablesProblem, type AccountsHost, type ReservedVariables } from './variables.ts';
+import { homeFolder } from '../../home-folder.ts';
 
 export type Env = Record<string, string | undefined>;
 
@@ -18,11 +18,11 @@ export function isDefaultAccount(id: string, account: Pick<ProviderAccount, 'kin
 }
 
 export function expandHome(path: string, env: Env): string {
-    const home = env.HOME ?? homedir();
+    const home = homeFolder(env);
     if (path === '~') {
         return home;
     }
-    if (path.startsWith('~/')) {
+    if (path.startsWith('~/') || (process.platform === 'win32' && path.startsWith('~\\'))) {
         return join(home, path.slice(2));
     }
     return resolve(path);
@@ -103,7 +103,7 @@ export function defaultFolder(provider: ChatProvider, env: Env): string {
     if (provider.home === undefined) {
         return '';
     }
-    return env[provider.home.env] ?? join(env.HOME ?? homedir(), provider.home.fallback);
+    return env[provider.home.env] ?? join(homeFolder(env), provider.home.fallback);
 }
 
 /* The folder a CLI of this account is started with: for a Codex account with a shadow home, that one. */
