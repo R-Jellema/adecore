@@ -5,7 +5,7 @@ import { useChatHost } from '../../../host';
 import { useChatScope } from '../../../scope';
 import { errorCode } from '../../../transport';
 import { useChatActions } from '../../actions';
-import { rememberChatAccount, rememberChatPreferences, rememberChatSelection } from '../../preferences';
+import { rememberChatAccount, rememberChatSelection } from '../../preferences';
 import { composerStopOf } from '../../subagent-list';
 import type { ComposerNotice } from './use-notice';
 
@@ -42,14 +42,12 @@ export function useChatControls({ chatId, info, notice: { setNotice, showError }
             });
     };
 
+    // A mode picked here is this chat's; the default for new chats changes only in the settings.
     const configure = (patch: { selection?: ModelSelection; runtimeMode?: RuntimeMode; account?: string }): void => {
         runConfiguration(() =>
             actions.configure(chatId, patch).then(() => {
                 if (patch.selection) {
                     rememberChatSelection(info.provider, patch.selection);
-                }
-                if (patch.runtimeMode) {
-                    rememberChatPreferences({ runtimeMode: patch.runtimeMode });
                 }
                 if (patch.account) {
                     rememberChatAccount(scope.id, info.provider, patch.account);

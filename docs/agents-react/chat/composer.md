@@ -32,6 +32,8 @@ A command of your own, such as a menu row, sends what a composer on screen holds
 
 Before the first message, picking another CLI's model calls `onRetarget(provider, selection)`, which moves the empty chat. After it, or with `providerFixed`, the picker offers only the chat's own CLI.
 
+A model picked in the composer becomes the one new chats of that CLI start on. A runtime mode picked there is the chat's own: the mode new chats start in changes only through `rememberChatPreferences`, from a settings page of your own.
+
 ## Keys
 
 `Mod` is Command on macOS and Control elsewhere. A key inside an IME composition belongs to the composition, and a key the host's `isAppShortcut` claims passes through.

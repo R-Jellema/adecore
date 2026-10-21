@@ -11,6 +11,7 @@ import { useProvidersStore } from '../../state/providers';
 import { ChatTransportError } from '../../transport';
 import type { ChatSendExtras } from '../chat-client';
 import { EMPTY_DRAFT, readDraft, writeDraft } from '../drafts';
+import { readChatPreferences, rememberChatPreferences } from '../preferences';
 import { useStash, type StashedPrompt } from '../stash';
 import { Composer } from './Composer';
 
@@ -801,5 +802,18 @@ describe('the surface around the text', () => {
         expect(surface.hasAttribute('data-text-cursor')).toBe(false);
         await composer.fire(composer.view().contentDOM, 'pointerover', {});
         expect(surface.hasAttribute('data-text-cursor')).toBe(true);
+    });
+});
+
+describe('the mode of a chat', () => {
+    test('a mode picked in the composer changes this chat and leaves the default for new chats alone', async () => {
+        rememberChatPreferences({ runtimeMode: 'full-access' });
+        const composer = await mount();
+        await act(async () => {
+            (composer.propsOf('RunSettings')!.onMode as (mode: string) => void)('supervised');
+        });
+        await settle();
+        expect(composer.calls).toContainEqual(['configure', CHAT, { runtimeMode: 'supervised' }]);
+        expect(readChatPreferences().runtimeMode).toBe('full-access');
     });
 });
