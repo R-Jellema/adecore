@@ -31,6 +31,8 @@ export interface LanguagePopupsProps<Language extends EditorLanguage = EditorLan
  * whenever the editor scrolls or resizes.
  */
 export function LanguagePopups<Language extends EditorLanguage>({ language, contextMenuItems, hoverFooter, children }: LanguagePopupsProps<Language>) {
+    // The React Compiler would keep each card's place from the render before; it is read from the editor again on every scroll.
+    'use no memo';
     const [, redraw] = useReducer((count: number) => count + 1, 0);
     const hover = useStore(language.popups, (state) => state.hover);
     const completion = useStore(language.popups, (state) => state.completion);

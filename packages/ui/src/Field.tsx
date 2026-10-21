@@ -1,4 +1,4 @@
-import { useId, useMemo, type ReactNode, type Ref } from 'react';
+import { useId, type ReactNode, type Ref } from 'react';
 import clsx from 'clsx';
 import { useRender } from '@base-ui/react/use-render';
 import { FieldContext } from './field-context.ts';
@@ -84,8 +84,9 @@ export function Field({ label, hint, error, group = false, orientation = 'vertic
     const hasLabel = label !== undefined;
     const hasHint = isShown(hint);
     const hasError = isShown(error);
-    const describedBy = [hasHint ? `${id}-hint` : null, hasError ? `${id}-error` : null].filter((part) => part !== null).join(' ') || undefined;
-    const control = useMemo(() => (group ? null : { id: `${id}-control`, describedBy, invalid: hasError }), [group, id, describedBy, hasError]);
+    const lines = [hasHint ? `${id}-hint` : null, hasError ? `${id}-error` : null].filter((part) => part !== null);
+    const describedBy = lines.length > 0 ? lines.join(' ') : undefined;
+    const control = group ? null : { id: `${id}-control`, describedBy, invalid: hasError };
     return (
         <div
             ref={ref}

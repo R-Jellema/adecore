@@ -1,4 +1,5 @@
 import { $ } from 'bun';
+import { compileReactDist, describeReactCompilerReport } from '../../../scripts/react-compiler.ts';
 import { copyFile, rm } from 'node:fs/promises';
 
 /*
@@ -7,4 +8,5 @@ import { copyFile, rm } from 'node:fs/promises';
  */
 await rm('dist', { recursive: true, force: true });
 await $`tsc -p tsconfig.build.json`;
+console.log(describeReactCompilerReport('ui', await compileReactDist('dist')));
 await copyFile('src/theme.css', 'dist/theme.css');

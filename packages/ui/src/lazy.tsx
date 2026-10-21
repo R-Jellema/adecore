@@ -79,6 +79,8 @@ export function lazyNamed<Module extends Record<Name, ComponentType<any>>, Name 
     const Lazy = lazy(() => open(loaded));
     // Once `loaded` has it, `Lazy` never committed anything, so switching over remounts nothing.
     const LazyNamed = (props: ComponentProps<Module[Name]>) => {
+        // `loaded` fills in place; compiled, the element drawn before the module landed would stay.
+        'use no memo';
         const Component: ComponentType<any> = loaded.current ?? Lazy;
         return <Component {...props} />;
     };
@@ -114,6 +116,8 @@ export function lazyDialog<Module extends Record<Name, ComponentType>, Name exte
     const subscribe = (listener: () => void) => loaded.subscribe(listener);
     const isLoaded = () => loaded.current !== null;
     const LazyDialog = () => {
+        // As in `lazyNamed`: what `loaded` holds is read again on every render.
+        'use no memo';
         const opened = useOpenedOnce(useStore(isOpen));
         useSyncExternalStore(subscribe, isLoaded);
         const Loaded: ComponentType | null = loaded.current;

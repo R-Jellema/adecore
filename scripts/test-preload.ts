@@ -2,6 +2,7 @@ import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { AGENTS_LOCALES } from '../packages/agents-react/src/locales.ts';
 import ui from '../packages/ui/src/locales/en.ts';
+import { compileReactSource } from './react-compiler.ts';
 
 // A demo imports a Web Worker the way Vite bundles one; a test renders it without ever starting the worker.
 Bun.plugin({
@@ -9,6 +10,17 @@ Bun.plugin({
     setup(build) {
         build.onResolve({ filter: /\?worker$/ }, (args) => ({ path: args.path, namespace: 'vite-worker' }));
         build.onLoad({ filter: /.*/, namespace: 'vite-worker' }, () => ({ contents: 'export default class {}', loader: 'js' }));
+    }
+});
+
+// A test of these packages runs their source the way their `dist` ships it: through the React Compiler.
+Bun.plugin({
+    name: 'react-compiler',
+    setup(build) {
+        build.onLoad({ filter: /[\\/]packages[\\/](ui|agents-react|editor-react|terminal)[\\/]src[\\/](?!.*\.test\.tsx?$).*\.tsx?$/ }, async (args) => ({
+            contents: await compileReactSource(await Bun.file(args.path).text(), args.path),
+            loader: args.path.endsWith('.tsx') ? 'tsx' : 'ts'
+        }));
     }
 });
 

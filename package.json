@@ -25,8 +25,12 @@
     "release:publish": "bun scripts/release.ts publish"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@babel/plugin-transform-react-jsx": "^7.29.7",
+    "@types/babel__core": "^7.20.5",
     "@types/bun": "^1.4.2",
     "@types/node": "^24.13.6",
+    "babel-plugin-react-compiler": "^1.0.0",
     "i18next": "^26.4.2",
     "oxc-parser": "^0.151.0",
     "oxfmt": "^0.70.0",

@@ -63,7 +63,7 @@ function Line({ row, id, active, expanded, position, size, ref, children, onClic
     );
 }
 
-function Symbol({ language, row, active, id, ref }: { language: EditorLanguage; row: NodeRow; active: boolean; id: string; ref?: Ref<HTMLDivElement> }) {
+function SymbolRow({ language, row, active, id, ref }: { language: EditorLanguage; row: NodeRow; active: boolean; id: string; ref?: Ref<HTMLDivElement> }) {
     const { t } = useTranslation('editor');
     const { item } = row;
     const path = relativeTo(fileUriToPath(item.uri) ?? item.uri, language.project.folder);
@@ -130,7 +130,7 @@ function Tree({ language, view }: { language: EditorLanguage; view: CallHierarch
                 const active = row.id === view.active;
                 const ref = active ? activeRow : undefined;
                 if (row.kind === 'node') {
-                    return <Symbol key={row.id} ref={ref} language={language} row={row} active={active} id={idOf(row)} />;
+                    return <SymbolRow key={row.id} ref={ref} language={language} row={row} active={active} id={idOf(row)} />;
                 }
                 if (row.kind === 'more') {
                     const next = Math.min(row.hidden, CALL_LEVEL_LIMIT);

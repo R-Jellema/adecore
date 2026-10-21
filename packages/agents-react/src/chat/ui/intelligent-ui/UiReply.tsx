@@ -399,6 +399,8 @@ function UiBlockBody({
     /* Set for a finished reply the machine keeps no readings for, which nothing will ever look up. */
     unrecorded: boolean;
 }): ReactNode {
+    // The block's state changes in place and only its revision says so; compiled, the evaluation of the first revision would stay.
+    'use no memo';
     const host = useChatHost();
     const { t } = useTranslation('agent-chat');
     const key = JSON.stringify([context.scopeId, context.chatId, context.itemId, block.id]);

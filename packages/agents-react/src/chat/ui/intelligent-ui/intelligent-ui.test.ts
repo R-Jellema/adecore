@@ -238,8 +238,14 @@ describe('local inputs', () => {
     test('change their state only through the binding, once their node closed', () => {
         const { nodes, state } = evaluate(REVIEW);
         const list = nodes.find((node) => node.type === 'Checklist') as UiViewNode<{ value: (string | number | boolean | null)[] }>;
-        const element = ChecklistRenderer({ node: list, children: null, context: CONTEXT }) as ReactElement<{ value: { toggle(value: unknown): void } }>;
-        element.props.value.toggle('links');
+        let element: ReactElement<{ value: { toggle(value: unknown): void } }> | null = null;
+        // Called inside a render, since the compiled renderer keeps its memo in a hook.
+        const Probe = (): null => {
+            element = ChecklistRenderer({ node: list, children: null, context: CONTEXT }) as ReactElement<{ value: { toggle(value: unknown): void } }>;
+            return null;
+        };
+        renderToStaticMarkup(createElement(Probe));
+        element!.props.value.toggle('links');
         expect(state.scope().$selected).toEqual(['preload']);
     });
 

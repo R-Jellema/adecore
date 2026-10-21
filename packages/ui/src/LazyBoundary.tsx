@@ -12,6 +12,8 @@ export interface LazyBoundaryProps {
  * lands, so a chunk that takes 20 ms shows after 20 ms.
  */
 export function LazyBoundary({ fallback = null, children }: LazyBoundaryProps) {
+    // Compiled, the same boundary would come back and the landing would wait for React's own retry after all.
+    'use no memo';
     useSyncExternalStore(subscribeLandings, readLandings, readLandings);
     return <Suspense fallback={fallback}>{children}</Suspense>;
 }

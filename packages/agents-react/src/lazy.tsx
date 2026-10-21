@@ -58,6 +58,8 @@ export function lazyNamed<Module extends Record<Name, ComponentType<any>>, Name 
         }
     });
     const LazyNamed = (props: ComponentProps<Module[Name]>) => {
+        // `loaded` fills in place; compiled, the element drawn before the module landed would stay.
+        'use no memo';
         const Component: ComponentType<any> = loaded.current ?? Lazy;
         return <Component {...props} />;
     };

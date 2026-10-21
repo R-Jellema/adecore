@@ -1,9 +1,11 @@
 import { $ } from 'bun';
+import { compileReactDist, describeReactCompilerReport } from '../../../scripts/react-compiler.ts';
 import { copyFile, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, extname, join, resolve } from 'node:path';
 
 await rm('dist', { recursive: true, force: true });
 await $`tsc -p tsconfig.build.json`;
+console.log(describeReactCompilerReport('editor-react', await compileReactDist('dist')));
 
 async function assets(directory: string): Promise<void> {
     for (const entry of await readdir(directory, { withFileTypes: true })) {

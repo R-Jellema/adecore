@@ -166,6 +166,8 @@ function drawNamed(command: string, runs: readonly Run[] | null, names: readonly
  * caller knows, and `names` draws words as the names a host gave them, both as offsets into `command`.
  */
 export function ShellCommand({ command, code = NO_CODE, names = NO_NAMES }: { command: string; code?: readonly EmbeddedCode[]; names?: readonly NamedWord[] }) {
+    // The highlighter's cache fills in place; compiled, the runs it gave before its grammars loaded would stay.
+    'use no memo';
     const theme = useCodeTheme();
     const { custom } = useChatHost().code;
     const highlighter = useCodeHighlighter();

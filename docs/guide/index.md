@@ -80,3 +80,11 @@ bun link @adecore/<name>
 ```
 
 Then turn the condition on wherever the app resolves modules: `resolve.conditions` in Vite, `customConditions` in TypeScript and `--conditions=source` for `bun test`. A package's own page lists what else it needs, such as a single copy of React.
+
+## The React Compiler
+
+The packages with React views (UI, Terminal, Agent views and Editor views) are built with the [React Compiler](https://react.dev/learn/react-compiler), so what npm serves from `dist` memoizes its components and hooks itself: a chat that streams or a composer that is typed in draws only the parts that changed. The compiled code imports `react/compiler-runtime`, which comes with React 19.
+
+The `source` condition gives an app the TypeScript as it is written. To keep the memoization, run the compiler over those sources the way the app runs it over its own: `babel-plugin-react-compiler` with `target: '19'`, through `reactCompilerPreset` of `@vitejs/plugin-react` in Vite. A bundler setup that leaves `node_modules` out has to let the `src` of these packages in. Without the compiler every view still works; it draws again as often as its parent does.
+
+A function that starts with `'use no memo'` stays as it is written, in `dist` too, and so does one the compiler cannot prove safe.
