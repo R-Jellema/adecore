@@ -9,6 +9,8 @@ export type {
     AcpPermissionRequest,
     AcpSessionInfo,
     AcpModeMap,
+    AcpChoice,
+    AcpThoughtLevel,
     AcpTurnUsage
 } from './acp-protocol.ts';
 export { AttachmentStore } from './attachment-store.ts';

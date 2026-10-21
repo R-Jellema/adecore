@@ -9,6 +9,7 @@ import {
     promptUsageOf,
     resolveAcpMode,
     runtimeModeOf,
+    thoughtLevelOf,
     toolRow,
     unifiedDiff,
     type AcpModeMap
@@ -74,7 +75,35 @@ describe('AcpProtocol', () => {
                 { id: 'plan', name: 'Plan' }
             ]
         });
-        expect(info.thoughtLevel).toEqual({ configId: 'reasoning', current: 'medium', values: ['low', 'medium', 'high'] });
+        expect(info.thoughtLevel).toEqual({
+            configId: 'reasoning',
+            current: 'medium',
+            choices: [
+                { id: 'low', name: 'Low', description: null },
+                { id: 'medium', name: 'Medium', description: null },
+                { id: 'high', name: 'High', description: null }
+            ]
+        });
+    });
+
+    test('takes a reasoning effort without a category by its id, and reads it from a response that carries the options', () => {
+        const options = [
+            {
+                id: 'reasoning_effort',
+                name: 'Reasoning effort',
+                type: 'select',
+                currentValue: 'high',
+                options: [{ value: 'high', name: 'High', description: 'Thinks longer' }]
+            }
+        ];
+        expect(parseSessionInfo({ sessionId: 's', configOptions: options }, 's', null).thoughtLevel).toEqual({
+            configId: 'reasoning_effort',
+            current: 'high',
+            choices: [{ id: 'high', name: 'High', description: 'Thinks longer' }]
+        });
+        expect(thoughtLevelOf({ configOptions: options })?.current).toBe('high');
+        expect(thoughtLevelOf({ configOptions: [] })).toBeNull();
+        expect(thoughtLevelOf({})).toBeUndefined();
     });
 
     test('takes models from the older models field when no config option has them', () => {

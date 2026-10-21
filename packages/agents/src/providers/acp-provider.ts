@@ -1,4 +1,4 @@
-import type { AgentKind, ProviderCapabilities, ProviderInstall } from '@adecore/agent-contracts';
+import type { AgentKind, ModelOptionDescriptor, ProviderCapabilities, ProviderInstall } from '@adecore/agent-contracts';
 import { createAcpBackend, type AcpAgentSpec, type AcpUsageReport } from '../chat/acp-backend.ts';
 import type { AcpSessionInfo } from '../chat/acp-protocol.ts';
 import { askAcpAccount } from './accounts/acp-account.ts';
@@ -66,11 +66,32 @@ function adoptableModels(info: AcpSessionInfo): Array<{ slug: string; name: stri
     return (info.models?.models ?? []).filter((model) => model.id !== '' && !model.id.startsWith('-')).map((model) => ({ slug: model.id, name: model.name }));
 }
 
+/* The reasoning effort a session offers, as the `effort` option the composer draws for every provider. */
+function effortOption(info: AcpSessionInfo): ModelOptionDescriptor[] {
+    const level = info.thoughtLevel;
+    if (level === null || !level.choices.some((choice) => choice.id === level.current)) {
+        return [];
+    }
+    return [
+        {
+            id: 'effort',
+            label: 'Reasoning',
+            type: 'select',
+            defaultChoice: level.current,
+            choices: level.choices.map((choice) => ({
+                id: choice.id,
+                label: choice.name,
+                ...(choice.description === null ? {} : { description: choice.description })
+            }))
+        }
+    ];
+}
+
 export function createAcpProvider(spec: AcpProviderSpec): ChatProvider {
     const capabilities = { ...ACP_CAPABILITIES, ...spec.capabilities };
     const onSession = (info: AcpSessionInfo): void => {
         if (spec.adoptModels !== false && info.models !== null) {
-            spec.catalog.adopt(adoptableModels(info), info.models.current);
+            spec.catalog.adopt(adoptableModels(info), info.models.current, effortOption(info));
         }
         spec.onSession?.(info);
     };

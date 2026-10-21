@@ -24,6 +24,9 @@ export interface FakeAcpOptions {
     closeSession?: boolean;
     // The `usage` every `session/prompt` response carries; absent reports none.
     turnUsage?: Record<string, number>;
+    // Offers a reasoning effort as the config option `reasoning_effort`, without a category: Low and High, and
+    // Extra high on `fake-large`. `reject` refuses every change to it.
+    reasoningEffort?: 'accept' | 'reject';
 }
 
 export function fakeAcpWith(options: FakeAcpOptions): FakeCli {
@@ -33,6 +36,7 @@ export function fakeAcpWith(options: FakeAcpOptions): FakeCli {
         let sessionId = '';
         let mode = modes[0] ?? '';
         let model = 'fake-small';
+        let effort = 'low';
         let serverRequestId = 0;
         let callCounter = 0;
         let prompt: { rpcId: number | string; cancelled: boolean } | null = null;
@@ -74,11 +78,25 @@ export function fakeAcpWith(options: FakeAcpOptions): FakeCli {
                 { value: 'fake-small', name: 'Fake small' },
                 { value: 'fake-large', name: 'Fake large' }
             ];
+            const effortChoices = [
+                { value: 'low', name: 'Low', description: 'Answers quickly' },
+                { value: 'high', name: 'High' },
+                ...(model === 'fake-large' ? [{ value: 'xhigh', name: 'Extra high' }] : [])
+            ];
+            const effortOption =
+                options.reasoningEffort === undefined
+                    ? []
+                    : [{ id: 'reasoning_effort', name: 'Reasoning effort', type: 'select', currentValue: effort, options: effortChoices }];
             return {
                 ...(modes.length === 0 ? {} : { modes: { currentModeId: mode, availableModes: modes.map((id) => ({ id, name: id })) } }),
                 ...(options.legacyModels
                     ? { models: { currentModelId: model, availableModels: modelChoices.map((choice) => ({ modelId: choice.value, name: choice.name })) } }
-                    : { configOptions: [{ id: 'model', name: 'Model', type: 'select', category: 'model', currentValue: model, options: modelChoices }] })
+                    : {
+                          configOptions: [
+                              { id: 'model', name: 'Model', type: 'select', category: 'model', currentValue: model, options: modelChoices },
+                              ...effortOption
+                          ]
+                      })
             };
         };
 
@@ -276,6 +294,13 @@ export function fakeAcpWith(options: FakeAcpOptions): FakeCli {
                 case 'session/set_config_option':
                     if (params.configId === 'model') {
                         model = String(params.value);
+                    }
+                    if (params.configId === 'reasoning_effort') {
+                        if (options.reasoningEffort === 'reject') {
+                            refuse(id, -32602, 'Reasoning effort is locked');
+                            return;
+                        }
+                        effort = String(params.value);
                     }
                     respond(id, { configOptions: sessionState().configOptions ?? [] });
                     return;

@@ -105,6 +105,42 @@ test('takes the models a session reports, so a later chat can pick one', async (
     expect(events.find((event) => event.type === 'session')).toMatchObject({ model: 'fake-large' });
 });
 
+test('takes the reasoning effort a session reports as the effort option, with its labels and its current value as the default', async () => {
+    const withEffort = new ModelCatalog({
+        defaultModel: 'default',
+        profiles: {
+            agent: {
+                options: [
+                    { id: 'effort', label: 'Reasoning', type: 'select', defaultChoice: 'medium', choices: [{ id: 'medium', label: 'Medium' }] },
+                    { id: 'fast', label: 'Fast', type: 'boolean', defaultValue: false }
+                ],
+                contextWindowTokens: {}
+            }
+        },
+        models: [{ slug: 'default', name: 'Default', profile: 'agent' }]
+    });
+    const provider = createAcpProvider({ kind: 'example', name: 'Example', command: 'example', catalog: withEffort });
+    const fake = inProcess(fakeAcpWith({ reasoningEffort: 'accept' }));
+    const backend = provider.createBackend(launchOn(provider, 'default', fake.spawn), { onEvent: () => undefined });
+    await backend.start();
+    await backend.dispose();
+    const small = provider.catalog.list().find((model) => model.slug === 'fake-small');
+    expect(small?.options).toEqual([
+        { id: 'fast', label: 'Fast', type: 'boolean', defaultValue: false },
+        {
+            id: 'effort',
+            label: 'Reasoning',
+            type: 'select',
+            defaultChoice: 'low',
+            choices: [
+                { id: 'low', label: 'Low', description: 'Answers quickly' },
+                { id: 'high', label: 'High' }
+            ]
+        }
+    ]);
+    expect(provider.catalog.normalize({ model: 'fake-small' }).options).toEqual({ fast: false, effort: 'low' });
+});
+
 test('keeps its own catalog where the agent reports no models or the spec says so', async () => {
     const kept = createAcpProvider({ kind: 'example', name: 'Example', command: 'example', catalog: agentDefault(), adoptModels: false });
     const fake = inProcess(fakeAcp);

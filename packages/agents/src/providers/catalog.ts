@@ -1,4 +1,4 @@
-import type { ModelCatalogData, ModelCatalogProfile, ModelInfo, ModelSelection } from '@adecore/agent-contracts';
+import type { ModelCatalogData, ModelCatalogProfile, ModelInfo, ModelOptionDescriptor, ModelSelection } from '@adecore/agent-contracts';
 import manifest from './claude-models.json' with { type: 'json' };
 
 // What a host builds a catalog from; one that is never replaced needs no date.
@@ -41,13 +41,16 @@ export class ModelCatalog {
     /*
      * Takes the models an agent reported for itself in place of the list, the agent's current model as the
      * default and its order kept; answers whether the models changed. Every model gets the profile the
-     * default has now, as an agent names its models but not what each can be asked for.
+     * default has now, as an agent names its models but not what each can be asked for, with `options`
+     * in place of the profile's options of the same id.
      */
-    adopt(models: ReadonlyArray<{ slug: string; name: string }>, defaultModel: string): boolean {
+    adopt(models: ReadonlyArray<{ slug: string; name: string }>, defaultModel: string, options: readonly ModelOptionDescriptor[] = []): boolean {
         if (models.length === 0 || !models.some((model) => model.slug === defaultModel)) {
             return false;
         }
-        const profile = this.profileOf(this.data.defaultModel) ?? { options: [], contextWindowTokens: {} };
+        const base = this.profileOf(this.data.defaultModel) ?? { options: [], contextWindowTokens: {} };
+        const replaced = new Set(options.map((option) => option.id));
+        const profile = { ...base, options: [...base.options.filter((option) => !replaced.has(option.id)), ...options] };
         const data: ModelCatalogInput = {
             ...(this.data.updatedAt === undefined ? {} : { updatedAt: this.data.updatedAt }),
             defaultModel,

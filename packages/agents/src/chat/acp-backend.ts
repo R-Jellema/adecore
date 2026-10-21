@@ -14,10 +14,12 @@ import {
     resolveAcpMode,
     runtimeModeOf,
     sessionIdOf,
+    thoughtLevelOf,
     type AcpAgentCapabilities,
     type AcpModeMap,
     type AcpPermissionRequest,
     type AcpSessionInfo,
+    type AcpThoughtLevel,
     type AcpTurnUsage
 } from './acp-protocol.ts';
 import type { ApprovalDecision, BackendEvent, BackendHost, BackendLaunch, ChatBackend, TurnInput } from './backend.ts';
@@ -154,9 +156,9 @@ export class AcpBackend implements ChatBackend {
         this.capabilities = capabilities;
         const info = await this.openSession(transport, capabilities);
         const modeId = await this.applyMode(transport, info);
-        const model = await this.applyModel(transport, info);
+        const { model, thoughtLevel } = await this.applyModel(transport, info);
         this.model = model;
-        await this.applyThoughtLevel(transport, info);
+        await this.applyThoughtLevel(transport, thoughtLevel);
         this.spec.onSession?.(info);
         this.emit({
             type: 'session',
@@ -263,24 +265,29 @@ export class AcpBackend implements ChatBackend {
         return resolved.modeId;
     }
 
-    /* Switches to the selected model where the agent offers it; answers the model the session runs. */
-    private async applyModel(transport: JsonRpcTransport, info: AcpSessionInfo): Promise<string | null> {
+    /*
+     * Switches to the selected model where the agent offers it; answers the model the session runs and the
+     * reasoning effort it offers there, which may change with the model.
+     */
+    private async applyModel(transport: JsonRpcTransport, info: AcpSessionInfo): Promise<{ model: string | null; thoughtLevel: AcpThoughtLevel | null }> {
         const models = info.models;
+        const thoughtLevel = info.thoughtLevel;
         const wanted = this.spec.model ? this.spec.model(this.launch.selection) : this.launch.selection.model;
         if (models === null || wanted === null || wanted === models.current) {
-            return models?.current ?? wanted;
+            return { model: models?.current ?? wanted, thoughtLevel };
         }
         if (!models.models.some((model) => model.id === wanted)) {
             this.emit({ type: 'note', level: 'warning', text: `${this.spec.name} does not offer ${this.launch.modelName}. It runs ${models.current}.` });
-            return models.current;
+            return { model: models.current, thoughtLevel };
         }
         try {
             if (models.configId === null) {
                 await transport.request('session/set_model', { sessionId: this.sessionId, modelId: wanted });
-            } else {
-                await transport.request('session/set_config_option', { sessionId: this.sessionId, configId: models.configId, value: wanted });
+                return { model: wanted, thoughtLevel };
             }
-            return wanted;
+            const result = await transport.request('session/set_config_option', { sessionId: this.sessionId, configId: models.configId, value: wanted });
+            const after = thoughtLevelOf(result);
+            return { model: wanted, thoughtLevel: after === undefined ? thoughtLevel : after };
         } catch (error) {
             if (!(error instanceof JsonRpcError)) {
                 throw error;
@@ -290,21 +297,26 @@ export class AcpBackend implements ChatBackend {
                 level: 'warning',
                 text: `${this.spec.name} did not switch to ${this.launch.modelName} (${errorText(error)}). It runs ${models.current}.`
             });
-            return models.current;
+            return { model: models.current, thoughtLevel };
         }
     }
 
-    private async applyThoughtLevel(transport: JsonRpcTransport, info: AcpSessionInfo): Promise<void> {
-        const level = info.thoughtLevel;
+    /* Sets the selected effort where the session offers it; a model without one runs as it is. */
+    private async applyThoughtLevel(transport: JsonRpcTransport, level: AcpThoughtLevel | null): Promise<void> {
         const effort = this.launch.selection.options.effort;
-        if (level === null || typeof effort !== 'string' || effort === level.current || !level.values.includes(effort)) {
+        const choice = level?.choices.find((entry) => entry.id === effort);
+        if (level === null || choice === undefined || effort === level.current) {
             return;
         }
-        await transport.request('session/set_config_option', { sessionId: this.sessionId, configId: level.configId, value: effort }).catch((error: unknown) => {
+        try {
+            await transport.request('session/set_config_option', { sessionId: this.sessionId, configId: level.configId, value: choice.id });
+        } catch (error) {
             if (!(error instanceof JsonRpcError)) {
                 throw error;
             }
-        });
+            const current = level.choices.find((entry) => entry.id === level.current)?.name ?? level.current;
+            this.emit({ type: 'note', level: 'warning', text: `${this.spec.name} kept its reasoning at ${current} instead of ${choice.name}.` });
+        }
     }
 
     private promptBlocks(input: TurnInput): unknown[] {

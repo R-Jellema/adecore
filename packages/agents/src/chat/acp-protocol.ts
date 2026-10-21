@@ -107,7 +107,7 @@ const ModeStateSchema = z.looseObject({
 
 const ModeSchema = z.looseObject({ id: z.string(), name: z.string() });
 
-const SelectValueSchema = z.looseObject({ value: z.string(), name: z.string() });
+const SelectValueSchema = z.looseObject({ value: z.string(), name: z.string(), description: z.string().nullish() });
 
 const ConfigOptionSchema = z.looseObject({
     id: z.string(),
@@ -221,14 +221,27 @@ export interface AcpModeState {
     configId: string | null;
 }
 
+export interface AcpChoice {
+    id: string;
+    name: string;
+    description: string | null;
+}
+
+/* The reasoning effort a session offers: the config option that sets it, the value it runs at and the values it takes. */
+export interface AcpThoughtLevel {
+    configId: string;
+    current: string;
+    choices: AcpChoice[];
+}
+
 /* What `session/new`, `session/load` or `session/resume` said about the session, for a host that fills its catalog from it. */
 export interface AcpSessionInfo {
     sessionId: string;
     agent: AcpAgentInfo | null;
     models: AcpModelState | null;
     modes: AcpModeState | null;
-    // The reasoning effort a session offers, as a config option with the `thought_level` category.
-    thoughtLevel: { configId: string; current: string; values: string[] } | null;
+    // A config option of the `thought_level` category, or one with the id `reasoning_effort` where an agent sets no category.
+    thoughtLevel: AcpThoughtLevel | null;
 }
 
 type ConfigOption = z.infer<typeof ConfigOptionSchema>;
@@ -243,6 +256,22 @@ function selectOption(options: ConfigOption[], category: string): ConfigOption |
     return options.find((option) => option.type === 'select' && option.category === category && typeof option.currentValue === 'string') ?? null;
 }
 
+function thoughtOption(options: ConfigOption[]): ConfigOption | null {
+    return (
+        selectOption(options, 'thought_level') ??
+        options.find((option) => option.type === 'select' && option.id === 'reasoning_effort' && typeof option.currentValue === 'string') ??
+        null
+    );
+}
+
+/* The reasoning effort in a response that carries the session's config options; undefined when it carries none. */
+export function thoughtLevelOf(result: unknown): AcpThoughtLevel | null | undefined {
+    if (!isRecord(result) || !Array.isArray(result.configOptions)) {
+        return undefined;
+    }
+    return sessionState(validItems(ConfigOptionSchema, result.configOptions), null, null).thoughtLevel;
+}
+
 export function parseSessionInfo(result: unknown, sessionId: string, agent: AcpAgentInfo | null): AcpSessionInfo {
     const record = isRecord(result) ? result : {};
     const options = validItems(ConfigOptionSchema, Array.isArray(record.configOptions) ? record.configOptions : []);
@@ -252,7 +281,7 @@ export function parseSessionInfo(result: unknown, sessionId: string, agent: AcpA
 function sessionState(options: ConfigOption[], modes: unknown, models: unknown): Omit<AcpSessionInfo, 'sessionId' | 'agent'> {
     const modelOption = selectOption(options, 'model');
     const modeOption = selectOption(options, 'mode');
-    const thoughtOption = selectOption(options, 'thought_level');
+    const thought = thoughtOption(options);
     const modeState = ModeStateSchema.safeParse(modes);
     const modelState = ModelStateSchema.safeParse(models);
     return {
@@ -286,8 +315,12 @@ function sessionState(options: ConfigOption[], modes: unknown, models: unknown):
                     configId: null
                 }
               : null,
-        thoughtLevel: thoughtOption
-            ? { configId: thoughtOption.id, current: thoughtOption.currentValue as string, values: selectValues(thoughtOption).map((value) => value.value) }
+        thoughtLevel: thought
+            ? {
+                  configId: thought.id,
+                  current: thought.currentValue as string,
+                  choices: selectValues(thought).map((value) => ({ id: value.value, name: value.name, description: value.description ?? null }))
+              }
             : null
     };
 }

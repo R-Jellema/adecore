@@ -305,6 +305,35 @@ test('the runtime mode picks the agent mode, the selection the model, and the ho
     await fake.backend.dispose();
 });
 
+test('an effort is set after the model, against the efforts the selected model offers', async () => {
+    const fake = run({ reasoningEffort: 'accept' }, { selection: { model: 'fake-large', options: { effort: 'xhigh' } } });
+    await fake.backend.start();
+    expect(fake.sent.filter((frame) => frame.method === 'session/set_config_option').map((frame) => frame.params)).toEqual([
+        { sessionId: sessionOf(fake.events), configId: 'model', value: 'fake-large' },
+        { sessionId: sessionOf(fake.events), configId: 'reasoning_effort', value: 'xhigh' }
+    ]);
+    expect(fake.events.some((event) => event.type === 'note')).toBe(false);
+    await fake.backend.dispose();
+
+    const unchanged = run({ reasoningEffort: 'accept' }, { selection: { model: 'fake-small', options: { effort: 'low' } } });
+    await unchanged.backend.start();
+    expect(unchanged.methods()).not.toContain('session/set_config_option');
+    await unchanged.backend.dispose();
+});
+
+test('an effort the agent refuses leaves a note and the session starts', async () => {
+    const fake = run({ reasoningEffort: 'reject' }, { selection: { model: 'fake-small', options: { effort: 'high' } } });
+    await fake.backend.start();
+    expect(fake.events).toContainEqual({
+        type: 'note',
+        level: 'warning',
+        text: 'Fake kept its reasoning at Low instead of High.'
+    });
+    fake.backend.sendTurn(turn('hello'));
+    expect(await fake.next('turn.done')).toMatchObject({ state: 'done' });
+    await fake.backend.dispose();
+});
+
 test('models reported the older way are switched with session/set_model, and an unknown one leaves the agent its own', async () => {
     const legacy = run({ legacyModels: true }, { selection: { model: 'fake-large', options: {} } });
     await legacy.backend.start();
