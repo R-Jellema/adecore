@@ -180,6 +180,25 @@ export const UsageWindowSchema = z.object({
 });
 export type UsageWindow = z.infer<typeof UsageWindowSchema>;
 
+/* `ahead` has used more than an even spread over the window would by now, `behind` less. */
+export type PaceStanding = 'ahead' | 'behind' | 'even';
+
+export interface EvenPace {
+    /* Where the usage would stand had the window been spent evenly from its start, in whole percent. */
+    percent: number;
+    standing: PaceStanding;
+}
+
+/* Where an evenly spent window would stand by now, or null when the provider named no reset or no length to measure from. */
+export function evenPace(window: UsageWindow, now: number): EvenPace | null {
+    if (window.resetsAt === null || window.durationMs === null || window.durationMs <= 0) {
+        return null;
+    }
+    const percent = Math.round(Math.min(1, Math.max(0, 1 - (window.resetsAt - now) / window.durationMs)) * 100);
+    const used = Math.round(window.used * 100);
+    return { percent, standing: used > percent ? 'ahead' : used < percent ? 'behind' : 'even' };
+}
+
 export const UsageLimitsProviderSchema = z.object({
     kind: UsageProviderSchema,
     /* The account these numbers are of. The default account of a kind comes first, in the shape an entry had before accounts. */

@@ -28,6 +28,6 @@ import { UsageLimits, UsageLimitsCard } from '@adecore/agents-react/usage';
 
 `LimitsList({ limits, now, compact? })` lists every CLI with its windows; `compact` is for a list inside a hover card. `AccountLimitsList({ groups, now })` does the same per account, once a CLI has several. `WindowBar({ window, now, compact })` is one bar with how much is used and when it resets.
 
-A window with both a reset and a length carries a mark where an even pace through it would stand by now, and every bar says in its `aria-valuetext` whether the account is ahead of that pace or behind it. `evenPace(window, now)` answers the same outside React: the mark in whole percent and whether the usage is `ahead`, `behind` or `even`, or `null` without the timing to measure from.
+A window with both a reset and a length carries a mark where an even pace through it would stand by now, and every bar says in its `aria-valuetext` whether the account is ahead of that pace or behind it. `evenPace(window, now)`, from `@adecore/agent-contracts/usage` and passed on here, answers the same outside React: the mark in whole percent and whether the usage is `ahead`, `behind` or `even`, or `null` without the timing to measure from.
 
 The logic behind them, which windows an account shows and which reset comes next, is internal to the package.

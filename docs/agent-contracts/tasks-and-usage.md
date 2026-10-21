@@ -74,4 +74,12 @@ A `costUsd` of `null` means no price is known, which is not free. `usage.changed
 
 `UsageLimitsSnapshot` is `{ providers }`, one entry per CLI and account with its `plan`, `windows`, session `cost` and an `unavailable` reason. A window is a session, weekly, monthly or other limit with `used` as a fraction from 0 to 1, `resetsAt` and `durationMs` (both `null` when the provider named none). `source` says whether the numbers came from a check of the host's own (`probe`) or from a running turn (`event`). `unavailable.reason` is `not-installed`, `no-subscription` or `failed`.
 
+```ts
+import { evenPace } from '@adecore/agent-contracts/usage';
+
+evenPace(window, now); // { percent: 40, standing: 'ahead' } two hours into a five hour window at 60% used
+```
+
+`evenPace(window, now)` says where the window would stand had it been spent evenly from its start: `percent` in whole percent, and `standing` (`PaceStanding`) is `ahead`, `behind` or `even` against it. It is `null` when the window has no `resetsAt` or no `durationMs` to measure from. A host that reports limits to an agent and a page that draws the mark on a bar read the same answer.
+
 A missing reading is unknown, not room left. And a chat's own `ChatUsage` is not this: that is one chat's context and cost as its CLI reported it, while a summary is read from transcripts and priced by the host.

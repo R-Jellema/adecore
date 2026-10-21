@@ -1,5 +1,6 @@
 import i18next from 'i18next';
 import {
+    evenPace,
     USAGE_PROVIDERS,
     type ProviderAccounts,
     type ProviderAccountStatus,
@@ -12,6 +13,8 @@ import { limitsAccountId } from '../agents/account-limits';
 import { accountName, accountsOfKind, accountStatusLine } from '../agents/accounts';
 import { formatDuration } from '@adecore/ui/format';
 import { PROVIDER_LABELS } from './format';
+
+export { evenPace, type EvenPace, type PaceStanding } from '@adecore/agent-contracts';
 
 const MINUTE = 60_000;
 
@@ -91,25 +94,6 @@ export function nextReset(windows: readonly UsageWindow[], now: number): (UsageW
         }
     }
     return next;
-}
-
-/* `ahead` has used more than an even spread over the window would by now, `behind` less. */
-export type PaceStanding = 'ahead' | 'behind' | 'even';
-
-export interface EvenPace {
-    /* Where the bar would stand had the window been spent evenly from its start, in whole percent. */
-    percent: number;
-    standing: PaceStanding;
-}
-
-/* Where an evenly spent window would stand by now, or null when the CLI named no reset or no length to measure from. */
-export function evenPace(window: UsageWindow, now: number): EvenPace | null {
-    if (window.resetsAt === null || window.durationMs === null || window.durationMs <= 0) {
-        return null;
-    }
-    const percent = Math.round(Math.min(1, Math.max(0, 1 - (window.resetsAt - now) / window.durationMs)) * 100);
-    const used = Math.round(window.used * 100);
-    return { percent, standing: used > percent ? 'ahead' : used < percent ? 'behind' : 'even' };
 }
 
 /* The bar as words for whoever cannot see the mark: how much is used and how that stands against an even pace. */
