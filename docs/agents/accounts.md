@@ -2,7 +2,7 @@
 
 ## Accounts
 
-An account of a CLI is one config folder of it, plus environment variables a person set for it. The person signs in with the CLI itself; the host only asks the CLI who is signed in. The default account of a CLI uses the CLI's own folder and has the CLI's kind as its id.
+An account of a CLI is one config folder of it, plus environment variables a person set for it. The person signs in with the CLI itself; the host only asks the CLI who is signed in. The default account of a CLI uses the CLI's own folder and has the CLI's kind as its id. Every CLI the host offers has one: the kinds its `providers` answer from `kinds()`, which `ProviderRegistry` does, or every kind in `KNOWN_AGENT_KINDS` when they answer none. An account of a kind the host does not offer is kept as it was written and never checked.
 
 `ProviderAccountsService` keeps the accounts of a host. `AgentHost` makes one as `host.accounts`; it answers the `accounts.*` requests, checks who is signed in about every 15 minutes (backing off to an hour while a check fails), and after `accounts.watchLogin` asks the CLI every three seconds for up to five minutes. The accounts are written to `providers.json` in the data folder, secrets left out; a record of a CLI this version does not know is written back as it was read.
 

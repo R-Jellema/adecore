@@ -1,15 +1,22 @@
 import { isAbsolute, join, resolve } from 'node:path';
-import { AgentKindSchema, ProviderAccountSchema, type AgentKind, type ProviderAccount, type ProviderAccountMap } from '@adecore/agent-contracts';
+import { KNOWN_AGENT_KINDS, ProviderAccountSchema, type AgentKind, type ProviderAccount, type ProviderAccountMap } from '@adecore/agent-contracts';
 import type { ChatProvider } from '../provider.ts';
 import { DEFAULT_ACCOUNTS_HOST, variablesProblem, type AccountsHost, type ReservedVariables } from './variables.ts';
 import { homeFolder } from '../../home-folder.ts';
 
 export type Env = Record<string, string | undefined>;
 
-const KNOWN_KINDS: readonly string[] = AgentKindSchema.options;
+/*
+ * The CLIs a host keeps accounts for, in catalog order, and the provider of any kind. An account of
+ * a kind outside `kinds` is kept as it was written and never judged, for a host that offers it.
+ */
+export interface AccountProviders {
+    kinds: readonly AgentKind[];
+    get(kind: AgentKind): ChatProvider;
+}
 
-export function isKnownKind(kind: string): kind is AgentKind {
-    return KNOWN_KINDS.includes(kind);
+export function isOfferedKind(kind: string, kinds: readonly AgentKind[]): boolean {
+    return kinds.includes(kind);
 }
 
 /* The default account of a CLI is the folder the CLI uses without being told, and its id is the CLI's kind. */
@@ -42,9 +49,10 @@ export function accountProblem(
     account: ProviderAccount,
     provider: ChatProvider,
     env: Env,
-    reserved: ReservedVariables = { host: DEFAULT_ACCOUNTS_HOST, folderVariables: [] }
+    reserved: ReservedVariables = { host: DEFAULT_ACCOUNTS_HOST, folderVariables: [] },
+    kinds: readonly AgentKind[] = KNOWN_AGENT_KINDS
 ): string | null {
-    if (isKnownKind(id) && id !== account.kind) {
+    if (isOfferedKind(id, kinds) && id !== account.kind) {
         return `"${id}" is the id of the default ${id} account`;
     }
     const variables = variablesProblem(account.env ?? [], reserved);
@@ -79,17 +87,17 @@ export function accountProblem(
 }
 
 /* The variables that point a CLI at its folder, which no account may set by hand. */
-export function folderVariablesOf(providerOf: (kind: AgentKind) => ChatProvider): string[] {
-    return AgentKindSchema.options.flatMap((kind) => {
-        const home = providerOf(kind).home;
+export function folderVariablesOf(providers: AccountProviders): string[] {
+    return providers.kinds.flatMap((kind) => {
+        const home = providers.get(kind).home;
         return home === undefined ? [] : [home.env];
     });
 }
 
-/* The map with a default account for every CLI this version knows, those first and in catalog order. */
-export function withDefaults(accounts: ProviderAccountMap): ProviderAccountMap {
+/* The map with a default account for every CLI the host offers, those first and in catalog order. */
+export function withDefaults(accounts: ProviderAccountMap, kinds: readonly AgentKind[]): ProviderAccountMap {
     const complete: ProviderAccountMap = {};
-    for (const kind of KNOWN_KINDS) {
+    for (const kind of kinds) {
         complete[kind] = accounts[kind] ?? { kind };
     }
     for (const [id, account] of Object.entries(accounts)) {
@@ -151,15 +159,15 @@ export interface NamedAccount {
  * Whether a conversation of one account can go on under the other: the same CLI, reading the same
  * transcripts. Two Codex accounts over one `home` can, shadow home or not; two Claude folders never.
  */
-export function canContinue(from: NamedAccount, to: NamedAccount, providerOf: (kind: AgentKind) => ChatProvider, env: Env): boolean {
+export function canContinue(from: NamedAccount, to: NamedAccount, providers: AccountProviders, env: Env): boolean {
     if (from.id === to.id) {
         return true;
     }
     const kind = from.account.kind;
-    if (kind !== to.account.kind || !isKnownKind(kind)) {
+    if (kind !== to.account.kind || !isOfferedKind(kind, providers.kinds)) {
         return false;
     }
-    const provider = providerOf(kind);
+    const provider = providers.get(kind);
     return transcriptFolder(from.id, from.account, provider, env) === transcriptFolder(to.id, to.account, provider, env);
 }
 
@@ -167,13 +175,7 @@ export function canContinue(from: NamedAccount, to: NamedAccount, providerOf: (k
  * An account as the file holds it, or null for one to drop. An unknown kind comes back as it was
  * read, extra fields included; a known kind has to parse and make sense.
  */
-export function readAccount(
-    id: string,
-    raw: unknown,
-    providerOf: (kind: AgentKind) => ChatProvider,
-    env: Env,
-    host: AccountsHost = DEFAULT_ACCOUNTS_HOST
-): unknown {
+export function readAccount(id: string, raw: unknown, providers: AccountProviders, env: Env, host: AccountsHost = DEFAULT_ACCOUNTS_HOST): unknown {
     if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
         return null;
     }
@@ -181,11 +183,12 @@ export function readAccount(
     if (typeof kind !== 'string' || kind === '') {
         return null;
     }
-    if (!isKnownKind(kind)) {
-        return isKnownKind(id) ? null : raw;
+    if (!isOfferedKind(kind, providers.kinds)) {
+        return isOfferedKind(id, providers.kinds) ? null : raw;
     }
     const parsed = ProviderAccountSchema.safeParse(raw);
-    if (!parsed.success || accountProblem(id, parsed.data, providerOf(kind), env, { host, folderVariables: folderVariablesOf(providerOf) }) !== null) {
+    const reserved = { host, folderVariables: folderVariablesOf(providers) };
+    if (!parsed.success || accountProblem(id, parsed.data, providers.get(kind), env, reserved, providers.kinds) !== null) {
         return null;
     }
     return parsed.data;

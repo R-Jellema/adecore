@@ -841,6 +841,29 @@ describe('the HEAD a turn checkpoint is taken on', () => {
         await without.session.dispose();
         await unborn.session.dispose();
     });
+
+    test('dispose waits for a turn that still settles its checkpoint', async () => {
+        let finish = () => {};
+        const settling = new Promise<{ diff: typeof diff; after: string }>((resolve) => {
+            finish = () => resolve({ diff, after: 'tree-after' });
+        });
+        const run = rig({ checkpoints: { ...hosts(undefined).checkpoints, settle: () => settling } });
+        run.session.send('go');
+        await flush();
+        run.event({ type: 'turn.done', state: 'done', costUsd: 0 });
+        await flush();
+
+        let disposed = false;
+        const disposing = run.session.dispose().then(() => {
+            disposed = true;
+        });
+        await flush();
+        expect(disposed).toBe(false);
+
+        finish();
+        await disposing;
+        expect(turnOf(run.session)).toMatchObject({ checkpointAfter: 'tree-after' });
+    });
 });
 
 describe('restarting the agent session', () => {

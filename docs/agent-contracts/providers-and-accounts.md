@@ -2,7 +2,19 @@
 
 ## Agent kinds
 
-`AgentKindSchema` is `claude`, `codex`, `gemini`, `copilot` or `apple`: the agent CLIs a host may know. A kind in this list is not a promise of a chat for it; whether a CLI opens as a chat, in a terminal or both is a capability of its provider. `AgentStatusSchema` is `running`, `needs-you`, `idle`, `error` or `exited`.
+`AgentKindSchema` is open: any identifier of lowercase letters, digits and hyphens that starts with a letter, at most `AGENT_KIND_MAX_LENGTH` (32) characters. A host can offer a CLI of its own under a new kind, and a client of an older version still reads a reply that names it. `KNOWN_AGENT_KINDS` lists the kinds this version knows by name (`claude`, `codex`, `gemini`, `copilot` and `apple`), `KnownAgentKind` is their type and `isKnownAgentKind` tells one apart. `AgentKind` accepts any string while an editor still completes the known ones.
+
+A kind is not a promise of a chat for it; whether a CLI opens as a chat, in a terminal or both is a capability of its provider. Code that meets a kind it has no mark, color or behavior for falls back to a neutral one: the provider's own name from `provider.list`, a generic icon, and what its capabilities say. `UsageProviderSchema` stays closed, as every usage provider has a reader in code.
+
+```ts
+import { AgentKindSchema, isKnownAgentKind } from '@adecore/agent-contracts/agent';
+
+AgentKindSchema.parse('grok'); // 'grok'
+AgentKindSchema.safeParse('../grok').success; // false
+isKnownAgentKind('grok'); // false
+```
+
+`AgentStatusSchema` is `running`, `needs-you`, `idle`, `error` or `exited`.
 
 ## Models
 

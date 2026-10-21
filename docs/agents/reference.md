@@ -38,10 +38,12 @@ Serving the requests over a port or a wire of your own.
 
 ## `@adecore/agents/chat`
 
-The core, a session per chat, the thread and what is written of it, and the two backends.
+The core, a session per chat, the thread and what is written of it, and the backends.
 
 | Module | Exports |
 | --- | --- |
+| [`chat/acp-backend`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/chat/acp-backend.ts) | `AcpAgentSpec`, `AcpClientInfo`, `createAcpBackend` |
+| [`chat/acp-protocol`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/chat/acp-protocol.ts) | `AcpAgentInfo`, `AcpModel`, `AcpModelState`, `AcpMode`, `AcpModeState`, `AcpSessionInfo`, `AcpModeMap` |
 | [`chat/attachment-store`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/chat/attachment-store.ts) | `AttachmentStore` |
 | [`chat/backend`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/chat/backend.ts) | `BackendLaunch`, `TurnInput`, `ApprovalDecision`, `BackendEvent`, `BackendHost`, `ChatBackend` |
 | [`chat/background-work`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/chat/background-work.ts) | `runningInBackground`, `BackgroundWork` |
@@ -78,6 +80,7 @@ The registry, the model catalogs, the runtime modes and the accounts of each CLI
 
 | Module | Exports |
 | --- | --- |
+| [`providers/acp-provider`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/providers/acp-provider.ts) | `ACP_CAPABILITIES`, `AcpProviderSpec`, `createAcpProvider` |
 | [`providers/accounts/launch`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/providers/accounts/launch.ts) | `AccountError`, `AccountLaunches`, `storedAccount`, `launchEnv` |
 | [`providers/accounts/service`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/providers/accounts/service.ts) | `ProviderAccountsService`, `ProviderAccountsOptions` |
 | [`providers/accounts/shadow-home`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/providers/accounts/shadow-home.ts) | `ShadowHomeReport` |
@@ -148,6 +151,7 @@ CLIs, a clock, a watcher and accounts for tests. Two more entries run a fake as 
 | Module | Exports |
 | --- | --- |
 | [`testing/fake-cli`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/testing/fake-cli.ts) | `FakeIo`, `FakeProgram`, `FakeCli`, `StartedFake`, `InProcessCli`, `inProcess`, `runOverStdio` |
+| [`testing/fake-acp`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/testing/fake-acp.ts) | `FakeAcpOptions`, `fakeAcpWith`, `fakeAcp` |
 | [`testing/fake-claude`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/testing/fake-claude.ts) | `fakeClaude`, `claudeStoppingOnResume` |
 | [`testing/fake-codex`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/testing/fake-codex.ts) | `FAKE_CHILD_STEPS`, `fakeCodexForks`, `FakeCodexOptions`, `fakeCodexWith`, `fakeCodex` |
 | [`testing/accounts`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/testing/accounts.ts) | `testAccounts` |

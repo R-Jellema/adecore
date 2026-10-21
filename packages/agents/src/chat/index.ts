@@ -1,4 +1,6 @@
 // Public API: exports.test.ts snapshots this list, so a name added or dropped here is an API change.
+export { type AcpAgentSpec, type AcpClientInfo, createAcpBackend } from './acp-backend.ts';
+export type { AcpAgentInfo, AcpModel, AcpModelState, AcpMode, AcpModeState, AcpSessionInfo, AcpModeMap } from './acp-protocol.ts';
 export { AttachmentStore } from './attachment-store.ts';
 export type { BackendLaunch, TurnInput, ApprovalDecision, BackendEvent, BackendHost, ChatBackend } from './backend.ts';
 export { runningInBackground, type BackgroundWork } from './background-work.ts';

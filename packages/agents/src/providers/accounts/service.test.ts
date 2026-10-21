@@ -98,7 +98,7 @@ describe('ProviderAccountsService', () => {
     test('without a file every CLI has its default account, checking until its CLI answered', async () => {
         const service = await make();
         const before = service.snapshot();
-        expect(Object.keys(before.accounts)).toEqual(['claude', 'codex', 'gemini', 'copilot', 'apple', 'nanogpt']);
+        expect(Object.keys(before.accounts)).toEqual(['claude', 'codex', 'gemini', 'copilot', 'apple']);
         expect(before.statuses.every((status) => status.state === 'checking')).toBe(true);
 
         const after = await service.refresh();
@@ -475,5 +475,17 @@ describe('ProviderAccountsService', () => {
         expect(clock - start).toBe(5 * 60_000);
         expect(asked).toHaveLength(100);
         expect(() => service.watchLogin('nobody')).toThrow("The account 'nobody' is not available");
+    });
+});
+
+describe('ProviderAccountsService kinds', () => {
+    test('holds a default account only for the CLIs the host offers', () => {
+        const service = new ProviderAccountsService({ home: NOWHERE, providers: { ...providers, kinds: () => ['claude', 'grok'] }, env, secrets: null });
+        expect(Object.keys(service.snapshot().accounts)).toEqual(['claude', 'grok']);
+    });
+
+    test('a host that names no kinds gets one for every kind this version knows', () => {
+        const service = new ProviderAccountsService({ home: NOWHERE, providers, env, secrets: null });
+        expect(Object.keys(service.snapshot().accounts)).toEqual(['claude', 'codex', 'gemini', 'copilot', 'apple']);
     });
 });

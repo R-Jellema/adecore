@@ -1,4 +1,5 @@
 // Public API: exports.test.ts snapshots this list, so a name added or dropped here is an API change.
+export { ACP_CAPABILITIES, type AcpProviderSpec, createAcpProvider } from './acp-provider.ts';
 export { AccountError, type AccountLaunches, storedAccount, launchEnv } from './accounts/launch.ts';
 export { ProviderAccountsService, type ProviderAccountsOptions } from './accounts/service.ts';
 export type { ShadowHomeReport } from './accounts/shadow-home.ts';
