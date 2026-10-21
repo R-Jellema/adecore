@@ -117,6 +117,7 @@ describe('prepared line tokens', () => {
         await settle();
         expect(tokenizeLine).not.toHaveBeenCalled();
         editor.setLineTokens(null);
+        await settle();
         expect(tokenizeLine).toHaveBeenCalled();
         expect([...host.querySelectorAll('.se-run span')].map((span) => span.textContent)).toEqual(['old', 'newer']);
         editor.dispose();
