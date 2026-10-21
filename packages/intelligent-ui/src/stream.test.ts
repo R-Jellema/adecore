@@ -1,6 +1,10 @@
-import { expect, test } from 'bun:test';
+import { afterEach, beforeEach, expect, setSystemTime, test } from 'bun:test';
 import { UI_REPLY_LIMITS, UiCompiler, compileUi } from './compiler.ts';
 import { UiStream, type UiStreamClock, type UiStreamPreview } from './stream.ts';
+
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 function manualClock(): UiStreamClock & { advance(ms: number): void; pending(): number } {
     let time = 0;
