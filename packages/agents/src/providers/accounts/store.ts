@@ -11,9 +11,10 @@ import {
     expandHome,
     folderVariablesOf,
     isDefaultAccount,
-    isKnownKind,
+    isOfferedKind,
     readAccount,
     withDefaults,
+    type AccountProviders,
     type Env
 } from './accounts.ts';
 import { DEFAULT_ACCOUNTS_HOST, redactVariables, type AccountsHost } from './variables.ts';
@@ -31,12 +32,7 @@ export function accountsPath(home: string): string {
 export type StoredAccounts = Record<string, unknown>;
 
 /* Every entry that does not parse is dropped on its own; a file that is not JSON at all reads as none. */
-export async function readAccounts(
-    path: string,
-    providerOf: (kind: AgentKind) => ChatProvider,
-    env: Env,
-    host: AccountsHost = DEFAULT_ACCOUNTS_HOST
-): Promise<StoredAccounts> {
+export async function readAccounts(path: string, providers: AccountProviders, env: Env, host: AccountsHost = DEFAULT_ACCOUNTS_HOST): Promise<StoredAccounts> {
     let parsed: unknown;
     try {
         parsed = JSON.parse(await readFile(path, 'utf8'));
@@ -55,7 +51,7 @@ export async function readAccounts(
         if (!ProviderAccountIdSchema.safeParse(id).success) {
             continue;
         }
-        const account = readAccount(id, raw, providerOf, env, host);
+        const account = readAccount(id, raw, providers, env, host);
         if (account !== null) {
             stored[id] = account;
         }
@@ -76,8 +72,8 @@ function wireAccount(entry: unknown): ProviderAccount {
     return parsed.data.env === undefined ? parsed.data : { ...parsed.data, env: redactVariables(parsed.data.env) };
 }
 
-export function wireAccounts(stored: StoredAccounts): ProviderAccountMap {
-    return withDefaults(Object.fromEntries(Object.entries(stored).map(([id, entry]) => [id, wireAccount(entry)])));
+export function wireAccounts(stored: StoredAccounts, kinds: readonly AgentKind[]): ProviderAccountMap {
+    return withDefaults(Object.fromEntries(Object.entries(stored).map(([id, entry]) => [id, wireAccount(entry)])), kinds);
 }
 
 export class InvalidAccountError extends CodedError<'invalid-account'> {
@@ -130,16 +126,16 @@ function linkProblem(
 export function acceptAccounts(
     saved: ProviderAccountMap,
     before: StoredAccounts,
-    providerOf: (kind: AgentKind) => ChatProvider,
+    providers: AccountProviders,
     env: Env,
     isDirectory: (path: string) => boolean,
     host: AccountsHost = DEFAULT_ACCOUNTS_HOST
 ): StoredAccounts {
     const stored: StoredAccounts = {};
-    const reserved = { host, folderVariables: folderVariablesOf(providerOf) };
-    for (const [id, account] of Object.entries(withDefaults(saved))) {
-        if (!isKnownKind(account.kind)) {
-            if (isKnownKind(id)) {
+    const reserved = { host, folderVariables: folderVariablesOf(providers) };
+    for (const [id, account] of Object.entries(withDefaults(saved, providers.kinds))) {
+        if (!isOfferedKind(account.kind, providers.kinds)) {
+            if (isOfferedKind(id, providers.kinds)) {
                 throw new InvalidAccountError(`"${id}" is the id of the default ${id} account`);
             }
             const kept = before[id];
@@ -147,8 +143,9 @@ export function acceptAccounts(
             stored[id] = keptKind === account.kind ? kept : account;
             continue;
         }
-        const provider = providerOf(account.kind);
-        const problem = accountProblem(id, account, provider, env, reserved) ?? linkProblem(id, account, before[id], provider, env, isDirectory);
+        const provider = providers.get(account.kind);
+        const problem =
+            accountProblem(id, account, provider, env, reserved, providers.kinds) ?? linkProblem(id, account, before[id], provider, env, isDirectory);
         if (problem !== null) {
             throw new InvalidAccountError(`${id}: ${problem}`);
         }

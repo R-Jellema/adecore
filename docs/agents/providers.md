@@ -7,11 +7,13 @@ A provider is one agent CLI as the host knows it: its models, what it can do, ho
 | Claude Code | `claude -p` with stream-json in and out           | `CLAUDE_CONFIG_DIR`, else `~/.claude`       |
 | Codex       | `codex app-server`, JSON-RPC over stdio           | `CODEX_HOME`, else `~/.codex`               |
 
+An agent that speaks the Agent Client Protocol needs no backend of its own: [ACP agents](/agents/acp) makes it a provider from a spec.
+
 The CLI stays up between turns. Claude Code reports a file change as the text before and after and folds its context with a prompt; Codex reports unified diffs, streams tool output, folds its context natively and has questions that can wait, but reports no cost and takes no reason with a denial. `provider.list` answers each one's [capabilities](/agent-contracts/providers-and-accounts#providers): offer a control only when the capability is there. The test fixtures were captured from particular versions of each CLI; they show what the backends were built against, not a minimum version.
 
 ## The registry
 
-`ProviderRegistry` holds the providers of a host, the built-ins by default. `list()` answers them with whether each is installed and its version, which it caches for a minute; `invalidate(kind)` forgets one. `get(kind)` answers the provider of a kind, or a stand-in that is not installed for a kind the host does not offer. `oneShotProvider(preferred?)` answers an installed CLI that can answer a single prompt, which is how a chat gets a title, or `null`.
+`ProviderRegistry` holds the providers of a host, the built-ins by default. `list()` answers them with whether each is installed and its version, which it caches for a minute; `invalidate(kind)` forgets one. `kinds()` answers the kinds it offers, in its order. `get(kind)` answers the provider of a kind, or a stand-in that is not installed for a kind the host does not offer. `oneShotProvider(preferred?)` answers an installed CLI that can answer a single prompt, which is how a chat gets a title, or `null`.
 
 `AgentHost` and `wireAgents` always use the two built-ins. A host with other providers builds the registry, the `ChatCore` and the services around it itself.
 

@@ -3,6 +3,7 @@
 exports[`the public API . exports these names 1`] = `
 [
   "AGENT_EVENT_SCHEMAS",
+  "AGENT_KIND_MAX_LENGTH",
   "AGENT_REQUEST_SCHEMAS",
   "AgentInfoSchema",
   "AgentKindSchema",
@@ -131,6 +132,7 @@ exports[`the public API . exports these names 1`] = `
   "EventSchema",
   "GeneratedImageInputSchema",
   "HOST_TASK_ORIGIN",
+  "KNOWN_AGENT_KINDS",
   "ModelCatalogDataSchema",
   "ModelCatalogEntrySchema",
   "ModelCatalogProfileSchema",
@@ -215,6 +217,7 @@ exports[`the public API . exports these names 1`] = `
   "clipText",
   "generatedImageAttachment",
   "injectVisualBootstrap",
+  "isKnownAgentKind",
   "isRecord",
   "notResumedNote",
   "parseRequest",
@@ -334,6 +337,7 @@ exports[`the public API . exports these names 1`] = `
   "type Event",
   "type FramePort",
   "type GeneratedImageInput",
+  "type KnownAgentKind",
   "type ModelCatalogData",
   "type ModelCatalogEntry",
   "type ModelCatalogProfile",
@@ -418,6 +422,7 @@ exports[`the public API . exports these names 1`] = `
 
 exports[`the public API ./agent exports these names 1`] = `
 [
+  "AGENT_KIND_MAX_LENGTH",
   "AgentInfoSchema",
   "AgentKindSchema",
   "AgentRequestSchema",
@@ -428,10 +433,12 @@ exports[`the public API ./agent exports these names 1`] = `
   "ApprovalChoiceSchema",
   "ApprovalPreferencePayloadSchema",
   "ApprovalRequestSchema",
+  "KNOWN_AGENT_KINDS",
   "SUGGESTED_TITLE_LIMIT",
   "SessionApprovalsEventSchema",
   "SessionStatusEventSchema",
   "SuggestedTitleSchema",
+  "isKnownAgentKind",
   "type AgentInfo",
   "type AgentKind",
   "type AgentRequest",
@@ -442,6 +449,7 @@ exports[`the public API ./agent exports these names 1`] = `
   "type ApprovalChoice",
   "type ApprovalPreferencePayload",
   "type ApprovalRequest",
+  "type KnownAgentKind",
   "type SessionApprovalsEvent",
   "type SessionStatusEvent",
 ]

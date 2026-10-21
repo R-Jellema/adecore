@@ -1,8 +1,8 @@
 import { join } from 'node:path';
 import { describe, expect, test } from 'bun:test';
-import type { AgentKind } from '@adecore/agent-contracts';
+import { KNOWN_AGENT_KINDS } from '@adecore/agent-contracts';
 import { providerFor } from '../registry.ts';
-import { accountEnv, accountFolder, accountProblem, canContinue, readAccount, withDefaults } from './accounts.ts';
+import { accountEnv, accountFolder, accountProblem, canContinue, readAccount, withDefaults, type AccountProviders } from './accounts.ts';
 
 // Windows reads the home from USERPROFILE and joins with backslashes.
 const HOME = process.platform === 'win32' ? 'C:\\Users\\bas' : '/home/bas';
@@ -15,9 +15,7 @@ const env = {
     OPENAI_API_KEY: 'sk-oai',
     CODEX_API_KEY: 'ck'
 };
-function providerOf(kind: AgentKind) {
-    return providerFor(kind);
-}
+const providerOf: AccountProviders = { kinds: KNOWN_AGENT_KINDS, get: providerFor };
 const claude = providerFor('claude');
 const codex = providerFor('codex');
 
@@ -75,9 +73,15 @@ describe('accountProblem', () => {
 
 describe('withDefaults', () => {
     test('always holds a default account per CLI, first and in catalog order', () => {
-        const accounts = withDefaults({ claude_personal: { kind: 'claude', home: '~/.cp' }, codex: { kind: 'codex', label: 'Work' } });
-        expect(Object.keys(accounts)).toEqual(['claude', 'codex', 'gemini', 'copilot', 'apple', 'nanogpt', 'claude_personal']);
+        const accounts = withDefaults({ claude_personal: { kind: 'claude', home: '~/.cp' }, codex: { kind: 'codex', label: 'Work' } }, KNOWN_AGENT_KINDS);
+        expect(Object.keys(accounts)).toEqual(['claude', 'codex', 'gemini', 'copilot', 'apple', 'claude_personal']);
         expect(accounts.codex).toEqual({ kind: 'codex', label: 'Work' });
+    });
+
+    test('adds a default only for the CLIs a host offers, a kind of its own included', () => {
+        const accounts = withDefaults({ gemini_work: { kind: 'gemini' } }, ['claude', 'grok']);
+        expect(Object.keys(accounts)).toEqual(['claude', 'grok', 'gemini_work']);
+        expect(accounts.grok).toEqual({ kind: 'grok' });
     });
 });
 
@@ -92,6 +96,14 @@ describe('readAccount', () => {
         expect(readAccount('claude_personal', { kind: 'claude' }, providerOf, env)).toBeNull();
         expect(readAccount('claude', { kind: 'cursor' }, providerOf, env)).toBeNull();
         expect(readAccount('x', 'claude', providerOf, env)).toBeNull();
+    });
+
+    test('judges an account of a kind the host added, and keeps one of a kind it does not offer', () => {
+        const offered: AccountProviders = { kinds: ['claude', 'grok'], get: providerFor };
+        expect(readAccount('grok', { kind: 'grok', label: 'Work' }, offered, env)).toEqual({ kind: 'grok', label: 'Work' });
+        expect(readAccount('grok', { kind: 'claude' }, offered, env)).toBeNull();
+        const gemini = { kind: 'gemini', label: 'Kept' };
+        expect(readAccount('gemini_work', gemini, offered, env)).toBe(gemini);
     });
 });
 

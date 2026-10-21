@@ -7,12 +7,13 @@ export const FOLLOW_THRESHOLD_PX = 40;
 
 /*
  * The gaps a row wears for where it sits: a question is followed by its answer gap, and a seam where
- * the list rhythm of tool lines meets the block rhythm of prose gets the block gap. A question
+ * the list rhythm of tool lines meets the block rhythm of prose gets the block gap. A visual has no
+ * margin of its own like prose does, so the row under one takes the block gap too. A question
  * already carries the gap before it, and the row after one is the answer, so neither takes a seam.
  */
 export function rowRhythm(row: TimelineRow, previous: TimelineRow | null): string {
     const question = row.kind === 'user';
-    const seam = !question && previous !== null && previous.kind !== 'user' && isBlock(row) !== isBlock(previous);
+    const seam = !question && previous !== null && previous.kind !== 'user' && (isBlock(row) !== isBlock(previous) || previous.kind === 'visual');
     return clsx(question && 'pb-(--chat-answer-gap)', seam && 'pt-(--chat-block-gap)');
 }
 

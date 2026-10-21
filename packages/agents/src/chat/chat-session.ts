@@ -198,6 +198,8 @@ export class ChatSession {
     // The last turn the main agent spoke in; a turn opened only for a subagent's request gets no `result`.
     private spokenTurnId: string | null = null;
     private titleTimer: ReturnType<typeof setTimeout> | null = null;
+    /* Checkpoints still asking git, which `dispose` waits for: the host may remove the folder next. */
+    private readonly checkpointWork = new Set<Promise<void>>();
     // A name is asked for once per chat this host holds; the turn count keeps it once across restarts.
     private naming = false;
     // Set while the host goes down: a CLI dying with it must not end the turn a restart takes up again.
@@ -1341,7 +1343,7 @@ export class ChatSession {
         this.backend?.stop();
     }
 
-    /* Ends the CLI and everything it started; settles once it exited or was sent the SIGKILL. */
+    /* Ends the CLI and everything it started; settles once it exited or was sent the SIGKILL and no checkpoint asks git any more. */
     dispose(): Promise<void> {
         this.uiReplies.clear();
         this.clearStartWarning();
@@ -1353,7 +1355,7 @@ export class ChatSession {
         const ended = this.backend?.dispose() ?? Promise.resolve();
         this.backend = null;
         this.starting = null;
-        return ended;
+        return Promise.all([ended, ...this.checkpointWork]).then(() => undefined);
     }
 
     /* What a turn changed against its checkpoint: the stored answer, or one taken now while it runs. */
@@ -1645,15 +1647,15 @@ export class ChatSession {
             return Promise.resolve();
         }
         const cwd = this.thread.info.cwd;
-        return Promise.all([checkpoints.take(cwd), checkpoints.head?.(cwd) ?? null])
-            .then(([tree, head]) => {
+        return this.trackCheckpoint(
+            Promise.all([checkpoints.take(cwd), checkpoints.head?.(cwd) ?? null]).then(([tree, head]) => {
                 const turn = this.thread.get(turnId);
                 if (tree === null || turn?.kind !== 'turn' || turn.state !== 'running' || this.info.activeTurnId !== turnId) {
                     return;
                 }
                 this.emit([this.thread.upsert({ ...turn, checkpoint: tree, ...(head === null ? {} : { checkpointHead: head }) })]);
             })
-            .catch(() => undefined);
+        );
     }
 
     /* The diff of a turn that just ended, so a reload shows it without asking git again, and the tree a fork after it starts from. */
@@ -1664,8 +1666,8 @@ export class ChatSession {
         }
         const { checkpoints } = this.options;
         const cwd = this.thread.info.cwd;
-        void Promise.all([checkpoints.settle(cwd, turn.checkpoint), checkpoints.head?.(cwd) ?? null])
-            .then(([answer, head]) => {
+        void this.trackCheckpoint(
+            Promise.all([checkpoints.settle(cwd, turn.checkpoint), checkpoints.head?.(cwd) ?? null]).then(([answer, head]) => {
                 const settled = this.thread.get(turnId);
                 if (answer === null || settled?.kind !== 'turn') {
                     return;
@@ -1680,7 +1682,14 @@ export class ChatSession {
                 ]);
                 this.options.persist();
             })
-            .catch(() => undefined);
+        );
+    }
+
+    /* Keeps the work in `checkpointWork` until it settled; a failure leaves the turn without a checkpoint. */
+    private trackCheckpoint(work: Promise<void>): Promise<void> {
+        const tracked = work.catch(() => undefined).finally(() => this.checkpointWork.delete(tracked));
+        this.checkpointWork.add(tracked);
+        return tracked;
     }
 
     /*

@@ -2,7 +2,7 @@ import { existsSync, statSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import {
-    AgentKindSchema,
+    KNOWN_AGENT_KINDS,
     type AgentKind,
     type ProviderAccount,
     type ProviderAccountCreatePayload,
@@ -18,7 +18,18 @@ import { ClientSinks } from '../../client-sinks.ts';
 import { errorText } from '../../error-text.ts';
 import type { AgentEvent, AgentSink } from '../../events.ts';
 import type { ChatProvider } from '../provider.ts';
-import { accountEnv, accountFolder, canContinue, defaultFolder, expandHome, isDefaultAccount, isKnownKind, transcriptFolder, type Env } from './accounts.ts';
+import {
+    accountEnv,
+    accountFolder,
+    canContinue,
+    defaultFolder,
+    expandHome,
+    isDefaultAccount,
+    isOfferedKind,
+    transcriptFolder,
+    type AccountProviders,
+    type Env
+} from './accounts.ts';
 import { AccountError, isDefaultAccountOf, type AccountLaunches } from './launch.ts';
 import { prepareShadowHome, type ShadowHomeReport } from './shadow-home.ts';
 import { askAccountAs, type AskAccount } from './status.ts';
@@ -38,7 +49,8 @@ export interface ProviderAccountsOptions {
     host?: AccountsHost;
     // How the host names itself to an app-server it asks who is signed in.
     client?: CodexClientInfo;
-    providers: { list(): Promise<ProviderInfo[]>; get(kind: AgentKind): ChatProvider; enabled?(kind: AgentKind): boolean };
+    // `kinds` are the CLIs that get a default account; absent, every kind this version knows.
+    providers: { list(): Promise<ProviderInfo[]>; get(kind: AgentKind): ChatProvider; enabled?(kind: AgentKind): boolean; kinds?(): readonly AgentKind[] };
     env?: Env;
     // How to ask a CLI who is signed in; a test answers without starting one.
     ask?: AskAccount;
@@ -131,7 +143,7 @@ export class ProviderAccountsService implements AccountLaunches {
     private readonly launches = new Map<string, number>();
     private readonly states = new Map<string, AccountState>();
     private stored: StoredAccounts = {};
-    private accounts: ProviderAccountMap = wireAccounts({});
+    private accounts: ProviderAccountMap;
     private passes: Promise<void> = Promise.resolve();
     private timer: ReturnType<typeof setInterval> | null = null;
 
@@ -148,11 +160,12 @@ export class ProviderAccountsService implements AccountLaunches {
         this.secrets = options.secrets === undefined ? platformSecrets(this.host, options.home) : options.secrets;
         this.now = options.now ?? Date.now;
         this.sleep = options.sleep ?? sleep;
+        this.accounts = wireAccounts({}, this.kinds());
     }
 
     async load(): Promise<void> {
-        this.stored = await readAccounts(this.path, (kind) => this.providers.get(kind), this.env, this.host);
-        this.accounts = wireAccounts(this.stored);
+        this.stored = await readAccounts(this.path, this.accountProviders(), this.env, this.host);
+        this.accounts = wireAccounts(this.stored, this.kinds());
         await this.readSecrets();
     }
 
@@ -162,7 +175,7 @@ export class ProviderAccountsService implements AccountLaunches {
 
     snapshot(): ProviderAccounts {
         const loginCommands: Partial<Record<AgentKind, string>> = {};
-        for (const kind of AgentKindSchema.options) {
+        for (const kind of this.kinds()) {
             const command = this.providers.get(kind).home?.loginCommand;
             if (command !== undefined) {
                 loginCommands[kind] = command;
@@ -206,7 +219,9 @@ export class ProviderAccountsService implements AccountLaunches {
             throw refuse('no account on it has that id');
         }
         if (account.kind !== kind) {
-            throw refuse(`it is an account of ${isKnownKind(account.kind) ? this.providers.get(account.kind).name : account.kind}, not of ${provider.name}`);
+            throw refuse(
+                `it is an account of ${isOfferedKind(account.kind, this.kinds()) ? this.providers.get(account.kind).name : account.kind}, not of ${provider.name}`
+            );
         }
         if (account.enabled === false) {
             throw refuse('it is turned off');
@@ -241,7 +256,7 @@ export class ProviderAccountsService implements AccountLaunches {
         if (fromAccount === undefined || toAccount === undefined || fromAccount.kind !== kind) {
             return false;
         }
-        return canContinue({ id: fromId, account: fromAccount }, { id: toId, account: toAccount }, (each) => this.providers.get(each), this.env);
+        return canContinue({ id: fromId, account: fromAccount }, { id: toId, account: toAccount }, this.accountProviders(), this.env);
     }
 
     labelOf(id: string): string {
@@ -355,6 +370,14 @@ export class ProviderAccountsService implements AccountLaunches {
         }
     }
 
+    private kinds(): readonly AgentKind[] {
+        return this.providers.kinds?.() ?? KNOWN_AGENT_KINDS;
+    }
+
+    private accountProviders(): AccountProviders {
+        return { kinds: this.kinds(), get: (kind) => this.providers.get(kind) };
+    }
+
     /* One change of the file at a time: a create and a save both read what the other just wrote. */
     private serial<T>(work: () => Promise<T>): Promise<T> {
         const next = this.writes.then(work);
@@ -363,7 +386,7 @@ export class ProviderAccountsService implements AccountLaunches {
     }
 
     private async commit(accounts: ProviderAccountMap, isDirectory: (path: string) => boolean): Promise<ProviderAccounts> {
-        const stored = acceptAccounts(accounts, this.stored, (kind) => this.providers.get(kind), this.env, isDirectory, this.host);
+        const stored = acceptAccounts(accounts, this.stored, this.accountProviders(), this.env, isDirectory, this.host);
         const { writes, removals } = this.planSecrets(stored);
         for (const [key, value] of writes) {
             await this.requireSecrets().write(key, value);
@@ -371,7 +394,7 @@ export class ProviderAccountsService implements AccountLaunches {
         }
         await writeAccounts(this.path, stored);
         this.stored = stored;
-        this.accounts = wireAccounts(stored);
+        this.accounts = wireAccounts(stored, this.kinds());
         for (const key of removals) {
             this.secretValues.delete(key);
             await this.secrets?.remove(key).catch((e: unknown) => console.error(`Could not remove ${key} from the keychain:`, errorText(e)));
@@ -397,7 +420,7 @@ export class ProviderAccountsService implements AccountLaunches {
         const kept = new Set<string>();
         for (const [id, entry] of Object.entries(stored)) {
             const kind = (entry as { kind: string }).kind;
-            if (!isKnownKind(kind)) {
+            if (!isOfferedKind(kind, this.kinds())) {
                 for (const name of sensitiveNames(entry)) {
                     kept.add(secretKey(id, name));
                 }
@@ -508,7 +531,7 @@ export class ProviderAccountsService implements AccountLaunches {
         state: ProviderAccountStatus['state'],
         fields: Partial<Omit<ProviderAccountStatus, 'id' | 'kind' | 'state'>> = {}
     ): ProviderAccountStatus {
-        const provider = isKnownKind(account.kind) ? this.providers.get(account.kind) : null;
+        const provider = isOfferedKind(account.kind, this.kinds()) ? this.providers.get(account.kind) : null;
         const folder = provider === null ? '' : accountFolder(id, account, provider, this.env);
         return {
             id,
@@ -555,7 +578,7 @@ export class ProviderAccountsService implements AccountLaunches {
 
     private async check(id: string, account: ProviderAccount, installed: ProviderInfo[]): Promise<ProviderAccountStatus> {
         const kind = account.kind;
-        if (!isKnownKind(kind)) {
+        if (!isOfferedKind(kind, this.kinds())) {
             return this.status(id, account, 'unavailable', { message: `This version of ${this.host.name} does not know this CLI` });
         }
         const provider = this.providers.get(kind);

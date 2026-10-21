@@ -47,14 +47,6 @@ function ListRow({
     );
 }
 
-/*
- * A provider that never runs in a terminal has no CLI to install: it is set up in its own detail (turned
- * on, given a key), so it stays in the list while it is not ready yet, and it has no version to show.
- */
-function hasCli(provider: ProviderInfo): boolean {
-    return provider.capabilities.terminal;
-}
-
 interface ProvidersPaneProps {
     /* The row a search result leads to, by its `searchId`; the pane opens on the CLI it belongs to. */
     target?: string | null;
@@ -76,8 +68,9 @@ export function ProvidersPane({ target = null, detailOf, defaults = true }: Prov
     const loginBlocked = host.useLoginBlocked(scopeId);
     const [picked, setPicked] = useState<Picked | null>(() => (target === 'providers.apple' ? { kind: 'cli', cli: 'apple' } : null));
 
-    const installed = useMemo(() => providers.filter((provider) => provider.installed || !hasCli(provider)), [providers]);
-    const missing = useMemo(() => providers.filter((provider) => !provider.installed && hasCli(provider)), [providers]);
+    // A provider that never runs in a terminal is no CLI to install: it is turned on in its own detail, so it is always listed.
+    const installed = useMemo(() => providers.filter((provider) => provider.installed || !provider.capabilities.terminal), [providers]);
+    const missing = useMemo(() => providers.filter((provider) => !provider.installed && provider.capabilities.terminal), [providers]);
     const entriesOf = (kind: AgentKind): AccountEntry[] => accountsOfKind(accounts, kind);
     const canAddAccount = (kind: AgentKind): boolean => accounts?.loginCommands?.[kind] !== undefined;
 
@@ -128,7 +121,7 @@ export function ProvidersPane({ target = null, detailOf, defaults = true }: Prov
                 >
                     <CliMark kind={cli.kind} />
                     <span className="min-w-0 grow truncate text-xs font-medium text-text">{cli.name}</span>
-                    {hasCli(cli) && cli.version && <span className="shrink-0 font-mono text-code text-text-faint">{cli.version}</span>}
+                    {cli.capabilities.terminal && cli.version && <span className="shrink-0 font-mono text-code text-text-faint">{cli.version}</span>}
                 </ListRow>
                 {entries.map((entry) => {
                     const name = accountName(entry, cli.name);
