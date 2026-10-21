@@ -53,7 +53,19 @@ export function ProvidersPane({ target = null, detailOf, defaults = true, instal
 
     // What was picked may be gone since (an account removed elsewhere); the first CLI stands in for it.
     const pickedEntry = picked?.kind === 'account' ? (Object.hasOwn(accounts?.accounts ?? {}, picked.id) ? picked.id : null) : null;
-    const keeps = (entry: Picked): boolean => (entry.kind === 'account' ? pickedEntry !== null : entry.kind !== 'catalog' || addPage !== undefined);
+    // A CLI taken off the host since it was picked makes way too, so the detail never stays empty.
+    const keeps = (entry: Picked): boolean => {
+        switch (entry.kind) {
+            case 'account':
+                return pickedEntry !== null;
+            case 'catalog':
+                return addPage !== undefined;
+            case 'cli':
+                return !loaded || installed.some((provider) => provider.kind === entry.cli);
+            default:
+                return true;
+        }
+    };
     const current: Picked | null = picked !== null && keeps(picked) ? picked : installed[0] ? { kind: 'cli', cli: installed[0].kind } : null;
     const currentAccount = current?.kind === 'account' ? accounts?.accounts[current.id] : undefined;
     const currentCli =
