@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, test } from 'bun:test';
+import { afterEach, beforeEach, expect, setSystemTime, test } from 'bun:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { parseHTML } from 'linkedom';
@@ -9,6 +9,10 @@ import { Markdown, MessageMarkdown } from '../ui/Markdown';
 import { readTimelineTarget, revealUiReplyBlock, uiReplyJump, withCurrentText } from './timeline-target';
 import { compileUi } from '@adecore/intelligent-ui';
 import type { TimelineRow } from './timeline';
+
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 const windowBefore = Object.getOwnPropertyDescriptor(globalThis, 'window');
 const scope = { id: 'original-machine' } as ChatScope;

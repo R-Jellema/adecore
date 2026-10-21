@@ -1,4 +1,4 @@
-import { expect, test } from 'bun:test';
+import { afterEach, beforeEach, expect, setSystemTime, test } from 'bun:test';
 import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -6,6 +6,10 @@ import { compileUi } from '@adecore/intelligent-ui';
 import { parseHTML } from 'linkedom';
 import { ChatHostProvider } from '../../../host';
 import { UiReply } from './UiReply';
+
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 const THEME = readFileSync(new URL('../../../../../ui/src/theme.css', import.meta.url), 'utf8');
 const context = { scopeId: 'scope', chatId: 'chat', itemId: 'item', phase: 'final' as const };

@@ -1,4 +1,4 @@
-import { expect, test } from 'bun:test';
+import { afterEach, beforeEach, expect, setSystemTime, test } from 'bun:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { compileUi, evaluateUiBlock } from '@adecore/intelligent-ui';
@@ -7,6 +7,10 @@ import { ChatHostProvider, type ChatHost } from '../../../host';
 import { UiReplyNavigationContext } from '../reply-context';
 import { UiReply } from './UiReply';
 import { uiReplyParts } from './reply-parts';
+
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 const context = { scopeId: 'scope', chatId: 'chat', itemId: 'item', phase: 'final' as const };
 

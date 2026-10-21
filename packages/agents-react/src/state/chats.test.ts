@@ -1,8 +1,12 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, setSystemTime, test } from 'bun:test';
 import { compileUi } from '@adecore/intelligent-ui';
 import type { ChatInfo, ChatItem, ChatSubagentItem } from '@adecore/agent-contracts';
 import { flyoutSubagents } from '../chat/subagent-list';
 import { applyEvent, chatSink, prependPage, useChats, waitingRequestsOf, type ChatState } from './chats';
+
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 function info(patch: Partial<ChatInfo> = {}): ChatInfo {
     return {
