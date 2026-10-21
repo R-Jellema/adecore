@@ -24,7 +24,13 @@ test('a summary does not wait for the price table or the rate, and their arrival
         })) as typeof fetch;
     const service = new UsageService({ home, roots: [], knownProjects: async () => [] });
     const events: AgentEvent[] = [];
-    service.subscribe('client', (event) => events.push(event));
+    const changed = Promise.withResolvers<void>();
+    service.subscribe('client', (event) => {
+        events.push(event);
+        if (event.event === 'usage.changed') {
+            changed.resolve();
+        }
+    });
 
     const summary = await service.summary({ from: '2026-10-13', to: '2026-10-13', resolution: 'day', timeZone: 'UTC' });
     expect(summary.rate).toBeNull();
@@ -33,7 +39,7 @@ test('a summary does not wait for the price table or the rate, and their arrival
     for (const answer of answers) {
         answer();
     }
-    await Bun.sleep(20);
+    await changed.promise;
     expect(events.map((event) => event.event)).toEqual(['usage.changed']);
     const again = await service.summary({ from: '2026-10-13', to: '2026-10-13', resolution: 'day', timeZone: 'UTC' });
     expect(again.rate?.rate).toBe(0.9);
