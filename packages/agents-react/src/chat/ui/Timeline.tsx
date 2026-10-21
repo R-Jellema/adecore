@@ -79,6 +79,7 @@ import { FileLinkContext } from './file-links';
 import { AgentIcon } from '../../agents/AgentIcon';
 import { useModelName } from '../../agents/model-name';
 import { ContextMenu, EmptyState, ErrorBoundary, Icon, SectionLabel } from '@adecore/ui';
+import { useHostContextSources, useHostHidesFolder, useHostThreadCards, useHostTimelineFind, useHostWelcome } from '../../host-hooks';
 
 const ESTIMATED_ROW_PX = 56;
 // How long a jump waits for a thread that is still loading before it calls the item missing.
@@ -95,12 +96,11 @@ function showRowAtTop(virtualizer: Virtualizer<HTMLDivElement, Element>, followR
  * and the folder it works in, so a first question can lean on all three.
  */
 function EmptyThread({ chatId }: { chatId: string }) {
-    const host = useChatHost();
     const { t } = useTranslation('agent-chat');
     const info = useChatRow(chatId, (row) => row?.info ?? null);
     const model = useModelName(info?.provider, info?.selection.model ?? '');
-    const sources = host.useContextSources(chatId);
-    const hidesFolder = host.useHidesFolder(chatId);
+    const sources = useHostContextSources(chatId);
+    const hidesFolder = useHostHidesFolder(chatId);
     return (
         <div className="flex grow items-center justify-center">
             <div className="flex max-w-sm flex-col items-center gap-3 px-6 py-8 text-center">
@@ -262,7 +262,7 @@ export function Timeline({ chatId, composer, overlay }: { chatId: string; compos
             }
         );
     }, [order, items, groups.ids, turns.ids, subagents.ids, activeTurnId, forkedTurns, host.commandLooks]);
-    const cards = host.useThreadCards(scopeId, chatId);
+    const cards = useHostThreadCards(scopeId, chatId);
     const drawsVisuals = host.visuals !== null;
     // Where the part of the thread this client holds begins, while there is a page before it.
     const heldFrom = cursor === null ? null : (items?.[order?.[0] ?? '']?.createdAt ?? null);
@@ -270,7 +270,7 @@ export function Timeline({ chatId, composer, overlay }: { chatId: string; compos
         () => withTimedRows(threadRows, timedRowsOf(cards, drawsVisuals ? (visuals ?? []) : null, heldFrom)),
         [threadRows, cards, drawsVisuals, visuals, heldFrom]
     );
-    const welcomes = host.useWelcome(chatId);
+    const welcomes = useHostWelcome(chatId);
 
     const empty = rows.length === 0;
     // A chat that took a turn before is one whose thread has not come in yet, not one to greet.
@@ -475,7 +475,7 @@ export function Timeline({ chatId, composer, overlay }: { chatId: string; compos
         }),
         [chatId, onMainAgent, rows, items, order, virtualizer, turns.add, groups.add, subagents.add, stopFollowing]
     );
-    const chatFind = host.useTimelineFind(findOptions);
+    const chatFind = useHostTimelineFind(findOptions);
     const searching = chatFind.open;
     // A find covers the whole thread, so every page before this one comes in while it is open.
     useEffect(() => {

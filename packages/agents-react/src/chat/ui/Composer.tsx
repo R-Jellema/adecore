@@ -44,6 +44,7 @@ import { usePromptHistory } from './composer/use-prompt-history';
 import { usePromptHold } from './composer/use-prompt-hold';
 import { surfacePartOf } from './composer/surface';
 import { useTakeBack } from './composer/use-take-back';
+import { useHostExtraPrompts, useHostSendDelivery } from '../../host-hooks';
 
 interface ComposerProps {
     chatId: string;
@@ -79,7 +80,7 @@ export function Composer({ chatId, info, focused, answerPromptsElsewhere, disabl
     const { t } = useTranslation('agent-chat');
     const host = useChatHost();
     const scope = useChatScope();
-    const sendDelivery = host.useSendDelivery();
+    const sendDelivery = useHostSendDelivery();
     const sendKey = useChatPreferences((preferences) => preferences.sendKey);
     const provider = useProviders((row) => row.providers.find((entry) => entry.kind === info.provider));
     // Absent until the host answered `provider.list`, so only an explicit false hides anything.
@@ -109,7 +110,7 @@ export function Composer({ chatId, info, focused, answerPromptsElsewhere, disabl
     const continuable = useContinuableTurn(chatId, info);
     // The stopped turn something went out for, since the chat takes a moment to answer and Continue must not stand there meanwhile.
     const [sentFor, setSentFor] = useState<string | null>(null);
-    const extraPrompts = host.prompts.useExtra(scope.id, chatId);
+    const extraPrompts = useHostExtraPrompts(scope.id, chatId);
     const { submit, continueTurn, restoreStashed, toggleStash } = useComposerSubmit({
         chatId,
         writable,

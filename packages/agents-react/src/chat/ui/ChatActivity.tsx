@@ -16,6 +16,7 @@ import { useChatHost } from '../../host';
 import { useChatScope } from '../../scope';
 import { useChatActions } from '../actions';
 import { statusLookOf, type StatusWord } from '../../agents/status-look';
+import { useHostTask, useHostTasks } from '../../host-hooks';
 
 const NO_TASKS: readonly ChatBackgroundTask[] = [];
 
@@ -32,7 +33,7 @@ export function ChatActivity({ chatId }: { chatId: string }) {
     const structure = useChatRow(chatId, (row) => row?.structure);
     const subagents = useMemo(() => (structure === undefined ? [] : flyoutSubagents([...before, ...order], structure)), [before, order, structure]);
     const { id, keyOf } = useChatScope();
-    const tasks = host.tasks.useTasks(id);
+    const tasks = useHostTasks(id);
     // The infos of these sub-agents' own chats, so the info of any other chat changing does not draw this again.
     const children = useChats(useShallow((s) => subagents.map((item) => (item.childId === undefined ? undefined : s.statusByKey[keyOf(item.childId)]?.info))));
     const progress = useMemo(
@@ -174,11 +175,10 @@ function SubagentRows({ chatId, items }: { chatId: string; items: readonly ChatS
 }
 
 function SubagentEntry({ chatId, item, now }: { chatId: string; item: ChatSubagentItem; now: number }) {
-    const host = useChatHost();
     const { t } = useTranslation('agent-chat');
     const { id, keyOf } = useChatScope();
     const refused = useSubagentSupport((s) => s.unsupported[id] === true);
-    const task = host.tasks.useTask(id, taskIdOf(item));
+    const task = useHostTask(id, taskIdOf(item));
     const { show } = useSubagentTrail(chatId);
     const child = useChats((s) => (item.childId === undefined ? undefined : s.statusByKey[keyOf(item.childId)]?.info));
     const word = statusWordOf(item, task);

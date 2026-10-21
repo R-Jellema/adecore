@@ -1,11 +1,11 @@
 import type { ThemeRegistration } from 'shiki';
-import { useChatHost, type ChatHost } from '../../host';
+import { type ChatHost } from '../../host';
+import { useHostCodeMode, useHostCodeThemes } from '../../host-hooks';
 
 /* The Shiki theme code is drawn in under the app's current light or dark. */
 export function useCodeTheme(): string {
-    const { code } = useChatHost();
-    const mode = code.useMode();
-    const themes = code.useThemes();
+    const mode = useHostCodeMode();
+    const themes = useHostCodeThemes();
     return mode === 'dark' ? themes.dark : themes.light;
 }
 

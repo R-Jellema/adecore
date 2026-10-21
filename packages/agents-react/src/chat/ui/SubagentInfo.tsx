@@ -7,20 +7,19 @@ import { SubagentActions, SubagentBreadcrumb } from './SubagentControls';
 import { useNow } from '@adecore/ui';
 import { useModelName } from '../../agents/model-name';
 import { useChatRow } from '../../state/chats';
-import { useChatHost } from '../../host';
 import { useChatScope } from '../../scope';
+import { useHostTask } from '../../host-hooks';
 
 /*
  * What a sub-agent is, over its conversation: the way down to it, its state and time, the model it runs on
  * and what it spent, and the way out. Only the way down and out for a conversation whose row the thread lost.
  */
 export function SubagentInfo({ chatId, toolUseId }: { chatId: string; toolUseId: string }) {
-    const host = useChatHost();
     const { t } = useTranslation('agent-chat');
     const { id } = useChatScope();
     const item = useSubagentItem(chatId, toolUseId);
     const provider = useChatRow(chatId, (row) => row?.info.provider);
-    const task = host.tasks.useTask(id, item === null ? null : taskIdOf(item));
+    const task = useHostTask(id, item === null ? null : taskIdOf(item));
     const modelName = useModelName(provider, item?.model ?? '');
     const now = useNow(1000, item?.status === 'running');
     const word = item === null ? null : statusWordOf(item, task);

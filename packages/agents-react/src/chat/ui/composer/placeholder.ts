@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useChatHost } from '../../../host';
 import { useChatScope } from '../../../scope';
+import { useHostComposerPlaceholder } from '../../../host-hooks';
 
 /* The empty box names its sigils as key caps, so they read as keys to press rather than as punctuation. */
 function hintedPlaceholder(lead: string, joiner: string, hints: ReadonlyArray<{ key: string; label: string }>): HTMLElement {
@@ -31,7 +31,7 @@ interface PlaceholderInput {
 export function useHintedPlaceholder({ chatId, disabled, readOnly, mentionable, hasSkills }: PlaceholderInput): string | HTMLElement {
     const { t } = useTranslation('agent-chat');
     const scope = useChatScope();
-    const lead = useChatHost().useComposerPlaceholder(scope.id, chatId);
+    const lead = useHostComposerPlaceholder(scope.id, chatId);
     return useMemo(() => {
         if (disabled) {
             return t('composer.placeholder.disconnected');

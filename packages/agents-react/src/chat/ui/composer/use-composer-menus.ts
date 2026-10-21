@@ -23,6 +23,7 @@ import type { ComposerInputHandle } from '../ComposerInput';
 import type { ComposerDraft } from './use-composer-draft';
 import { inCode } from './keys';
 import { clampMenuIndex, composerMenuAria } from './menu-aria';
+import { useHostReferableChats } from '../../../host-hooks';
 
 const SEARCH_DEBOUNCE_MS = 80;
 // What fits above the composer without turning the picker into a file tree.
@@ -62,7 +63,7 @@ export function useComposerMenus({ chatId, info, capabilities, providerName, dra
     const scope = useChatScope();
     const host = useChatHost();
     const { searchFiles } = host;
-    const chats = host.useReferableChats();
+    const chats = useHostReferableChats();
     const [menuIndex, setMenuIndex] = useState(0);
     const [mention, setMention] = useState<MentionQuery | null>(null);
     const [skillQuery, setSkillQuery] = useState<MentionQuery | null>(null);

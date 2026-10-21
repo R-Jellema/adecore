@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { registerCustomTheme, type ThemesType } from '@pierre/diffs';
 import { useChatHost, type ChatHost } from '../../host';
+import { useHostCodeThemes } from '../../host-hooks';
 
 // The library's registry is global and refuses a name twice, so what is registered is kept by name.
 const registered = new Set<string>();
@@ -23,6 +24,6 @@ function registerThemes(custom: ChatHost['code']['custom']): void {
 export function useDiffTheme(): ThemesType {
     const { code } = useChatHost();
     registerThemes(code.custom);
-    const { light, dark } = code.useThemes();
+    const { light, dark } = useHostCodeThemes();
     return useMemo(() => ({ light, dark }), [light, dark]);
 }

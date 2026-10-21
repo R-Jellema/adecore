@@ -5,11 +5,10 @@ import { Check, Copy, ExternalLink, SquareTerminal } from 'lucide-react';
 import type { ProviderInfo, ProviderPlatform, ProviderSignIn } from '@adecore/agent-contracts';
 import { Button, copyText, Icon, Pill, Segmented } from '@adecore/ui';
 import { useChatHost } from '../host';
+import { useHostMachinePlatform } from '../host-hooks';
 import { useChatScope } from '../scope';
 import { installPlatforms, installStepStates, pagePlatform, type InstallStepState, type ProviderInstallStep } from './install-steps';
 import { CliMark } from './parts';
-
-const noPlatform = (): ProviderPlatform | null => null;
 
 function CommandBlock({ command }: { command: string }) {
     const { t } = useTranslation('agent-providers');
@@ -104,8 +103,7 @@ export function InstallPage({ provider, signedIn, extra }: InstallPageProps) {
     const { t } = useTranslation('agent-providers');
     const { id: scopeId } = useChatScope();
     const host = useChatHost();
-    const useMachinePlatform = host.useMachinePlatform ?? noPlatform;
-    const machine = useMachinePlatform(scopeId) ?? pagePlatform();
+    const machine = useHostMachinePlatform(scopeId) ?? pagePlatform();
     const { offered, initial } = installPlatforms(provider, machine);
     // Only a person's pick is kept, so a machine whose system arrives late still opens on its own.
     const [chosen, setPlatform] = useState<ProviderPlatform | null>(null);

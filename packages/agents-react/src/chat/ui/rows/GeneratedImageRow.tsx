@@ -16,6 +16,7 @@ import { useFileLinkCwd, useOpenFileLink } from '../file-links';
 import { ImageThumb } from '../ImageView';
 import { ROW_GUTTER } from '../icons';
 import { RunningFor, WorkRow } from './WorkRows';
+import { useHostAttachmentUrl } from '../../../host-hooks';
 
 const SAVED_FLASH_MS = 2000;
 
@@ -94,7 +95,7 @@ function ReadyImage({ chatId, attachment, prompt, transparent }: { chatId: strin
     const { t } = useTranslation('agent-chat');
     const { id: scopeId } = useChatScope();
     const { attachments } = useChatHost();
-    const source = attachments.useUrl(scopeId, chatId, attachment.id);
+    const source = useHostAttachmentUrl(scopeId, chatId, attachment.id);
     const savedKey = `${scopeId}\n${chatId}\n${attachment.id}`;
     const [lightbox, setLightbox] = useState(false);
     const [saving, setSaving] = useState(false);

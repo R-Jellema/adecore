@@ -12,6 +12,7 @@ import { useChatHost } from '../../host';
 import { useChatScope } from '../../scope';
 import { useChatActions } from '../actions';
 import { Button, Icon } from '@adecore/ui';
+import { useHostExtraPrompts } from '../../host-hooks';
 
 /* Keeps a prompt card behind the draft while the person types; `released` says what lifted the hold last. */
 export interface PromptHold {
@@ -57,7 +58,7 @@ export function PromptComposer({
     const actions = useChatActions();
     const elsewhere = onShowElsewhere !== undefined;
     // A card the app raises itself waits in the chat beside the CLI's own requests.
-    const extra = host.prompts.useExtra(id, chatId);
+    const extra = useHostExtraPrompts(id, chatId);
     const subjects = useMemo(
         (): PromptSubject[] => [
             ...pending.map((item): PromptSubject => ({ kind: 'chat', nodeId: chatId, item })),

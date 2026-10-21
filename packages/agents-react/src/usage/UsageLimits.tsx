@@ -12,6 +12,7 @@ import { useLimitGroups, useUsageLimits } from './limits';
 import { useProviderAccountsStore } from '../state/provider-accounts';
 import { useChatScope } from '../scope';
 import { ProviderLogo } from '../agents/ProviderLogo';
+import { useHostLoginBlocked } from '../host-hooks';
 
 const MINUTE_MS = 60_000;
 
@@ -101,7 +102,7 @@ export function UsageLimits() {
     const scopeId = useChatScope().id;
     const loginCommands = useProviderAccountsStore((s) => s.byScope[scopeId]?.accounts?.loginCommands);
     const { openLogin } = host;
-    const blocked = host.useLoginBlocked(scopeId);
+    const blocked = useHostLoginBlocked(scopeId);
     const [filter, setFilter] = useState<Filter>('all');
 
     if (limits === null) {

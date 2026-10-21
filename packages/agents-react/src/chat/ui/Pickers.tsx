@@ -14,6 +14,7 @@ import { pickerEntriesOf, type PickerEntry } from '../logic/picker-entries';
 import { favoriteModelsOf, toggleFavoriteModel, useChatPreferences } from '../preferences';
 import { forgetStashed, STASH_SHORTCUT, useStash, type StashedPrompt } from '../stash';
 import { Icon, IconButton, Menu, Popover, Tooltip } from '@adecore/ui';
+import { useHostMachineLabel } from '../../host-hooks';
 
 const triggerClass =
     'flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2 text-xs text-text-muted hover:bg-surface-hover hover:text-text data-[popup-open]:bg-surface-active data-[popup-open]:text-text';
@@ -82,7 +83,7 @@ export function ModelPicker({
         [providers, trimmed, legacyOpen, expanded, provider, selection.model, favorites]
     );
     const scope = useContext(ChatScopeContext);
-    const machine = host.useMachineLabel(scope?.id ?? '');
+    const machine = useHostMachineLabel(scope?.id ?? '');
     const reported = useReportedModels(provider);
     const requirementOf = (entry: PickerEntry & { kind: 'model' }) => modelRequirementOf(entry.model, entry.provider, reported);
     // A CLI that is too old blocks all its models; one way to its settings under the group says it once.

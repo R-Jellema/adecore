@@ -16,6 +16,7 @@ import { groupProviders, type ProviderSetupStatus } from './provider-groups';
 import { ProviderList } from './ProviderList';
 import { useProviderAccounts } from '../state/provider-accounts';
 import { useProviders } from '../state/providers';
+import { useHostLoginBlocked } from '../host-hooks';
 
 interface ProvidersPaneProps {
     /* The row a search result leads to, by its `searchId`; the pane opens on the CLI it belongs to. `providers.install.<kind>` opens on that CLI's install page, or on its detail once it is installed. */
@@ -43,7 +44,7 @@ export function ProvidersPane({ target = null, detailOf, defaults = true, instal
     const accounts = useProviderAccounts((s) => s.accounts);
     const host = useChatHost();
     const { openLogin } = host;
-    const loginBlocked = host.useLoginBlocked(scopeId);
+    const loginBlocked = useHostLoginBlocked(scopeId);
     const [picked, setPicked] = useState<Picked | null>(() => pickOfTarget(target, providers));
 
     const groups = groupProviders(providers, accounts, setupStatusOf);

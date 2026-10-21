@@ -2,8 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { ChevronRight, GitFork } from 'lucide-react';
 import { useForkIdsAfter } from '../../forks';
 import { ROW_GUTTER } from '../icons';
-import { useChatHost } from '../../../host';
 import { Icon, Menu } from '@adecore/ui';
+import { useHostChatPlace } from '../../../host-hooks';
 
 const LINE = '-mx-1 mb-0.5 flex h-7 items-center gap-2 rounded-md px-1 text-xs text-text-muted';
 const LINK = `${LINE} hover:bg-surface-hover hover:text-text data-[popup-open]:bg-surface-hover data-[popup-open]:text-text`;
@@ -52,8 +52,7 @@ function ForksLabel({ label, link = true }: { label: string; link?: boolean }) {
 
 // A fork no longer in this project has nowhere to lead, so it only says it is there.
 function OneFork({ forkId, label }: { forkId: string; label: string }) {
-    const host = useChatHost();
-    const place = host.useChatPlace(forkId);
+    const place = useHostChatPlace(forkId);
     return (
         <div className="flex">
             {place.title === null ? (
@@ -70,9 +69,8 @@ function OneFork({ forkId, label }: { forkId: string; label: string }) {
 }
 
 function ForkItem({ forkId }: { forkId: string }) {
-    const host = useChatHost();
     const { t } = useTranslation('agent-chat');
-    const place = host.useChatPlace(forkId);
+    const place = useHostChatPlace(forkId);
     return (
         <Menu.Item disabled={place.title === null} onClick={place.go}>
             <Icon icon={GitFork} size={14} /> <span className="truncate">{place.title ?? t('fork.pill.label')}</span>

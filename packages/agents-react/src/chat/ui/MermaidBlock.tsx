@@ -2,11 +2,11 @@ import { useContext, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Code, Workflow } from 'lucide-react';
 import { IconButton } from '@adecore/ui';
-import { useChatHost } from '../../host';
 import { CodeBlock } from './CodeBlock';
 import { CodeStreamingContext } from './code-streaming';
 import { MERMAID_TOKENS, mermaidConfig, sizedSvg, svgDataUrl, type MermaidColors, type SizedSvg } from './mermaid';
 import { watchTheme } from './theme-watch';
+import { useHostCodeMode } from '../../host-hooks';
 
 type Drawing = { state: 'drawing' } | { state: 'drawn'; image: SizedSvg } | { state: 'failed' };
 
@@ -63,10 +63,9 @@ async function drawDiagram(id: string, source: string, look: DiagramLook, dark: 
  * draw, it is the code block it would otherwise be.
  */
 export function MermaidBlock({ code }: { code: string }) {
-    const host = useChatHost();
     const { t } = useTranslation('agent-chat');
     const streaming = useContext(CodeStreamingContext);
-    const dark = host.code.useMode() === 'dark';
+    const dark = useHostCodeMode() === 'dark';
     const id = `mermaid-${useId().replace(/[^\w-]/g, '')}`;
     const frame = useRef<HTMLDivElement>(null);
     const [source, setSource] = useState(false);

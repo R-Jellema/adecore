@@ -8,6 +8,7 @@ import { useChatHost } from '../../host';
 import { useChatScope } from '../../scope';
 import { useChatRow } from '../../state/chats';
 import { Icon, Menu } from '@adecore/ui';
+import { useHostChatPlace } from '../../host-hooks';
 
 /* A chat's bookmarks in thread order, each a jump to its message with rename and remove; nothing without bookmarks. */
 export function BookmarkSubmenu({ chatId }: { chatId: string }) {
@@ -16,7 +17,7 @@ export function BookmarkSubmenu({ chatId }: { chatId: string }) {
     const bookmarks = useChatRow(chatId, (row) => row?.bookmarks);
     const order = useChatRow(chatId, (row) => row?.order);
     const host = useChatHost();
-    const place = host.useChatPlace(chatId);
+    const place = useHostChatPlace(chatId);
     const sorted = useMemo(() => bookmarksInThreadOrder(bookmarks ?? [], order ?? []), [bookmarks, order]);
     if (sorted.length === 0) {
         return null;

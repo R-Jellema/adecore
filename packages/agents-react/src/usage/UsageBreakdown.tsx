@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import type { UsageModel, UsageProject, UsageProvider, UsageSummaryResult } from '@adecore/agent-contracts';
 import { EmptyState, Icon, SectionLabel, Segmented, Tooltip } from '@adecore/ui';
 import { useChatScope } from '../scope';
-import { useChatHost } from '../host';
 import type { UsageMetric } from '../state/usage';
 import { ProviderLogo } from '../agents/ProviderLogo';
 import { USAGE_PROVIDERS, totalTokensOf } from '@adecore/agent-contracts';
@@ -13,6 +12,7 @@ import { useModelName } from '../agents/model-name';
 import { formatCount, formatTokens, PROVIDER_COLORS, PROVIDER_LABELS, shortPath, slotLabel } from './format';
 import { useMoney } from './money';
 import { deriveDays } from './summary';
+import { useHostProjectLook } from '../host-hooks';
 
 type Breakdown = 'models' | 'projects' | 'day';
 
@@ -109,9 +109,8 @@ function ModelRows({ models, metric, total }: { models: readonly UsageModel[]; m
 
 /* One project's row, under the name and the mark its host gives it, or its folder's own under a folder. */
 function ProjectRow({ project, top, money }: { project: UsageProject; top: number; money(usd: number): string }) {
-    const host = useChatHost();
     // The usage on screen is one host's, so the look of a project is that host's too.
-    const look = host.useProjectLook(useChatScope().id, project.projectId);
+    const look = useHostProjectLook(useChatScope().id, project.projectId);
     return (
         /* The mark sits on the title rather than between the two lines, so the icons line up with the names. */
         <div className={`${ROW} h-auto items-start py-1.5`}>

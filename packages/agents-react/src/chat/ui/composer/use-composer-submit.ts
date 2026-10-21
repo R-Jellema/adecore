@@ -19,6 +19,7 @@ import type { ComposerDraft } from './use-composer-draft';
 import type { ComposerMenus } from './use-composer-menus';
 import type { PromptHistory } from './use-prompt-history';
 import type { ComposerPromptHold } from './use-prompt-hold';
+import { useHostReferableChats } from '../../../host-hooks';
 
 interface SubmitInput {
     chatId: string;
@@ -58,7 +59,7 @@ export function useComposerSubmit({
     const host = useChatHost();
     const scope = useChatScope();
     const { draft, setDraft } = box;
-    const referable = host.useReferableChats();
+    const referable = useHostReferableChats();
 
     /* Opens the host's new chat once the host took the message; a host that answers nothing took it. */
     const afterSend = (sent: void | Promise<boolean>, andNew: boolean): void => {

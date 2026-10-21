@@ -14,7 +14,6 @@ import type {
 import { WAITING_NOTE_PREFIX } from '@adecore/agent-contracts';
 import { fileBadge, formatBytes, isImageAttachment } from '../../attachments';
 import { useChatRow, useCurrentItem } from '../../../state/chats';
-import { useChatHost } from '../../../host';
 import { useChatScope } from '../../../scope';
 import { splitQuote } from '../../quote';
 import { jumpToTimelineItem } from '../../timeline-scroll';
@@ -34,6 +33,7 @@ import { ROW_GUTTER } from '../icons';
 import { useOpenForFind } from '../find-reveal';
 import { ReplyContext, UiReplyNavigationContext } from '../reply-context';
 import { UiReply } from '../intelligent-ui/UiReply';
+import { useHostAttachmentUrl, useHostChatPlace, useHostReplyAuthor, useHostStreaming } from '../../../host-hooks';
 
 // A long prompt folds so the answer stays in view; the reader can open it.
 const USER_FOLD_LINES = 8;
@@ -43,10 +43,9 @@ const USER_FOLD_CHARS = 600;
 const FOLD = 'max-h-[10em] overflow-hidden [mask-image:linear-gradient(to_bottom,black_70%,transparent)]';
 
 function useReplyAuthor(chatId: string) {
-    const host = useChatHost();
     const { id } = useChatScope();
     const context = useContext(ReplyContext);
-    const author = host.useReplyAuthor(id, context?.chatId ?? chatId);
+    const author = useHostReplyAuthor(id, context?.chatId ?? chatId);
     return context !== null && context.chatId === undefined ? null : author;
 }
 
@@ -55,9 +54,8 @@ function useReplyAuthor(chatId: string) {
  * hands a link that opens a window to the system browser, which cannot reach a blob of this page.
  */
 function AttachmentLink({ chatId, attachment }: { chatId: string; attachment: ChatAttachment }) {
-    const host = useChatHost();
     const { id } = useChatScope();
-    const { url } = host.attachments.useUrl(id, chatId, attachment.id);
+    const { url } = useHostAttachmentUrl(id, chatId, attachment.id);
     const badge = fileBadge(attachment.name);
     return (
         <Tooltip label={attachment.name}>
@@ -81,9 +79,8 @@ function AttachmentLink({ chatId, attachment }: { chatId: string; attachment: Ch
 
 /* A picture attached to a message, which opens large. */
 function AttachmentThumb({ chatId, attachment }: { chatId: string; attachment: ChatAttachment }) {
-    const host = useChatHost();
     const { id } = useChatScope();
-    const source = host.attachments.useUrl(id, chatId, attachment.id);
+    const source = useHostAttachmentUrl(id, chatId, attachment.id);
     return <ImageThumb source={source} alt={attachment.name} className="max-h-32 max-w-48 object-cover" />;
 }
 
@@ -268,7 +265,6 @@ function Writing() {
  * written fades anything: an old reply scrolled back into view just stands there.
  */
 export function AssistantRow({ chatId, item: derived }: { chatId: string; item: ChatAssistantItem }) {
-    const host = useChatHost();
     const item = useCurrentItem(chatId, derived);
     const scope = useChatScope();
     const context = useContext(ReplyContext);
@@ -276,7 +272,7 @@ export function AssistantRow({ chatId, item: derived }: { chatId: string; item: 
         () => (context === null && !item.parentToolUseId ? { scopeId: scope.id, chatId, itemId: item.id, streaming: item.streaming } : undefined),
         [context, item.parentToolUseId, scope.id, chatId, item.id, item.streaming]
     );
-    const mode = host.useStreaming();
+    const mode = useHostStreaming();
     const [sawWriting] = useState(item.streaming);
     const live = mode === 'words' && item.streaming;
     const reveal = useRevealedText(item.text, live);
@@ -338,10 +334,9 @@ export function AssistantRow({ chatId, item: derived }: { chatId: string; item: 
  * folded, it shows the heading it opens with or itself on one line, and opened, it reads as Markdown.
  */
 export function ThinkingRow({ chatId, item: derived }: { chatId: string; item: ChatThinkingItem }) {
-    const host = useChatHost();
     const { t } = useTranslation('agent-chat');
     const item = useCurrentItem(chatId, derived);
-    const mode = host.useStreaming();
+    const mode = useHostStreaming();
     const [open, setOpen] = useState(false);
     const reveal = useRevealedText(item.text, mode === 'words' && item.streaming);
     // A block at a time, the paragraphs of the thought that closed are shown as they land.
@@ -465,9 +460,8 @@ export function NoteRow({ id, level, text, from }: { id: string; level: 'info' |
 
 /* "Open fork" on a note a fork sent, or "Open to answer" on one about a waiting child, while that chat is still in the project. */
 function OpenChatButton({ chatId, label }: { chatId: string; label: 'openFork' | 'openWaiting' }) {
-    const host = useChatHost();
     const { t } = useTranslation('agent-chat');
-    const place = host.useChatPlace(chatId);
+    const place = useHostChatPlace(chatId);
     if (place.title === null) {
         return null;
     }

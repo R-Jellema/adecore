@@ -2,14 +2,13 @@ import { LegacyDiffPool } from './LegacyDiffPool';
 import { useReviewSettled } from './review-settle';
 import { useMemo } from 'react';
 import { MultiFileDiff } from '@pierre/diffs/react';
-import { useChatHost } from '../../../host';
 import { useDiffTheme } from '../diff-theme';
 import type { FileChange } from '../../logic/tools';
+import { useHostCodeMode } from '../../../host-hooks';
 
 export default function LegacyEditDiff({ change, maxHeight }: { change: FileChange; maxHeight?: number }) {
-    const host = useChatHost();
     useReviewSettled();
-    const resolved = host.code.useMode();
+    const resolved = useHostCodeMode();
     const theme = useDiffTheme();
     const oldFile = useMemo(() => ({ name: change.path, contents: change.before }), [change.path, change.before]);
     const newFile = useMemo(() => ({ name: change.path, contents: change.after }), [change.path, change.after]);

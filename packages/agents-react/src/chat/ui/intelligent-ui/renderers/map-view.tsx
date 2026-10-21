@@ -7,6 +7,7 @@ import { ButtonGroup, IconButton } from '@adecore/ui';
 import { useChatHost, type UiMapSource } from '../../../../host';
 import { watchTheme } from '../../theme-watch';
 import { baseMapStyle, boundsOf, localizedTextField, mapFitOptions, spreadOverlaps, type MapColors, type MapPoint } from './map-style';
+import { useHostCodeMode } from '../../../../host-hooks';
 
 /*
  * What the view is drawing: `base` by the source's choice, `offline` and `unavailable` as a fallback from tiles that
@@ -63,7 +64,7 @@ function readColors(element: HTMLElement): MapColors {
 export function MapView({ markers, source, selected, onPick, onStatus }: MapViewProps) {
     const { t, i18n } = useTranslation('agent-chat');
     const host = useChatHost();
-    const mode = host.code.useMode();
+    const mode = useHostCodeMode();
     const workerUrl = host.maps?.workerUrl;
     const element = useRef<HTMLDivElement>(null);
     const [map, setMap] = useState<MapLibreMap | null>(null);

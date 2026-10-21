@@ -4,10 +4,10 @@ import { useMemo } from 'react';
 import clsx from 'clsx';
 import { FileDiff, PatchDiff } from '@pierre/diffs/react';
 import type { ChatFileChange } from '@adecore/agent-contracts';
-import { useChatHost } from '../../../host';
 import { useDiffTheme } from '../diff-theme';
 import { fullFileDiff } from '../full-diff';
 import type { UnifiedDiffProps } from './diff-props';
+import { useHostCodeMode } from '../../../host-hooks';
 
 /*
  * A patch the CLI reported itself. The renderer needs a file header, which a CLI that only sends hunks
@@ -45,9 +45,8 @@ function lineClass(line: string): string {
 }
 
 export default function LegacyUnifiedDiff({ change, overflow = 'wrap', diffStyle = 'unified', fill = false, contents, maxHeight }: UnifiedDiffProps) {
-    const host = useChatHost();
     useReviewSettled();
-    const resolved = host.code.useMode();
+    const resolved = useHostCodeMode();
     const theme = useDiffTheme();
     const patch = useMemo(() => asPatch(change), [change]);
     const oldText = contents?.old;

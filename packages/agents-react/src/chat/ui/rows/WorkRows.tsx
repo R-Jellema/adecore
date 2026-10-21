@@ -23,6 +23,7 @@ import {
 } from '../../logic/tools';
 import { useOpenForFind } from '../find-reveal';
 import { useChatHost, type CommandLook } from '../../../host';
+import { useCommandNames } from '../../../host-hooks';
 import { lazyNamed } from '../../../lazy';
 import { useChatActions } from '../../actions';
 import { ChatScopeContext, useChatScope } from '../../../scope';
@@ -71,10 +72,14 @@ function withBrand(text: string, brands: readonly string[]): ReactNode {
     return text;
 }
 
+function hasNames(look: CommandLook): look is CommandLook & Required<Pick<CommandLook, 'useNames'>> {
+    return look.useNames !== undefined;
+}
+
 /* The detail of a look's run, with the words its host names drawn as those names. */
-function NamedLookDetail({ run, chatId, useNames }: { run: CommandLookRun; chatId: string; useNames: NonNullable<CommandLook['useNames']> }) {
+function NamedLookDetail({ run, chatId, look }: { run: CommandLookRun; chatId: string; look: Required<Pick<CommandLook, 'useNames'>> }) {
     const scope = useContext(ChatScopeContext);
-    const nameOf = useNames(scope?.id ?? '', chatId);
+    const nameOf = useCommandNames(look, scope?.id ?? '', chatId);
     const names = run.words.flatMap((word): NamedWord[] => {
         const name = nameOf(word.text, word.option);
         return name === null ? [] : [{ start: word.start, end: word.end, word: word.text, name }];
@@ -83,12 +88,12 @@ function NamedLookDetail({ run, chatId, useNames }: { run: CommandLookRun; chatI
 }
 
 function LookDetail({ run, chatId }: { run: CommandLookRun; chatId: string }) {
-    const { useNames } = run.look;
-    if (useNames === undefined) {
+    const { look } = run;
+    if (!hasNames(look)) {
         return <ShellCommand command={run.detail} code={run.code} />;
     }
     // Keyed by the look, so a row whose command turns into another look's starts its hooks again.
-    return <NamedLookDetail key={run.look.program} run={run} chatId={chatId} useNames={useNames} />;
+    return <NamedLookDetail key={look.program} run={run} chatId={chatId} look={look} />;
 }
 
 const TAG = 'shrink-0 rounded bg-surface-hover px-1.5 text-text-faint';

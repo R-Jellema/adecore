@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import type { UiProps, UiViewNode } from '@adecore/intelligent-ui';
 import { Button, LazyBoundary, Spinner } from '@adecore/ui';
 import { useChatHost, type UiMapSource } from '../../../../host';
+import { useHostMapSource } from '../../../../host-hooks';
 import { lazyNamed } from '../../../../lazy';
 import { DiffFallbackBoundary } from '../../diff/DiffFallbackBoundary';
 import { uiChildrenOf, uiNodeLabel } from '../node-text';
@@ -170,7 +171,7 @@ function MapFrame({ markers, source, selected, onPick }: FrameProps) {
 
 /* Asks the host for its tiles in a component of its own, since a host that offers none has no hook to call. */
 function HostedFrame({ maps, scopeId, ...frame }: Omit<FrameProps, 'source'> & { maps: NonNullable<ReturnType<typeof useChatHost>['maps']>; scopeId: string }) {
-    return <MapFrame {...frame} source={maps.useSource(scopeId)} />;
+    return <MapFrame {...frame} source={useHostMapSource(maps, scopeId)} />;
 }
 
 /*

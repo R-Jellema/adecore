@@ -12,6 +12,7 @@ import { ImageThumb } from '../../ImageView';
 import { uiChildrenOf, uiNodeLabel, uiNodeText, uiUrlDomain } from '../node-text';
 import type { UiRendererProps } from '../render-context';
 import { useTruncated } from '../use-truncated';
+import { useHostAttachmentUrl } from '../../../../host-hooks';
 
 // The number of every source by its node id, which the list counts in its own order.
 const SourceNumbers = createContext<ReadonlyMap<string, number>>(new Map());
@@ -55,8 +56,7 @@ function AttachedImage({
     cell: boolean;
     unnamed: boolean;
 }) {
-    const host = useChatHost();
-    const source = host.attachments.useUrl(scopeId, chatId, attachmentId);
+    const source = useHostAttachmentUrl(scopeId, chatId, attachmentId);
     if (!cell) {
         return <ImageThumb source={source} alt={alt} className="max-h-70 max-w-full rounded-xl object-contain" />;
     }
@@ -117,12 +117,11 @@ const COMPARE_MAX_HEIGHT = 384;
  */
 export function CompareRenderer({ node, children, context }: UiRendererProps<UiProps<'Compare'>>) {
     const { t } = useTranslation('agent-chat');
-    const host = useChatHost();
     const { before, after } = node.props;
     const beforeLabel = node.props.beforeLabel || t('blocks.compare.before');
     const afterLabel = node.props.afterLabel || t('blocks.compare.after');
-    const first = host.attachments.useUrl(context.scopeId, context.chatId, before);
-    const second = host.attachments.useUrl(context.scopeId, context.chatId, after);
+    const first = useHostAttachmentUrl(context.scopeId, context.chatId, before);
+    const second = useHostAttachmentUrl(context.scopeId, context.chatId, after);
     const [split, setSplit] = useState(0.5);
     const [aspect, setAspect] = useState(COMPARE_ASPECT);
     const caption = uiNodeLabel(node);
@@ -205,7 +204,7 @@ export function ModelRenderer({ node, children, context }: UiRendererProps<UiPro
     const { t } = useTranslation('agent-chat');
     const host = useChatHost();
     const { attachment, alt } = node.props;
-    const source = host.attachments.useUrl(context.scopeId, context.chatId, attachment);
+    const source = useHostAttachmentUrl(context.scopeId, context.chatId, attachment);
     const caption = uiNodeLabel(node);
     const label = alt ?? (caption === '' ? t('blocks.model.label') : caption);
     const View = host.ModelView;

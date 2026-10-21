@@ -14,6 +14,7 @@ import { useChatHost } from '../../host';
 import { useChatScope, type ChatScope } from '../../scope';
 import { useChatActions } from '../actions';
 import { useUsageStore } from '../../state/usage';
+import { useHostResumeAtReset } from '../../host-hooks';
 
 // A time a limit names reads as a clock today and with its day after that, so the words follow the minute.
 const MINUTE_MS = 60_000;
@@ -43,11 +44,10 @@ function readUnreadAccounts(scope: ChatScope): void {
  * switch off it stands off and says where that switch is.
  */
 function ResumeAtResetToggle({ chatId, info }: { chatId: string; info: ChatInfo }) {
-    const host = useChatHost();
     const { t } = useTranslation('agent-chat');
     const { id } = useChatScope();
     const actions = useChatActions();
-    const machineAllows = host.useResumeAtReset(id);
+    const machineAllows = useHostResumeAtReset(id);
     const set = (on: boolean): void => {
         void actions.configure(chatId, { resumeAtReset: on }).catch(() => undefined);
     };
