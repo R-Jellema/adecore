@@ -24,6 +24,20 @@ function adoptableModels(info: AcpSessionInfo): Adopted['models'] {
         .map((model) => ({ slug: model.id, name: model.name, ...(model.contextWindow === null ? {} : { contextWindow: model.contextWindow }) }));
 }
 
+/*
+ * An agent may name its choices in lowercase, as Copilot CLI 1.0.101 names its efforts; a person reads them with a
+ * capital like every other label. Also applied to what a store kept from before, so only the labels change, never the ids.
+ */
+function capitalized(option: ModelOptionDescriptor): ModelOptionDescriptor {
+    if (option.type !== 'select') {
+        return option;
+    }
+    return {
+        ...option,
+        choices: option.choices.map((choice) => ({ ...choice, label: choice.label.charAt(0).toLocaleUpperCase('en') + choice.label.slice(1) }))
+    };
+}
+
 /* The reasoning effort a session offers, as the `effort` option the composer draws for every provider. */
 function effortOption(info: AcpSessionInfo): ModelOptionDescriptor[] {
     const level = info.thoughtLevel;
@@ -171,7 +185,7 @@ export class AcpAgentState {
             return false;
         }
         this.adopted = adopted;
-        return this.options.catalog.adopt(adopted.models, adopted.defaultModel, adopted.options);
+        return this.options.catalog.adopt(adopted.models, adopted.defaultModel, adopted.options.map(capitalized));
     }
 
     /* Saves and tells the listeners once something changed. */

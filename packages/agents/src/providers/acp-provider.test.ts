@@ -247,6 +247,33 @@ test('keeps the models a session reported in the host store, so a provider made 
     expect(restarted.catalog.list()).toEqual(provider.catalog.list());
 });
 
+test('writes the effort names a store kept in lowercase with a capital, and keeps their ids', () => {
+    const effort = {
+        id: 'effort',
+        label: 'Reasoning',
+        type: 'select',
+        defaultChoice: 'max',
+        choices: [
+            { id: 'low', label: 'low' },
+            { id: 'max', label: 'max' }
+        ]
+    };
+    const provider = createAcpProvider({
+        kind: 'example',
+        name: 'Example',
+        command: 'example',
+        catalog: agentDefault(),
+        catalogStore: memoryStore({ models: { defaultModel: 'kept', models: [{ slug: 'kept', name: 'Kept' }], options: [effort] } })
+    });
+    expect(provider.catalog.list()[0]?.options).toContainEqual({
+        ...effort,
+        choices: [
+            { id: 'low', label: 'Low' },
+            { id: 'max', label: 'Max' }
+        ]
+    });
+});
+
 test('starts from its own catalog when the store holds nothing it can read or cannot be read at all', () => {
     const garbage = createAcpProvider({
         kind: 'example',

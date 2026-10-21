@@ -108,7 +108,7 @@ test('ends a Copilot turn on its response in what a client reads, and sends the 
     expect(chat.info()?.suggestedTitle).toBeUndefined();
 });
 
-test("adopts Copilot's models and reasoning effort from a chat's session, with no account check", async () => {
+test("adopts Copilot's models and reasoning effort from a chat's session, its effort names written with a capital, with no account check", async () => {
     const provider = copilot();
     expect(provider.askAccount).toBeUndefined();
     const chat = open(provider);
@@ -127,7 +127,12 @@ test("adopts Copilot's models and reasoning effort from a chat's session, with n
     expect(haiku?.options.find((option) => option.id === 'effort')).toMatchObject({
         type: 'select',
         defaultChoice: 'medium',
-        choices: [{ id: 'low' }, { id: 'medium' }, { id: 'high' }, { id: 'max' }]
+        choices: [
+            { id: 'low', label: 'Low' },
+            { id: 'medium', label: 'Medium' },
+            { id: 'high', label: 'High' },
+            { id: 'max', label: 'Max' }
+        ]
     });
     expect(provider.capabilities).toMatchObject({ reportsContextWindow: true, compaction: 'prompt' });
 });
