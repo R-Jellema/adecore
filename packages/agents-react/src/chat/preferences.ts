@@ -20,6 +20,8 @@ export interface ChatPreferences {
     readingWidth: ChatReadingWidth;
     /* Which key sends from the composer. It never reaches a machine either. */
     sendKey: ChatSendKey;
+    /* The models a person starred, per CLI, which the pickers list first. Neither does this. */
+    favoriteModels: Partial<Record<AgentKind, string[]>>;
     /* When a person last changed any of it; what settles whose pick a machine uses when several clients told it one. */
     changedAt: number;
 }
@@ -32,8 +34,22 @@ export const DEFAULT_CHAT_PREFERENCES: ChatPreferences = {
     accountByMachine: {},
     readingWidth: DEFAULT_READING_WIDTH,
     sendKey: DEFAULT_SEND_KEY,
+    favoriteModels: {},
     changedAt: 0
 };
+
+/* Only lists of slugs survive, so a hand-edited or older record cannot put something else in the pickers. */
+function parseFavoriteModels(stored: unknown): Partial<Record<AgentKind, string[]>> {
+    if (typeof stored !== 'object' || stored === null || Array.isArray(stored)) {
+        return {};
+    }
+    return Object.fromEntries(
+        Object.entries(stored).flatMap(([provider, slugs]) => {
+            const kept = Array.isArray(slugs) ? slugs.filter((slug): slug is string => typeof slug === 'string' && slug !== '') : [];
+            return kept.length === 0 ? [] : [[provider, kept]];
+        })
+    );
+}
 
 /*
  * Only the fields we know today, so what an older build wrote (one global `selection`, the plan
@@ -54,6 +70,7 @@ export function parseChatPreferences(raw: string | null): ChatPreferences {
             accountByMachine: { ...stored.accountByMachine },
             readingWidth: isChatReadingWidth(stored.readingWidth) ? stored.readingWidth : DEFAULT_READING_WIDTH,
             sendKey: isChatSendKey(stored.sendKey) ? stored.sendKey : DEFAULT_SEND_KEY,
+            favoriteModels: parseFavoriteModels(stored.favoriteModels),
             changedAt: typeof stored.changedAt === 'number' ? stored.changedAt : 0
         };
     } catch {
@@ -188,6 +205,24 @@ export function rememberChatSelection(provider: AgentKind, selection: ModelSelec
 
 export function rememberChatAccount(scopeId: string, provider: AgentKind, account: string | null): void {
     write(withAccount(useChatPreferences.getState(), scopeId, provider, account));
+}
+
+/* The starred models of one CLI; a slug only means something inside its own catalog. */
+export function favoriteModelsOf(favorites: ChatPreferences['favoriteModels'], provider: AgentKind): ReadonlySet<string> {
+    return new Set(favorites[provider] ?? []);
+}
+
+/* Stars a model that was not, and takes the star off one that was. A provider left without any drops out. */
+export function withFavoriteToggled(preferences: ChatPreferences, provider: AgentKind, slug: string): ChatPreferences {
+    const current = preferences.favoriteModels[provider] ?? [];
+    const next = current.includes(slug) ? current.filter((each) => each !== slug) : [...current, slug];
+    const { [provider]: _previous, ...others } = preferences.favoriteModels;
+    return { ...preferences, favoriteModels: next.length === 0 ? others : { ...others, [provider]: next } };
+}
+
+/* Leaves `changedAt` alone: a star orders a person's own pickers and is no pick a machine weighs. */
+export function toggleFavoriteModel(provider: AgentKind, slug: string): void {
+    store(withFavoriteToggled(useChatPreferences.getState(), provider, slug));
 }
 
 /* Back to the CLI's own default for this provider; the other providers keep what they had. */

@@ -15,6 +15,7 @@ import {
     Shield,
     ShieldAlert,
     SlidersHorizontal,
+    Star,
     type LucideIcon
 } from 'lucide-react';
 import type { AgentKind, ChatUsage, ModelInfo, ModelOptionDescriptor, ModelSelection, ProviderInfo, RuntimeMode, UsageWindow } from '@adecore/agent-contracts';
@@ -25,7 +26,8 @@ import { AgentIcon } from '../../agents/AgentIcon';
 import type { AccountChoice } from '../account-choice';
 import { modelName, shortModelName } from '../../agents/model-name';
 import { ModelMarks } from './ModelMarks';
-import { modelsByVendor, searchModels, shortlistOf, wantsModelSearch } from '../logic/picker-entries';
+import { favoritesFirst, searchModels, shortlistOf, wantsModelSearch } from '../logic/picker-entries';
+import { favoriteModelsOf, toggleFavoriteModel, useChatPreferences } from '../preferences';
 import { CONTEXT_OPTION, contextFraction, contextSegments, orderOptions, type ContextPart } from '../logic/context-usage';
 import { RUNTIME_MODES } from '../runtime-modes';
 import { formatClock, formatWeekdayClock, isSameDay, formatPercent, formatTokens } from '@adecore/ui/format';
@@ -172,7 +174,9 @@ export function RunSettings({
     };
 
     const searchable = wantsModelSearch(providers);
-    const found = query.trim() === '' ? null : searchModels(providers, query);
+    const favorites = useChatPreferences((preferences) => preferences.favoriteModels);
+    const favoritesOf = (kind: AgentKind): ReadonlySet<string> => favoriteModelsOf(favorites, kind);
+    const found = query.trim() === '' ? null : searchModels(providers, query, favoritesOf);
 
     // The menu moves the focus to its popup as it opens, so the search field takes it a frame later.
     useEffect(() => {
@@ -227,28 +231,49 @@ export function RunSettings({
         }
     };
 
-    const modelRow = (entry: ProviderInfo, row: ModelInfo) => (
-        <Menu.RadioItem key={row.slug} value={modelValue(entry.kind, row.slug)} closeOnClick>
-            <AgentIcon kind={entry.kind} size={14} className="shrink-0" />
-            <span className="min-w-0 truncate">{row.name}</span>
-            <ModelMarks model={row} />
-        </Menu.RadioItem>
-    );
+    // The name wraps rather than truncates, so a long name a provider gives is read whole.
+    const modelRow = (entry: ProviderInfo, row: ModelInfo) => {
+        const starred = favoritesOf(entry.kind).has(row.slug);
+        return (
+            <Menu.Row key={row.slug} aria-label={row.name}>
+                <Menu.RadioItem value={modelValue(entry.kind, row.slug)} closeOnClick>
+                    <AgentIcon kind={entry.kind} size={14} className="shrink-0" />
+                    <span className="min-w-0 break-words">{row.name}</span>
+                    <ModelMarks model={row} />
+                </Menu.RadioItem>
+                <Menu.RowAction
+                    icon={Star}
+                    label={starred ? t('pickers.model.unstar') : t('pickers.model.star')}
+                    iconClassName={starred ? 'fill-current text-accent' : 'text-text-faint'}
+                    closeOnClick={false}
+                    onClick={() => toggleFavoriteModel(entry.kind, row.slug)}
+                />
+            </Menu.Row>
+        );
+    };
 
-    // Every model of one provider, under a label per maker where the provider names them.
-    const byMaker = (entry: ProviderInfo, models: ModelInfo[]) =>
-        modelsByVendor(models).map((row, i, sorted) => (
-            <Fragment key={row.slug}>
-                {row.vendor !== undefined && sorted[i - 1]?.vendor !== row.vendor && <Menu.GroupLabel>{row.vendor}</Menu.GroupLabel>}
-                {modelRow(entry, row)}
-            </Fragment>
-        ));
+    // Every model of one provider, the starred ones first and the rest under a label per maker where the provider names them.
+    const byMaker = (entry: ProviderInfo, models: ModelInfo[]) => {
+        const starred = favoritesOf(entry.kind);
+        return favoritesFirst(models, starred).map((row, i, sorted) => {
+            const previous = sorted[i - 1];
+            const labeled =
+                row.vendor !== undefined && !starred.has(row.slug) && (previous === undefined || starred.has(previous.slug) || previous.vendor !== row.vendor);
+            return (
+                <Fragment key={row.slug}>
+                    {labeled && <Menu.GroupLabel>{row.vendor}</Menu.GroupLabel>}
+                    {modelRow(entry, row)}
+                </Fragment>
+            );
+        });
+    };
 
-    // A provider with many models shows the default and the chosen one, with all of them one submenu away.
+    // A provider with many models shows the starred ones, the default and the chosen one, with all of them one submenu away.
     const providerModels = (entry: ProviderInfo, models: ModelInfo[]) => {
-        const shortlist = shortlistOf(entry.kind, models, { provider, model: selection.model });
+        const starred = favoritesOf(entry.kind);
+        const shortlist = shortlistOf(entry.kind, models, { provider, model: selection.model }, starred);
         if (shortlist === null) {
-            return models.map((row) => modelRow(entry, row));
+            return [...models.filter((row) => starred.has(row.slug)), ...models.filter((row) => !starred.has(row.slug))].map((row) => modelRow(entry, row));
         }
         return (
             <>

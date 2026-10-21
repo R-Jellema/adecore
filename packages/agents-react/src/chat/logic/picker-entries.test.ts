@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { ModelInfo, ProviderInfo } from '@adecore/agent-contracts';
-import { pickerEntriesOf, searchModels, shortlistOf, wantsModelSearch } from './picker-entries';
+import { favoritesFirst, pickerEntriesOf, searchModels, shortlistOf, wantsModelSearch } from './picker-entries';
 
 const model = (slug: string, extra: Partial<ModelInfo> = {}): ModelInfo => ({ slug, name: slug, legacy: false, isDefault: false, options: [], ...extra });
 const provider = (models: ModelInfo[]): ProviderInfo => ({ kind: 'claude', name: 'Claude Code', version: '1.0.0', models }) as ProviderInfo;
@@ -91,5 +91,37 @@ describe('a provider with many models', () => {
             ['claude', false],
             ['codex', true]
         ]);
+    });
+});
+
+describe('starred models', () => {
+    const slugs = (entries: ReturnType<typeof pickerEntriesOf>) => entries.flatMap((entry) => (entry.kind === 'model' ? [entry.model.slug] : [entry.kind]));
+
+    test('come first in the order they came, with the rest by maker after them', () => {
+        const models = many(6, ['Qwen', 'DeepSeek']);
+        expect(favoritesFirst(models, new Set(['m05', 'm02'])).map((entry) => entry.slug)).toEqual(['m02', 'm05', 'm01', 'm03', 'm00', 'm04']);
+        expect(favoritesFirst(models, new Set()).map((entry) => entry.slug)).toEqual(['m01', 'm03', 'm05', 'm00', 'm02', 'm04']);
+    });
+
+    test('lead a short list, and only the list of their own CLI', () => {
+        const providers = [provider([model('a'), model('b'), model('c')])];
+        expect(slugs(pickerEntriesOf(providers, '', false, new Set(), null, (kind) => new Set(kind === 'claude' ? ['c'] : [])))).toEqual(['c', 'a', 'b']);
+        expect(slugs(pickerEntriesOf(providers, '', false, new Set(), null, () => new Set()))).toEqual(['a', 'b', 'c']);
+        expect(slugs(pickerEntriesOf(providers, '', false, new Set(), null, (kind) => new Set(kind === 'codex' ? ['c'] : [])))).toEqual(['a', 'b', 'c']);
+    });
+
+    test('stay in the short list of a long one, before the default and the one that is picked', () => {
+        const big = provider(many(12).map((entry, i) => (i === 3 ? { ...entry, isDefault: true } : entry)));
+        expect(shortlistOf('claude', big.models, { provider: 'claude', model: 'm07' }, new Set(['m10']))?.map((entry) => entry.slug)).toEqual([
+            'm10',
+            'm03',
+            'm07'
+        ]);
+        expect(slugs(pickerEntriesOf([big], '', false, new Set(), null, () => new Set(['m10'])))).toEqual(['m10', 'm03', 'all']);
+    });
+
+    test('come first among what a search finds', () => {
+        const found = searchModels([provider([model('opus'), model('opus-fast')])], 'opus', () => new Set(['opus-fast']));
+        expect(found[0]!.models.map((entry) => entry.slug)).toEqual(['opus-fast', 'opus']);
     });
 });

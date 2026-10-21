@@ -447,7 +447,9 @@ export default {
             tools: 'Can use tools',
             requires: 'Requires {{cli}} {{version}} or later on {{machine}}',
             requiresHere: 'Requires {{cli}} {{version}} or later',
-            providerSettings: 'Provider settings'
+            providerSettings: 'Provider settings',
+            star: 'Add to favorites',
+            unstar: 'Remove from favorites'
         },
         stash: {
             title: 'Stashed prompts',

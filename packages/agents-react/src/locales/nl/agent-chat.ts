@@ -447,7 +447,9 @@ export default {
             tools: 'Kan tools gebruiken',
             requires: 'Vereist {{cli}} {{version}} of nieuwer op {{machine}}',
             requiresHere: 'Vereist {{cli}} {{version}} of nieuwer',
-            providerSettings: 'Providerinstellingen'
+            providerSettings: 'Providerinstellingen',
+            star: 'Aan favorieten toevoegen',
+            unstar: 'Uit favorieten halen'
         },
         stash: {
             title: 'Stashed prompts',

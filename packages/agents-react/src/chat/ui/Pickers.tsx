@@ -1,6 +1,6 @@
 import { useContext, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bookmark, ChevronDown, ChevronRight, Search, Trash2 } from 'lucide-react';
+import { Bookmark, ChevronDown, ChevronRight, Search, Star, Trash2 } from 'lucide-react';
 import type { AgentKind, ModelSelection, ProviderInfo, UsageProvider } from '@adecore/agent-contracts';
 import { AgentIcon } from '../../agents/AgentIcon';
 import { ProviderLogo } from '../../agents/ProviderLogo';
@@ -11,6 +11,7 @@ import { ChatScopeContext } from '../../scope';
 import { useReportedModels } from '../../state/chats';
 import { ModelMarks } from './ModelMarks';
 import { pickerEntriesOf, type PickerEntry } from '../logic/picker-entries';
+import { favoriteModelsOf, toggleFavoriteModel, useChatPreferences } from '../preferences';
 import { forgetStashed, STASH_SHORTCUT, useStash, type StashedPrompt } from '../stash';
 import { Icon, IconButton, Menu, Popover, Tooltip } from '@adecore/ui';
 
@@ -74,9 +75,11 @@ export function ModelPicker({
     const grouped = providers.length > 1;
     const trimmed = query.trim().toLowerCase();
 
+    const favorites = useChatPreferences((preferences) => preferences.favoriteModels);
+    const starredHere = (row: PickerEntry | undefined): boolean => row?.kind === 'model' && favorites[row.provider.kind]?.includes(row.model.slug) === true;
     const entries = useMemo(
-        () => pickerEntriesOf(providers, trimmed, legacyOpen, expanded, { provider, model: selection.model }),
-        [providers, trimmed, legacyOpen, expanded, provider, selection.model]
+        () => pickerEntriesOf(providers, trimmed, legacyOpen, expanded, { provider, model: selection.model }, (kind) => favoriteModelsOf(favorites, kind)),
+        [providers, trimmed, legacyOpen, expanded, provider, selection.model, favorites]
     );
     const scope = useContext(ChatScopeContext);
     const machine = host.useMachineLabel(scope?.id ?? '');
@@ -226,17 +229,21 @@ export function ModelPicker({
                         const first = grouped && (previous === undefined || previous.kind === 'legacy' || previous.provider.kind !== entry.provider.kind);
                         // The makers read as groups only where the whole list is shown, so a short list is not cut by labels.
                         const vendorOpen = trimmed !== '' || expanded.has(entry.provider.kind);
+                        // The starred rows lead their CLI without a maker's label; the makers start after them.
                         const vendorFirst =
                             vendorOpen &&
                             entry.model.vendor !== undefined &&
+                            !starredHere(entry) &&
                             (previous === undefined ||
                                 previous.kind !== 'model' ||
                                 previous.provider.kind !== entry.provider.kind ||
+                                starredHere(previous) ||
                                 previous.model.vendor !== entry.model.vendor);
                         const requirement = requirementOf(entry);
                         const next = entries[i + 1];
                         const lastOfGroup = next === undefined || next.kind !== 'model' || next.provider.kind !== entry.provider.kind;
                         const chosen = entry.provider.kind === provider && entry.model.slug === selection.model;
+                        const starred = starredHere(entry);
                         return (
                             <div key={`${entry.provider.kind}/${entry.model.slug}`}>
                                 {first && (
@@ -246,30 +253,43 @@ export function ModelPicker({
                                     </Menu.Label>
                                 )}
                                 {vendorFirst && <Menu.Label>{entry.model.vendor}</Menu.Label>}
-                                <button
-                                    role="option"
-                                    aria-selected={chosen}
-                                    aria-disabled={requirement !== null || undefined}
-                                    data-active={i === index}
-                                    className={`cursor-row flex w-full flex-col items-stretch gap-0.5 rounded-md px-2.5 py-1.5 text-left text-sm ${requirement === null ? 'text-text-muted' : 'text-text-faint'}`}
-                                    onMouseEnter={() => setIndex(i)}
-                                    onClick={() => choose(entry)}
-                                >
-                                    <span className="flex w-full items-center gap-2">
-                                        <Menu.Check kind="radio" checked={chosen} />
-                                        <span className="min-w-0 truncate">{entry.model.name}</span>
-                                        <ModelMarks model={entry.model} />
-                                        <span className="grow" />
-                                        {entry.model.legacy && <span className="text-xs text-text-faint">{t('pickers.model.legacy')}</span>}
-                                    </span>
-                                    {requirement !== null && (
-                                        <span className="pl-6 text-xs text-text-faint">
-                                            {machine === null
-                                                ? t('pickers.model.requiresHere', { cli: requirement.cli, version: requirement.minVersion })
-                                                : t('pickers.model.requires', { cli: requirement.cli, version: requirement.minVersion, machine })}
+                                {/* The star sits beside the option rather than in it, since a button holds no other button. */}
+                                <div className="flex items-start gap-0.5">
+                                    <button
+                                        role="option"
+                                        aria-selected={chosen}
+                                        aria-disabled={requirement !== null || undefined}
+                                        data-active={i === index}
+                                        className={`cursor-row flex min-w-0 grow flex-col items-stretch gap-0.5 rounded-md px-2.5 py-1.5 text-left text-sm ${requirement === null ? 'text-text-muted' : 'text-text-faint'}`}
+                                        onMouseEnter={() => setIndex(i)}
+                                        onClick={() => choose(entry)}
+                                    >
+                                        <span className="flex w-full items-center gap-2">
+                                            <Menu.Check kind="radio" checked={chosen} />
+                                            {/* Wrapped rather than cut, so a long name a provider gives is read whole. */}
+                                            <span className="min-w-0 break-words">{entry.model.name}</span>
+                                            <ModelMarks model={entry.model} />
+                                            <span className="grow" />
+                                            {entry.model.legacy && <span className="text-xs text-text-faint">{t('pickers.model.legacy')}</span>}
                                         </span>
-                                    )}
-                                </button>
+                                        {requirement !== null && (
+                                            <span className="pl-6 text-xs text-text-faint">
+                                                {machine === null
+                                                    ? t('pickers.model.requiresHere', { cli: requirement.cli, version: requirement.minVersion })
+                                                    : t('pickers.model.requires', { cli: requirement.cli, version: requirement.minVersion, machine })}
+                                            </span>
+                                        )}
+                                    </button>
+                                    <IconButton
+                                        icon={Star}
+                                        size="sm"
+                                        label={starred ? t('pickers.model.unstar') : t('pickers.model.star')}
+                                        aria-pressed={starred}
+                                        iconClassName={starred ? 'fill-current text-accent' : undefined}
+                                        className="mt-0.5 shrink-0"
+                                        onClick={() => toggleFavoriteModel(entry.provider.kind, entry.model.slug)}
+                                    />
+                                </div>
                                 {lastOfGroup && blockedKinds.has(entry.provider.kind) && (
                                     <button
                                         type="button"

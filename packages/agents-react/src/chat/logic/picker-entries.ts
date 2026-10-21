@@ -17,6 +17,11 @@ export interface PickerCurrent {
     model: string;
 }
 
+/* The models a person starred, per CLI. */
+export type FavoritesOf = (kind: AgentKind) => ReadonlySet<string>;
+
+const NO_FAVORITES: FavoritesOf = () => new Set();
+
 function matches(model: ModelInfo, query: string): boolean {
     return model.name.toLowerCase().includes(query) || model.slug.toLowerCase().includes(query) || (model.vendor?.toLowerCase().includes(query) ?? false);
 }
@@ -40,12 +45,31 @@ export function modelsByVendor(models: ModelInfo[]): ModelInfo[] {
     });
 }
 
-/* The models a long list shows before it is opened: the default and the one that is picked. Null when the list is short enough to show whole. */
-export function shortlistOf(kind: AgentKind, models: ModelInfo[], current: PickerCurrent | null): ModelInfo[] | null {
+/* The starred models first, in the order they came, then the rest by maker. */
+export function favoritesFirst(models: ModelInfo[], favorites: ReadonlySet<string>): ModelInfo[] {
+    if (favorites.size === 0) {
+        return modelsByVendor(models);
+    }
+    return [...models.filter((model) => favorites.has(model.slug)), ...modelsByVendor(models.filter((model) => !favorites.has(model.slug)))];
+}
+
+/*
+ * The models a long list shows before it is opened: the starred ones, the default and the one that is picked.
+ * Null when the list is short enough to show whole.
+ */
+export function shortlistOf(
+    kind: AgentKind,
+    models: ModelInfo[],
+    current: PickerCurrent | null,
+    favorites: ReadonlySet<string> = new Set()
+): ModelInfo[] | null {
     if (models.length <= COMPACT_MODEL_LIMIT) {
         return null;
     }
-    return modelsByVendor(models.filter((model) => model.isDefault || (current?.provider === kind && current.model === model.slug)));
+    return favoritesFirst(
+        models.filter((model) => model.isDefault || favorites.has(model.slug) || (current?.provider === kind && current.model === model.slug)),
+        favorites
+    );
 }
 
 /* Whether the providers offer enough models together that a search is quicker than reading the list. */
@@ -53,11 +77,21 @@ export function wantsModelSearch(providers: readonly ProviderInfo[]): boolean {
     return providers.reduce((count, entry) => count + entry.models.length, 0) > COMPACT_MODEL_LIMIT;
 }
 
-/* Every model of every provider that a search finds, legacy ones included, by maker; a provider with none is left out. */
-export function searchModels(providers: readonly ProviderInfo[], query: string): Array<{ entry: ProviderInfo; models: ModelInfo[] }> {
+/* Every model of every provider that a search finds, legacy ones included, starred first and then by maker; a provider with none is left out. */
+export function searchModels(
+    providers: readonly ProviderInfo[],
+    query: string,
+    favoritesOf: FavoritesOf = NO_FAVORITES
+): Array<{ entry: ProviderInfo; models: ModelInfo[] }> {
     const needle = query.trim().toLowerCase();
     return providers
-        .map((entry) => ({ entry, models: modelsByVendor(entry.models.filter((model) => matches(model, needle))) }))
+        .map((entry) => ({
+            entry,
+            models: favoritesFirst(
+                entry.models.filter((model) => matches(model, needle)),
+                favoritesOf(entry.kind)
+            )
+        }))
         .filter((group) => group.models.length > 0);
 }
 
@@ -67,17 +101,18 @@ const NONE: ReadonlySet<AgentKind> = new Set();
  * The rows of the model list. A model an old CLI cannot run is a row like any other, so a search for
  * only that model still finds the row that explains why it cannot be picked. A search looks through
  * every model of every provider; without one, a provider with many models shows a short list and a row
- * that opens the rest, grouped by maker.
+ * that opens the rest, grouped by maker. A provider's starred models come first wherever it lists them.
  */
 export function pickerEntriesOf(
     providers: readonly ProviderInfo[],
     query: string,
     legacyOpen: boolean,
     expanded: ReadonlySet<AgentKind> = NONE,
-    current: PickerCurrent | null = null
+    current: PickerCurrent | null = null,
+    favoritesOf: FavoritesOf = NO_FAVORITES
 ): PickerEntry[] {
     const rowsOf = (entry: ProviderInfo, models: ModelInfo[]): PickerEntry[] =>
-        modelsByVendor(models).map((model) => ({ kind: 'model', provider: entry, model }));
+        favoritesFirst(models, favoritesOf(entry.kind)).map((model) => ({ kind: 'model', provider: entry, model }));
     if (query !== '') {
         return providers.flatMap((entry) =>
             rowsOf(
@@ -91,7 +126,7 @@ export function pickerEntriesOf(
     );
     const live = providers.flatMap((entry): PickerEntry[] => {
         const models = entry.models.filter((model) => !model.legacy);
-        const shortlist = shortlistOf(entry.kind, models, current);
+        const shortlist = shortlistOf(entry.kind, models, current, favoritesOf(entry.kind));
         if (shortlist === null) {
             return rowsOf(entry, models);
         }

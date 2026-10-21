@@ -5,10 +5,12 @@ import {
     chatPreferencesPayload,
     DEFAULT_CHAT_PREFERENCES,
     defaultProvider,
+    favoriteModelsOf,
     parseChatPreferences,
     selectionFor,
     startingSelection,
     withAccount,
+    withFavoriteToggled,
     withSelection,
     type ChatPreferences
 } from './preferences';
@@ -80,6 +82,7 @@ describe('reading what is stored', () => {
             accountByMachine: { local: { claude: 'claude_work' }, studio: { codex: 'codex_client' } },
             readingWidth: 'narrow',
             sendKey: 'mod-enter',
+            favoriteModels: { claude: ['opus'], codex: ['gpt-5-codex', 'gpt-5'] },
             changedAt: 42
         };
         expect(parseChatPreferences(JSON.stringify(stored))).toEqual(stored as ChatPreferences);
@@ -161,4 +164,25 @@ test('each provider starts with its remembered model or its own catalog default'
     expect(startingSelection(picked, claude)).toEqual({ model: 'sonnet', options: { effort: 'high' } });
     expect(startingSelection(picked, codex)).toEqual({ model: 'gpt', options: {} });
     expect(startingSelection(picked, { ...codex, defaultModel: null })).toBeNull();
+});
+
+describe('favoriteModels', () => {
+    test('a star goes on a model of its own CLI and comes off again, and a CLI with none left drops out', () => {
+        const starred = withFavoriteToggled(withFavoriteToggled(preferences(), 'claude', 'opus'), 'codex', 'gpt-5-codex');
+        expect(favoriteModelsOf(starred.favoriteModels, 'claude')).toEqual(new Set(['opus']));
+        expect(favoriteModelsOf(starred.favoriteModels, 'codex')).toEqual(new Set(['gpt-5-codex']));
+        const unstarred = withFavoriteToggled(starred, 'claude', 'opus');
+        expect(unstarred.favoriteModels).toEqual({ codex: ['gpt-5-codex'] });
+        expect(favoriteModelsOf(unstarred.favoriteModels, 'claude').size).toBe(0);
+    });
+
+    test('a star is no pick a machine weighs, so it leaves the moment of the last change alone', () => {
+        expect(withFavoriteToggled(preferences({ changedAt: 7 }), 'claude', 'opus').changedAt).toBe(7);
+    });
+
+    test('only lists of slugs are read back', () => {
+        const parsed = parseChatPreferences(JSON.stringify({ favoriteModels: { claude: ['opus', 3, ''], codex: 'gpt-5', grok: [] } }));
+        expect(parsed.favoriteModels).toEqual({ claude: ['opus'] });
+        expect(parseChatPreferences(JSON.stringify({ favoriteModels: ['opus'] })).favoriteModels).toEqual({});
+    });
 });
