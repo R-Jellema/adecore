@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight } from 'lucide-react';
 import type { ProviderInfo } from '@adecore/agent-contracts';
-import { freeAccountColor, mintAccountId, type AccountEntry } from '../agents/accounts';
+import { freeAccountColor, mintAccountId, type AccountEntry, type AccountLogin } from '../agents/accounts';
 import { useChatHost } from '../host';
 import { useChatScope } from '../scope';
 import { createAccount, linkAccount } from './account-actions';
@@ -16,6 +16,7 @@ import { providerAccountsOf } from '../state/provider-accounts';
 interface AddAccountFormProps {
     provider: ProviderInfo;
     entries: AccountEntry[];
+    login: AccountLogin;
     onCancel(): void;
     /* The account exists; `made` says the machine made its folder, so nobody signed in there yet. */
     onAdded(id: string, name: string, made: boolean): void;
@@ -25,7 +26,7 @@ interface AddAccountFormProps {
  * A name and a color, asked before anything exists, so the account is made once with both. By default
  * the machine makes the folder; under Advanced a person points at a folder of their own instead.
  */
-export function AddAccountForm({ provider, entries, onCancel, onAdded }: AddAccountFormProps) {
+export function AddAccountForm({ provider, entries, login, onCancel, onAdded }: AddAccountFormProps) {
     const { t } = useTranslation('agent-providers');
     const scope = useChatScope();
     const { accents } = useChatHost();
@@ -62,7 +63,11 @@ export function AddAccountForm({ provider, entries, onCancel, onAdded }: AddAcco
 
     return (
         <form className="contents" onSubmit={(event) => void submit(event)}>
-            <DetailHeader mark={<CliTile kind={provider.kind} />} title={t('add.title', { provider: provider.name })} subtitle={t('add.description')} />
+            <DetailHeader
+                mark={<CliTile kind={provider.kind} />}
+                title={t('add.title', { provider: provider.name })}
+                subtitle={login === 'chat' ? t('add.chatDescription') : t('add.description')}
+            />
             <SettingsSection>
                 <SettingsRow
                     label={t('add.name')}

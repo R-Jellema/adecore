@@ -8,6 +8,8 @@ An account of a CLI is one config folder of it, plus environment variables a per
 
 When a CLI starts under an account that is not the default, the host takes the variables that would sign it in another way off its environment, points the CLI's folder variable at the account's folder, and adds the account's own variables. A chat can move to another account only when both are of the same CLI and write their conversations in the same folder (`canContinue`); otherwise the host refuses with `account-incompatible`. An account the host cannot start is refused with `account-unavailable`.
 
+A CLI keeps accounts when its provider has a `home`: the variable that moves its folder, the folder it uses without one, the variables that sign it in on their own, and `loginCommand`, what a person types in a terminal to sign in. A CLI that signs in from its first chat, such as an ACP agent that runs `authenticate` there, leaves `loginCommand` out. Its accounts still get folders of their own, the snapshot names its kind in `chatLogins` rather than `loginCommands`, and the host takes such an account as `ready` without asking the CLI who is signed in, since nothing outside the chat can say.
+
 `accounts.create` makes a folder for the new account under the data folder. For Codex that folder is a shadow home: its own `auth.json` for the login, and links to the sessions, skills and rules of the shared Codex home, so two accounts continue each other's threads. Caches, logs and sockets stay its own. A file already in the way is left alone and reported as not shared. This needs Codex to keep its login in a file rather than the keychain.
 
 ## Secrets

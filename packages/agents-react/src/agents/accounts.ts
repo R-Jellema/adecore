@@ -41,6 +41,19 @@ export function accountName(entry: Pick<AccountEntry, 'id' | 'account' | 'isDefa
     return entry.account.label ?? (entry.isDefault ? providerName : entry.id);
 }
 
+/*
+ * Where an account of a kind signs in: a terminal runs the CLI's login, or its first chat asks. Null for a
+ * CLI without a config folder, which has only its default account; also null until the accounts arrived.
+ */
+export type AccountLogin = 'terminal' | 'chat' | null;
+
+export function accountLoginOf(accounts: ProviderAccounts | null | undefined, kind: AgentKind): AccountLogin {
+    if (accounts?.loginCommands?.[kind] !== undefined) {
+        return 'terminal';
+    }
+    return accounts?.chatLogins?.includes(kind) === true ? 'chat' : null;
+}
+
 export type AccountTone = 'muted' | 'needs-you' | 'error';
 
 export const ACCOUNT_TONE_CLASSES: Record<AccountTone, string> = {

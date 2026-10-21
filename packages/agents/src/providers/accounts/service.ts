@@ -175,17 +175,21 @@ export class ProviderAccountsService implements AccountLaunches {
 
     snapshot(): ProviderAccounts {
         const loginCommands: Partial<Record<AgentKind, string>> = {};
+        const chatLogins: AgentKind[] = [];
         for (const kind of this.kinds()) {
-            const command = this.providers.get(kind).home?.loginCommand;
-            if (command !== undefined) {
-                loginCommands[kind] = command;
+            const home = this.providers.get(kind).home;
+            if (home?.loginCommand !== undefined) {
+                loginCommands[kind] = home.loginCommand;
+            } else if (home !== undefined) {
+                chatLogins.push(kind);
             }
         }
         return {
             accounts: this.accounts,
             statuses: Object.entries(this.accounts).map(([id, account]) => this.statusOf(id, account)),
             secretsAvailable: this.secrets !== null,
-            loginCommands
+            loginCommands,
+            ...(chatLogins.length > 0 ? { chatLogins } : {})
         };
     }
 
@@ -610,6 +614,10 @@ export class ProviderAccountsService implements AccountLaunches {
             const { values, missing } = this.variablesOf(id, account);
             if (missing !== null) {
                 throw new Error(`The keychain does not give the value of ${missing}`);
+            }
+            // A CLI that signs in from its chat has no command that says who is signed in; its chat asks when it must.
+            if (provider.home.loginCommand === undefined) {
+                return this.status(id, account, 'ready', { message });
             }
             const reading = await this.ask(kind, provider.command, accountEnv(id, account, provider, this.env, values));
             return this.status(id, account, reading.signedIn ? 'ready' : 'signed-out', {

@@ -4,7 +4,7 @@ import type { AgentKind, ModelInfo, ProviderInfo } from '@adecore/agent-contract
 import { AccountDot } from '../agents/AccountDot';
 import { ModelOptionControl } from '../agents/ModelOptionControl';
 import { carryOptions } from '../agents/model-options';
-import { ACCOUNT_TONE_CLASSES, accountName, accountStatusLine, type AccountEntry } from '../agents/accounts';
+import { ACCOUNT_TONE_CLASSES, accountName, accountStatusLine, type AccountEntry, type AccountLogin } from '../agents/accounts';
 import { accountFor, forgetChatSelection, rememberChatAccount, rememberChatSelection, selectionFor, useChatPreferences } from '../chat/preferences';
 import { useChatScope } from '../scope';
 import { providerAbilities } from './provider-abilities';
@@ -40,13 +40,13 @@ interface CliDetailProps {
     /* Null for a machine that keeps no accounts. */
     entries: AccountEntry[] | null;
     defaults: boolean;
-    canAddAccount: boolean;
+    login: AccountLogin;
     onAddAccount(): void;
     onPickAccount(id: string): void;
 }
 
 /* One CLI: what it is, what a new chat of it starts with unless `defaults` is off, and its accounts. */
-export function CliDetail({ provider, entries, defaults, canAddAccount, onAddAccount, onPickAccount }: CliDetailProps) {
+export function CliDetail({ provider, entries, defaults, login, onAddAccount, onPickAccount }: CliDetailProps) {
     const { t } = useTranslation('agent-providers');
     const { id: scopeId } = useChatScope();
     const preferences = useChatPreferences();
@@ -56,7 +56,7 @@ export function CliDetail({ provider, entries, defaults, canAddAccount, onAddAcc
     const picked = accountFor(preferences, scopeId, provider.kind, machineAccounts) ?? provider.kind;
     // An account that is off is out of every picker, unless it is the one picked already.
     const choosable = (entries ?? []).filter((entry) => entry.account.enabled !== false || entry.id === picked);
-    const canLogIn = canAddAccount;
+    const canAddAccount = login !== null;
 
     return (
         <>
@@ -135,7 +135,7 @@ export function CliDetail({ provider, entries, defaults, canAddAccount, onAddAcc
             ) : (
                 <SettingsSection title={t('cli.accounts')} footer={canAddAccount ? undefined : t('cli.onlyDefault', { provider: provider.name })}>
                     {entries.map((entry) => {
-                        const status = accountStatusLine(entry.status, canLogIn);
+                        const status = accountStatusLine(entry.status, login === 'terminal');
                         return (
                             <button
                                 key={entry.id}

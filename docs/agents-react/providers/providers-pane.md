@@ -10,7 +10,7 @@ import { ProvidersPane } from '@adecore/agents-react/providers';
 
 A CLI shows its version and what it can do, the model and options a new chat of it starts with, and its accounts. An account shows its state as the CLI reported it, its name, color, folder and environment variables, a way to sign in and a way to remove it. The plus beside a CLI adds an account: in a folder the host makes, or under Advanced in one that exists. A CLI that is not installed is listed under the others without accounts.
 
-The pane needs the scope's accounts, so run `watchProviderAccounts(scopeId, transport)` for the scope; see [Getting started](/agents-react/guide/getting-started#a-scope). Signing in runs the CLI's own login through the host's `openLogin`; without one there is no button. The host checks every save itself and refuses what it does not allow, such as a variable it reserves.
+The pane needs the scope's accounts, so run `watchProviderAccounts(scopeId, transport)` for the scope; see [Getting started](/agents-react/guide/getting-started#a-scope). Signing in runs the CLI's own login through the host's `openLogin`; without one there is no button. A CLI whose provider has a `home` without a `loginCommand` signs in from its first chat: it still gets the plus, its new account gets a folder of its own, and the account says that the chat asks for the login instead of offering a terminal. The host checks every save itself and refuses what it does not allow, such as a variable it reserves.
 
 ## Props
 

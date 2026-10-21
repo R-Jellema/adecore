@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Plus, Terminal } from 'lucide-react';
 import type { AgentKind, ProviderInfo } from '@adecore/agent-contracts';
 import { AccountDot } from '../agents/AccountDot';
-import { ACCOUNT_TONE_CLASSES, accountName, accountsOfKind, accountStatusLine, type AccountEntry } from '../agents/accounts';
+import { ACCOUNT_TONE_CLASSES, accountLoginOf, accountName, accountsOfKind, accountStatusLine, type AccountEntry } from '../agents/accounts';
 import { ErrorBoundary, Icon, IconButton, SectionLabel, Skeleton } from '@adecore/ui';
 import { MasterDetail } from '@adecore/ui/settings';
 import { useChatHost } from '../host';
@@ -72,7 +72,7 @@ export function ProvidersPane({ target = null, detailOf, defaults = true }: Prov
     const installed = useMemo(() => providers.filter((provider) => provider.installed || !provider.capabilities.terminal), [providers]);
     const missing = useMemo(() => providers.filter((provider) => !provider.installed && provider.capabilities.terminal), [providers]);
     const entriesOf = (kind: AgentKind): AccountEntry[] => accountsOfKind(accounts, kind);
-    const canAddAccount = (kind: AgentKind): boolean => accounts?.loginCommands?.[kind] !== undefined;
+    const loginOf = (kind: AgentKind) => accountLoginOf(accounts, kind);
 
     // What was picked may be gone since (an account removed elsewhere); the first CLI stands in for it.
     const pickedEntry = picked?.kind === 'account' ? (Object.hasOwn(accounts?.accounts ?? {}, picked.id) ? picked.id : null) : null;
@@ -95,7 +95,7 @@ export function ProvidersPane({ target = null, detailOf, defaults = true }: Prov
 
     const added = (id: string, name: string, made: boolean): void => {
         setPicked({ kind: 'account', id });
-        if (made && provider !== null && openLogin !== null && loginBlocked === null) {
+        if (made && provider !== null && loginOf(provider.kind) === 'terminal' && openLogin !== null && loginBlocked === null) {
             void openLogin(scopeId, provider.kind, id, name);
         }
     };
@@ -109,7 +109,7 @@ export function ProvidersPane({ target = null, detailOf, defaults = true }: Prov
                     onSelect={() => setPicked({ kind: 'cli', cli: cli.kind })}
                     className="pr-1"
                     trailing={
-                        canAddAccount(cli.kind) && (
+                        loginOf(cli.kind) !== null && (
                             <IconButton
                                 icon={Plus}
                                 size="sm"
@@ -125,7 +125,7 @@ export function ProvidersPane({ target = null, detailOf, defaults = true }: Prov
                 </ListRow>
                 {entries.map((entry) => {
                     const name = accountName(entry, cli.name);
-                    const status = accountStatusLine(entry.status, canAddAccount(cli.kind));
+                    const status = accountStatusLine(entry.status, loginOf(cli.kind) === 'terminal');
                     return (
                         <ListRow
                             key={entry.id}
@@ -190,6 +190,7 @@ export function ProvidersPane({ target = null, detailOf, defaults = true }: Prov
                     key={provider.kind}
                     provider={provider}
                     entries={entriesOf(provider.kind)}
+                    login={loginOf(provider.kind)}
                     onCancel={() => setPicked({ kind: 'cli', cli: provider.kind })}
                     onAdded={added}
                 />
@@ -203,7 +204,8 @@ export function ProvidersPane({ target = null, detailOf, defaults = true }: Prov
                         key={entry.id}
                         provider={provider}
                         entry={entry}
-                        canLogIn={openLogin !== null && canAddAccount(provider.kind)}
+                        login={loginOf(provider.kind)}
+                        canOpenLogin={openLogin !== null}
                         loginBlocked={loginBlocked}
                         secretsAvailable={accounts?.secretsAvailable === true}
                         onRemoved={() => setPicked({ kind: 'cli', cli: provider.kind })}
@@ -216,7 +218,7 @@ export function ProvidersPane({ target = null, detailOf, defaults = true }: Prov
                 provider={provider}
                 entries={accounts === null ? null : entriesOf(provider.kind)}
                 defaults={defaults}
-                canAddAccount={canAddAccount(provider.kind)}
+                login={loginOf(provider.kind)}
                 onAddAccount={() => setPicked({ kind: 'add', cli: provider.kind })}
                 onPickAccount={(id) => setPicked({ kind: 'account', id })}
             />

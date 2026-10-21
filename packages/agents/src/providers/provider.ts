@@ -11,7 +11,8 @@ export interface ProviderHome {
     // Variables that sign the CLI in on their own, over whatever login the folder holds.
     readonly loginEnv: readonly string[];
     // What a person types in a terminal to sign in; the account's folder comes from the terminal's environment.
-    readonly loginCommand: string;
+    // Absent on a CLI that signs in from its first chat, which nothing outside that chat can ask about.
+    readonly loginCommand?: string;
 }
 
 /*

@@ -83,7 +83,7 @@ An account of a CLI is one config folder of it, handed to the CLI through the va
 
 | Request               | Payload and answer                                                                                     |
 | --------------------- | ------------------------------------------------------------------------------------------------------ |
-| `accounts.list`       | The snapshot: `accounts`, `statuses`, `secretsAvailable?`, `loginCommands?`.                           |
+| `accounts.list`       | The snapshot: `accounts`, `statuses`, `secretsAvailable?`, `loginCommands?` (what a terminal types to sign each CLI in) and `chatLogins?` (the kinds that keep accounts but sign in from a chat). |
 | `accounts.save`       | The whole map. An id left out is removed; its folder stays.                                            |
 | `accounts.create`     | `{ kind, label, color? }`, with a label of 1 to 80 characters after trimming. Answers the snapshot and the new `id`. |
 | `accounts.refresh`    | Asks every CLI again and answers when all did.                                                         |

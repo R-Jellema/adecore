@@ -3,7 +3,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { LogIn } from 'lucide-react';
 import type { ProviderInfo } from '@adecore/agent-contracts';
 import { AccountDot } from '../agents/AccountDot';
-import { accountName, FOLDER_VARIABLES, type AccountEntry } from '../agents/accounts';
+import { accountName, FOLDER_VARIABLES, type AccountEntry, type AccountLogin } from '../agents/accounts';
 import { ConfirmDialog, DetailHeader, SettingsRow, SettingsSection } from '@adecore/ui/settings';
 import { Button, copyText, Icon, Input, Switch, Tooltip } from '@adecore/ui';
 import { useChatHost } from '../host';
@@ -19,8 +19,10 @@ const TROUBLE = new Set(['folder-missing', 'unavailable', 'failed']);
 interface AccountDetailProps {
     provider: ProviderInfo;
     entry: AccountEntry;
-    /* False for a CLI without a config folder: it has only its own login, and nothing to sign in here. */
-    canLogIn: boolean;
+    /* Null for a CLI without a config folder: it has only its own login, and nothing to sign in here. */
+    login: AccountLogin;
+    /* Whether the host can open a terminal for a login at all. */
+    canOpenLogin: boolean;
     /* Why a login cannot open a terminal right now, or null when it can. */
     loginBlocked: string | null;
     secretsAvailable: boolean;
@@ -56,7 +58,7 @@ function NameField({ value, label, onSave }: { value: string; label: string; onS
 }
 
 /* One account: how it looks in a picker, who is signed in, where its folder is, its variables. */
-export function AccountDetail({ provider, entry, canLogIn, loginBlocked, secretsAvailable, onRemoved }: AccountDetailProps) {
+export function AccountDetail({ provider, entry, login, canOpenLogin, loginBlocked, secretsAvailable, onRemoved }: AccountDetailProps) {
     const { t } = useTranslation('agent-providers');
     const scope = useChatScope();
     const host = useChatHost();
@@ -72,9 +74,11 @@ export function AccountDetail({ provider, entry, canLogIn, loginBlocked, secrets
         host.notify({ kind: 'success', title: t('account.folderCopied'), description: folder });
     };
 
+    const trouble = status !== null && TROUBLE.has(status.state) && status.message ? status.message : null;
+
     const loginDetail = (): string => {
-        if (status !== null && TROUBLE.has(status.state) && status.message) {
-            return status.message;
+        if (trouble !== null) {
+            return trouble;
         }
         if (!signedIn) {
             return t('account.login.signedOutDetail');
@@ -149,27 +153,31 @@ export function AccountDetail({ provider, entry, canLogIn, loginBlocked, secrets
                     }
                 />
             </SettingsSection>
-            {canLogIn && (
+            {(login === 'chat' || (login === 'terminal' && canOpenLogin)) && (
                 <SettingsSection title={t('account.login.title')}>
-                    <SettingsRow
-                        label={
-                            signedIn
-                                ? status?.email
-                                    ? t('account.login.signedInAs', { email: status.email })
-                                    : t('account.login.signedIn')
-                                : t('account.login.signedOut')
-                        }
-                        description={loginBlocked === null ? loginDetail() : `${loginDetail()} ${loginBlocked}`}
-                        control={
-                            loginBlocked === null ? (
-                                loginButton
-                            ) : (
-                                <Tooltip label={loginBlocked}>
-                                    <span className="inline-flex">{loginButton}</span>
-                                </Tooltip>
-                            )
-                        }
-                    />
+                    {login === 'chat' ? (
+                        <SettingsRow label={t('account.login.inChat')} description={trouble ?? t('account.login.inChatDetail')} />
+                    ) : (
+                        <SettingsRow
+                            label={
+                                signedIn
+                                    ? status?.email
+                                        ? t('account.login.signedInAs', { email: status.email })
+                                        : t('account.login.signedIn')
+                                    : t('account.login.signedOut')
+                            }
+                            description={loginBlocked === null ? loginDetail() : `${loginDetail()} ${loginBlocked}`}
+                            control={
+                                loginBlocked === null ? (
+                                    loginButton
+                                ) : (
+                                    <Tooltip label={loginBlocked}>
+                                        <span className="inline-flex">{loginButton}</span>
+                                    </Tooltip>
+                                )
+                            }
+                        />
+                    )}
                     <SettingsRow label={t('account.folder.label')}>
                         <Input mono className="h-8.5" value={folder} readOnly aria-label={t('account.folder.label')} />
                         <p className="-mt-1 text-xs text-text-muted">

@@ -83,7 +83,9 @@ export const ProviderAccountsSchema = z.object({
     // Whether this machine can keep a sensitive variable; false off macOS, where no keychain is used.
     secretsAvailable: z.boolean().optional(),
     // Per agent kind, what a terminal types to sign that CLI in under an account, which the account's environment points at.
-    loginCommands: z.partialRecord(AgentKindSchema, z.string()).optional()
+    loginCommands: z.partialRecord(AgentKindSchema, z.string()).optional(),
+    // The agent kinds that keep accounts in folders of their own but sign in from a chat, with no command to type.
+    chatLogins: z.array(AgentKindSchema).optional()
 });
 export type ProviderAccounts = z.infer<typeof ProviderAccountsSchema>;
 

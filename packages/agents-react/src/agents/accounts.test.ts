@@ -1,7 +1,17 @@
 import { describe, expect, test } from 'bun:test';
 import type { ProviderAccounts, ProviderAccountStatus } from '@adecore/agent-contracts';
 import type { ChatHost } from '../host';
-import { accountName, accountStatusLine, accountsOfKind, canContinueOn, freeAccountColor, hasAccountChoice, mintAccountId, offeredAccounts } from './accounts';
+import {
+    accountLoginOf,
+    accountName,
+    accountStatusLine,
+    accountsOfKind,
+    canContinueOn,
+    freeAccountColor,
+    hasAccountChoice,
+    mintAccountId,
+    offeredAccounts
+} from './accounts';
 
 function status(id: string, patch: Partial<ProviderAccountStatus> = {}): ProviderAccountStatus {
     return {
@@ -118,5 +128,26 @@ describe('a choice of account in a chat', () => {
         const quiet = { ...three, statuses: [status('codex'), status('codex_work')] };
         expect(canContinueOn(quiet, 'codex', undefined, 'codex_work')).toBe(false);
         expect(canContinueOn(null, 'codex', undefined, 'codex_work')).toBe(false);
+    });
+});
+
+describe('where an account signs in', () => {
+    const logins: ProviderAccounts = { accounts: {}, statuses: [], loginCommands: { claude: 'claude auth login' }, chatLogins: ['acme'] };
+
+    test('a CLI with a login command signs in in a terminal', () => {
+        expect(accountLoginOf(logins, 'claude')).toBe('terminal');
+    });
+
+    test('a CLI the host names as signing in from its chat signs in there', () => {
+        expect(accountLoginOf(logins, 'acme')).toBe('chat');
+    });
+
+    test('a CLI with neither has only its default account', () => {
+        expect(accountLoginOf(logins, 'gemini')).toBeNull();
+        expect(accountLoginOf(null, 'claude')).toBeNull();
+    });
+
+    test('a machine that names no chat logins keeps every kind as it was', () => {
+        expect(accountLoginOf({ accounts: {}, statuses: [], loginCommands: { claude: 'claude auth login' } }, 'acme')).toBeNull();
     });
 });

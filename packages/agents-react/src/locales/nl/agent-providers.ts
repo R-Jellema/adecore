@@ -65,7 +65,9 @@ export default {
             signedOut: 'Niet ingelogd',
             signedOutDetail: 'Opent een terminal die de login van de CLI met deze map draait.',
             logIn: 'Inloggen',
-            logInAgain: 'Opnieuw inloggen'
+            logInAgain: 'Opnieuw inloggen',
+            inChat: 'Logt in vanuit een chat',
+            inChatDetail: 'De eerste chat op dit account vraagt je in te loggen, en de CLI bewaart die login in deze map.'
         },
         folder: {
             label: 'Map',
@@ -106,6 +108,7 @@ export default {
     add: {
         title: 'Een {{provider}}-account toevoegen',
         description: 'Ruimte maakt er een map voor op de machine en opent dan een terminal waarin je inlogt.',
+        chatDescription: 'Er komt een map voor op de machine. De eerste chat erop vraagt je in te loggen.',
         name: 'Naam',
         namePlaceholder: 'Werk',
         color: 'Kleur',

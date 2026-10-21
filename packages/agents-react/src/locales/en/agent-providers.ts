@@ -65,7 +65,9 @@ export default {
             signedOut: 'Not logged in',
             signedOutDetail: "Opens a terminal that runs the CLI's login with this folder.",
             logIn: 'Log in',
-            logInAgain: 'Log in again'
+            logInAgain: 'Log in again',
+            inChat: 'Logs in from a chat',
+            inChatDetail: 'The first chat on this account asks you to log in, and the CLI keeps that login in this folder.'
         },
         folder: {
             label: 'Folder',
@@ -106,6 +108,7 @@ export default {
     add: {
         title: 'Add a {{provider}} account',
         description: 'Ruimte makes a folder for it on the machine, then opens a terminal where you log in.',
+        chatDescription: 'A folder is made for it on the machine. The first chat on it asks you to log in.',
         name: 'Name',
         namePlaceholder: 'Work',
         color: 'Color',

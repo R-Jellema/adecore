@@ -489,3 +489,60 @@ describe('ProviderAccountsService kinds', () => {
         expect(Object.keys(service.snapshot().accounts)).toEqual(['claude', 'codex', 'gemini', 'copilot', 'apple']);
     });
 });
+
+describe('ProviderAccountsService for a CLI that signs in from its chat', () => {
+    const acme = { ...providerFor('claude'), kind: 'acme', name: 'Acme', home: { env: 'ACME_HOME', fallback: '.acme', loginEnv: [] } };
+    const withAcme = {
+        list: async () => (['claude', 'acme'] as AgentKind[]).map((kind) => ({ kind, installed: true }) as ProviderInfo),
+        get: (kind: AgentKind) => (kind === 'acme' ? acme : providerFor(kind)),
+        kinds: (): AgentKind[] => ['claude', 'acme']
+    };
+    let dir: string;
+    let asked: AgentKind[];
+
+    const make = async (): Promise<ProviderAccountsService> => {
+        const service = new ProviderAccountsService({
+            home: dir,
+            providers: withAcme,
+            env,
+            secrets: null,
+            ask: async (kind) => {
+                asked.push(kind);
+                return { signedIn: true, email: null, plan: null, organization: null };
+            },
+            folderExists: () => true,
+            prepareShadow: async () => ({ linked: [], unshared: [], sharedLogin: false })
+        });
+        await service.load();
+        return service;
+    };
+
+    beforeEach(async () => {
+        dir = await mkdtemp(join(tmpdir(), 'ruimte-accounts-'));
+        asked = [];
+    });
+
+    afterEach(async () => {
+        await rm(dir, { recursive: true, force: true });
+    });
+
+    test('names it apart from the CLIs a terminal signs in', async () => {
+        const snapshot = (await make()).snapshot();
+        expect(snapshot.loginCommands).toEqual({ claude: 'claude auth login' });
+        expect(snapshot.chatLogins).toEqual(['acme']);
+    });
+
+    test('makes it an account in a folder of its own', async () => {
+        const service = await make();
+        const created = await service.create({ kind: 'acme', label: 'Work' });
+        expect(created.accounts.acme_work).toEqual({ kind: 'acme', label: 'Work', home: join(dir, 'accounts', 'acme_work') });
+    });
+
+    test('takes its account as ready without asking who is signed in', async () => {
+        const service = await make();
+        await service.create({ kind: 'acme', label: 'Work' });
+        await service.refresh();
+        expect(service.snapshot().statuses.find((status) => status.id === 'acme_work')).toMatchObject({ state: 'ready' });
+        expect(asked).not.toContain('acme');
+    });
+});
