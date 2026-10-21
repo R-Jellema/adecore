@@ -1,11 +1,8 @@
-import { useMemo, useState, type ReactNode } from 'react';
-import clsx from 'clsx';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus } from 'lucide-react';
 import type { AgentKind, ProviderInfo } from '@adecore/agent-contracts';
-import { AccountDot } from '../agents/AccountDot';
-import { ACCOUNT_TONE_CLASSES, accountLoginOf, accountName, accountsOfKind, accountStatusLine, type AccountEntry } from '../agents/accounts';
-import { ErrorBoundary, IconButton, SectionLabel, Skeleton } from '@adecore/ui';
+import { accountLoginOf, accountsOfKind, type AccountEntry } from '../agents/accounts';
+import { ErrorBoundary, Skeleton } from '@adecore/ui';
 import { MasterDetail } from '@adecore/ui/settings';
 import { useChatHost } from '../host';
 import { useChatScope } from '../scope';
@@ -15,38 +12,10 @@ import { CliDetail } from './CliDetail';
 import { InstallPage } from './InstallPage';
 import type { ProviderInstallStep } from './install-steps';
 import { pickOfTarget, type Picked } from './pane-target';
-import { CliMark } from './parts';
+import { groupProviders, type ProviderSetupStatus } from './provider-groups';
+import { ProviderList } from './ProviderList';
 import { useProviderAccounts } from '../state/provider-accounts';
 import { useProviders } from '../state/providers';
-
-/* A row of the list with a control of its own beside the part that picks it, so the two never nest. */
-function ListRow({
-    selected,
-    onSelect,
-    children,
-    trailing,
-    className
-}: {
-    selected: boolean;
-    onSelect(): void;
-    children: ReactNode;
-    trailing?: ReactNode;
-    className?: string;
-}) {
-    return (
-        <div className={clsx('flex min-w-0 shrink-0 items-center gap-2 rounded-lg pr-2', selected ? 'bg-text/5' : 'hover:bg-surface-hover', className)}>
-            <button
-                type="button"
-                aria-current={selected ? 'true' : undefined}
-                className="flex min-w-0 grow items-center gap-3 self-stretch rounded-lg py-2 pl-3 text-left focus-visible:-outline-offset-2"
-                onClick={onSelect}
-            >
-                {children}
-            </button>
-            {trailing}
-        </div>
-    );
-}
 
 interface ProvidersPaneProps {
     /* The row a search result leads to, by its `searchId`; the pane opens on the CLI it belongs to. `providers.install.<kind>` opens on that CLI's install page, or on its detail once it is installed. */
@@ -57,10 +26,12 @@ interface ProvidersPaneProps {
     defaults?: boolean;
     /* A step of the app's own on the install page of a CLI, after its install, such as a server its chat needs; null adds none. */
     installStepOf?(provider: ProviderInfo): ProviderInstallStep | null;
+    /* Why a provider is not usable yet when the app knows better than its accounts, such as one turned off in its own detail; null leaves it to the accounts. */
+    setupStatusOf?(provider: ProviderInfo): ProviderSetupStatus | null;
 }
 
 /* The agent CLIs of the host in scope, each with its accounts, beside the detail of what is picked. */
-export function ProvidersPane({ target = null, detailOf, defaults = true, installStepOf }: ProvidersPaneProps) {
+export function ProvidersPane({ target = null, detailOf, defaults = true, installStepOf, setupStatusOf }: ProvidersPaneProps) {
     const { t } = useTranslation('agent-providers');
     const { id: scopeId } = useChatScope();
     const providers = useProviders((s) => s.providers);
@@ -71,9 +42,8 @@ export function ProvidersPane({ target = null, detailOf, defaults = true, instal
     const loginBlocked = host.useLoginBlocked(scopeId);
     const [picked, setPicked] = useState<Picked | null>(() => pickOfTarget(target, providers));
 
-    // A provider that never runs in a terminal is no CLI to install: it is turned on in its own detail, so it is always listed.
-    const installed = useMemo(() => providers.filter((provider) => provider.installed || !provider.capabilities.terminal), [providers]);
-    const missing = useMemo(() => providers.filter((provider) => !provider.installed && provider.capabilities.terminal), [providers]);
+    const groups = groupProviders(providers, accounts, setupStatusOf);
+    const installed = [...groups.ready, ...groups.setup].map((row) => row.provider);
     const entriesOf = (kind: AgentKind): AccountEntry[] => accountsOfKind(accounts, kind);
     const loginOf = (kind: AgentKind) => accountLoginOf(accounts, kind);
 
@@ -84,7 +54,6 @@ export function ProvidersPane({ target = null, detailOf, defaults = true, instal
     const currentAccount = current?.kind === 'account' ? accounts?.accounts[current.id] : undefined;
     const currentCli = current === null ? null : current.kind === 'account' ? (currentAccount?.kind as AgentKind | undefined) : current.cli;
     const provider = (current?.kind === 'install' ? providers : installed).find((entry) => entry.kind === currentCli) ?? null;
-    const picksCli = (kind: AgentKind): boolean => (current?.kind === 'cli' || current?.kind === 'install') && current.cli === kind;
 
     // A search result lands on a row of a CLI's detail, so a picked account makes way for its CLI.
     const [seenTarget, setSeenTarget] = useState(target);
@@ -105,80 +74,13 @@ export function ProvidersPane({ target = null, detailOf, defaults = true, instal
         }
     };
 
-    const group = (cli: ProviderInfo) => {
-        const entries = cli.installed ? entriesOf(cli.kind) : [];
-        return (
-            <div key={cli.kind} className="flex min-w-0 shrink-0 flex-col gap-0.5 pt-1">
-                <ListRow
-                    selected={picksCli(cli.kind)}
-                    onSelect={() => setPicked({ kind: 'cli', cli: cli.kind })}
-                    className="pr-1"
-                    trailing={
-                        loginOf(cli.kind) !== null && (
-                            <IconButton
-                                icon={Plus}
-                                size="sm"
-                                label={t('list.addAccount', { provider: cli.name })}
-                                onClick={() => setPicked({ kind: 'add', cli: cli.kind })}
-                            />
-                        )
-                    }
-                >
-                    <CliMark kind={cli.kind} />
-                    <span className="min-w-0 grow truncate text-xs font-medium text-text">{cli.name}</span>
-                    {cli.capabilities.terminal && cli.version && <span className="shrink-0 font-mono text-code text-text-faint">{cli.version}</span>}
-                </ListRow>
-                {entries.map((entry) => {
-                    const name = accountName(entry, cli.name);
-                    const status = accountStatusLine(entry.status, loginOf(cli.kind) === 'terminal');
-                    return (
-                        <ListRow
-                            key={entry.id}
-                            selected={current?.kind === 'account' && current.id === entry.id}
-                            onSelect={() => setPicked({ kind: 'account', id: entry.id })}
-                        >
-                            <span className="grid w-3.5 shrink-0 place-items-center">
-                                <AccountDot color={entry.account.color} className="size-2.25" />
-                            </span>
-                            <span className="flex min-w-0 grow flex-col">
-                                <span className="flex min-w-0 items-center gap-2 text-sm text-text">
-                                    <span className="truncate">{name}</span>
-                                    {entry.isDefault && (
-                                        <span className="shrink-0 rounded-md bg-surface-active px-1.5 text-xs text-text-muted">{t('list.default')}</span>
-                                    )}
-                                </span>
-                                <span className={clsx('truncate text-xs', ACCOUNT_TONE_CLASSES[status.tone])}>{status.text}</span>
-                            </span>
-                        </ListRow>
-                    );
-                })}
-            </div>
-        );
-    };
-
     const list = !loaded ? (
         <div className="flex flex-col gap-3 p-3">
             <Skeleton className="w-32" />
             <Skeleton className="w-40" />
         </div>
     ) : (
-        <>
-            {installed.map(group)}
-            {installed.length === 0 && <p className="px-3 py-2 text-xs text-text-muted">{t('list.none')}</p>}
-            {missing.length > 0 && (
-                <div className="mt-1.5 flex min-w-0 shrink-0 flex-col border-t border-border pt-2.5 pb-2">
-                    <SectionLabel className="px-3 pt-1 pb-1.5">{t('list.notInstalled')}</SectionLabel>
-                    {missing.map((cli) => (
-                        <ListRow key={cli.kind} selected={picksCli(cli.kind)} onSelect={() => setPicked({ kind: 'install', cli: cli.kind })}>
-                            <CliMark kind={cli.kind} className="opacity-60" />
-                            <span className="min-w-0 grow truncate text-xs font-medium text-text-muted">{cli.name}</span>
-                            <span className="shrink-0 text-xs text-text-faint">{t('list.missing')}</span>
-                        </ListRow>
-                    ))}
-                    {missing.every((cli) => cli.install === undefined) && <p className="mt-1 px-3 text-xs text-text-faint">{t('list.notInstalledNote')}</p>}
-                </div>
-            )}
-        </>
+        <ProviderList groups={groups} current={current} canAddAccount={(kind) => loginOf(kind) !== null} onPick={setPicked} />
     );
 
     const detail = (): ReactNode => {

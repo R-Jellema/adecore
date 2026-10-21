@@ -9,4 +9,5 @@ export { carryOptions } from '../agents/model-options';
 export { type ModelRequirement } from '../agents/model-requirement';
 export { ProvidersPane } from './ProvidersPane';
 export type { ProviderInstallStep } from './install-steps';
+export type { ProviderSetupStatus } from './provider-groups';
 export { CliMark, CliTile } from './parts';

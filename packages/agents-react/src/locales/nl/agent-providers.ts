@@ -15,6 +15,9 @@ export default {
     list: {
         label: "Agent-CLI's en hun accounts",
         default: 'Standaard',
+        ready: 'Klaar',
+        needsSetup: 'Nog instellen',
+        signedOut: 'Uitgelogd',
         addAccount: 'Een {{provider}}-account toevoegen',
         notInstalled: 'Niet geïnstalleerd',
         missing: 'Ontbreekt',

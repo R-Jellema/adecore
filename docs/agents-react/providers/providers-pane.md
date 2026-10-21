@@ -8,7 +8,13 @@ import { ProvidersPane } from '@adecore/agents-react/providers';
 
 <Demo src="agents/providers-pane" />
 
-A CLI shows its version and what it can do, the model and options a new chat of it starts with, and its accounts. An account shows its state as the CLI reported it, its name, color, folder and environment variables, a way to sign in and a way to remove it. The plus beside a CLI adds an account: in a folder the host makes, or under Advanced in one that exists. A CLI that is not installed is listed under the others without accounts, and picking it opens its install page.
+The list puts the providers in three groups, and leaves out a group without any:
+
+- Ready: an installed CLI with at least one account that is signed in (or still being checked), or a provider without accounts to read.
+- Needs setup: a provider your app says is not set up through `setupStatusOf`, or a CLI whose accounts are all signed out, failing or turned off. The row says why in a word or two.
+- Not installed: a CLI the host reports with `installed: false`. Picking it opens its install page.
+
+A provider with one account shows that account's plan on its right. With more than one, the accounts sit under the provider, each with its plan, and the default one wears a Default pill. Picking a provider opens its detail with its version, what it can do, the model and options a new chat of it starts with, and its accounts. An account shows its state as the CLI reported it, its name, color, folder and environment variables, a way to sign in and a way to remove it. The plus beside a provider, shown on hover, adds an account: in a folder the host makes, or under Advanced in one that exists.
 
 The pane needs the scope's accounts, so run `watchProviderAccounts(scopeId, transport)` for the scope; see [Getting started](/agents-react/guide/getting-started#a-scope). Signing in runs the CLI's own login through the host's `openLogin`; without one there is no button. A CLI whose provider has a `home` without a `loginCommand` signs in from its first chat: it still gets the plus, its new account gets a folder of its own, and the account says that the chat asks for the login instead of offering a terminal. The host checks every save itself and refuses what it does not allow, such as a variable it reserves.
 
@@ -20,6 +26,15 @@ The pane needs the scope's accounts, so run `watchProviderAccounts(scopeId, tran
 | `detailOf`      | `(provider: ProviderInfo) => ReactNode \| null`           | A detail of your own for a CLI; `null` draws the usual one.                                                                                 |
 | `defaults`      | `boolean`                                                 | Shows what a new chat starts with. `true` by default; pass `false` when your app decides that elsewhere.                                    |
 | `installStepOf` | `(provider: ProviderInfo) => ProviderInstallStep \| null` | A step of your own on a CLI's install page, after its install; `null` adds none.                                                            |
+| `setupStatusOf` | `(provider: ProviderInfo) => ProviderSetupStatus \| null` | Puts a provider under Needs setup with a few words, such as one turned off in its own detail; `null` leaves it to its accounts.              |
+
+## Setup status
+
+A provider that never runs in a terminal has no CLI to sign in to, so its accounts cannot say whether it is ready. Your app knows: hand back a `ProviderSetupStatus`, its `text` and a `tone` of `muted` or `warning`, while the provider cannot be used yet. The words come before whatever its accounts say. Without the hook, a CLI whose accounts all fail says so itself, as "Signed out" or "Check failed".
+
+```tsx
+<ProvidersPane setupStatusOf={(provider) => (provider.kind === 'example' && !example.enabled ? { text: 'Off', tone: 'muted' } : null)} />
+```
 
 ## Install page
 

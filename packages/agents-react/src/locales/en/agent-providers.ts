@@ -15,6 +15,9 @@ export default {
     list: {
         label: 'Agent CLIs and their accounts',
         default: 'Default',
+        ready: 'Ready',
+        needsSetup: 'Needs setup',
+        signedOut: 'Signed out',
         addAccount: 'Add a {{provider}} account',
         notInstalled: 'Not installed',
         missing: 'Missing',
