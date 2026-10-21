@@ -14,6 +14,7 @@ Wiring the views into an app: the host adapters, the scope, the transport, stora
 | [`scope`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/scope.ts) | `ChatScope`, `ChatScopeContext`, `useChatScope` |
 | [`transport`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/transport.ts) | `ChatRequestMap`, `ChatEventMap`, `ChatTransportStatus`, `ChatTransport`, `ChatTransportError`, `errorCode`, `isConnectionError` |
 | [`port-transport`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/port-transport.ts) | `portTransport`, `PortTransport` |
+| [`agents/agent-marks`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/agents/agent-marks.ts) | `configureAgentMarks`, `AgentMark` |
 | [`storage`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/storage.ts) | `configureChatStorage`, `ChatStorageRecord`, `ChatStorageAdapter`, `ChatStorageOptions` |
 | [`lazy`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/lazy.tsx) | `setLazyPrefetch`, `onLazyOpenError` |
 | [`mounted-registry`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/mounted-registry.ts) | `MountedEntry`, `MountedRegistry` |

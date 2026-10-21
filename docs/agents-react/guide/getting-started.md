@@ -69,6 +69,8 @@ import { configureChatStorage } from '@adecore/agents-react';
 configureChatStorage({ namespace: 'my-app' });
 ```
 
+A kind of agent your app adds gets its mark the same way, once, with `configureAgentMarks`. See [Agent marks](/agents-react/providers/marks#a-mark-for-a-kind-the-host-adds).
+
 A `ChatHostProvider` hands the views what only your app can decide. Keep the object in a constant, since the provider reads it once. Everything you leave out keeps a default that leaves that part out. See [Host adapters](/agents-react/guide/host).
 
 ```tsx

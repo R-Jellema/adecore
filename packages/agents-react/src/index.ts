@@ -37,6 +37,7 @@ export {
     isConnectionError
 } from './transport';
 export { portTransport, type PortTransport } from './port-transport';
+export { configureAgentMarks, type AgentMark } from './agents/agent-marks';
 export { configureChatStorage, type ChatStorageRecord, type ChatStorageAdapter, type ChatStorageOptions } from './storage';
 export { setLazyPrefetch, onLazyOpenError } from './lazy';
 export { type MountedEntry, MountedRegistry } from './mounted-registry';
