@@ -10,7 +10,7 @@ export { UsagePane } from './UsagePane';
 export { UsageSummary } from './UsageSummary';
 export { UsageTiles } from './UsageTiles';
 export { formatClock, type UsageCurrency } from './format';
-export type { LimitAccount, LimitGroup } from './limit-groups';
+export { evenPace, type EvenPace, type LimitAccount, type LimitGroup, type PaceStanding } from './limit-groups';
 export { useLimitGroups } from './limits';
 export { useMoney } from './money';
 export { niceScale, labelEveryFor, deriveUsage, type ChartSlot, type ProviderTotal, type DerivedUsage } from './summary';

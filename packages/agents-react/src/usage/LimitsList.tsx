@@ -8,7 +8,7 @@ import { Tooltip } from '@adecore/ui';
 import { formatClock, formatWeekdayClock, isSameDay, formatCountdown, formatPercent } from '@adecore/ui/format';
 import { ProviderLogo } from '../agents/ProviderLogo';
 import { PROVIDER_COLORS, PROVIDER_LABELS } from './format';
-import { accountNote, explain, isSignedOut, nextReset, type LimitAccount, type LimitGroup } from './limit-groups';
+import { accountNote, evenPace, explain, isSignedOut, nextReset, paceText, type LimitAccount, type LimitGroup, type PaceStanding } from './limit-groups';
 
 /* Red where a window is nearly spent, amber where it is worth knowing; room to spare is not news and takes the text color. */
 function toneOf(used: number): string {
@@ -25,20 +25,18 @@ function resetInLabel(resetsAt: number, now: number): string | null {
     return resetsAt <= now ? null : formatCountdown(resetsAt - now);
 }
 
-/* How much of the window has run, or null when the provider named neither a reset nor a length. */
-function elapsedShare(window: UsageWindow, now: number): number | null {
-    if (window.resetsAt === null || window.durationMs === null || window.durationMs <= 0) {
-        return null;
-    }
-    return Math.min(1, Math.max(0, 1 - (window.resetsAt - now) / window.durationMs));
-}
+const PACE_LINES: Record<PaceStanding, string> = {
+    ahead: 'limits.faster',
+    behind: 'limits.slower',
+    even: 'limits.even'
+};
 
 export function WindowBar({ window, now, compact }: { window: UsageWindow; now: number; compact: boolean }) {
     const { t } = useTranslation('agent-usage');
     const percent = Math.round(window.used * 100);
-    const elapsed = elapsedShare(window, now);
     // The bar fills as the quota is spent, so the mark beside it is how much of the window has run.
-    const mark = elapsed === null ? null : Math.round(elapsed * 100);
+    const pace = evenPace(window, now);
+    const mark = pace?.percent ?? null;
     const resetsAt = window.resetsAt === null ? null : resetAtLabel(window.resetsAt, now);
     const resetsIn = window.resetsAt === null ? null : resetInLabel(window.resetsAt, now);
 
@@ -47,6 +45,7 @@ export function WindowBar({ window, now, compact }: { window: UsageWindow; now: 
             role="progressbar"
             aria-label={t('limits.bar', { window: window.label, percent })}
             aria-valuenow={percent}
+            aria-valuetext={paceText(window, now)}
             aria-valuemin={0}
             aria-valuemax={100}
             className={clsx('relative cursor-default', compact ? 'h-4' : 'h-6')}
@@ -85,7 +84,7 @@ export function WindowBar({ window, now, compact }: { window: UsageWindow; now: 
                                 {t('limits.used', { percent })}
                                 {mark !== null && ` · ${t('limits.windowPassed', { percent: mark })}`}
                             </span>
-                            {mark !== null && <span className="text-text-muted">{mark <= percent ? t('limits.faster') : t('limits.slower')}</span>}
+                            {pace !== null && <span className="text-text-muted">{t(PACE_LINES[pace.standing])}</span>}
                         </span>
                     }
                 >
@@ -145,8 +144,7 @@ export function LimitsList({ limits, now, compact = false }: LimitsListProps) {
 function WindowLine({ window, now }: { window: UsageWindow; now: number }) {
     const { t } = useTranslation('agent-usage');
     const percent = Math.round(window.used * 100);
-    const elapsed = elapsedShare(window, now);
-    const mark = elapsed === null ? null : Math.round(elapsed * 100);
+    const mark = evenPace(window, now)?.percent ?? null;
     return (
         <>
             <span className="text-text-muted">{window.label}</span>
@@ -154,6 +152,7 @@ function WindowLine({ window, now }: { window: UsageWindow; now: number }) {
                 role="progressbar"
                 aria-label={t('limits.bar', { window: window.label, percent })}
                 aria-valuenow={percent}
+                aria-valuetext={paceText(window, now)}
                 aria-valuemin={0}
                 aria-valuemax={100}
                 className="relative h-1.5 rounded-full bg-surface-sunken"

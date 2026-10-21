@@ -2,13 +2,19 @@ export default {
     limits: {
         title: 'Limieten',
         explain:
-            'Het streepje op een balk laat zien hoeveel van het venster voorbij is. Een balk voorbij dat streepje verbruikt sneller dan het venster teruggeeft.',
+            'Het streepje op een balk staat waar een gelijkmatig tempo door het venster nu zou zijn. Een balk voorbij dat streepje verbruikt sneller dan het venster teruggeeft.',
         loading: 'Limieten laden…',
         used: '{{percent}}% gebruikt',
         bar: '{{window}}, {{percent}}% gebruikt',
         windowPassed: '{{percent}}% van het venster voorbij',
         faster: 'Verbruikt sneller dan het venster teruggeeft.',
         slower: 'Verbruikt langzamer dan het venster teruggeeft.',
+        pace: {
+            ahead: '{{percent}}% gebruikt, voor op een gelijkmatig tempo van {{pace}}%',
+            behind: '{{percent}}% gebruikt, achter op een gelijkmatig tempo van {{pace}}%',
+            even: '{{percent}}% gebruikt, op een gelijkmatig tempo'
+        },
+        even: 'Verbruikt even snel als het venster teruggeeft.',
         resets: 'Reset {{at}}',
         none: 'Nog geen limieten gemeld.',
         notInstalled: 'Niet geïnstalleerd op deze machine.',

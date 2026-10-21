@@ -1,13 +1,20 @@
 export default {
     limits: {
         title: 'Limits',
-        explain: 'The mark on a bar shows how much of its window has passed. A bar past its mark is spending faster than the window gives back.',
+        explain:
+            'The mark on a bar is where an even pace through its window would stand by now. A bar past its mark is spending faster than the window gives back.',
         loading: 'Loading limits…',
         used: '{{percent}}% used',
         bar: '{{window}}, {{percent}}% used',
         windowPassed: '{{percent}}% of the window passed',
         faster: 'Spending faster than the window gives back.',
         slower: 'Spending slower than the window gives back.',
+        pace: {
+            ahead: '{{percent}}% used, ahead of an even pace of {{pace}}%',
+            behind: '{{percent}}% used, behind an even pace of {{pace}}%',
+            even: '{{percent}}% used, on an even pace'
+        },
+        even: 'Spending as fast as the window gives back.',
         resets: 'Resets {{at}}',
         none: 'No limits reported yet.',
         notInstalled: 'Not installed on this machine.',

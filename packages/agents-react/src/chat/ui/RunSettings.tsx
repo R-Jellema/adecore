@@ -17,7 +17,7 @@ import {
     SlidersHorizontal,
     type LucideIcon
 } from 'lucide-react';
-import type { AgentKind, ChatUsage, ModelInfo, ModelOptionDescriptor, ModelSelection, ProviderInfo, RuntimeMode } from '@adecore/agent-contracts';
+import type { AgentKind, ChatUsage, ModelInfo, ModelOptionDescriptor, ModelSelection, ProviderInfo, RuntimeMode, UsageWindow } from '@adecore/agent-contracts';
 import { AccountDot } from '../../agents/AccountDot';
 import { limitsOfAccount, sessionWindow } from '../../agents/account-limits';
 import { canContinueOn } from '../../agents/accounts';
@@ -31,6 +31,7 @@ import { RUNTIME_MODES } from '../runtime-modes';
 import { formatClock, formatWeekdayClock, isSameDay, formatPercent, formatTokens } from '@adecore/ui/format';
 import { Icon, Menu, Tooltip, useNow } from '@adecore/ui';
 import { useChatHost } from '../../host';
+import { evenPace, paceText } from '../../usage/limit-groups';
 import { useUsageLimits } from '../../usage/limits';
 
 const MINUTE_MS = 60_000;
@@ -488,7 +489,7 @@ function AccountRows({ choice, locked }: { choice: AccountChoice; locked(id: str
                         <AccountDot color={entry.account.color} />
                         <span className="truncate">{choice.nameOf(entry)}</span>
                     </span>
-                    {session !== null && <SessionLine used={session.used} resetsAt={session.resetsAt} now={now} />}
+                    {session !== null && <SessionLine window={session} now={now} />}
                 </span>
             </Menu.RadioItem>
         );
@@ -502,16 +503,28 @@ function AccountRows({ choice, locked }: { choice: AccountChoice; locked(id: str
     });
 }
 
-function SessionLine({ used, resetsAt, now }: { used: number; resetsAt: number | null; now: number }) {
+function SessionLine({ window, now }: { window: UsageWindow; now: number }) {
     const { t } = useTranslation('agent-chat');
-    const percent = Math.round(used * 100);
-    const tone = sessionTone(used);
+    const percent = Math.round(window.used * 100);
+    const tone = sessionTone(window.used);
+    const mark = evenPace(window, now)?.percent ?? null;
+    const resetsAt = window.resetsAt;
     return (
         <span className="flex items-center gap-2 text-xs text-text-faint tabular-nums">
-            <span aria-hidden className="relative h-1 w-14 shrink-0 overflow-hidden rounded-full bg-surface-sunken">
+            <span aria-hidden className="relative h-1 w-14 shrink-0 rounded-full bg-surface-sunken">
                 <span className={clsx('absolute inset-y-0 left-0 rounded-full', tone.bar)} style={{ width: `${Math.min(100, percent)}%` }} />
+                {/* Where an even spread over the window would stand, as the usage bars mark it. */}
+                {mark !== null && (
+                    <span
+                        className={clsx('absolute -inset-y-0.5 w-px -translate-x-1/2', mark <= percent ? 'bg-surface-raised' : 'bg-text-muted')}
+                        style={{ left: `${mark}%` }}
+                    />
+                )}
             </span>
-            <span className={tone.text}>{formatPercent(percent)}</span>
+            <span aria-hidden className={tone.text}>
+                {formatPercent(percent)}
+            </span>
+            <span className="sr-only">{paceText(window, now)}</span>
             {resetsAt !== null && (
                 <span className="whitespace-nowrap">
                     · {t('pickers.account.resets', { time: isSameDay(resetsAt, now) ? formatClock(resetsAt) : formatWeekdayClock(resetsAt) })}

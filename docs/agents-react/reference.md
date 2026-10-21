@@ -174,7 +174,7 @@ What the CLIs cost and their plan limits: the usage page, dialog and pane, and t
 | [`usage/UsageSummary`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/usage/UsageSummary.tsx) | `UsageSummary` |
 | [`usage/UsageTiles`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/usage/UsageTiles.tsx) | `UsageTiles` |
 | [`usage/format`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/usage/format.ts) | `formatClock`, `UsageCurrency` |
-| [`usage/limit-groups`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/usage/limit-groups.ts) | `LimitAccount`, `LimitGroup` |
+| [`usage/limit-groups`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/usage/limit-groups.ts) | `evenPace`, `EvenPace`, `PaceStanding`, `LimitAccount`, `LimitGroup` |
 | [`usage/limits`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/usage/limits.ts) | `useLimitGroups` |
 | [`usage/money`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/usage/money.ts) | `useMoney` |
 | [`usage/summary`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/usage/summary.ts) | `niceScale`, `labelEveryFor`, `deriveUsage`, `ChartSlot`, `ProviderTotal`, `DerivedUsage` |

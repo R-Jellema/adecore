@@ -93,6 +93,34 @@ export function nextReset(windows: readonly UsageWindow[], now: number): (UsageW
     return next;
 }
 
+/* `ahead` has used more than an even spread over the window would by now, `behind` less. */
+export type PaceStanding = 'ahead' | 'behind' | 'even';
+
+export interface EvenPace {
+    /* Where the bar would stand had the window been spent evenly from its start, in whole percent. */
+    percent: number;
+    standing: PaceStanding;
+}
+
+/* Where an evenly spent window would stand by now, or null when the CLI named no reset or no length to measure from. */
+export function evenPace(window: UsageWindow, now: number): EvenPace | null {
+    if (window.resetsAt === null || window.durationMs === null || window.durationMs <= 0) {
+        return null;
+    }
+    const percent = Math.round(Math.min(1, Math.max(0, 1 - (window.resetsAt - now) / window.durationMs)) * 100);
+    const used = Math.round(window.used * 100);
+    return { percent, standing: used > percent ? 'ahead' : used < percent ? 'behind' : 'even' };
+}
+
+/* The bar as words for whoever cannot see the mark: how much is used and how that stands against an even pace. */
+export function paceText(window: UsageWindow, now: number): string {
+    const percent = Math.round(window.used * 100);
+    const pace = evenPace(window, now);
+    return pace === null
+        ? i18next.t('agent-usage:limits.used', { percent })
+        : i18next.t(`agent-usage:limits.pace.${pace.standing}`, { percent, pace: pace.percent });
+}
+
 /* When the numbers came in and from where: a read of the machine's own, or a turn that reported them. Null before the first read. */
 export function checkedLabel(entry: UsageLimitsProvider, now: number): string | null {
     if (entry.checkedAt <= 0) {
