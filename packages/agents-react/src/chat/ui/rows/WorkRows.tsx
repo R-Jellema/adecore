@@ -154,27 +154,30 @@ export function ToggleLine({
     const content = (
         <>
             <span className={clsx(ROW_GUTTER, live && 'text-accent')}>{icon}</span>
-            <span className={clsx('shrink-0', live && 'chat-live-text')}>
-                {brand !== undefined && <span className={BRAND}>{brand}</span>}
-                {brand !== undefined && label !== '' && ' '}
-                {label}
-            </span>
-            {look !== undefined ? (
-                <>
-                    {look.run.detail !== '' && (
+            {/* The label is sans and the detail mono, so only a shared baseline puts them on one line. */}
+            <span className="flex min-w-0 items-baseline gap-2">
+                <span className={clsx('shrink-0', live && 'chat-live-text')}>
+                    {brand !== undefined && <span className={BRAND}>{brand}</span>}
+                    {brand !== undefined && label !== '' && ' '}
+                    {label}
+                </span>
+                {look !== undefined ? (
+                    <>
+                        {look.run.detail !== '' && (
+                            <span data-find-field="summary" className="min-w-0 truncate font-mono text-code text-text-faint">
+                                <LookDetail run={look.run} chatId={look.chatId} />
+                            </span>
+                        )}
+                        <LookTags run={look.run} />
+                    </>
+                ) : (
+                    detail && (
                         <span data-find-field="summary" className="min-w-0 truncate font-mono text-code text-text-faint">
-                            <LookDetail run={look.run} chatId={look.chatId} />
+                            {command ? <ShellCommand command={detail} /> : path ? <MiddleTruncate text={detail} /> : detail}
                         </span>
-                    )}
-                    <LookTags run={look.run} />
-                </>
-            ) : (
-                detail && (
-                    <span data-find-field="summary" className="min-w-0 truncate font-mono text-code text-text-faint">
-                        {command ? <ShellCommand command={detail} /> : path ? <MiddleTruncate text={detail} /> : detail}
-                    </span>
-                )
-            )}
+                    )
+                )}
+            </span>
             <span className="grow" />
             {trailing}
             {time !== undefined && <RowTime at={time} />}
