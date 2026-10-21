@@ -317,3 +317,22 @@ test('reports the context window once the agent sent one in a usage update, and 
     });
     expect(overridden.capabilities.reportsContextWindow).toBe(false);
 });
+
+test('folds the context with a prompt and sends goals as a command where the agent lists those commands, also after a restart', async () => {
+    const store = memoryStore();
+    const provider = createAcpProvider({ kind: 'example', name: 'Example', command: 'example', catalog: agentDefault(), catalogStore: store });
+    expect(provider.capabilities.compaction).toBe('none');
+    expect(provider.capabilities.goals).toBeUndefined();
+    let changes = 0;
+    provider.onChange?.(() => changes++);
+    await oneSession(provider, { commands: ['compact', 'goal', 'context'] });
+    expect(provider.capabilities).toMatchObject({ compaction: 'prompt', goals: 'command' });
+    const restarted = createAcpProvider({ kind: 'example', name: 'Example', command: 'example', catalog: agentDefault(), catalogStore: store });
+    expect(restarted.capabilities).toMatchObject({ compaction: 'prompt', goals: 'command' });
+
+    const before = changes;
+    await oneSession(provider, { commands: ['context'] });
+    expect(provider.capabilities.compaction).toBe('none');
+    expect(provider.capabilities).not.toHaveProperty('goals');
+    expect(changes).toBe(before + 1);
+});

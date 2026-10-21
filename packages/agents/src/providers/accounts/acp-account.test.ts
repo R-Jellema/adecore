@@ -31,7 +31,7 @@ function recorded(cli: FakeCli) {
     return { fake, sent, folders, firstFrame, methods: () => sent.flatMap((frame) => (frame.method ? [frame.method] : [])) };
 }
 
-function probe(cli: FakeCli, extra: { timer?: ManualClock; onSession?(info: AcpSessionInfo): void } = {}) {
+function probe(cli: FakeCli, extra: { timer?: ManualClock; onSession?(info: AcpSessionInfo): void; onCommands?(commands: string[]): void } = {}) {
     const run = recorded(cli);
     const reading = askAcpAccount({ name: 'Fake', command: ['fake-acp'], env: { HOME: '/home/fake', UNSET: undefined }, spawn: run.fake.spawn, ...extra });
     return { ...run, reading };
@@ -49,6 +49,13 @@ describe('askAcpAccount', () => {
         expect(sessions[0]?.models?.models.map((model) => model.id)).toEqual(['fake-small', 'fake-large']);
         expect(existsSync(folder)).toBe(false);
         expect(await run.fake.started[0]!.exited).toBeNull();
+    });
+
+    test('hands on the commands the session listed before the agent named it', async () => {
+        const listed: string[][] = [];
+        const run = probe(agent({ commands: ['compact'] }), { onCommands: (commands) => listed.push(commands) });
+        await run.reading;
+        expect(listed).toEqual([['compact']]);
     });
 
     test('closes the session where the agent can', async () => {

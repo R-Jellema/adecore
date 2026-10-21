@@ -74,6 +74,8 @@ export class AcpAgentState {
     private adopted: Adopted | null = null;
     // Whether the agent reported its context window in a `usage_update`, once in any session.
     private reportsContext = false;
+    // The slash commands the last session listed; null until one did.
+    private commands: string[] | null = null;
 
     constructor(options: AcpAgentStateOptions) {
         this.options = options;
@@ -95,6 +97,20 @@ export class AcpAgentState {
         const adopted: Adopted = { defaultModel: info.models.current, models: adoptableModels(info), options: effortOption(info) };
         const changed = this.adopt(adopted);
         this.settle(changed);
+    }
+
+    commandsListed(commands: readonly string[]): void {
+        const names = [...new Set(commands)].sort();
+        if (this.commands !== null && JSON.stringify(names) === JSON.stringify(this.commands)) {
+            return;
+        }
+        this.commands = names;
+        const changed = this.refresh();
+        // The commands are saved even when the capabilities stay, so a restart knows them too.
+        this.save();
+        if (changed) {
+            this.notify();
+        }
     }
 
     contextReported(): void {
@@ -121,12 +137,18 @@ export class AcpAgentState {
             this.adopt(adopted);
         }
         this.reportsContext = record.reportsContext === true;
+        this.commands = storedPart(z.array(z.string()), record.commands);
         this.refresh();
     }
 
     /* What the agent showed it can do, under what the host set itself. */
     private learned(): Partial<ProviderCapabilities> {
-        return { ...(this.reportsContext ? { reportsContextWindow: true } : {}) };
+        const commands = this.commands ?? [];
+        return {
+            ...(this.reportsContext ? { reportsContextWindow: true } : {}),
+            ...(commands.includes('compact') ? { compaction: 'prompt' as const } : {}),
+            ...(commands.includes('goal') ? { goals: 'command' as const } : {})
+        };
     }
 
     /* Lays what the agent showed over the capabilities, in place; answers whether they changed. */
@@ -154,20 +176,31 @@ export class AcpAgentState {
 
     /* Saves and tells the listeners once something changed. */
     private settle(changed: boolean): void {
-        if (!changed) {
-            return;
+        if (changed) {
+            this.save();
+            this.notify();
         }
+    }
+
+    private save(): void {
         try {
             this.options.store?.save(this.stored());
         } catch {
-            // A store that cannot write costs the next start the list, never this session.
+            // A store that cannot write costs the next start what it would have kept, never this session.
         }
+    }
+
+    private notify(): void {
         for (const listener of [...this.listeners]) {
             listener();
         }
     }
 
     private stored(): Record<string, unknown> {
-        return { ...(this.adopted === null ? {} : { models: this.adopted }), ...(this.reportsContext ? { reportsContext: true } : {}) };
+        return {
+            ...(this.adopted === null ? {} : { models: this.adopted }),
+            ...(this.reportsContext ? { reportsContext: true } : {}),
+            ...(this.commands === null ? {} : { commands: this.commands })
+        };
     }
 }

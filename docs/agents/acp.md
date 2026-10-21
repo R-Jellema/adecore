@@ -40,6 +40,7 @@ Put it in the `ProviderRegistry` beside the others. A `kind` is any name the hos
 | `accountProbe` | `false` leaves the provider without `askAccount`, so the host's own reader asks about its accounts. |
 | `adoptModels` | `false` keeps `catalog` as the host built it instead of taking the models a session reports. |
 | `catalogStore` | Where the provider keeps what the agent reported, so a host that starts again offers it at once (`AcpCatalogStore`). See [Models](#models). |
+| `onCommands(commands)` | The slash commands a session offers, without the slash, each time the agent lists them. |
 | `onContextReport()` | Called once per process, at the first `usage_update` that names the context window. |
 | `capabilities` | Over `ACP_CAPABILITIES` and what the agent showed it can do (see [Capabilities](#capabilities)), for what the host knows better. |
 | `resumeCommand`, `home`, `detect`, `oneShotArgs`, `oneShotStdinArgs`, `firstPromptArgs`, `enabled`, `ignoresProjectConfig` | As on any `ChatProvider`. Without `firstPromptArgs` the agent is offered as a chat only, and without `detect` the executable is asked for `--version`. |
@@ -109,7 +110,7 @@ An approval offers allow, allow always and deny. Allow answers with the agent's 
 | `agent_thought_chunk` | `thinking.delta` and `thinking.done` |
 | `tool_call`, `tool_call_update` | `tool.started`, again whenever an update changes the row, and `tool.done` once the call is `completed` or `failed`. The kind names the row (`execute` is `Bash`, `read` is `Read`, `search` is `Grep`, `fetch` is `WebFetch` or `WebSearch`). A diff of one file draws as `Edit`, `Write` or `MultiEdit` from the text before and after; diffs of several files as unified changes. |
 | `plan` | A `TodoWrite` row with the whole plan |
-| `available_commands_update` | The chat's slash commands |
+| `available_commands_update` | The chat's slash commands, also when the agent sends it before it answers with the session's id |
 | `current_mode_update` | `permissions`, with the runtime mode `modes` puts that agent mode under |
 | `config_option_update` | `model` and `permissions` for the model and mode options |
 | `usage_update` | `usage` with the context tokens and window, and the cost when it is in USD |
@@ -139,6 +140,10 @@ A provider starts from `ACP_CAPABILITIES` and lays over it what its agent showed
 | The agent | Capability |
 | --- | --- |
 | Sends a `usage_update` with its context window | `reportsContextWindow: true` |
+| Lists a `compact` command | `compaction: 'prompt'`: the chat sends `/compact` as a prompt, and so does the backend's `compact()` |
+| Lists a `goal` command | `goals: 'command'`: the goal goes to the agent as `/goal` |
+
+The commands follow the last list the agent sent: a list without `compact` sets `compaction` back to `none`.
 
 A model whose entry carries `_meta.totalContextTokens`, a field some agents add outside the protocol, gets that size as its context window in the catalog, so the meter has a size before the first `usage_update`.
 
@@ -150,10 +155,10 @@ The backend hands every turn with usage to `onUsage`. With `usageLog`, the provi
 
 ## Accounts
 
-ACP has no request that says who is signed in, so `askAccount` asks by opening a session: `askAcpAccount` starts the agent in the account's environment, runs `initialize` and then `session/new` in an empty temporary folder with no MCP servers. A session means signed in; an answer with the "authentication required" code (`-32000`) means signed out. Any other error, an exit or no answer within 20 seconds fails the check with a short message. The probe never calls `authenticate`, since that could start a login. It closes the session with `session/close` when the agent advertises `sessionCapabilities.close`, then ends the process and its children and removes the folder. An agent that cannot close a session may keep an empty one in its history.
+ACP has no request that says who is signed in, so `askAccount` asks by opening a session: `askAcpAccount` starts the agent in the account's environment, runs `initialize` and then `session/new` in an empty temporary folder with no MCP servers. A session means signed in; an answer with the "authentication required" code (`-32000`) means signed out. Any other error, an exit or no answer within 20 seconds fails the check with a short message. The probe never calls `authenticate`, since that could start a login. It closes the session with `session/close` when the agent advertises `sessionCapabilities.close`, then ends the process and its children and removes the folder. An agent that cannot close a session may keep an empty one in its history. What the session offered goes to `onSession`, and the commands it listed before it closed to `onCommands`, so the provider learns them from a check as it does from a chat.
 
 A reading carries no email or plan: `initialize` names the agent, not the person. `askAcpAccount` also takes a `spawn` and a `timer` (`ProbeTimer`), for a test that runs a fake agent on a clock of its own.
 
 ## What it leaves out
 
-Plan limits, the file system and terminal client capabilities, MCP servers for the agent, elicitations, notices and compaction updates. ACP has no call to fold the context, so `compaction` is `none`; an agent with a command for it can set `compaction: 'prompt'`. The test fakes in `@adecore/agents/testing` include `fakeAcp`, an agent for backend tests, and `fakeAcpWith`, which can also require a login (`authMethod`), advertise `session/close` (`closeSession`) or report `usage` on every prompt response (`turnUsage`).
+Plan limits, the file system and terminal client capabilities, MCP servers for the agent, elicitations, notices and compaction updates. ACP has no call to fold the context, so `compaction` is `none` unless the agent lists a `compact` command (see [Capabilities](#capabilities)). The test fakes in `@adecore/agents/testing` include `fakeAcp`, an agent for backend tests, and `fakeAcpWith`, which can also require a login (`authMethod`), advertise `session/close` (`closeSession`), report `usage` on every prompt response (`turnUsage`), name each model's context window (`contextWindows`) or list slash commands (`commands`).

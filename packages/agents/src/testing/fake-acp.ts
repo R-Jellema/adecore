@@ -29,6 +29,8 @@ export interface FakeAcpOptions {
     reasoningEffort?: 'accept' | 'reject';
     // Names each model's context window in its `_meta` (`totalContextTokens`): 128000 for `fake-small`, 1000000 for `fake-large`.
     contextWindows?: boolean;
+    // The slash commands a new session lists, sent before the answer that names the session.
+    commands?: readonly string[];
 }
 
 export function fakeAcpWith(options: FakeAcpOptions): FakeCli {
@@ -254,6 +256,12 @@ export function fakeAcpWith(options: FakeAcpOptions): FakeCli {
                     }
                     sessionId = `fake-session-${Math.random().toString(36).slice(2, 8)}`;
                     sessionHistory.set(sessionId, []);
+                    if (options.commands !== undefined) {
+                        update({
+                            sessionUpdate: 'available_commands_update',
+                            availableCommands: options.commands.map((name) => ({ name, description: name }))
+                        });
+                    }
                     respond(id, { sessionId, ...sessionState() });
                     return;
                 case 'session/load':

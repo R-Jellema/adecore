@@ -339,6 +339,23 @@ function sessionState(options: ConfigOption[], modes: unknown, models: unknown):
     };
 }
 
+function commandNames(commands: unknown): string[] {
+    return validItems(CommandSchema, Array.isArray(commands) ? commands : []).map((command) => command.name);
+}
+
+/* The session a `session/update` notification is for, and the commands it lists when it is an `available_commands_update`; null when it does not parse. */
+export function sessionUpdateOf(params: unknown): { sessionId: string; commands: string[] | null } | null {
+    const notification = SessionNotificationSchema.safeParse(params);
+    if (!notification.success) {
+        return null;
+    }
+    const update = notification.data.update;
+    return {
+        sessionId: notification.data.sessionId,
+        commands: update.sessionUpdate === 'available_commands_update' ? commandNames(update.availableCommands) : null
+    };
+}
+
 export function sessionIdOf(result: unknown): string | null {
     const parsed = SessionResponseSchema.safeParse(result);
     return parsed.success ? (parsed.data.sessionId ?? null) : null;
@@ -604,10 +621,8 @@ export class AcpProtocol {
             }
             case 'plan':
                 return this.plan(update);
-            case 'available_commands_update': {
-                const commands = validItems(CommandSchema, Array.isArray(update.availableCommands) ? update.availableCommands : []);
-                return [{ type: 'session', agentSessionId: null, model: null, slashCommands: commands.map((command) => command.name) }];
-            }
+            case 'available_commands_update':
+                return [{ type: 'session', agentSessionId: null, model: null, slashCommands: commandNames(update.availableCommands) }];
             case 'current_mode_update':
                 return typeof update.currentModeId === 'string' ? [this.modeEvent(update.currentModeId)] : [];
             case 'config_option_update': {

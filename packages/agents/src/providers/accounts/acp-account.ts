@@ -2,7 +2,15 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DEFAULT_ACP_CLIENT, type AcpClientInfo } from '../../chat/acp-backend.ts';
-import { ACP_AUTH_REQUIRED, ACP_PROTOCOL_VERSION, parseInitialize, parseSessionInfo, sessionIdOf, type AcpSessionInfo } from '../../chat/acp-protocol.ts';
+import {
+    ACP_AUTH_REQUIRED,
+    ACP_PROTOCOL_VERSION,
+    parseInitialize,
+    parseSessionInfo,
+    sessionIdOf,
+    sessionUpdateOf,
+    type AcpSessionInfo
+} from '../../chat/acp-protocol.ts';
 import type { SpawnChatProcess } from '../../chat/chat-process.ts';
 import { JsonRpcError, JsonRpcTransport, type JsonRpcFrame } from '../../chat/json-rpc-transport.ts';
 import { ASK_TIMEOUT_MS, type AccountReading } from './status.ts';
@@ -24,6 +32,8 @@ export interface AcpAccountProbe {
     timer?: ProbeTimer;
     // What the probe's session offered, for a host that fills its model catalog from the agent.
     onSession?(info: AcpSessionInfo): void;
+    // The slash commands the probe's session offered, when the agent listed them before the session closed.
+    onCommands?(commands: string[]): void;
 }
 
 const SIGNED_OUT: AccountReading = { signedIn: false, email: null, plan: null, organization: null };
@@ -63,6 +73,20 @@ export async function askAcpAccount(probe: AcpAccountProbe): Promise<AccountRead
     const folder = await mkdtemp(join(tmpdir(), 'acp-account-'));
     const client = probe.client ?? DEFAULT_ACP_CLIENT;
     let transport: JsonRpcTransport | null = null;
+    // An agent may list its commands before it answers with the session's id.
+    const listed = new Map<string, string[]>();
+    let sessionId: string | null = null;
+    const noteCommands = (frame: JsonRpcFrame): void => {
+        const update = frame.method === 'session/update' && (frame.id === undefined || frame.id === null) ? sessionUpdateOf(frame.params) : null;
+        if (update === null || update.commands === null) {
+            return;
+        }
+        if (sessionId === null) {
+            listed.set(update.sessionId, update.commands);
+        } else if (update.sessionId === sessionId) {
+            probe.onCommands?.(update.commands);
+        }
+    };
     try {
         const started = new JsonRpcTransport({
             command: [...probe.command],
@@ -74,7 +98,10 @@ export async function askAcpAccount(probe: AcpAccountProbe): Promise<AccountRead
             // The probe's own deadline covers every request.
             requestTimeoutMs: null,
             versionField: true,
-            onFrame: (frame) => refuseRequest(started, frame),
+            onFrame: (frame) => {
+                noteCommands(frame);
+                refuseRequest(started, frame);
+            },
             onExit: () => undefined
         });
         transport = started;
@@ -98,11 +125,15 @@ export async function askAcpAccount(probe: AcpAccountProbe): Promise<AccountRead
                 }
                 throw error;
             }
-            const sessionId = sessionIdOf(result);
+            sessionId = sessionIdOf(result);
             if (sessionId === null) {
                 throw new Error(`${probe.name} opened a session without an id`);
             }
             probe.onSession?.(parseSessionInfo(result, sessionId, capabilities.agent));
+            const commands = listed.get(sessionId);
+            if (commands !== undefined) {
+                probe.onCommands?.(commands);
+            }
             if (capabilities.closeSession) {
                 // The answer is known by now; an agent that cannot close it keeps an empty session, nothing worse.
                 await started.request('session/close', { sessionId }).catch(() => undefined);

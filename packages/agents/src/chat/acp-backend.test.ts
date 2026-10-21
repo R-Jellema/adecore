@@ -388,3 +388,30 @@ test('a crash during a turn is the exit, not a second turn end', async () => {
     expect(fake.events.some((event) => event.type === 'turn.done')).toBe(false);
     expect(fake.backend.running).toBe(false);
 });
+
+test('the commands an agent lists before it names the session reach the thread and the spec', async () => {
+    const listed: string[][] = [];
+    const fake = run({ commands: ['compact', 'goal'] }, {}, { ...SPEC, onCommands: (commands) => listed.push(commands) });
+    await fake.backend.start();
+    const session = fake.events.findIndex((event) => event.type === 'session' && event.agentSessionId !== null);
+    expect(fake.events.slice(session + 1)).toContainEqual({ type: 'session', agentSessionId: null, model: null, slashCommands: ['compact', 'goal'] });
+    expect(listed).toEqual([['compact', 'goal']]);
+    await fake.backend.dispose();
+});
+
+test('compact sends the agent its own command as a prompt where it lists one, and says it cannot elsewhere', async () => {
+    const listing = run({ commands: ['compact'] });
+    await listing.backend.start();
+    listing.backend.compact();
+    await listing.next('turn.done');
+    const prompt = listing.sent.find((frame) => frame.method === 'session/prompt');
+    expect(prompt?.params?.prompt).toEqual([{ type: 'text', text: '/compact' }]);
+    await listing.backend.dispose();
+
+    const silent = run();
+    await silent.backend.start();
+    silent.backend.compact();
+    expect(silent.events.find((event) => event.type === 'note')).toMatchObject({ text: 'Fake cannot fold its context on request.' });
+    expect(silent.methods()).not.toContain('session/prompt');
+    await silent.backend.dispose();
+});

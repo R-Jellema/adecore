@@ -14,6 +14,7 @@ import {
     resolveAcpMode,
     runtimeModeOf,
     sessionIdOf,
+    sessionUpdateOf,
     thoughtLevelOf,
     type AcpAgentCapabilities,
     type AcpModeMap,
@@ -58,6 +59,8 @@ export interface AcpAgentSpec {
     onUsage?(usage: AcpUsageReport): void;
     // Called once per process, at the first `usage_update` that names the context window.
     onContextReport?(): void;
+    // The slash commands a session offers (without the slash), each time the agent lists them.
+    onCommands?(commands: string[]): void;
     // A permission request the host answers itself, in any runtime mode: true allows it once without asking the
     // person, for a call the host already guards. A throw counts as false.
     autoAllow?(request: AcpPermissionRequest): boolean;
@@ -98,6 +101,9 @@ export class AcpBackend implements ChatBackend {
     private prompt: { promptId: string | undefined; cancelled: boolean } | null = null;
     private model: string | null = null;
     private contextReported = false;
+    private commands: string[] = [];
+    // An agent may send updates for a new session before it answers with the session's id.
+    private early: unknown[] = [];
 
     constructor(launch: BackendLaunch, host: BackendHost, spec: AcpAgentSpec) {
         this.launch = launch;
@@ -170,6 +176,9 @@ export class AcpBackend implements ChatBackend {
             effectiveRuntimeMode: this.launch.runtimeMode,
             ...(modeId === null ? {} : { permissionMode: modeId })
         });
+        for (const params of this.early.splice(0)) {
+            this.emitAll(this.protocol.update(this.sessionId, params));
+        }
     }
 
     private sessionParams(): Record<string, unknown> {
@@ -367,8 +376,12 @@ export class AcpBackend implements ChatBackend {
             });
     }
 
-    /* ACP has no call to fold the context; a host that offers it sends the agent's own command as a prompt. */
+    /* ACP has no call to fold the context, so an agent that lists a `compact` command gets it as a prompt. */
     compact(): void {
+        if (this.commands.includes('compact')) {
+            this.sendTurn({ text: '/compact', preamble: null, attachments: [], mentions: [], skills: [] });
+            return;
+        }
         this.emit({ type: 'note', level: 'warning', text: `${this.spec.name} cannot fold its context on request.` });
         this.emit({ type: 'turn.done', state: 'done', costUsd: 0 });
     }
@@ -446,9 +459,11 @@ export class AcpBackend implements ChatBackend {
         }
         const id = typeof frame.id === 'number' || typeof frame.id === 'string' ? frame.id : null;
         if (frame.method === 'session/update' && id === null) {
-            if (!this.replaying) {
-                this.emitAll(this.protocol.update(this.sessionId, frame.params));
+            if (this.sessionId === '' || this.replaying) {
+                this.holdEarly(frame.params);
+                return;
             }
+            this.emitAll(this.protocol.update(this.sessionId, frame.params));
             return;
         }
         if (id === null) {
@@ -480,6 +495,14 @@ export class AcpBackend implements ChatBackend {
             return;
         }
         this.emitAll(permission.events);
+    }
+
+    /* Holds an update until the session is known; of a history a load replays, only the commands, since the thread has the rest. */
+    private holdEarly(params: unknown): void {
+        const update = sessionUpdateOf(params);
+        if (update !== null && (!this.replaying || update.commands !== null)) {
+            this.early.push(params);
+        }
     }
 
     private hostAllows(request: AcpPermissionRequest): boolean {
@@ -518,6 +541,10 @@ export class AcpBackend implements ChatBackend {
     private emit(event: BackendEvent): void {
         if (event.type === 'model') {
             this.model = event.model;
+        }
+        if (event.type === 'session' && event.slashCommands !== undefined) {
+            this.commands = event.slashCommands;
+            this.spec.onCommands?.(event.slashCommands);
         }
         if (event.type === 'usage' && event.contextWindow !== undefined && !this.contextReported) {
             this.contextReported = true;

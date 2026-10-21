@@ -76,6 +76,10 @@ export function createAcpProvider(spec: AcpProviderSpec): ChatProvider {
         state.session(info);
         spec.onSession?.(info);
     };
+    const onCommands = (commands: string[]): void => {
+        state.commandsListed(commands);
+        spec.onCommands?.(commands);
+    };
     const usageLog = spec.usageLog === undefined || OWN_USAGE_FILES.has(spec.kind) ? null : spec.usageLog;
     const onUsage =
         usageLog === null
@@ -113,12 +117,14 @@ export function createAcpProvider(spec: AcpProviderSpec): ChatProvider {
                           command,
                           env: { ...env, ...spec.env },
                           ...(spec.client ? { client: spec.client } : {}),
-                          onSession
+                          onSession,
+                          onCommands
                       })
               }),
         createBackend: createAcpBackend({
             ...spec,
             onSession,
+            onCommands,
             onContextReport: () => {
                 state.contextReported();
                 spec.onContextReport?.();
