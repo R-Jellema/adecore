@@ -1,9 +1,13 @@
-import { afterEach, beforeAll, beforeEach, expect, mock, test } from 'bun:test';
+import { afterEach, beforeAll, beforeEach, expect, mock, setSystemTime, test } from 'bun:test';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { compileUi } from '@adecore/intelligent-ui';
 import { ChatHostProvider, type ChatHost } from '../../../../host';
 import { UiReply } from '../UiReply';
+
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 class FakeMap {
     static made: FakeMap[] = [];

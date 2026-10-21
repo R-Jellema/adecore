@@ -1,10 +1,14 @@
-import { expect, test } from 'bun:test';
+import { afterEach, beforeEach, expect, setSystemTime, test } from 'bun:test';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { compileUi, resolveUiChoice } from '@adecore/intelligent-ui';
 import { ChatHostProvider, type ChatHost } from '../../../host';
 import { UiReply } from './UiReply';
 import { useTruncated } from './use-truncated';
+
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 const SOURCES = {
     empty: '<Choices><Choice context="Run checks"></Choice></Choices>',

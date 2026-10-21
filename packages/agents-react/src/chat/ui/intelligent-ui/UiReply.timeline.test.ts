@@ -1,9 +1,13 @@
-import { expect, test } from 'bun:test';
+import { afterEach, beforeEach, expect, setSystemTime, test } from 'bun:test';
 import { act, createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { compileUi } from '@adecore/intelligent-ui';
 import { ChatHostProvider } from '../../../host';
 import { UiReply } from './UiReply';
+
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 test.skipIf(typeof document === 'undefined')('an event with a time nobody can read draws with the time as written and shows the person no note', async () => {
     const text =
