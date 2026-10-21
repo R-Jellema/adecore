@@ -281,3 +281,39 @@ test('the registry passes on the kind of a provider whose models changed', async
     expect(kinds).toEqual(['example']);
     expect((await registry.list())[0]?.models.map((model) => model.slug)).toEqual(['fake-small', 'fake-large']);
 });
+
+test('gives each adopted model the context window the agent names for it, and keeps it across a restart', async () => {
+    const store = memoryStore();
+    const provider = createAcpProvider({ kind: 'example', name: 'Example', command: 'example', catalog: agentDefault(), catalogStore: store });
+    await oneSession(provider, { contextWindows: true, legacyModels: true });
+    expect(provider.catalog.contextWindowFor(provider.catalog.normalize({ model: 'fake-small' }))).toBe(128000);
+    expect(provider.catalog.contextWindowFor(provider.catalog.normalize({ model: 'fake-large' }))).toBe(1000000);
+    const restarted = createAcpProvider({ kind: 'example', name: 'Example', command: 'example', catalog: agentDefault(), catalogStore: store });
+    expect(restarted.catalog.contextWindowFor(restarted.catalog.normalize({ model: 'fake-large' }))).toBe(1000000);
+});
+
+test('reports the context window once the agent sent one in a usage update, and remembers that', async () => {
+    const store = memoryStore();
+    const provider = createAcpProvider({ kind: 'example', name: 'Example', command: 'example', catalog: agentDefault(), catalogStore: store });
+    const listed = provider.capabilities;
+    await oneSession(provider);
+    expect(provider.capabilities.reportsContextWindow).toBe(false);
+    let changes = 0;
+    provider.onChange?.(() => changes++);
+    await oneTurn(provider);
+    expect(changes).toBe(1);
+    expect(listed.reportsContextWindow).toBe(true);
+    await oneTurn(provider);
+    expect(changes).toBe(1);
+    const restarted = createAcpProvider({ kind: 'example', name: 'Example', command: 'example', catalog: agentDefault(), catalogStore: store });
+    expect(restarted.capabilities.reportsContextWindow).toBe(true);
+    const overridden = createAcpProvider({
+        kind: 'example',
+        name: 'Example',
+        command: 'example',
+        catalog: agentDefault(),
+        catalogStore: store,
+        capabilities: { reportsContextWindow: false }
+    });
+    expect(overridden.capabilities.reportsContextWindow).toBe(false);
+});

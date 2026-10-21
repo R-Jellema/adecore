@@ -18,6 +18,8 @@ function timeOf(data: ModelCatalogInput): number {
 export class ModelCatalog {
     private readonly shippedAt: number;
     private data: ModelCatalogInput;
+    // The sizes the host's own default had before an agent's models replaced it, for an adopted model that names none.
+    private hostWindows: ModelCatalogProfile['contextWindowTokens'] | undefined;
 
     constructor(data: ModelCatalogInput = manifest as never) {
         this.shippedAt = timeOf(data);
@@ -35,6 +37,7 @@ export class ModelCatalog {
         }
         const changed = JSON.stringify(data) !== JSON.stringify(this.data);
         this.data = data;
+        this.hostWindows = undefined;
         return changed;
     }
 
@@ -42,20 +45,31 @@ export class ModelCatalog {
      * Takes the models an agent reported for itself in place of the list, the agent's current model as the
      * default and its order kept; answers whether the models changed. Every model gets the profile the
      * default has now, as an agent names its models but not what each can be asked for, with `options`
-     * in place of the profile's options of the same id.
+     * in place of the profile's options of the same id, and the context window in tokens a model names as its only size.
      */
-    adopt(models: ReadonlyArray<{ slug: string; name: string }>, defaultModel: string, options: readonly ModelOptionDescriptor[] = []): boolean {
+    adopt(
+        models: ReadonlyArray<{ slug: string; name: string; contextWindow?: number }>,
+        defaultModel: string,
+        options: readonly ModelOptionDescriptor[] = []
+    ): boolean {
         if (models.length === 0 || !models.some((model) => model.slug === defaultModel)) {
             return false;
         }
         const base = this.profileOf(this.data.defaultModel) ?? { options: [], contextWindowTokens: {} };
         const replaced = new Set(options.map((option) => option.id));
-        const profile = { ...base, options: [...base.options.filter((option) => !replaced.has(option.id)), ...options] };
+        this.hostWindows ??= base.contextWindowTokens;
+        const profile = { ...base, contextWindowTokens: this.hostWindows, options: [...base.options.filter((option) => !replaced.has(option.id)), ...options] };
+        const profileName = (window: number | undefined): string => (window === undefined ? ADOPTED_PROFILE : `${ADOPTED_PROFILE}-${window}`);
+        const profiles: Record<string, ModelCatalogProfile> = {};
+        for (const model of models) {
+            profiles[profileName(model.contextWindow)] =
+                model.contextWindow === undefined ? profile : { ...profile, contextWindowTokens: { '*': model.contextWindow } };
+        }
         const data: ModelCatalogInput = {
             ...(this.data.updatedAt === undefined ? {} : { updatedAt: this.data.updatedAt }),
             defaultModel,
-            profiles: { [ADOPTED_PROFILE]: profile },
-            models: models.map((model) => ({ slug: model.slug, name: model.name, profile: ADOPTED_PROFILE }))
+            profiles,
+            models: models.map((model) => ({ slug: model.slug, name: model.name, profile: profileName(model.contextWindow) }))
         };
         const changed = JSON.stringify(data) !== JSON.stringify(this.data);
         this.data = data;

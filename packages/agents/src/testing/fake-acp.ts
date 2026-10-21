@@ -27,6 +27,8 @@ export interface FakeAcpOptions {
     // Offers a reasoning effort as the config option `reasoning_effort`, without a category: Low and High, and
     // Extra high on `fake-large`. `reject` refuses every change to it.
     reasoningEffort?: 'accept' | 'reject';
+    // Names each model's context window in its `_meta` (`totalContextTokens`): 128000 for `fake-small`, 1000000 for `fake-large`.
+    contextWindows?: boolean;
 }
 
 export function fakeAcpWith(options: FakeAcpOptions): FakeCli {
@@ -74,9 +76,10 @@ export function fakeAcpWith(options: FakeAcpOptions): FakeCli {
         };
 
         const sessionState = (): Frame => {
+            const meta = (totalContextTokens: number): Frame => (options.contextWindows ? { _meta: { totalContextTokens } } : {});
             const modelChoices = [
-                { value: 'fake-small', name: 'Fake small' },
-                { value: 'fake-large', name: 'Fake large' }
+                { value: 'fake-small', name: 'Fake small', ...meta(128000) },
+                { value: 'fake-large', name: 'Fake large', ...meta(1000000) }
             ];
             const effortChoices = [
                 { value: 'low', name: 'Low', description: 'Answers quickly' },
@@ -90,7 +93,7 @@ export function fakeAcpWith(options: FakeAcpOptions): FakeCli {
             return {
                 ...(modes.length === 0 ? {} : { modes: { currentModeId: mode, availableModes: modes.map((id) => ({ id, name: id })) } }),
                 ...(options.legacyModels
-                    ? { models: { currentModelId: model, availableModels: modelChoices.map((choice) => ({ modelId: choice.value, name: choice.name })) } }
+                    ? { models: { currentModelId: model, availableModels: modelChoices.map(({ value, ...choice }) => ({ modelId: value, ...choice })) } }
                     : {
                           configOptions: [
                               { id: 'model', name: 'Model', type: 'select', category: 'model', currentValue: model, options: modelChoices },

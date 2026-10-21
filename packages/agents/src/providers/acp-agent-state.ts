@@ -11,7 +11,7 @@ export interface AcpCatalogStore {
 
 const AdoptedSchema = z.object({
     defaultModel: z.string().min(1),
-    models: z.array(z.object({ slug: z.string().min(1), name: z.string() })).min(1),
+    models: z.array(z.object({ slug: z.string().min(1), name: z.string(), contextWindow: z.number().int().positive().optional() })).min(1),
     options: z.array(ModelOptionDescriptorSchema)
 });
 
@@ -19,7 +19,9 @@ type Adopted = z.infer<typeof AdoptedSchema>;
 
 /* An agent's model id may reach a command line, so one that reads as a flag is left out. */
 function adoptableModels(info: AcpSessionInfo): Adopted['models'] {
-    return (info.models?.models ?? []).filter((model) => model.id !== '' && !model.id.startsWith('-')).map((model) => ({ slug: model.id, name: model.name }));
+    return (info.models?.models ?? [])
+        .filter((model) => model.id !== '' && !model.id.startsWith('-'))
+        .map((model) => ({ slug: model.id, name: model.name, ...(model.contextWindow === null ? {} : { contextWindow: model.contextWindow }) }));
 }
 
 /* The reasoning effort a session offers, as the `effort` option the composer draws for every provider. */
@@ -70,6 +72,8 @@ export class AcpAgentState {
     private readonly options: AcpAgentStateOptions;
     private readonly listeners = new Set<() => void>();
     private adopted: Adopted | null = null;
+    // Whether the agent reported its context window in a `usage_update`, once in any session.
+    private reportsContext = false;
 
     constructor(options: AcpAgentStateOptions) {
         this.options = options;
@@ -93,6 +97,14 @@ export class AcpAgentState {
         this.settle(changed);
     }
 
+    contextReported(): void {
+        if (this.reportsContext) {
+            return;
+        }
+        this.reportsContext = true;
+        this.settle(this.refresh());
+    }
+
     private restore(): void {
         let stored: unknown;
         try {
@@ -108,6 +120,27 @@ export class AcpAgentState {
         if (adopted !== null && this.options.adoptModels) {
             this.adopt(adopted);
         }
+        this.reportsContext = record.reportsContext === true;
+        this.refresh();
+    }
+
+    /* What the agent showed it can do, under what the host set itself. */
+    private learned(): Partial<ProviderCapabilities> {
+        return { ...(this.reportsContext ? { reportsContextWindow: true } : {}) };
+    }
+
+    /* Lays what the agent showed over the capabilities, in place; answers whether they changed. */
+    private refresh(): boolean {
+        const next: ProviderCapabilities = { ...this.options.base, ...this.learned(), ...this.options.overrides };
+        if (JSON.stringify(next) === JSON.stringify(this.capabilities)) {
+            return false;
+        }
+        const capabilities = this.capabilities as Partial<ProviderCapabilities>;
+        for (const key of Object.keys(capabilities) as Array<keyof ProviderCapabilities>) {
+            delete capabilities[key];
+        }
+        Object.assign(capabilities, next);
+        return true;
     }
 
     /* Answers whether the catalog changed; a list without its default is refused there and leaves the one adopted before. */
@@ -135,6 +168,6 @@ export class AcpAgentState {
     }
 
     private stored(): Record<string, unknown> {
-        return { ...(this.adopted === null ? {} : { models: this.adopted }) };
+        return { ...(this.adopted === null ? {} : { models: this.adopted }), ...(this.reportsContext ? { reportsContext: true } : {}) };
     }
 }

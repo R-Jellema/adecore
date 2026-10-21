@@ -107,7 +107,7 @@ const ModeStateSchema = z.looseObject({
 
 const ModeSchema = z.looseObject({ id: z.string(), name: z.string() });
 
-const SelectValueSchema = z.looseObject({ value: z.string(), name: z.string(), description: z.string().nullish() });
+const SelectValueSchema = z.looseObject({ value: z.string(), name: z.string(), description: z.string().nullish(), _meta: z.unknown().optional() });
 
 const ConfigOptionSchema = z.looseObject({
     id: z.string(),
@@ -124,7 +124,13 @@ const ModelStateSchema = z.looseObject({
     availableModels: z.array(z.unknown())
 });
 
-const ModelEntrySchema = z.looseObject({ modelId: z.string(), name: z.string(), description: z.string().nullish() });
+const ModelEntrySchema = z.looseObject({ modelId: z.string(), name: z.string(), description: z.string().nullish(), _meta: z.unknown().optional() });
+
+/* The context window an agent names for a model in the model's `_meta` (`totalContextTokens`, not part of the protocol); null where it names none. */
+function contextWindowOf(meta: unknown): number | null {
+    const tokens = isRecord(meta) ? meta.totalContextTokens : undefined;
+    return typeof tokens === 'number' && Number.isSafeInteger(tokens) && tokens > 0 ? tokens : null;
+}
 
 const AuthMethodSchema = z.looseObject({ id: z.string(), name: z.string() });
 
@@ -200,6 +206,8 @@ export interface AcpModel {
     id: string;
     name: string;
     description: string | null;
+    // In tokens, where the agent names it.
+    contextWindow: number | null;
 }
 
 /* The models a session offers. `configId` is the config option that picks one, or null where the agent takes `session/set_model`. */
@@ -288,7 +296,12 @@ function sessionState(options: ConfigOption[], modes: unknown, models: unknown):
         models: modelOption
             ? {
                   current: modelOption.currentValue as string,
-                  models: selectValues(modelOption).map((value) => ({ id: value.value, name: value.name, description: null })),
+                  models: selectValues(modelOption).map((value) => ({
+                      id: value.value,
+                      name: value.name,
+                      description: null,
+                      contextWindow: contextWindowOf(value._meta)
+                  })),
                   configId: modelOption.id
               }
             : modelState.success
@@ -297,7 +310,8 @@ function sessionState(options: ConfigOption[], modes: unknown, models: unknown):
                     models: validItems(ModelEntrySchema, modelState.data.availableModels).map((model) => ({
                         id: model.modelId,
                         name: model.name,
-                        description: model.description ?? null
+                        description: model.description ?? null,
+                        contextWindow: contextWindowOf(model._meta)
                     })),
                     configId: null
                 }

@@ -201,3 +201,22 @@ describe('ignoresProjectConfig', () => {
         expect(providerFor('opencode' as never).ignoresProjectConfig).toBeUndefined();
     });
 });
+
+test('an adopted model that names its context window has that size, and one that names none keeps the host default', () => {
+    const catalog = new ModelCatalog({
+        defaultModel: 'default',
+        profiles: { agent: { options: [], contextWindowTokens: { '*': 64000 } } },
+        models: [{ slug: 'default', name: 'Default', profile: 'agent' }]
+    });
+    catalog.adopt(
+        [
+            { slug: 'wide', name: 'Wide', contextWindow: 256000 },
+            { slug: 'plain', name: 'Plain' }
+        ],
+        'wide'
+    );
+    expect(catalog.contextWindowFor(catalog.normalize({ model: 'wide' }))).toBe(256000);
+    expect(catalog.contextWindowFor(catalog.normalize({ model: 'plain' }))).toBe(64000);
+    catalog.adopt([{ slug: 'plain', name: 'Plain' }], 'plain');
+    expect(catalog.contextWindowFor(catalog.normalize({ model: 'plain' }))).toBe(64000);
+});

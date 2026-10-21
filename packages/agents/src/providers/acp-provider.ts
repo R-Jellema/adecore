@@ -37,7 +37,7 @@ export interface AcpProviderSpec extends AcpAgentSpec {
     command: string;
     args?: readonly string[];
     catalog: ModelCatalog;
-    // Over `ACP_CAPABILITIES`, for an agent that reports its cost or context window, or whose commands fold its context.
+    // Over `ACP_CAPABILITIES` and what the agent showed it can do, for what the host knows better.
     capabilities?: Partial<ProviderCapabilities>;
     // What a terminal runs to continue one of its sessions; empty where it has none.
     resumeCommand?: string;
@@ -116,6 +116,14 @@ export function createAcpProvider(spec: AcpProviderSpec): ChatProvider {
                           onSession
                       })
               }),
-        createBackend: createAcpBackend({ ...spec, onSession, ...(onUsage === undefined ? {} : { onUsage }) })
+        createBackend: createAcpBackend({
+            ...spec,
+            onSession,
+            onContextReport: () => {
+                state.contextReported();
+                spec.onContextReport?.();
+            },
+            ...(onUsage === undefined ? {} : { onUsage })
+        })
     };
 }

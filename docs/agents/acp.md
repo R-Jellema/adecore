@@ -40,7 +40,8 @@ Put it in the `ProviderRegistry` beside the others. A `kind` is any name the hos
 | `accountProbe` | `false` leaves the provider without `askAccount`, so the host's own reader asks about its accounts. |
 | `adoptModels` | `false` keeps `catalog` as the host built it instead of taking the models a session reports. |
 | `catalogStore` | Where the provider keeps what the agent reported, so a host that starts again offers it at once (`AcpCatalogStore`). See [Models](#models). |
-| `capabilities` | Over `ACP_CAPABILITIES`, for an agent that reports its cost or context window. |
+| `onContextReport()` | Called once per process, at the first `usage_update` that names the context window. |
+| `capabilities` | Over `ACP_CAPABILITIES` and what the agent showed it can do (see [Capabilities](#capabilities)), for what the host knows better. |
 | `resumeCommand`, `home`, `detect`, `oneShotArgs`, `oneShotStdinArgs`, `firstPromptArgs`, `enabled`, `ignoresProjectConfig` | As on any `ChatProvider`. Without `firstPromptArgs` the agent is offered as a chat only, and without `detect` the executable is asked for `--version`. |
 
 A host that builds its `ChatProvider` by hand calls `createAcpBackend(spec)` for its `createBackend`.
@@ -130,6 +131,16 @@ const store: AcpCatalogStore = {
     save: (value) => writeFileSync(file, JSON.stringify(value))
 };
 ```
+
+## Capabilities
+
+A provider starts from `ACP_CAPABILITIES` and lays over it what its agent showed, in sessions and account checks alike; `capabilities` from the spec goes over both. What the agent showed is kept in `catalogStore` with the models, and a change calls the listeners of `onChange`. The object stays the same one, changed in place, so a host that spread the provider into a value of its own still reads the current capabilities.
+
+| The agent | Capability |
+| --- | --- |
+| Sends a `usage_update` with its context window | `reportsContextWindow: true` |
+
+A model whose entry carries `_meta.totalContextTokens`, a field some agents add outside the protocol, gets that size as its context window in the catalog, so the meter has a size before the first `usage_update`.
 
 ## Usage
 

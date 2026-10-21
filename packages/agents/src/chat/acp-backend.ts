@@ -56,6 +56,8 @@ export interface AcpAgentSpec {
     onSession?(info: AcpSessionInfo): void;
     // The tokens of every turn whose `session/prompt` response reports them, for a host that keeps a usage log.
     onUsage?(usage: AcpUsageReport): void;
+    // Called once per process, at the first `usage_update` that names the context window.
+    onContextReport?(): void;
     // A permission request the host answers itself, in any runtime mode: true allows it once without asking the
     // person, for a call the host already guards. A throw counts as false.
     autoAllow?(request: AcpPermissionRequest): boolean;
@@ -95,6 +97,7 @@ export class AcpBackend implements ChatBackend {
     private contextPending: string | null = null;
     private prompt: { promptId: string | undefined; cancelled: boolean } | null = null;
     private model: string | null = null;
+    private contextReported = false;
 
     constructor(launch: BackendLaunch, host: BackendHost, spec: AcpAgentSpec) {
         this.launch = launch;
@@ -515,6 +518,10 @@ export class AcpBackend implements ChatBackend {
     private emit(event: BackendEvent): void {
         if (event.type === 'model') {
             this.model = event.model;
+        }
+        if (event.type === 'usage' && event.contextWindow !== undefined && !this.contextReported) {
+            this.contextReported = true;
+            this.spec.onContextReport?.();
         }
         this.host.onEvent(event);
     }

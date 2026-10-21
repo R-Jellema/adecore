@@ -62,8 +62,8 @@ describe('AcpProtocol', () => {
             current: 'example-fast',
             configId: 'model',
             models: [
-                { id: 'example-fast', name: 'Example Fast', description: null },
-                { id: 'example-deep', name: 'Example Deep', description: null }
+                { id: 'example-fast', name: 'Example Fast', description: null, contextWindow: null },
+                { id: 'example-deep', name: 'Example Deep', description: null, contextWindow: null }
             ]
         });
         expect(info.modes).toEqual({
@@ -112,8 +112,40 @@ describe('AcpProtocol', () => {
             's',
             null
         );
-        expect(info.models).toEqual({ current: 'a', configId: null, models: [{ id: 'a', name: 'A', description: 'First' }] });
+        expect(info.models).toEqual({ current: 'a', configId: null, models: [{ id: 'a', name: 'A', description: 'First', contextWindow: null }] });
         expect(info.modes).toBeNull();
+    });
+
+    test('reads the context window an agent names in a model meta, and only a positive whole number', () => {
+        const meta = (totalContextTokens: unknown) => ({ _meta: { totalContextTokens } });
+        const legacy = parseSessionInfo(
+            {
+                sessionId: 's',
+                models: {
+                    currentModelId: 'a',
+                    availableModels: [
+                        { modelId: 'a', name: 'A', ...meta(256000) },
+                        { modelId: 'b', name: 'B', ...meta(0) },
+                        { modelId: 'c', name: 'C', ...meta('256000') },
+                        { modelId: 'd', name: 'D' }
+                    ]
+                }
+            },
+            's',
+            null
+        );
+        expect(legacy.models?.models.map((model) => model.contextWindow)).toEqual([256000, null, null, null]);
+        const option = parseSessionInfo(
+            {
+                sessionId: 's',
+                configOptions: [
+                    { id: 'model', name: 'Model', type: 'select', category: 'model', currentValue: 'a', options: [{ value: 'a', name: 'A', ...meta(128000) }] }
+                ]
+            },
+            's',
+            null
+        );
+        expect(option.models?.models[0]?.contextWindow).toBe(128000);
     });
 
     test('maps a captured turn onto backend events', () => {
