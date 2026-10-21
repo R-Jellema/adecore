@@ -112,7 +112,7 @@ function foldBucket(
     }
     bucket.totals = addTotals(bucket.totals, record.totals);
     bucket.costUsd += cost;
-    bucket.priced ||= price !== null;
+    bucket.priced ||= price !== null || record.costUsd !== undefined;
     bucket.cacheSavingsUsd += price === null ? 0 : cacheSavingsOf(record.totals, price);
     if (record.sessionId !== '') {
         bucket.sessions.add(record.sessionId);
@@ -130,14 +130,15 @@ function foldModel(models: Map<string, ModelRow>, record: UsageRecord, account: 
             totals: emptyTotals(),
             costUsd: 0,
             priced: false,
-            basis: lookup.basis,
-            pricedAs: lookup.pricedAs
+            // A cost the CLI reported is the bill itself, not a price looked up for the model.
+            basis: record.costUsd === undefined ? lookup.basis : 'exact',
+            pricedAs: record.costUsd === undefined ? lookup.pricedAs : null
         };
         models.set(key, model);
     }
     model.totals = addTotals(model.totals, record.totals);
     model.costUsd += cost;
-    model.priced ||= lookup.price !== null;
+    model.priced ||= lookup.price !== null || record.costUsd !== undefined;
 }
 
 function foldProject(project: ProjectAccumulator, record: UsageRecord, cost: number): void {
@@ -186,7 +187,7 @@ export async function aggregate(
             continue;
         }
         const lookup = prices.look(record.model);
-        const cost = lookup.price === null ? 0 : costOf(record.totals, lookup.price);
+        const cost = record.costUsd ?? (lookup.price === null ? 0 : costOf(record.totals, lookup.price));
         foldBucket(buckets, slot, record, account, lookup.price, cost);
         foldModel(models, record, account, lookup, cost);
         if (record.sessionId !== '') {

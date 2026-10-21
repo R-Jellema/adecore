@@ -28,12 +28,13 @@ export function moneyFormat(currency: UsageCurrency, rate: UsageRate | null): (u
     };
 }
 
-export const PROVIDER_LABELS: Record<UsageProvider, string> = { claude: 'Claude Code', codex: 'Codex', nanogpt: 'NanoGPT' };
+export const PROVIDER_LABELS: Record<UsageProvider, string> = { claude: 'Claude Code', codex: 'Codex', nanogpt: 'NanoGPT', grok: 'Grok' };
 
 export const PROVIDER_COLORS: Record<UsageProvider, string> = {
     claude: 'var(--chart-claude)',
     codex: 'var(--chart-codex)',
-    nanogpt: 'var(--chart-nanogpt)'
+    nanogpt: 'var(--chart-nanogpt)',
+    grok: 'var(--chart-grok)'
 };
 
 /*

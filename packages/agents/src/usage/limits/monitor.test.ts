@@ -29,6 +29,21 @@ describe('the usage monitor', () => {
         monitor.stop();
     });
 
+    test('leaves out a provider it has no way to read a plan of', async () => {
+        const probed: string[] = [];
+        const monitor = new UsageMonitor({
+            providers: registry(['claude', 'grok']),
+            probe: (kind) => {
+                probed.push(kind);
+                return Promise.resolve(reading(0.23));
+            }
+        });
+        await monitor.refresh(true);
+        expect(monitor.snapshot().providers.map((provider) => provider.kind)).toEqual(['claude', 'codex']);
+        expect(probed).toEqual(['claude']);
+        monitor.stop();
+    });
+
     test('tells every subscribed client when a number moved', async () => {
         const seen: string[] = [];
         const monitor = new UsageMonitor({ providers: registry(['claude']), probe: () => Promise.resolve(reading(0.23)) });

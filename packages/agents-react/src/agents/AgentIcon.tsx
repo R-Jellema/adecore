@@ -10,6 +10,7 @@ import { PROVIDER_PATHS } from './provider-paths';
 const BUILT_IN_MARKS: Partial<Record<AgentKind, AgentMark>> = {
     claude: siClaude,
     codex: { title: 'Codex', path: PROVIDER_PATHS.codex },
+    grok: { title: 'Grok', path: PROVIDER_PATHS.grok },
     gemini: siGooglegemini,
     copilot: siGithubcopilot
 };

@@ -36,9 +36,13 @@ export interface LimitGroup {
  * The plan numbers per CLI, one row per account. The machine only reads an account that is signed in,
  * so an account that is on but signed out comes from the account list, where it can say why it has
  * no numbers. An account that is off is left out, unless the machine still reads it (a CLI's default).
+ * A CLI the machine reads no plan of at all has no group, whatever accounts it has.
  */
 export function limitGroups(snapshot: UsageLimitsSnapshot, accounts: ProviderAccounts | null): LimitGroup[] {
     return USAGE_PROVIDERS.flatMap((kind) => {
+        if (!snapshot.providers.some((entry) => entry.kind === kind)) {
+            return [];
+        }
         const known = accountsOfKind(accounts, kind);
         const read = snapshot.providers
             .filter((entry) => entry.kind === kind)

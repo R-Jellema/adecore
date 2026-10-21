@@ -9,7 +9,8 @@ const CLI_COLORS: Partial<Record<AgentKind, string>> = {
     codex: 'text-chart-codex',
     gemini: 'text-chart-gemini',
     copilot: 'text-chart-copilot',
-    nanogpt: 'text-chart-nanogpt'
+    nanogpt: 'text-chart-nanogpt',
+    grok: 'text-chart-grok'
 };
 
 export function CliMark({ kind, size = 14, className }: { kind: AgentKind; size?: number; className?: string }) {

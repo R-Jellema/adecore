@@ -43,6 +43,15 @@ function assistant(id: string, seconds: number, output: number): string {
     })}\n`;
 }
 
+/* A session's `usage.json` as Grok writes it, the session totals left out since the reader goes by turn. */
+function grokUsage(turns: ReadonlyArray<Record<string, unknown>>): string {
+    return JSON.stringify({ sessionId: '01a1-session', updatedAt: '2026-10-21T10:00:00.000000+00:00', session: {}, turns });
+}
+
+function grokTurn(turnNumber: number, endedAt: string, modelUsage: Record<string, Record<string, number>>): Record<string, unknown> {
+    return { turnNumber, endedAt, primaryModelId: Object.keys(modelUsage)[0], modelUsage };
+}
+
 describe('the usage scanner', () => {
     test('reads the log of a provider with no transcripts, and a call appended later once', async () => {
         const { home } = await workspace();
@@ -74,6 +83,60 @@ describe('the usage scanner', () => {
         const warm = new UsageScanner(home, [{ provider: 'nanogpt', path: folder }]);
         expect((await warm.scan()).changedFiles).toBe(0);
         expect(warm.records().map((record) => record.provider)).toEqual(['nanogpt', 'nanogpt']);
+    });
+
+    test('reads Grok usage files whole, again when one is rewritten, and counts a turn it still lists once', async () => {
+        const { home } = await workspace();
+        const sessions = join(home, '..', 'grok', 'sessions');
+        const folder = join(sessions, encodeURIComponent('/work/repo'), '01a1-session');
+        await mkdir(folder, { recursive: true });
+        await writeFile(join(folder, 'summary.json'), '{"info": {"id": "01a1-session"}}');
+        const usage = join(folder, 'usage.json');
+        const first = grokTurn(1, '2026-10-21T09:51:44.000000+00:00', {
+            'grok-4.7-build-fast': { inputTokens: 1000, cachedReadTokens: 600, outputTokens: 50, modelCalls: 1, costUsdTicks: 10_000_000 }
+        });
+        await writeFile(usage, grokUsage([first]));
+
+        const roots: UsageRootPath[] = [{ provider: 'grok', path: sessions }];
+        const scanner = new UsageScanner(home, roots);
+        expect(await scanner.scan()).toMatchObject({ files: 1, changedFiles: 1, roots: [{ provider: 'grok', status: 'ok' }] });
+        expect(scanner.records().map((record) => [record.cwd, record.totals.input, record.costUsd])).toEqual([['/work/repo', 400, 0.001]]);
+
+        const second = grokTurn(2, '2026-10-21T09:53:00.000000+00:00', {
+            'grok-4.7-build-fast': { inputTokens: 2000, cachedReadTokens: 1500, outputTokens: 80, modelCalls: 2 }
+        });
+        await writeFile(usage, grokUsage([first, second]));
+        await scanner.scan();
+        expect(scanner.records().map((record) => record.totals.input)).toEqual([400, 500]);
+
+        // A file caught halfway through a write keeps what was read of it, and is read again once whole.
+        await writeFile(usage, '{"sessionId": "01a1-session", "turns": [');
+        expect((await scanner.scan()).roots[0]!.status).toBe('ok');
+        expect(scanner.records().map((record) => record.totals.input)).toEqual([400, 500]);
+
+        const warm = new UsageScanner(home, roots);
+        await warm.scan();
+        expect(warm.records().map((record) => [record.provider, record.costUsd])).toEqual([
+            ['grok', 0.001],
+            ['grok', undefined]
+        ]);
+    });
+
+    test('skips a Grok usage file that never read, and counts the others', async () => {
+        const { home } = await workspace();
+        const sessions = join(home, '..', 'grok', 'sessions');
+        const broken = join(sessions, encodeURIComponent('/work/a'), 'broken');
+        const fine = join(sessions, encodeURIComponent('/work/b'), 'fine');
+        await mkdir(broken, { recursive: true });
+        await mkdir(fine, { recursive: true });
+        await writeFile(join(broken, 'usage.json'), 'not json');
+        await writeFile(
+            join(fine, 'usage.json'),
+            grokUsage([grokTurn(1, '2026-10-21T09:51:44.000000+00:00', { 'grok-4.7-build': { inputTokens: 10, outputTokens: 5 } })])
+        );
+        const scanner = new UsageScanner(home, [{ provider: 'grok', path: sessions }]);
+        expect(await scanner.scan()).toMatchObject({ files: 2, changedFiles: 1, roots: [{ status: 'ok' }] });
+        expect(scanner.records().map((record) => record.cwd)).toEqual(['/work/b']);
     });
 
     test('reads both roots, keeps the index and opens nothing on a second pass', async () => {

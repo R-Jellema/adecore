@@ -68,6 +68,11 @@ describe('limits per account', () => {
         expect(hasSeveralAccounts(groups)).toBe(true);
     });
 
+    test('a CLI the machine reads no plan of has no group, even with an account that is on', () => {
+        const withGrok: ProviderAccounts = { ...accounts, accounts: { ...accounts.accounts, grok: { kind: 'grok' } } };
+        expect(limitGroups({ providers: [entry('codex')] }, withGrok).map((group) => group.kind)).toEqual(['codex']);
+    });
+
     test('a machine from before accounts has one row per CLI, named after it', () => {
         const groups = limitGroups({ providers: [entry('claude'), entry('codex')] }, null);
         expect(groups.map((group) => group.accounts.map((account) => account.name))).toEqual([['Claude Code'], ['Codex']]);

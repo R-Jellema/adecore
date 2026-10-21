@@ -69,6 +69,17 @@ describe('the aggregation', () => {
         expect(buckets.find((bucket) => bucket.model === 'claude-opus-4-5')!.costUsd).toBeGreaterThan(0);
     });
 
+    test('takes the cost a CLI reported over the price table, also for a model the table does not know', async () => {
+        const records = [
+            record({ at: '2026-09-10T09:00:00.000Z', provider: 'grok', model: 'grok-4.7-build-fast', costUsd: 0.25 }),
+            record({ at: '2026-09-10T10:00:00.000Z', provider: 'grok', model: 'grok-4.7-build-fast', costUsd: 0.5 })
+        ];
+        const { models, buckets, projects } = await aggregate(records, week, prices, []);
+        expect(models).toMatchObject([{ provider: 'grok', costUsd: 0.75, priceBasis: 'exact', pricedAs: null }]);
+        expect(buckets[0]!.costUsd).toBe(0.75);
+        expect(projects[0]!.byProvider.grok?.costUsd).toBe(0.75);
+    });
+
     test('folds a directory onto the project it belongs to and keeps a share per provider', async () => {
         const known = [{ projectId: 'p1', name: 'Ruimte', folder: '/work/repo' }];
         const records = [

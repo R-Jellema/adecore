@@ -7,6 +7,7 @@ import { isNotFound, writeAtomic } from '../fs.ts';
 import { decodeIndex, encodeIndex, type IndexedFile, type UsageIndex } from './index-file.ts';
 import { foldByKey, type UsageRecord } from './record.ts';
 import { claudeMightCarryUsage, parseClaudeLine } from './readers/claude.ts';
+import { GROK_USAGE_FILE, parseGrokUsage } from './readers/grok.ts';
 import { hostLogMightCarryUsage, parseHostUsageLine } from './readers/host-log.ts';
 import { cloneCodexState, codexMightCarryUsage, createCodexState, parseCodexLine, type CodexParserState } from './readers/codex.ts';
 import { usageRoots, type UsageRootPath } from './roots.ts';
@@ -75,7 +76,16 @@ interface ParsedFile {
     codex: CodexParserState | null;
 }
 
-async function listJsonl(dir: string, out: string[] = []): Promise<string[]> {
+/* A log of lines for every provider but Grok, which keeps one JSON file per session that it rewrites whole. */
+function readsWhole(provider: UsageProvider): boolean {
+    return provider === 'grok';
+}
+
+function isUsageFile(provider: UsageProvider, name: string): boolean {
+    return readsWhole(provider) ? name === GROK_USAGE_FILE : name.endsWith('.jsonl');
+}
+
+async function listUsageFiles(dir: string, provider: UsageProvider, out: string[] = []): Promise<string[]> {
     let entries;
     try {
         entries = await readdir(dir, { withFileTypes: true });
@@ -86,8 +96,8 @@ async function listJsonl(dir: string, out: string[] = []): Promise<string[]> {
     for (const entry of entries) {
         const path = join(dir, entry.name);
         if (entry.isDirectory()) {
-            await listJsonl(path, out);
-        } else if (entry.isFile() && entry.name.endsWith('.jsonl')) {
+            await listUsageFiles(path, provider, out);
+        } else if (entry.isFile() && isUsageFile(provider, entry.name)) {
             out.push(path);
         }
     }
@@ -128,7 +138,7 @@ function parseChunk(text: string, provider: UsageProvider, from: number, state: 
                 }
                 continue;
             }
-            // Claude Code and Codex write transcripts of their own; every other provider is a log its host keeps.
+            // Claude Code and Codex write transcripts of their own, Grok a file read whole; every other provider is a log its host keeps.
             if (hostLogMightCarryUsage(line)) {
                 const record = parseHostUsageLine(line, provider);
                 if (record !== null) {
@@ -245,7 +255,7 @@ export class UsageScanner {
             }
             let failure: string | null = null;
             const accountOf = accountResolver(root, sessionAccounts);
-            for (const path of await listJsonl(root.path)) {
+            for (const path of await listUsageFiles(root.path, root.provider)) {
                 files += 1;
                 try {
                     if (await this.readFileInto(path, root.provider, accountOf)) {
@@ -282,6 +292,9 @@ export class UsageScanner {
         if (known !== undefined && known.provider === provider && known.size === info.size && known.mtimeMs === info.mtimeMs) {
             return false;
         }
+        if (readsWhole(provider)) {
+            return this.readWholeInto(path, provider, accountOf, info);
+        }
         const appended = known !== undefined && known.provider === provider && info.size > known.size && known.head?.startsWith('sha256:') === true;
         let read = await readHashed(path, appended ? known.offset : 0);
         // A file only counts as grown while it starts the way it did; one rewritten larger is read again from the start.
@@ -305,6 +318,30 @@ export class UsageScanner {
             head: headOf(read.hash)
         };
         this.index.set(path, entry);
+        this.dirty = true;
+        return true;
+    }
+
+    /*
+     * A file rewritten as a whole replaces what the index held of it, so a turn it still lists is never
+     * counted twice. One that does not parse, such as one caught halfway through a write, keeps the
+     * records it had and is read again on the next scan.
+     */
+    private async readWholeInto(path: string, provider: UsageProvider, accountOf: AccountOf, info: { size: number; mtimeMs: number }): Promise<boolean> {
+        const records = parseGrokUsage(await readFile(path, 'utf8'), path);
+        if (records === null) {
+            return false;
+        }
+        this.index.set(path, {
+            provider,
+            size: info.size,
+            mtimeMs: info.mtimeMs,
+            offset: info.size,
+            records: foldByKey(withAccount(records, accountOf)),
+            tail: [],
+            codex: null,
+            head: null
+        });
         this.dirty = true;
         return true;
     }

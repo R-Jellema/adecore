@@ -2,8 +2,8 @@ import type { AgentKind, UsageProvider } from '@adecore/agent-contracts';
 import { AccountDot, AgentIcon, ProviderLogo, CliMark, CliTile } from '@adecore/agents-react/providers';
 import { DemoChatHost } from '../shared/agents.tsx';
 
-const KINDS: AgentKind[] = ['claude', 'codex', 'gemini', 'copilot', 'apple'];
-const PROVIDERS: UsageProvider[] = ['claude', 'codex'];
+const KINDS: AgentKind[] = ['claude', 'codex', 'grok', 'gemini', 'copilot', 'apple'];
+const PROVIDERS: UsageProvider[] = ['claude', 'codex', 'nanogpt', 'grok'];
 
 export default function MarksDemo() {
     return (

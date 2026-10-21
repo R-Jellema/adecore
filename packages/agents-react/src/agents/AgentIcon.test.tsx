@@ -16,9 +16,9 @@ describe('AgentIcon', () => {
     });
 
     test('a kind the host added wears the mark the host gave it', () => {
-        configureAgentMarks({ grok: { title: 'Grok', path: 'M1 1h22v22H1Z' } });
-        const markup = renderToStaticMarkup(createElement(AgentIcon, { kind: 'grok' }));
-        expect(markup).toContain('aria-label="Grok"');
+        configureAgentMarks({ antigravity: { title: 'Antigravity', path: 'M1 1h22v22H1Z' } });
+        const markup = renderToStaticMarkup(createElement(AgentIcon, { kind: 'antigravity' }));
+        expect(markup).toContain('aria-label="Antigravity"');
         expect(markup).toContain('d="M1 1h22v22H1Z"');
         expect(markup).not.toContain('lucide-bot');
     });
@@ -34,13 +34,13 @@ describe('AgentIcon', () => {
     });
 
     test('a kind without any mark is a robot, also after the host configured others', () => {
-        configureAgentMarks({ grok: { title: 'Grok', path: 'M1 1h22v22H1Z' } });
+        configureAgentMarks({ antigravity: { title: 'Antigravity', path: 'M1 1h22v22H1Z' } });
         expect(renderToStaticMarkup(createElement(AgentIcon, { kind: 'mystery' }))).toContain('lucide-bot');
     });
 
     test('a later configuration replaces the earlier one', () => {
-        configureAgentMarks({ grok: { title: 'Grok', path: 'M1 1h22v22H1Z' } });
+        configureAgentMarks({ antigravity: { title: 'Antigravity', path: 'M1 1h22v22H1Z' } });
         configureAgentMarks({});
-        expect(renderToStaticMarkup(createElement(AgentIcon, { kind: 'grok' }))).toContain('lucide-bot');
+        expect(renderToStaticMarkup(createElement(AgentIcon, { kind: 'antigravity' }))).toContain('lucide-bot');
     });
 });

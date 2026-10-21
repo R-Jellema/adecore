@@ -12,10 +12,13 @@ describe('CliMark', () => {
 
     test('a provider with a usage chart color wears it here too, so its mark reads the same on both', () => {
         expect(renderToStaticMarkup(createElement(CliMark, { kind: 'nanogpt' }))).toContain('text-chart-nanogpt');
+        const grok = renderToStaticMarkup(createElement(CliMark, { kind: 'grok' }));
+        expect(grok).toContain('text-chart-grok');
+        expect(grok).toContain('aria-label="Grok"');
     });
 
     test('a CLI this version has no mark for falls back to a muted bot', () => {
-        const markup = renderToStaticMarkup(createElement(CliMark, { kind: 'grok' }));
+        const markup = renderToStaticMarkup(createElement(CliMark, { kind: 'antigravity' }));
         expect(markup).toContain('text-text-muted');
         expect(markup).toContain('lucide-bot');
         expect(markup).not.toContain('text-chart-');

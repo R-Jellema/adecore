@@ -15,6 +15,8 @@ const MAX_BACKOFF_MS = 60 * 60_000;
 const RECENT_USE_MS = 24 * 60 * 60_000;
 
 const PROVIDERS: readonly UsageProvider[] = USAGE_PROVIDERS;
+/* The CLIs the probes know how to ask; any other provider has a plan only through the host's `plans`. */
+const PROBED: readonly UsageProvider[] = ['claude', 'codex'];
 
 export type ProbeEnv = Record<string, string>;
 
@@ -167,6 +169,9 @@ export class UsageMonitor {
     private listed(): LimitAccount[] {
         const accounts = this.accounts?.list() ?? PROVIDERS.map((kind) => ({ id: kind, kind, label: kind, isDefault: true }));
         return PROVIDERS.flatMap((kind) => {
+            if (!PROBED.includes(kind) && this.plans[kind] === undefined) {
+                return [];
+            }
             const own = accounts.filter((account) => account.kind === kind);
             return [...own.filter((account) => account.isDefault), ...own.filter((account) => !account.isDefault)];
         });

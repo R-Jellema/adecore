@@ -10,14 +10,19 @@ export interface UsageRootPath {
 }
 
 /* Where in its config folder each CLI leaves its transcripts. A provider with no CLI has a log its host passes as a root of its own. */
-const TRANSCRIPTS: Partial<Record<UsageProvider, string>> & Record<'claude' | 'codex', string> = { claude: 'projects', codex: 'sessions' };
+const TRANSCRIPTS: Partial<Record<UsageProvider, string>> & Record<'claude' | 'codex' | 'grok', string> = {
+    claude: 'projects',
+    codex: 'sessions',
+    grok: 'sessions'
+};
 
 /* The transcripts of the default accounts, found through the variables the CLIs themselves read. */
 export function usageRoots(env: Record<string, string | undefined> = process.env): UsageRootPath[] {
     const home = homeFolder(env);
     return [
         { provider: 'claude', path: join(env.CLAUDE_CONFIG_DIR ?? join(home, '.claude'), TRANSCRIPTS.claude) },
-        { provider: 'codex', path: join(env.CODEX_HOME ?? join(home, '.codex'), TRANSCRIPTS.codex) }
+        { provider: 'codex', path: join(env.CODEX_HOME ?? join(home, '.codex'), TRANSCRIPTS.codex) },
+        { provider: 'grok', path: join(env.GROK_HOME ?? join(home, '.grok'), TRANSCRIPTS.grok) }
     ];
 }
 

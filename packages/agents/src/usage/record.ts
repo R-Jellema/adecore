@@ -11,6 +11,8 @@ export interface UsageRecord {
     /* The account the call was made under; absent is the default account of the CLI. */
     account?: string;
     totals: UsageTotals;
+    /* What the CLI itself says the call cost, which wins over a price from the table; absent where it says nothing. */
+    costUsd?: number;
     /* What identifies the message this line reports on, or null when nothing does. */
     dedupeKey: string | null;
 }
@@ -54,7 +56,11 @@ export function foldByKey(records: readonly UsageRecord[]): UsageRecord[] {
             folded.push({ ...record, totals: { ...record.totals } });
             continue;
         }
-        maxTotals(folded[seen]!.totals, record.totals);
+        const into = folded[seen]!;
+        maxTotals(into.totals, record.totals);
+        if (record.costUsd !== undefined) {
+            into.costUsd = Math.max(into.costUsd ?? 0, record.costUsd);
+        }
     }
     return folded;
 }

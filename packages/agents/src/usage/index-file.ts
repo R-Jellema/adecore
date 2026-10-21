@@ -30,8 +30,9 @@ export type UsageIndex = Map<string, IndexedFile>;
  * directory and account strings over and over. Interning those and writing a record as a tuple is
  * what keeps the file at a few megabytes instead of tens of them. The account is one past its place
  * in its table, and 0 for the default account, which is also what a version 1 row without it means.
+ * A cost the CLI reported itself rides last, only on a row that has one, so every other row keeps its length.
  */
-type RecordRow = [number, number, number, number, number, number, number, number, number, number, number, string | 0, number?];
+type RecordRow = [number, number, number, number, number, number, number, number, number, number, number, string | 0, number?, number?];
 
 interface FileRow {
     p: UsageProvider;
@@ -75,21 +76,27 @@ export function encodeIndex(index: UsageIndex): string {
     const folders = new Interner();
     const accounts = new Interner();
     const files: Record<string, FileRow> = {};
-    const row = (record: UsageRecord): RecordRow => [
-        record.timestampMs,
-        models.index(record.model),
-        sessions.index(record.sessionId),
-        folders.index(record.cwd),
-        record.totals.calls,
-        record.totals.input,
-        record.totals.cacheRead,
-        record.totals.cacheWrite,
-        record.totals.cacheWrite1h,
-        record.totals.output,
-        record.totals.reasoning,
-        record.dedupeKey ?? 0,
-        record.account === undefined ? 0 : accounts.index(record.account) + 1
-    ];
+    const row = (record: UsageRecord): RecordRow => {
+        const counted: RecordRow = [
+            record.timestampMs,
+            models.index(record.model),
+            sessions.index(record.sessionId),
+            folders.index(record.cwd),
+            record.totals.calls,
+            record.totals.input,
+            record.totals.cacheRead,
+            record.totals.cacheWrite,
+            record.totals.cacheWrite1h,
+            record.totals.output,
+            record.totals.reasoning,
+            record.dedupeKey ?? 0,
+            record.account === undefined ? 0 : accounts.index(record.account) + 1
+        ];
+        if (record.costUsd !== undefined) {
+            counted.push(record.costUsd);
+        }
+        return counted;
+    };
     for (const [path, file] of index) {
         files[path] = {
             p: file.provider,
@@ -116,10 +123,11 @@ export function encodeIndex(index: UsageIndex): string {
 function isRow(row: unknown, version: number): row is RecordRow {
     return (
         Array.isArray(row) &&
-        row.length === (version === ACCOUNTLESS_VERSION ? 12 : 13) &&
+        (version === ACCOUNTLESS_VERSION ? row.length === 12 : row.length === 13 || row.length === 14) &&
         row.slice(0, 11).every((value) => typeof value === 'number') &&
         (typeof row[11] === 'string' || row[11] === 0) &&
-        (version === ACCOUNTLESS_VERSION || typeof row[12] === 'number')
+        (version === ACCOUNTLESS_VERSION || typeof row[12] === 'number') &&
+        (row.length < 14 || typeof row[13] === 'number')
     );
 }
 
@@ -176,6 +184,7 @@ export function decodeIndex(text: string): UsageIndex {
                     cwd,
                     ...(account === undefined ? {} : { account }),
                     totals: { calls: row[4], input: row[5], cacheRead: row[6], cacheWrite: row[7], cacheWrite1h: row[8], output: row[9], reasoning: row[10] },
+                    ...(row[13] === undefined ? {} : { costUsd: row[13] }),
                     dedupeKey: row[11] === 0 ? null : row[11]
                 });
             }

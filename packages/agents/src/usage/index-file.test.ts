@@ -34,6 +34,16 @@ describe('the usage index file', () => {
         expect(decodeIndex(encodeIndex(index))).toEqual(index);
     });
 
+    test('keeps the cost a CLI reported on the rows that have one', () => {
+        const index: UsageIndex = new Map([
+            [
+                '/grok/usage.json',
+                file({ provider: 'grok', head: null, records: [record({ provider: 'grok', costUsd: 1.699024 }), record({ provider: 'grok' })] })
+            ]
+        ]);
+        expect(decodeIndex(encodeIndex(index))).toEqual(index);
+    });
+
     test('writes each model, session and folder once', () => {
         const index: UsageIndex = new Map([['/claude/a.jsonl', file({ records: [record(), record(), record({ account: 'work' })] })]]);
         const document = JSON.parse(encodeIndex(index)) as { models: string[]; sessions: string[]; folders: string[]; accounts: string[] };
