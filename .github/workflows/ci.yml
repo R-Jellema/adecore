@@ -304,12 +304,8 @@ jobs:
 
   packages:
     runs-on: ubuntu-latest
-    name: 📦 Packed consumers (Node ${{ matrix.node }})
+    name: 📦 Packed consumers
     needs: pack
-    strategy:
-      fail-fast: false
-      matrix:
-        node: ['22.x', '24.x']
     steps:
       - name: 👀 Checkout
         uses: actions/checkout@v6
@@ -320,7 +316,7 @@ jobs:
       - name: ✨ Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ matrix.node }}
+          node-version: '24.x'
       - name: 💾 Cache Bun packages
         uses: actions/cache@v6
         with:
