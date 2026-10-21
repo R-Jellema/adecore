@@ -25,7 +25,7 @@ function matches(model: ModelInfo, query: string): boolean {
  * By maker, then by name, when the provider says who made its models; a list with no makers keeps the order
  * it came in. A model with no maker goes last, so the ones that have one read as groups.
  */
-function byVendor(models: ModelInfo[]): ModelInfo[] {
+export function modelsByVendor(models: ModelInfo[]): ModelInfo[] {
     if (!models.some((model) => model.vendor !== undefined)) {
         return models;
     }
@@ -38,6 +38,14 @@ function byVendor(models: ModelInfo[]): ModelInfo[] {
             a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true })
         );
     });
+}
+
+/* The models a long list shows before it is opened: the default and the one that is picked. Null when the list is short enough to show whole. */
+export function shortlistOf(kind: AgentKind, models: ModelInfo[], current: PickerCurrent | null): ModelInfo[] | null {
+    if (models.length <= COMPACT_MODEL_LIMIT) {
+        return null;
+    }
+    return modelsByVendor(models.filter((model) => model.isDefault || (current?.provider === kind && current.model === model.slug)));
 }
 
 const NONE: ReadonlySet<AgentKind> = new Set();
@@ -55,7 +63,8 @@ export function pickerEntriesOf(
     expanded: ReadonlySet<AgentKind> = NONE,
     current: PickerCurrent | null = null
 ): PickerEntry[] {
-    const rowsOf = (entry: ProviderInfo, models: ModelInfo[]): PickerEntry[] => byVendor(models).map((model) => ({ kind: 'model', provider: entry, model }));
+    const rowsOf = (entry: ProviderInfo, models: ModelInfo[]): PickerEntry[] =>
+        modelsByVendor(models).map((model) => ({ kind: 'model', provider: entry, model }));
     if (query !== '') {
         return providers.flatMap((entry) =>
             rowsOf(
@@ -69,13 +78,13 @@ export function pickerEntriesOf(
     );
     const live = providers.flatMap((entry): PickerEntry[] => {
         const models = entry.models.filter((model) => !model.legacy);
-        if (models.length <= COMPACT_MODEL_LIMIT) {
+        const shortlist = shortlistOf(entry.kind, models, current);
+        if (shortlist === null) {
             return rowsOf(entry, models);
         }
         if (expanded.has(entry.kind)) {
             return [{ kind: 'all', provider: entry, count: models.length, open: true }, ...rowsOf(entry, models)];
         }
-        const shortlist = models.filter((model) => model.isDefault || (current?.provider === entry.kind && current.model === model.slug));
         return [...rowsOf(entry, shortlist), { kind: 'all', provider: entry, count: models.length, open: false }];
     });
     if (legacy.length === 0) {

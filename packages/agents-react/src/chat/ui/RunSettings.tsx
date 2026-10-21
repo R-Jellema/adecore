@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import {
@@ -22,6 +23,7 @@ import { canContinueOn } from '../../agents/accounts';
 import { AgentIcon } from '../../agents/AgentIcon';
 import type { AccountChoice } from '../account-choice';
 import { modelName, shortModelName } from '../../agents/model-name';
+import { modelsByVendor, shortlistOf } from '../logic/picker-entries';
 import { CONTEXT_OPTION, contextFraction, contextSegments, orderOptions, type ContextPart } from '../logic/context-usage';
 import { RUNTIME_MODES } from '../runtime-modes';
 import { formatClock, formatWeekdayClock, isSameDay, formatPercent, formatTokens } from '@adecore/ui/format';
@@ -164,6 +166,48 @@ export function RunSettings({
         onModel(value.slice(0, slash) as AgentKind, value.slice(slash + 1));
     };
 
+    const modelRow = (entry: ProviderInfo, row: ModelInfo) => (
+        <Menu.RadioItem key={row.slug} value={modelValue(entry.kind, row.slug)} closeOnClick>
+            <AgentIcon kind={entry.kind} size={14} className="shrink-0" />
+            <span className="min-w-0 truncate">{row.name}</span>
+            {row.badge && (
+                <Pill tone="accent" shape="tag" size="sm">
+                    {row.badge.charAt(0).toLocaleUpperCase() + row.badge.slice(1)}
+                </Pill>
+            )}
+        </Menu.RadioItem>
+    );
+
+    // Every model of one provider, under a label per maker where the provider names them.
+    const byMaker = (entry: ProviderInfo, models: ModelInfo[]) =>
+        modelsByVendor(models).map((row, i, sorted) => (
+            <Fragment key={row.slug}>
+                {row.vendor !== undefined && sorted[i - 1]?.vendor !== row.vendor && <Menu.GroupLabel>{row.vendor}</Menu.GroupLabel>}
+                {modelRow(entry, row)}
+            </Fragment>
+        ));
+
+    // A provider with many models shows the default and the chosen one, with all of them one submenu away.
+    const providerModels = (entry: ProviderInfo, models: ModelInfo[]) => {
+        const shortlist = shortlistOf(entry.kind, models, { provider, model: selection.model });
+        if (shortlist === null) {
+            return models.map((row) => modelRow(entry, row));
+        }
+        return (
+            <>
+                {shortlist.map((row) => modelRow(entry, row))}
+                <Menu.SubmenuRoot>
+                    <Menu.SubmenuTrigger className="text-text-muted">{t('pickers.model.allGroup', { count: models.length })}</Menu.SubmenuTrigger>
+                    <Menu.Popup className="w-80">
+                        <Menu.RadioGroup value={chosenModel} onValueChange={chooseModel}>
+                            {byMaker(entry, models)}
+                        </Menu.RadioGroup>
+                    </Menu.Popup>
+                </Menu.SubmenuRoot>
+            </>
+        );
+    };
+
     const modelGroups = (groups: typeof live) =>
         groups.map(({ entry, models }) => (
             <Menu.Group key={entry.kind}>
@@ -173,17 +217,7 @@ export function RunSettings({
                         {entry.name}
                     </Menu.GroupLabel>
                 )}
-                {models.map((row) => (
-                    <Menu.RadioItem key={row.slug} value={modelValue(entry.kind, row.slug)} closeOnClick>
-                        <AgentIcon kind={entry.kind} size={14} className="shrink-0" />
-                        <span className="min-w-0 truncate">{row.name}</span>
-                        {row.badge && (
-                            <Pill tone="accent" shape="tag" size="sm">
-                                {row.badge.charAt(0).toLocaleUpperCase() + row.badge.slice(1)}
-                            </Pill>
-                        )}
-                    </Menu.RadioItem>
-                ))}
+                {providerModels(entry, models)}
             </Menu.Group>
         ));
 

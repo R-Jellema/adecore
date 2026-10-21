@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { ModelInfo, ProviderInfo } from '@adecore/agent-contracts';
-import { pickerEntriesOf } from './picker-entries';
+import { pickerEntriesOf, shortlistOf } from './picker-entries';
 
 const model = (slug: string, extra: Partial<ModelInfo> = {}): ModelInfo => ({ slug, name: slug, legacy: false, isDefault: false, options: [], ...extra });
 const provider = (models: ModelInfo[]): ProviderInfo => ({ kind: 'claude', name: 'Claude Code', version: '1.0.0', models }) as ProviderInfo;
@@ -50,6 +50,12 @@ describe('a provider with many models', () => {
         expect(entries.every((entry) => entry.kind === 'model' && entry.model.vendor === 'Moonshot AI')).toBe(true);
         expect(entries).toHaveLength(4);
         expect(pickerEntriesOf([big], 'model 11', false, new Set(), null).map((entry) => (entry.kind === 'model' ? entry.model.slug : ''))).toEqual(['m11']);
+    });
+
+    test('the composer shows the same short list, and none for a list short enough to show whole', () => {
+        expect(shortlistOf('claude', big.models, { provider: 'claude', model: 'm07' })?.map((model) => model.slug)).toEqual(['m07', 'm03']);
+        expect(shortlistOf('claude', big.models, { provider: 'codex', model: 'm07' })?.map((model) => model.slug)).toEqual(['m03']);
+        expect(shortlistOf('claude', big.models.slice(0, 8), null)).toBeNull();
     });
 
     test('a provider with eight models or fewer is listed whole, as before', () => {
