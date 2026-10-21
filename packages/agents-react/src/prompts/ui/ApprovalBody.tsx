@@ -30,9 +30,11 @@ function ApprovalDetails({ item }: { item: ChatApprovalItem }) {
     const editorPreview = host.code.editor !== undefined;
     const maxHeight = expanded ? 480 : 176;
     const input = typeof item.input === 'object' && item.input !== null ? (item.input as Record<string, unknown>) : {};
+    // Some agents describe a command by the command itself, which the box under it already shows.
+    const describes = item.description && item.description.trim() !== (typeof input.command === 'string' ? input.command.trim() : null);
     return (
         <>
-            {item.description && <p className="text-sm text-text-muted">{item.description}</p>}
+            {describes && <p className="text-sm text-text-muted">{item.description}</p>}
             {patches.length + edits.length > 1 && (
                 <p className="text-xs text-text-muted">{t('approval.allChanges', { count: patches.length + edits.length })}</p>
             )}
