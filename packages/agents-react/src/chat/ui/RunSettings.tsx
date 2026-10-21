@@ -189,6 +189,21 @@ export function RunSettings({
         onOpenChange(next);
     };
 
+    // An item under the pointer takes the focus from the field; typing there still goes to the search.
+    const onPopupKey = (event: KeyboardEvent<HTMLDivElement>): void => {
+        if (!searchable || event.target === searchRef.current || event.metaKey || event.ctrlKey || event.altKey) {
+            return;
+        }
+        const typed = event.key.length === 1 && event.key !== ' ';
+        if (!typed && event.key !== 'Backspace') {
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        setQuery((now) => (typed ? now + event.key : now.slice(0, -1)));
+        searchRef.current?.focus();
+    };
+
     // The menu reads letters as a jump to an item and arrows as moving through them; the field keeps what it types.
     const onSearchKey = (event: KeyboardEvent<HTMLInputElement>): void => {
         if (event.key === 'Escape' && query !== '') {
@@ -308,7 +323,7 @@ export function RunSettings({
                     <Icon icon={open ? ChevronUp : ChevronDown} size={12} className="shrink-0 @max-sm/composer:hidden" />
                 </Menu.Trigger>
             </Tooltip>
-            <Menu.Popup side="top" sideOffset={8} align="start" className="w-80">
+            <Menu.Popup side="top" sideOffset={8} align="start" className="w-80" onKeyDownCapture={onPopupKey}>
                 {providers.length === 0 && <div className="px-2.5 py-3 text-xs text-text-faint">{t('pickers.model.noProvider')}</div>}
                 {searchable && (
                     <div className="flex items-center gap-2 border-b border-border px-2.5">
