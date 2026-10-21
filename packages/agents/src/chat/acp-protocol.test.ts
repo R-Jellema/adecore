@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test';
+import { SUGGESTED_TITLE_LIMIT } from '@adecore/agent-contracts';
 import { ModelCatalog } from '../providers/catalog.ts';
 import {
     AcpProtocol,
@@ -250,6 +251,20 @@ describe('AcpProtocol', () => {
             permissionMode: 'accept-edits',
             usage: { contextTokens: 48210, contextWindow: 200000, costUsd: 0.0421, turns: 1 }
         });
+    });
+
+    test('takes a session title as a client can show it, and leaves out one that only repeats the prompt', () => {
+        const protocol = new AcpProtocol(1, MODES, acpStopWords('Example'));
+        const titled = (title: unknown) => protocol.update('s', { sessionId: 's', update: { sessionUpdate: 'session_info_update', title } });
+        const prompt = `You work in a workspace of projects.\n\n${'Read every file of it and say what it holds. '.repeat(4)}`;
+        protocol.prompted(prompt);
+        expect(titled(prompt)).toEqual([]);
+        expect(titled('You work in a workspace')).toEqual([]);
+        expect(titled('  Workspace\noverview  ')).toEqual([{ type: 'title', title: 'Workspace overview' }]);
+        const [long] = titled('A name '.repeat(20));
+        expect(long?.type === 'title' ? long.title.length : Infinity).toBeLessThanOrEqual(SUGGESTED_TITLE_LIMIT);
+        expect(titled('   ')).toEqual([]);
+        expect(titled(42)).toEqual([]);
     });
 
     test('a stop reason other than the end of the turn says why', () => {

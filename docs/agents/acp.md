@@ -116,7 +116,7 @@ An approval offers allow, allow always and deny. Allow answers with the agent's 
 | `current_mode_update` | `permissions`, with the runtime mode `modes` puts that agent mode under |
 | `config_option_update` | `model` and `permissions` for the model and mode options |
 | `usage_update` | `usage` with the context tokens and window, and the cost when it is in USD |
-| `session_info_update` | `title` |
+| `session_info_update` | `title`, cut to `SUGGESTED_TITLE_LIMIT`. A title that only repeats the start of a prompt the backend sent is left out: Copilot CLI names a session that way, a host's instructions included, which would leave the host no room to name the chat. |
 
 Any other update, and any field the backend does not know, is ignored. A request of the agent the backend does not handle (the file system and terminal methods among them) is answered with "method not found".
 
@@ -153,7 +153,7 @@ A model whose entry carries `_meta.totalContextTokens`, a field some agents add 
 
 A `session/prompt` response may carry `usage`, a part of the protocol that is still unstable. The backend reads it into `AcpTurnUsage`, with the kinds of token apart as a usage record keeps them. The protocol does not say whether `inputTokens` holds the cached part, so the total decides: when input, output and both cache kinds add up to more than `totalTokens`, the cache is taken out of the input. Thought tokens are kept as `reasoning`, a part of `output`. A cancelled turn still reports what it spent.
 
-The backend hands every turn with usage to `onUsage`. With `usageLog`, the provider also appends it as a `hostUsageLine` to a file per session in that folder, so the scanner reads it like any host log: the host adds a root for the folder with the provider it logs the agent under, which has to be one of `USAGE_PROVIDERS`. An agent whose own usage files the scanner reads (Grok) logs nothing, whatever `usageLog` says, so no turn is counted twice. The `usage_update` notification is the context window and the session's cost, not the tokens of a turn, so it is never logged.
+The backend hands every turn with usage to `onUsage`. With `usageLog`, the provider also appends it as a `hostUsageLine` to a file per session in that folder, so the scanner reads it like any host log: the host adds a root for the folder with the provider it logs the agent under, which has to be one of `USAGE_PROVIDERS` (`copilot` is one). An agent whose own usage files the scanner reads (Grok) logs nothing, whatever `usageLog` says, so no turn is counted twice. The `usage_update` notification is the context window and the session's cost, not the tokens of a turn, so it is never logged.
 
 ## Accounts
 

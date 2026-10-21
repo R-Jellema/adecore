@@ -1,6 +1,7 @@
 import { isRecord, type ChatFileChange, type RuntimeMode } from '@adecore/agent-contracts';
 import { z } from 'zod';
 import { MODE_ORDER } from '../modes.ts';
+import { cleanTitle } from '../title-file.ts';
 import type { ApprovalDecision, BackendEvent } from './backend.ts';
 
 /*
@@ -463,6 +464,13 @@ const KIND_NAMES: Record<string, string> = {
     other: 'Tool'
 };
 
+// A session's title comes from its opening prompts; later ones are not kept.
+const KEPT_PROMPTS = 3;
+
+function foldSpace(text: string): string {
+    return text.replace(/\s+/g, ' ').trim();
+}
+
 function str(value: unknown): string | null {
     return typeof value === 'string' && value !== '' ? value : null;
 }
@@ -598,6 +606,8 @@ export class AcpProtocol {
     private thought: { ref: string; text: string } | null = null;
     private counter = 0;
     private costUsd = 0;
+    // The opening prompts of the process, whitespace folded, which an agent may hand back as the session's title.
+    private readonly prompts: string[] = [];
 
     constructor(generation: number, modes: AcpModeMap, words: AcpStopWords) {
         this.generation = generation;
@@ -647,11 +657,29 @@ export class AcpProtocol {
                 }
                 return [{ type: 'usage', contextTokens: usage.data.used, contextWindow: usage.data.size, ...(cost === undefined ? {} : { costUsd: cost }) }];
             }
-            case 'session_info_update':
-                return str(update.title) === null ? [] : [{ type: 'title', title: update.title as string }];
+            case 'session_info_update': {
+                const title = cleanTitle(update.title);
+                return title === null || this.restatesPrompt(title) ? [] : [{ type: 'title', title }];
+            }
             default:
                 return [];
         }
+    }
+
+    /* Notes a prompt sent to the agent, so a title that only repeats its start is not taken for a name. */
+    prompted(text: string): void {
+        if (this.prompts.length < KEPT_PROMPTS) {
+            this.prompts.push(foldSpace(text));
+        }
+    }
+
+    /*
+     * Whether a title is only the start of a prompt, as Copilot CLI 1.0.101 names a session: with a host's instructions in
+     * front of the message that names every chat after them, and it keeps the host from naming the chat itself.
+     */
+    private restatesPrompt(title: string): boolean {
+        const start = foldSpace(title.endsWith('…') ? title.slice(0, -1) : title);
+        return start !== '' && this.prompts.some((prompt) => prompt.startsWith(start));
     }
 
     modeEvent(modeId: string): BackendEvent {

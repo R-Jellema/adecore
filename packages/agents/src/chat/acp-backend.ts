@@ -357,7 +357,9 @@ export class AcpBackend implements ChatBackend {
         const named: ChatAttachment[] = input.attachments.filter((attachment) => !images.includes(attachment));
         const parts = [this.contextPending, input.preamble, input.text, attachmentNote(named)].filter((part): part is string => part !== null && part !== '');
         this.contextPending = null;
-        return [{ type: 'text', text: parts.join('\n\n') }, ...blocks, ...this.mentionBlocks(input.mentions)];
+        const text = parts.join('\n\n');
+        this.protocol.prompted(text);
+        return [{ type: 'text', text }, ...blocks, ...this.mentionBlocks(input.mentions)];
     }
 
     /*
@@ -577,13 +579,17 @@ export class AcpBackend implements ChatBackend {
         this.emit({ type: 'exit', exitCode, ...(stderr === null ? {} : { stderr }) });
     }
 
-    /* A cancelled turn still spent what it reports. */
+    /* A cancelled turn still spent what it reports. A host that fails to keep it costs the record, never the end of the turn. */
     private report(result: unknown): void {
         const usage = this.spec.onUsage === undefined ? null : promptUsageOf(result);
         if (usage === null) {
             return;
         }
-        this.spec.onUsage?.({ ...usage, sessionId: this.sessionId, cwd: this.launch.cwd, model: this.model ?? this.launch.selection.model });
+        try {
+            this.spec.onUsage?.({ ...usage, sessionId: this.sessionId, cwd: this.launch.cwd, model: this.model ?? this.launch.selection.model });
+        } catch (error) {
+            console.warn(`Could not keep the usage of a ${this.spec.name} turn:`, errorText(error));
+        }
     }
 
     private emitAll(events: BackendEvent[]): void {

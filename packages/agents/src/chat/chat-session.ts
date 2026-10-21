@@ -36,6 +36,7 @@ import { ChatThread } from './thread.ts';
 import { UiReplies, type UiReplyHost } from './ui-replies.ts';
 import { errorText } from '../error-text.ts';
 import { systemClock, type OutboxClock } from '../outbox/outbox-worker.ts';
+import { cleanTitle } from '../title-file.ts';
 
 /* What a host keeps of a chat's turns in git (or anything like it), so a turn can show what it changed. */
 export interface TurnCheckpoints {
@@ -2171,8 +2172,10 @@ export class ChatSession {
             .catch(() => undefined);
     }
 
-    private applyTitle(title: string): void {
-        if (title === this.thread.info.suggestedTitle) {
+    private applyTitle(raw: string): void {
+        // Every info a client reads carries the title, so one it would refuse would leave the chat stuck there.
+        const title = cleanTitle(raw);
+        if (title === null || title === this.thread.info.suggestedTitle) {
             return;
         }
         this.emit([this.thread.patchInfo({ suggestedTitle: title })]);
