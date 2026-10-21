@@ -9,7 +9,7 @@ import { useChatHost } from '../host';
 import type { UsageMetric } from '../state/usage';
 import { ProviderLogo } from '../agents/ProviderLogo';
 import { USAGE_PROVIDERS, totalTokensOf } from '@adecore/agent-contracts';
-import { modelNameFromSlug } from '../agents/model-name';
+import { useModelName } from '../agents/model-name';
 import { formatCount, formatTokens, PROVIDER_COLORS, PROVIDER_LABELS, shortPath, slotLabel } from './format';
 import { useMoney } from './money';
 import { deriveDays } from './summary';
@@ -40,6 +40,16 @@ function ProviderMark({ provider }: { provider: UsageProvider }) {
     );
 }
 
+/* The name the machine's catalog gives the model, where it has the model; the slug made readable where it does not. */
+function ModelName({ provider, slug }: { provider: UsageProvider; slug: string }) {
+    return useModelName(provider, slug);
+}
+
+function PricedAs({ provider, slug }: { provider: UsageProvider; slug: string }) {
+    const { t } = useTranslation('agent-usage');
+    return t('breakdown.models.pricedAs', { model: useModelName(provider, slug) });
+}
+
 function ModelRows({ models, metric, total }: { models: readonly UsageModel[]; metric: UsageMetric; total: number }) {
     const { t } = useTranslation('agent-usage');
     const money = useMoney();
@@ -61,9 +71,11 @@ function ModelRows({ models, metric, total }: { models: readonly UsageModel[]; m
             {sorted.map((model) => (
                 <div key={`${model.provider} ${model.model}`} className={ROW}>
                     <ProviderMark provider={model.provider} />
-                    <span className="truncate">{modelNameFromSlug(model.model)}</span>
+                    <span className="truncate">
+                        <ModelName provider={model.provider} slug={model.model} />
+                    </span>
                     {model.priceBasis === 'family' && model.pricedAs !== null && (
-                        <Tooltip label={t('breakdown.models.pricedAs', { model: modelNameFromSlug(model.pricedAs) })}>
+                        <Tooltip label={<PricedAs provider={model.provider} slug={model.pricedAs} />}>
                             <span className="text-text-faint">
                                 <Icon icon={Info} size={12} />
                             </span>
