@@ -137,8 +137,9 @@ test('a host fence language replaces the default one', async () => {
 
 function choiceReply() {
     const text = `<Choices><Choice context="Run the selected checks">Check</Choice><Choice context="Inspect code">Inspect</Choice></Choices>`;
-    const block = { ...compileUiBlock(text, { id: 'block', final: true }), revision: 'stored-revision' };
-    const choices = evaluateUiBlock(block).nodes[0].children;
+    // A stopped clock, so a slow runner cannot spend the budget before the block is built.
+    const block = { ...compileUiBlock(text, { id: 'block', final: true, now: () => 0 }), revision: 'stored-revision' };
+    const choices = evaluateUiBlock(block, undefined, { milliseconds: Number.MAX_SAFE_INTEGER }).nodes[0].children;
     const item: ChatItem = { id: 'answer', kind: 'assistant', createdAt: 5, turnId: null, streaming: false, text, ui: [block] };
     const payload = { chatId: 'child', itemId: 'answer', blockId: 'block', revision: block.revision, choiceId: choices[0].id };
     return { item, payload, other: choices[1].id };
