@@ -19,6 +19,7 @@ export default {
         needsSetup: 'Nog instellen',
         signedOut: 'Uitgelogd',
         addAccount: 'Een {{provider}}-account toevoegen',
+        addProvider: 'Provider toevoegen',
         notInstalled: 'Niet geïnstalleerd',
         missing: 'Ontbreekt',
         notInstalledNote: 'Installeer er een op deze machine om hem hier te gebruiken.',

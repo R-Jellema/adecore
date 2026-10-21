@@ -28,10 +28,14 @@ interface ProvidersPaneProps {
     installStepOf?(provider: ProviderInfo): ProviderInstallStep | null;
     /* Why a provider is not usable yet when the app knows better than its accounts, such as one turned off in its own detail; null leaves it to the accounts. */
     setupStatusOf?(provider: ProviderInfo): ProviderSetupStatus | null;
+    /* Sections of the app's own under a CLI's usual detail, such as its version and an update; null adds none. */
+    sectionsOf?(provider: ProviderInfo): ReactNode | null;
+    /* A page of the app's own to add a provider from, such as a catalog to install one; the list then ends in a row that opens it. `added` picks the provider it added. */
+    addPage?(added: (kind: AgentKind) => void): ReactNode;
 }
 
 /* The agent CLIs of the host in scope, each with its accounts, beside the detail of what is picked. */
-export function ProvidersPane({ target = null, detailOf, defaults = true, installStepOf, setupStatusOf }: ProvidersPaneProps) {
+export function ProvidersPane({ target = null, detailOf, defaults = true, installStepOf, setupStatusOf, sectionsOf, addPage }: ProvidersPaneProps) {
     const { t } = useTranslation('agent-providers');
     const { id: scopeId } = useChatScope();
     const providers = useProviders((s) => s.providers);
@@ -49,10 +53,11 @@ export function ProvidersPane({ target = null, detailOf, defaults = true, instal
 
     // What was picked may be gone since (an account removed elsewhere); the first CLI stands in for it.
     const pickedEntry = picked?.kind === 'account' ? (Object.hasOwn(accounts?.accounts ?? {}, picked.id) ? picked.id : null) : null;
-    const current: Picked | null =
-        picked !== null && (picked.kind !== 'account' || pickedEntry !== null) ? picked : installed[0] ? { kind: 'cli', cli: installed[0].kind } : null;
+    const keeps = (entry: Picked): boolean => (entry.kind === 'account' ? pickedEntry !== null : entry.kind !== 'catalog' || addPage !== undefined);
+    const current: Picked | null = picked !== null && keeps(picked) ? picked : installed[0] ? { kind: 'cli', cli: installed[0].kind } : null;
     const currentAccount = current?.kind === 'account' ? accounts?.accounts[current.id] : undefined;
-    const currentCli = current === null ? null : current.kind === 'account' ? (currentAccount?.kind as AgentKind | undefined) : current.cli;
+    const currentCli =
+        current === null || current.kind === 'catalog' ? null : current.kind === 'account' ? (currentAccount?.kind as AgentKind | undefined) : current.cli;
     const provider = (current?.kind === 'install' ? providers : installed).find((entry) => entry.kind === currentCli) ?? null;
 
     // A search result lands on a row of a CLI's detail, so a picked account makes way for its CLI.
@@ -80,10 +85,19 @@ export function ProvidersPane({ target = null, detailOf, defaults = true, instal
             <Skeleton className="w-40" />
         </div>
     ) : (
-        <ProviderList groups={groups} current={current} canAddAccount={(kind) => loginOf(kind) !== null} onPick={setPicked} />
+        <ProviderList
+            groups={groups}
+            current={current}
+            canAddAccount={(kind) => loginOf(kind) !== null}
+            canAddProvider={addPage !== undefined}
+            onPick={setPicked}
+        />
     );
 
     const detail = (): ReactNode => {
+        if (current?.kind === 'catalog') {
+            return addPage?.((kind) => setPicked({ kind: 'cli', cli: kind })) ?? null;
+        }
         if (current === null || provider === null) {
             return null;
         }
@@ -130,14 +144,17 @@ export function ProvidersPane({ target = null, detailOf, defaults = true, instal
             );
         }
         return (
-            <CliDetail
-                provider={provider}
-                entries={accounts === null ? null : entriesOf(provider.kind)}
-                defaults={defaults}
-                login={loginOf(provider.kind)}
-                onAddAccount={() => setPicked({ kind: 'add', cli: provider.kind })}
-                onPickAccount={(id) => setPicked({ kind: 'account', id })}
-            />
+            <>
+                <CliDetail
+                    provider={provider}
+                    entries={accounts === null ? null : entriesOf(provider.kind)}
+                    defaults={defaults}
+                    login={loginOf(provider.kind)}
+                    onAddAccount={() => setPicked({ kind: 'add', cli: provider.kind })}
+                    onPickAccount={(id) => setPicked({ kind: 'account', id })}
+                />
+                {sectionsOf?.(provider) ?? null}
+            </>
         );
     };
 

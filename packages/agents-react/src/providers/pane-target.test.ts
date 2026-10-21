@@ -13,6 +13,10 @@ describe('pickOfTarget', () => {
         expect(pickOfTarget('providers.apple', providers)).toEqual({ kind: 'cli', cli: 'apple' });
     });
 
+    test('the add target opens the page to add a provider', () => {
+        expect(pickOfTarget('providers.add', providers)).toEqual({ kind: 'catalog' });
+    });
+
     test('a missing CLI opens on its install page', () => {
         expect(pickOfTarget('providers.install.grok', providers)).toEqual({ kind: 'install', cli: 'grok' });
     });

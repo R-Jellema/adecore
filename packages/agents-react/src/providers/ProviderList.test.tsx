@@ -21,8 +21,10 @@ function entryOf(id: string, label: string | undefined, plan: string | null, isD
 
 const emptyGroups: ProviderGroups = { ready: [], setup: [], missing: [] };
 
-function render(groups: Partial<ProviderGroups>, current: Picked | null = null): string {
-    return renderToStaticMarkup(createElement(ProviderList, { groups: { ...emptyGroups, ...groups }, current, canAddAccount: () => true, onPick: () => {} }));
+function render(groups: Partial<ProviderGroups>, current: Picked | null = null, canAddProvider = false): string {
+    return renderToStaticMarkup(
+        createElement(ProviderList, { groups: { ...emptyGroups, ...groups }, current, canAddAccount: () => true, canAddProvider, onPick: () => {} })
+    );
 }
 
 const sectionsIn = (markup: string): string[] => [...markup.matchAll(/<section aria-label="([^"]+)"/g)].map((match) => match[1]!);
@@ -69,5 +71,12 @@ describe('ProviderList', () => {
             { kind: 'account', id: 'codex' }
         );
         expect(markup).toContain('aria-current="true"');
+    });
+
+    test('ends in a row that adds a provider only for a host with a page for it', () => {
+        const ready: ProviderRow = { provider: providerOf('claude', 'Claude Code'), entries: [], note: null };
+        expect(render({ ready: [ready] })).not.toContain('Add provider');
+        expect(render({ ready: [ready] }, null, true)).toContain('Add provider');
+        expect(render({ ready: [ready] }, { kind: 'catalog' }, true)).toMatch(/aria-current="true"[^>]*>(?:(?!<\/button>).)*Add provider/);
     });
 });

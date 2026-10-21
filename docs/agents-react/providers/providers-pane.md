@@ -27,6 +27,8 @@ The pane needs the scope's accounts, so run `watchProviderAccounts(scopeId, tran
 | `defaults`      | `boolean`                                                 | Shows what a new chat starts with. `true` by default; pass `false` when your app decides that elsewhere.                                    |
 | `installStepOf` | `(provider: ProviderInfo) => ProviderInstallStep \| null` | A step of your own on a CLI's install page, after its install; `null` adds none.                                                            |
 | `setupStatusOf` | `(provider: ProviderInfo) => ProviderSetupStatus \| null` | Puts a provider under Needs setup with a few words, such as one turned off in its own detail; `null` leaves it to its accounts.              |
+| `sectionsOf`    | `(provider: ProviderInfo) => ReactNode \| null`           | Sections of your own under a CLI's usual detail, such as its version and an update; `null` adds none.                                       |
+| `addPage`       | `(added: (kind: AgentKind) => void) => ReactNode`         | A page of your own to add a provider from, such as a catalog; the list ends in an Add provider row that opens it. See below.                 |
 
 ## Setup status
 
@@ -57,6 +59,16 @@ A CLI whose chat needs more than the CLI, such as a server your app installs bes
     installStepOf={(provider) => (provider.kind === 'example' ? { title: 'Install the chat server', done: server.installed, body: <ServerInstall /> } : null)}
 />
 ```
+
+## Adding a provider
+
+A host that can put a new provider on its machine, from a catalog for example, draws that page itself through `addPage`. The list then ends in an Add provider row, and `target="providers.add"` opens on the page. Call `added(kind)` once the provider is there, after the host reported it anew, and the pane picks it.
+
+```tsx
+<ProvidersPane addPage={(added) => <Catalog onInstalled={added} />} />
+```
+
+`sectionsOf` adds sections under a CLI's usual detail without replacing it, such as the version installed and an update offered the way the CLI was installed.
 
 ## In the settings dialog
 

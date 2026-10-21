@@ -19,6 +19,7 @@ export default {
         needsSetup: 'Needs setup',
         signedOut: 'Signed out',
         addAccount: 'Add a {{provider}} account',
+        addProvider: 'Add provider',
         notInstalled: 'Not installed',
         missing: 'Missing',
         notInstalledNote: 'Install one on this machine to use it here.',

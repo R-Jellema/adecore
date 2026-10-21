@@ -5,7 +5,7 @@ import { Plus } from 'lucide-react';
 import type { AgentKind } from '@adecore/agent-contracts';
 import { AccountDot } from '../agents/AccountDot';
 import { accountName } from '../agents/accounts';
-import { IconButton, SectionLabel } from '@adecore/ui';
+import { Icon, IconButton, SectionLabel } from '@adecore/ui';
 import type { Picked } from './pane-target';
 import { CliMark } from './parts';
 import { accountNote, type ProviderGroups, type ProviderRow, type ProviderSetupStatus } from './provider-groups';
@@ -55,11 +55,13 @@ interface ProviderListProps {
     groups: ProviderGroups;
     current: Picked | null;
     canAddAccount(kind: AgentKind): boolean;
+    /* Whether the list ends in a row that opens the host's page to add a provider. */
+    canAddProvider?: boolean;
     onPick(picked: Picked): void;
 }
 
 /* The providers by whether they are ready, need setup or are not installed; a group without providers is left out. */
-export function ProviderList({ groups, current, canAddAccount, onPick }: ProviderListProps) {
+export function ProviderList({ groups, current, canAddAccount, canAddProvider = false, onPick }: ProviderListProps) {
     const { t } = useTranslation('agent-providers');
     const picksCli = (kind: AgentKind): boolean => (current?.kind === 'cli' || current?.kind === 'install') && current.cli === kind;
     const picksAccount = (id: string): boolean => current?.kind === 'account' && current.id === id;
@@ -139,6 +141,14 @@ export function ProviderList({ groups, current, canAddAccount, onPick }: Provide
                         )}
                     </>
                 )}
+            {canAddProvider && (
+                <ListRow selected={current?.kind === 'catalog'} onSelect={() => onPick({ kind: 'catalog' })} className="py-2">
+                    <span className="grid w-3.5 shrink-0 place-items-center text-text-muted">
+                        <Icon icon={Plus} size={14} />
+                    </span>
+                    <span className="min-w-0 grow truncate text-sm text-text-muted">{t('list.addProvider')}</span>
+                </ListRow>
+            )}
         </>
     );
 }
