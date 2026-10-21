@@ -128,6 +128,16 @@ export class ProviderRegistry {
         return this.get(kind).enabled?.() !== false;
     }
 
+    /* Calls the listener with the kind of every provider whose models or capabilities changed, so a host can list them again; answers how to stop. */
+    onChange(listener: (kind: AgentKind) => void): () => void {
+        const stops = this.providers.flatMap((provider) => (provider.onChange ? [provider.onChange(() => listener(provider.kind))] : []));
+        return () => {
+            for (const stop of stops) {
+                stop();
+            }
+        };
+    }
+
     invalidate(kind: AgentKind): void {
         this.cache.delete(kind);
     }

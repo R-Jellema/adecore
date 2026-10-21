@@ -303,6 +303,7 @@ exports[`the public API ./providers exports these names 1`] = `
   "type AccountReading",
   "type AccountsHost",
   "type AcpAccountProbe",
+  "type AcpCatalogStore",
   "type AcpProviderSpec",
   "type AskAccount",
   "type ChatProvider",

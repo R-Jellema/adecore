@@ -13,7 +13,7 @@ The CLI stays up between turns. Claude Code reports a file change as the text be
 
 ## The registry
 
-`ProviderRegistry` holds the providers of a host, the built-ins by default. `list()` answers them with whether each is installed and its version, which it caches for a minute; `invalidate(kind)` forgets one. `kinds()` answers the kinds it offers, in its order. `get(kind)` answers the provider of a kind, or a stand-in that is not installed for a kind the host does not offer. `oneShotProvider(preferred?)` answers an installed CLI that can answer a single prompt, which is how a chat gets a title, or `null`.
+`ProviderRegistry` holds the providers of a host, the built-ins by default. `list()` answers them with whether each is installed and its version, which it caches for a minute; `invalidate(kind)` forgets one. `kinds()` answers the kinds it offers, in its order. `get(kind)` answers the provider of a kind, or a stand-in that is not installed for a kind the host does not offer. `oneShotProvider(preferred?)` answers an installed CLI that can answer a single prompt, which is how a chat gets a title, or `null`. `onChange(listener)` calls the listener with the kind of every provider whose models or capabilities changed, for a provider that learns them from its CLI (`ChatProvider.onChange`), so a host can hand its clients the new list; it answers how to stop.
 
 `AgentHost` and `wireAgents` always use the two built-ins. A host with other providers builds the registry, the `ChatCore` and the services around it itself.
 

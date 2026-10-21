@@ -1,4 +1,5 @@
 // Public API: exports.test.ts snapshots this list, so a name added or dropped here is an API change.
+export { type AcpCatalogStore } from './acp-agent-state.ts';
 export { ACP_CAPABILITIES, type AcpProviderSpec, createAcpProvider } from './acp-provider.ts';
 export { type AcpAccountProbe, askAcpAccount, type ProbeTimer } from './accounts/acp-account.ts';
 export { AccountError, type AccountLaunches, storedAccount, launchEnv } from './accounts/launch.ts';

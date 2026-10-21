@@ -50,5 +50,7 @@ export interface ChatProvider {
     enabled?(): boolean;
     /* Asks the CLI, started in an account's environment, who is signed in there. Absent leaves the host's own reader. */
     askAccount?(command: readonly string[], env: Record<string, string | undefined>): Promise<AccountReading>;
+    /* Calls the listener whenever the models or the capabilities changed, for a provider that learns them from its CLI; answers how to stop. */
+    onChange?(listener: () => void): () => void;
     createBackend(launch: BackendLaunch, host: BackendHost): ChatBackend;
 }

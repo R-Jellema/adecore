@@ -8,6 +8,7 @@ import { fakeAcp, fakeAcpWith } from '../testing/fake-acp.ts';
 import { UsageScanner } from '../usage/scanner.ts';
 import { ACP_CAPABILITIES, createAcpProvider } from './acp-provider.ts';
 import { ModelCatalog } from './catalog.ts';
+import { ProviderRegistry } from './registry.ts';
 
 const catalog = new ModelCatalog({
     defaultModel: 'fake-small',
@@ -207,4 +208,76 @@ test('logs nothing for an agent whose own usage files are read', async () => {
     } finally {
         await rm(base, { recursive: true, force: true });
     }
+});
+
+/* A store in memory, as a host keeps one in a file. */
+function memoryStore(initial?: unknown): { load(): unknown; save(value: unknown): void; saved: unknown[] } {
+    const saved: unknown[] = initial === undefined ? [] : [initial];
+    return {
+        saved,
+        load: () => saved.at(-1),
+        save: (value) => {
+            saved.push(JSON.parse(JSON.stringify(value)));
+        }
+    };
+}
+
+async function oneSession(provider: ReturnType<typeof createAcpProvider>, options: Parameters<typeof fakeAcpWith>[0] = {}): Promise<BackendEvent[]> {
+    const fake = inProcess(fakeAcpWith(options));
+    const events: BackendEvent[] = [];
+    const backend = provider.createBackend(launchOn(provider, provider.catalog.defaultModel, fake.spawn), { onEvent: (event) => events.push(event) });
+    await backend.start();
+    await backend.dispose();
+    return events;
+}
+
+test('keeps the models a session reported in the host store, so a provider made after a restart offers them at once', async () => {
+    const store = memoryStore();
+    const provider = createAcpProvider({ kind: 'example', name: 'Example', command: 'example', catalog: agentDefault(), catalogStore: store });
+    let changes = 0;
+    provider.onChange?.(() => changes++);
+    await oneSession(provider, { reasoningEffort: 'accept' });
+    expect(changes).toBe(1);
+    expect(store.saved).toHaveLength(1);
+    await oneSession(provider, { reasoningEffort: 'accept' });
+    expect(changes).toBe(1);
+
+    const restarted = createAcpProvider({ kind: 'example', name: 'Example', command: 'example', catalog: agentDefault(), catalogStore: store });
+    expect(restarted.catalog.defaultModel).toBe('fake-small');
+    expect(restarted.catalog.list()).toEqual(provider.catalog.list());
+});
+
+test('starts from its own catalog when the store holds nothing it can read or cannot be read at all', () => {
+    const garbage = createAcpProvider({
+        kind: 'example',
+        name: 'Example',
+        command: 'example',
+        catalog: agentDefault(),
+        catalogStore: memoryStore({ models: { defaultModel: 'gone', models: [{ slug: 'other', name: 'Other' }], options: [] } })
+    });
+    expect(garbage.catalog.list().map((model) => model.slug)).toEqual(['default']);
+    const failing = createAcpProvider({
+        kind: 'example',
+        name: 'Example',
+        command: 'example',
+        catalog: agentDefault(),
+        catalogStore: {
+            load: () => {
+                throw new Error('unreadable');
+            },
+            save: () => undefined
+        }
+    });
+    expect(failing.catalog.list().map((model) => model.slug)).toEqual(['default']);
+});
+
+test('the registry passes on the kind of a provider whose models changed', async () => {
+    const provider = createAcpProvider({ kind: 'example', name: 'Example', command: 'example', catalog: agentDefault() });
+    const registry = new ProviderRegistry({ providers: [provider], detect: async () => ({ installed: true, version: '1' }), env: {} });
+    const kinds: string[] = [];
+    const stop = registry.onChange((kind) => kinds.push(kind));
+    await oneSession(provider);
+    stop();
+    expect(kinds).toEqual(['example']);
+    expect((await registry.list())[0]?.models.map((model) => model.slug)).toEqual(['fake-small', 'fake-large']);
 });

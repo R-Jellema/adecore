@@ -39,6 +39,7 @@ Put it in the `ProviderRegistry` beside the others. A `kind` is any name the hos
 | `autoAllow(request)` | Answers a permission request without asking the person, in any runtime mode. See [Calls the host guards](#calls-the-host-guards). |
 | `accountProbe` | `false` leaves the provider without `askAccount`, so the host's own reader asks about its accounts. |
 | `adoptModels` | `false` keeps `catalog` as the host built it instead of taking the models a session reports. |
+| `catalogStore` | Where the provider keeps what the agent reported, so a host that starts again offers it at once (`AcpCatalogStore`). See [Models](#models). |
 | `capabilities` | Over `ACP_CAPABILITIES`, for an agent that reports its cost or context window. |
 | `resumeCommand`, `home`, `detect`, `oneShotArgs`, `oneShotStdinArgs`, `firstPromptArgs`, `enabled`, `ignoresProjectConfig` | As on any `ChatProvider`. Without `firstPromptArgs` the agent is offered as a chat only, and without `detect` the executable is asked for `--version`. |
 
@@ -119,7 +120,16 @@ Any other update, and any field the backend does not know, is ignored. A request
 
 `AcpSessionInfo.models` holds the models a session offers: a config option of the `model` category, or the `models` field agents sent before config options. The backend switches to the selected model through the option, or through `session/set_model` for the older field. A model the agent does not offer leaves the agent its own, with a note. `AcpSessionInfo.thoughtLevel` holds the reasoning effort as an `AcpThoughtLevel`, its values as `AcpChoice` entries: a select config option of the `thought_level` category, or one with the id `reasoning_effort` from an agent that sets no category. After the model the backend sets the `effort` option of a selection through it, against the values the response to the model switch reports, since an agent may offer other efforts per model. A value the agent does not offer for the model is skipped, and an agent that refuses one leaves a note and keeps its own.
 
-The provider takes the models a session reports into its `catalog` (`ModelCatalog.adopt`): the agent's current model becomes the default, the others follow in the agent's order under the names it gives them, and each gets the profile the catalog's default had. A reasoning effort the session reports becomes that profile's `effort` option, the one the composer draws for every provider: the agent's names as labels and its current value as the default. ACP reports the effort only for the model a session runs, so every adopted model gets it. A model id that starts with a dash is left out, as it could pass for a flag. A session that reports no models leaves the catalog as it was, so the host's catalog is the fallback. A session is opened by every chat and by every account check, so the list is there before the first chat. Set `adoptModels: false` to keep the host's catalog; `onSession` still sees every session. A host that lists the models to its clients asks the catalog again after a check, since the catalog says nothing when it changes.
+The provider takes the models a session reports into its `catalog` (`ModelCatalog.adopt`): the agent's current model becomes the default, the others follow in the agent's order under the names it gives them, and each gets the profile the catalog's default had. A reasoning effort the session reports becomes that profile's `effort` option, the one the composer draws for every provider: the agent's names as labels and its current value as the default. ACP reports the effort only for the model a session runs, so every adopted model gets it. A model id that starts with a dash is left out, as it could pass for a flag. A session that reports no models leaves the catalog as it was, so the host's catalog is the fallback. A session is opened by every chat and by every account check, so the list is there before the first chat. Set `adoptModels: false` to keep the host's catalog; `onSession` still sees every session. The provider calls the listeners of `onChange` whenever the models change, and `ProviderRegistry.onChange` passes that on with the provider's kind, so a host can hand its clients the new list.
+
+With `catalogStore` the provider saves what the agent reported each time it changes, and a provider made with the same store starts from it, before any session ran. `load()` answers what `save(value)` was last given; the value is the provider's own and only needs to survive as JSON. A part of it the provider cannot read is skipped, and a store that throws costs only what it would have kept.
+
+```ts
+const store: AcpCatalogStore = {
+    load: () => (existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : null),
+    save: (value) => writeFileSync(file, JSON.stringify(value))
+};
+```
 
 ## Usage
 

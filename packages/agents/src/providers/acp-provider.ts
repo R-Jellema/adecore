@@ -1,7 +1,8 @@
-import type { AgentKind, ModelOptionDescriptor, ProviderCapabilities, ProviderInstall } from '@adecore/agent-contracts';
+import type { AgentKind, ProviderCapabilities, ProviderInstall } from '@adecore/agent-contracts';
 import { createAcpBackend, type AcpAgentSpec, type AcpUsageReport } from '../chat/acp-backend.ts';
 import type { AcpSessionInfo } from '../chat/acp-protocol.ts';
 import { askAcpAccount } from './accounts/acp-account.ts';
+import { AcpAgentState, type AcpCatalogStore } from './acp-agent-state.ts';
 import { writeAcpUsage } from './acp-usage-log.ts';
 import type { ModelCatalog } from './catalog.ts';
 import { detectCli, type CliDetection } from './detect.ts';
@@ -56,43 +57,23 @@ export interface AcpProviderSpec extends AcpAgentSpec {
     adoptModels?: boolean;
     // The folder the usage of every turn the agent reports is logged to, for a usage root of the agent's kind; absent logs nothing.
     usageLog?: string;
+    // Keeps the models the agent reported across a restart of the host; absent starts from `catalog` every time.
+    catalogStore?: AcpCatalogStore;
 }
 
 /* Agents whose own usage files the scanner reads; a log of their turns would count every one twice. */
 const OWN_USAGE_FILES: ReadonlySet<AgentKind> = new Set(['grok']);
 
-/* An agent's model id may reach a command line, so one that reads as a flag is left out. */
-function adoptableModels(info: AcpSessionInfo): Array<{ slug: string; name: string }> {
-    return (info.models?.models ?? []).filter((model) => model.id !== '' && !model.id.startsWith('-')).map((model) => ({ slug: model.id, name: model.name }));
-}
-
-/* The reasoning effort a session offers, as the `effort` option the composer draws for every provider. */
-function effortOption(info: AcpSessionInfo): ModelOptionDescriptor[] {
-    const level = info.thoughtLevel;
-    if (level === null || !level.choices.some((choice) => choice.id === level.current)) {
-        return [];
-    }
-    return [
-        {
-            id: 'effort',
-            label: 'Reasoning',
-            type: 'select',
-            defaultChoice: level.current,
-            choices: level.choices.map((choice) => ({
-                id: choice.id,
-                label: choice.name,
-                ...(choice.description === null ? {} : { description: choice.description })
-            }))
-        }
-    ];
-}
-
 export function createAcpProvider(spec: AcpProviderSpec): ChatProvider {
-    const capabilities = { ...ACP_CAPABILITIES, ...spec.capabilities };
+    const state = new AcpAgentState({
+        catalog: spec.catalog,
+        adoptModels: spec.adoptModels !== false,
+        store: spec.catalogStore ?? null,
+        base: ACP_CAPABILITIES,
+        overrides: spec.capabilities ?? {}
+    });
     const onSession = (info: AcpSessionInfo): void => {
-        if (spec.adoptModels !== false && info.models !== null) {
-            spec.catalog.adopt(adoptableModels(info), info.models.current, effortOption(info));
-        }
+        state.session(info);
         spec.onSession?.(info);
     };
     const usageLog = spec.usageLog === undefined || OWN_USAGE_FILES.has(spec.kind) ? null : spec.usageLog;
@@ -107,7 +88,8 @@ export function createAcpProvider(spec: AcpProviderSpec): ChatProvider {
         kind: spec.kind,
         name: spec.name,
         catalog: spec.catalog,
-        capabilities,
+        capabilities: state.capabilities,
+        onChange: (listener) => state.onChange(listener),
         command: [spec.command, ...(spec.args ?? [])],
         resumeCommand: spec.resumeCommand ?? '',
         ...(spec.ignoresProjectConfig === undefined ? {} : { ignoresProjectConfig: spec.ignoresProjectConfig }),
