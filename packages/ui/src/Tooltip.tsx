@@ -1,4 +1,4 @@
-import { useCallback, type ComponentProps, type ReactElement, type ReactNode } from 'react';
+import { type ComponentProps, type ReactElement, type ReactNode } from 'react';
 import { Tooltip as BaseTooltip } from '@base-ui/react/tooltip';
 import { Kbd } from './Kbd.tsx';
 import type { Shortcut } from './shortcut.ts';
@@ -37,15 +37,12 @@ export interface TooltipProps {
 /* A hint on hover and on keyboard focus. Every hint in an app is one of these, never a `title`. */
 export function Tooltip({ label, open, onOpenChange, anchor, kbd, side = 'top', sideOffset = 6, name = false, disabled = false, children }: TooltipProps) {
     // Held Cmd (Ctrl off macOS) prints this shortcut under the trigger (`ShortcutHints`).
-    const hintRef = useCallback(
-        (element: HTMLElement | null) => {
-            if (element === null || kbd === undefined || typeof kbd === 'string') {
-                return undefined;
-            }
-            return registerShortcutHint(element, kbd);
-        },
-        [kbd]
-    );
+    const hintRef = (element: HTMLElement | null) => {
+        if (element === null || kbd === undefined || typeof kbd === 'string') {
+            return undefined;
+        }
+        return registerShortcutHint(element, kbd);
+    };
 
     return (
         <BaseTooltip.Root disabled={disabled} open={open} onOpenChange={onOpenChange} disableHoverablePopup={children === undefined}>

@@ -1,4 +1,4 @@
-import { useCallback, type MouseEvent } from 'react';
+import { type MouseEvent } from 'react';
 import clsx from 'clsx';
 import { useRender } from '@base-ui/react/use-render';
 import { ChevronRight } from 'lucide-react';
@@ -25,13 +25,10 @@ export type TreeRootProps = useRender.ComponentProps<'div'> & {
 export function TreeRoot({ overflow = 'truncate', render, className, ref, children, ...props }: TreeRootProps) {
     const { attach, bar } = useTreeShift(TREE_ROWS);
     const scrolls = overflow === 'scroll';
-    const rootRef = useCallback(
-        (node: HTMLDivElement | null) => {
-            attach(scrolls ? node : null);
-            mergeRefs<HTMLDivElement>(ref)(node);
-        },
-        [scrolls, ref, attach]
-    );
+    const rootRef = (node: HTMLDivElement | null) => {
+        attach(scrolls ? node : null);
+        mergeRefs<HTMLDivElement>(ref)(node);
+    };
     return useRender({
         render,
         ref: rootRef,

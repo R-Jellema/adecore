@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef, useState, type Ref } from 'react';
+import { useLayoutEffect, useRef, useState, type Ref } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Editor, EditorEngine, EditorLineHighlight, EditorTheme } from '@adecore/editor';
 import { parseChord } from '@adecore/editor/keymap';
@@ -54,7 +54,7 @@ function UnifiedDiffView({
     onMount
 }: UnifiedViewProps) {
     const { t } = useTranslation('editor');
-    const emphasis = useMemo(() => wordMarks(document), [document]);
+    const emphasis = wordMarks(document);
     const element = useRef<HTMLDivElement>(null);
     const current = useRef({ display, tokens, theme, wrap, label });
     const applied = useRef({ theme, wrap, label });
@@ -240,7 +240,7 @@ export function DiffView(props: DiffViewProps) {
     }));
     const gaps = expanded.document === document ? expanded.gaps : undefined;
     const blocked = expanded.document === document ? expanded.blocked : new Set<number>();
-    const projection = useMemo(() => (props.layout === 'split' ? diffSplit(document, gaps) : diffDisplay(document, gaps)), [props.layout, document, gaps]);
+    const projection = props.layout === 'split' ? diffSplit(document, gaps) : diffDisplay(document, gaps);
     const unfold = (id: number): void =>
         setExpanded((previous) => {
             const gaps = previous.document === document ? previous.gaps : new Map<number, number>();

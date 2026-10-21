@@ -1,4 +1,4 @@
-import { useContext, useMemo, useState, type ReactNode } from 'react';
+import { useContext, useState, type ReactNode } from 'react';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { Bot, Brain, Check, ChevronDown, CircleAlert, File, Info, MessageCircleQuestionMark, Reply, TriangleAlert, X } from 'lucide-react';
@@ -268,10 +268,7 @@ export function AssistantRow({ chatId, item: derived }: { chatId: string; item: 
     const item = useCurrentItem(chatId, derived);
     const scope = useChatScope();
     const context = useContext(ReplyContext);
-    const reply = useMemo(
-        () => (context === null && !item.parentToolUseId ? { scopeId: scope.id, chatId, itemId: item.id, streaming: item.streaming } : undefined),
-        [context, item.parentToolUseId, scope.id, chatId, item.id, item.streaming]
-    );
+    const reply = context === null && !item.parentToolUseId ? { scopeId: scope.id, chatId, itemId: item.id, streaming: item.streaming } : undefined;
     const mode = useHostStreaming();
     const [sawWriting] = useState(item.streaming);
     const live = mode === 'words' && item.streaming;
@@ -344,8 +341,8 @@ export function ThinkingRow({ chatId, item: derived }: { chatId: string; item: C
     // Whole, the thought stays behind "Thinking…" until it is done and then folds like any other.
     const shown = open || reveal.active || (settled !== null && settled !== '');
     const text = settled ?? reveal.text;
-    const live = useMemo(() => (item.streaming && mode !== 'whole' ? thoughtLine(text) : ''), [item.streaming, mode, text]);
-    const preview = useMemo(() => (item.streaming ? '' : thoughtPreview(item.text)), [item.streaming, item.text]);
+    const live = item.streaming && mode !== 'whole' ? thoughtLine(text) : '';
+    const preview = item.streaming ? '' : thoughtPreview(item.text);
     const duration = formatElapsedShort((item.endedAt ?? item.createdAt) - item.createdAt);
     useOpenForFind(item.id, 'text', setOpen);
     return (
@@ -396,7 +393,7 @@ export function ThinkingRow({ chatId, item: derived }: { chatId: string; item: C
  */
 export function LiveThoughtRow({ chatId, item: derived }: { chatId: string; item: ChatThinkingItem }) {
     const item = useCurrentItem(chatId, derived);
-    const line = useMemo(() => thoughtLine(item.text), [item.text]);
+    const line = thoughtLine(item.text);
     if (line === '') {
         return null;
     }

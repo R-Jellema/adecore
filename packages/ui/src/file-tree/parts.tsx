@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useRender } from '@base-ui/react/use-render';
 import { FileTree as PierreFileTree, type FileTreeProps as PierreProps } from '@pierre/trees/react';
@@ -55,14 +55,11 @@ export function FileTreeRoot({
     const { t } = useTranslation('ui');
     const [frame, setFrame] = useState<HTMLDivElement | null>(null);
     const { attach, bar } = useFileTreeShift(model, resetKey);
-    const frameRef = useCallback(
-        (node: Element | null) => {
-            setFrame(node as HTMLDivElement | null);
-            attach(node as HTMLElement | null);
-            mergeRefs<Element>(ref)(node);
-        },
-        [ref, attach]
-    );
+    const frameRef = (node: Element | null) => {
+        setFrame(node as HTMLDivElement | null);
+        attach(node as HTMLElement | null);
+        mergeRefs<Element>(ref)(node);
+    };
     const slots = useFileTreeSlots(model, frame, label ?? t('tree.label'));
     const latestLoads = useRef({ onLoadChildren, onExpandedPathsChange });
     useLayoutEffect(() => {

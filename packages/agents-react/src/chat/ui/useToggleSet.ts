@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 
 export interface ToggleSet {
     ids: ReadonlySet<string>;
@@ -15,25 +15,22 @@ export interface ToggleSet {
 export function useToggleSet(onToggle?: () => void): ToggleSet {
     const [ids, setIds] = useState<ReadonlySet<string>>(() => new Set());
 
-    const toggle = useCallback(
-        (id: string): void => {
-            setIds((current) => {
-                const next = new Set(current);
-                if (next.has(id)) {
-                    next.delete(id);
-                } else {
-                    next.add(id);
-                }
-                return next;
-            });
-            onToggle?.();
-        },
-        [onToggle]
-    );
+    const toggle = (id: string): void => {
+        setIds((current) => {
+            const next = new Set(current);
+            if (next.has(id)) {
+                next.delete(id);
+            } else {
+                next.add(id);
+            }
+            return next;
+        });
+        onToggle?.();
+    };
 
-    const add = useCallback((id: string): void => {
+    const add = (id: string): void => {
         setIds((current) => new Set(current).add(id));
-    }, []);
+    };
 
     return { ids, toggle, add };
 }

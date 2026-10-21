@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { LazyBoundary } from '@adecore/ui';
 import { useTranslation } from 'react-i18next';
 import { lazyNamed } from '../../lazy';
@@ -20,11 +19,11 @@ export default function UnifiedDiff(props: UnifiedDiffProps) {
     const loadEngine = host.code.editor;
     const oldText = contents?.old ?? '';
     const newText = contents?.new ?? '';
-    const sourceAllowed = useMemo(() => diffSourceBudget(oldText, newText) && patchSourceBudget(change.diff), [oldText, newText, change.diff]);
+    const sourceAllowed = diffSourceBudget(oldText, newText) && patchSourceBudget(change.diff);
     const legacyMode = !allowEditor || loadEngine === undefined;
     const hasHunks = /^@@/m.test(change.diff);
-    const legacyAllowed = useMemo(() => legacyMode && legacyDiffBudget(oldText, newText, change.diff), [legacyMode, oldText, newText, change.diff]);
-    const rawAllowed = useMemo(() => hasHunks || legacyDiffBudget('', '', change.diff), [hasHunks, change.diff]);
+    const legacyAllowed = legacyMode && legacyDiffBudget(oldText, newText, change.diff);
+    const rawAllowed = hasHunks || legacyDiffBudget('', '', change.diff);
     const omitted = <DiffOmitted path={change.path} />;
     const fallback = legacyAllowed ? (
         <DiffFallbackBoundary fallback={omitted} resetKeys={[change.path, change.diff, oldText, newText, diffStyle]}>

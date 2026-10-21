@@ -1,6 +1,5 @@
 import { LegacyDiffPool } from './LegacyDiffPool';
 import { useReviewSettled } from './review-settle';
-import { useMemo } from 'react';
 import { MultiFileDiff } from '@pierre/diffs/react';
 import { useDiffTheme } from '../diff-theme';
 import type { FileChange } from '../../logic/tools';
@@ -10,19 +9,16 @@ export default function LegacyEditDiff({ change, maxHeight }: { change: FileChan
     useReviewSettled();
     const resolved = useHostCodeMode();
     const theme = useDiffTheme();
-    const oldFile = useMemo(() => ({ name: change.path, contents: change.before }), [change.path, change.before]);
-    const newFile = useMemo(() => ({ name: change.path, contents: change.after }), [change.path, change.after]);
-    const options = useMemo(
-        () => ({
-            diffStyle: 'unified' as const,
-            theme,
-            themeType: resolved,
-            disableFileHeader: true,
-            overflow: 'wrap' as const,
-            hunkSeparators: 'simple' as const
-        }),
-        [theme, resolved]
-    );
+    const oldFile = { name: change.path, contents: change.before };
+    const newFile = { name: change.path, contents: change.after };
+    const options = {
+        diffStyle: 'unified' as const,
+        theme,
+        themeType: resolved,
+        disableFileHeader: true,
+        overflow: 'wrap' as const,
+        hunkSeparators: 'simple' as const
+    };
     return (
         <div className="chat-diff select-text" style={maxHeight === undefined ? undefined : { maxHeight, overflow: 'auto' }}>
             <LegacyDiffPool>

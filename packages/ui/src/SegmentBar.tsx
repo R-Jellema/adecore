@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type Ref } from 'react';
+import { useEffect, useRef, useState, type Ref } from 'react';
 import clsx from 'clsx';
 import { mergeRefs } from './merge-refs.ts';
 import { Tooltip } from './Tooltip.tsx';
@@ -37,7 +37,7 @@ export interface SegmentBarProps {
    place; the gap between two parts that touch comes out of the one before. */
 export function SegmentBar({ parts, range, size = 'md', onSelect, label, className, ref }: SegmentBarProps) {
     const [measure, width] = useMeasuredWidth();
-    const rootRef = useMemo(() => mergeRefs(ref, measure), [ref, measure]);
+    const rootRef = mergeRefs(ref, measure);
     const labels = useRef<(HTMLSpanElement | null)[]>([]);
     const [cut, setCut] = useState<readonly boolean[]>([]);
 

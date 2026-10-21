@@ -1,7 +1,6 @@
 import {
     createContext,
     useContext,
-    useCallback,
     useEffect,
     useLayoutEffect,
     useRef,
@@ -109,7 +108,7 @@ export function TabStrip({
     };
     const [edges, setEdges] = useState({ start: false, end: false });
     const [insertion, setInsertion] = useState(0);
-    const measure = useCallback((): void => {
+    const measure = (): void => {
         const element = strip.current;
         if (!element) {
             return;
@@ -123,7 +122,7 @@ export function TabStrip({
             const last = tabs.at(-1);
             setInsertion(after?.offsetLeft ?? (last ? last.offsetLeft + last.offsetWidth : 0));
         }
-    }, [insertAt]);
+    };
     // Stays set after the active tab changes, as its width can settle frames later; a person's own scroll ends it.
     const revealing = useRef(false);
     const reveal = (): void => {

@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from 'react';
+import { createContext, useContext } from 'react';
 import { useChatHost, type FileRef } from '../../host';
 import { ChatScopeContext } from '../../scope';
 
@@ -22,7 +22,7 @@ export function useFileLinkTarget(text: string): FileRef | null {
     const cwd = useFileLinkCwd();
     const scopeId = useFileLinkScopeId();
     const { fileLinks } = useChatHost();
-    return useMemo(() => fileLinks?.target(text, cwd, scopeId) ?? null, [fileLinks, text, cwd, scopeId]);
+    return fileLinks?.target(text, cwd, scopeId) ?? null;
 }
 
 /* Follows a reference the way the app opens a file or a folder. */

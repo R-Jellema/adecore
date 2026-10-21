@@ -287,13 +287,13 @@ export function SplitView({
     useLayoutEffect(() => {
         latest.current = { value, onValueChange };
     });
-    const dispatch = useCallback((command: SplitCommand): void => {
+    const dispatch = (command: SplitCommand): void => {
         const state = latest.current;
         const next = updateSplitLayout(state.value, command);
         if (next !== state.value) {
             state.onValueChange(next, command);
         }
-    }, []);
+    };
     const measure = useCallback((): void => {
         const element = root.current;
         if (!element) {

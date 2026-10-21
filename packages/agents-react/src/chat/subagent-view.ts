@@ -1,5 +1,4 @@
 import i18next from 'i18next';
-import { useMemo } from 'react';
 import { create } from 'zustand';
 import type { ChatItem, ChatSubagentItem } from '@adecore/agent-contracts';
 import { useChatScope } from '../scope';
@@ -128,10 +127,10 @@ export function useOpenableSubagents(chatId: string): ChatSubagentItem[] {
     // The structure and not the items, so a delta growing a reply does not walk the thread again.
     const order = useChatRow(chatId, (row) => row?.order);
     const structure = useChatRow(chatId, (row) => row?.structure);
-    return useMemo(() => (structure === undefined ? [] : openableSubagents(order ?? NO_ITEMS, structure, refused)), [order, structure, refused]);
+    return structure === undefined ? [] : openableSubagents(order ?? NO_ITEMS, structure, refused);
 }
 
 export function useSubagentItem(chatId: string, toolUseId: string): ChatSubagentItem | null {
     const structure = useChatRow(chatId, (row) => row?.structure);
-    return useMemo(() => (structure === undefined ? null : subagentOf(structure, toolUseId)), [structure, toolUseId]);
+    return structure === undefined ? null : subagentOf(structure, toolUseId);
 }

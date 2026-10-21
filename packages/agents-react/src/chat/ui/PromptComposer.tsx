@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ArrowDown, Hand, MessageCircleQuestionMark } from 'lucide-react';
 import type { HoldRelease } from '../prompt-hold';
@@ -59,13 +59,10 @@ export function PromptComposer({
     const elsewhere = onShowElsewhere !== undefined;
     // A card the app raises itself waits in the chat beside the CLI's own requests.
     const extra = useHostExtraPrompts(id, chatId);
-    const subjects = useMemo(
-        (): PromptSubject[] => [
-            ...pending.map((item): PromptSubject => ({ kind: 'chat', nodeId: chatId, item })),
-            ...extra.map((prompt): PromptSubject => ({ kind: 'host', nodeId: chatId, prompt }))
-        ],
-        [pending, extra, chatId]
-    );
+    const subjects: PromptSubject[] = [
+        ...pending.map((item): PromptSubject => ({ kind: 'chat', nodeId: chatId, item })),
+        ...extra.map((prompt): PromptSubject => ({ kind: 'host', nodeId: chatId, prompt }))
+    ];
     const session = usePromptSession({ prompts: subjects, idOf: promptIdOf, pick: pickSubject, disabled });
     const ref = useRef<HTMLDivElement>(null);
     const { active, activeId: activeKey } = session;

@@ -1,4 +1,4 @@
-import { useMemo, type ReactElement } from 'react';
+import { type ReactElement } from 'react';
 import type { FileTree } from '@pierre/trees';
 import { useTreeShift, type TreeShiftSource } from '../tree/use-tree-shift.tsx';
 import { shiftNeed } from '../tree/shift.ts';
@@ -40,13 +40,10 @@ function needOf(row: HTMLElement, shift: number, gap: number, range: Range): num
 
 /* The file tree draws its rows in a shadow root, and only the name slides: its decorations sit over the row. */
 export function useFileTreeShift(model: FileTree, resetKey?: string): { attach(node: HTMLElement | null): void; bar: ReactElement } {
-    const source = useMemo(
-        (): TreeShiftSource => ({
-            root: () => model.getFileTreeContainer()?.shadowRoot ?? null,
-            rows: (root) => [...root.querySelectorAll<HTMLElement>(ROWS)],
-            need: needOf
-        }),
-        [model]
-    );
+    const source: TreeShiftSource = {
+        root: () => model.getFileTreeContainer()?.shadowRoot ?? null,
+        rows: (root) => [...root.querySelectorAll<HTMLElement>(ROWS)],
+        need: needOf
+    };
     return useTreeShift(source, resetKey);
 }

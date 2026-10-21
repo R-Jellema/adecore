@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ChatUiLinkReading, ChatUiQueryState } from '@adecore/agent-contracts';
 import { uiLinkTargets, type UiLinkTarget } from '@adecore/intelligent-ui/links';
 import { uiInputValues, UI_HOST_LIMITS, type UiBlock, UiState } from '@adecore/intelligent-ui';
@@ -40,7 +40,7 @@ export function useUiLinks(
     const signature = JSON.stringify(targets);
     const input = JSON.stringify(values);
     const tickets = JSON.stringify(reads);
-    const defaultInput = useMemo(() => JSON.stringify(uiInputValues(block, new UiState(block))), [block]);
+    const defaultInput = JSON.stringify(uiInputValues(block, new UiState(block)));
     const link = host?.link;
     useEffect(() => {
         asked.current.clear();
@@ -134,7 +134,7 @@ export function useUiLinks(
             });
     };
     const hostOpenUrl = host?.openUrl;
-    const openUrl = useCallback((url: string) => hostOpenUrl?.(context.scopeId, url), [hostOpenUrl, context.scopeId]);
+    const openUrl = (url: string) => hostOpenUrl?.(context.scopeId, url);
     return {
         link: link ? resolution : undefined,
         openLink: link && host?.openLink ? open : undefined,

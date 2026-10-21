@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChartNoAxesColumn, RefreshCw } from 'lucide-react';
 import { USAGE_PROVIDERS, type UsageAccount } from '@adecore/agent-contracts';
@@ -29,7 +29,7 @@ const DIALOG_CENTER = 'pointer-events-none absolute inset-0';
 /* Whether the scope's host answers right now, redrawn as its link comes and goes. */
 function useAnswering(transport: ChatTransport): boolean {
     return useSyncExternalStore(
-        useCallback((onChange: () => void) => transport.subscribeStatus(onChange), [transport]),
+        (onChange: () => void) => transport.subscribeStatus(onChange),
         () => transport.status === 'open'
     );
 }
@@ -43,7 +43,7 @@ function HostAgents() {
     const { t } = useTranslation('agent-usage');
     const { id } = useChatScope();
     const row = useProvidersStore((s) => s.byScope[id]);
-    const installed = useMemo(() => (row?.providers ?? []).filter((provider) => provider.installed), [row]);
+    const installed = (row?.providers ?? []).filter((provider) => provider.installed);
     if (!row?.loaded) {
         return null;
     }

@@ -1,4 +1,4 @@
-import { useContext, useMemo } from 'react';
+import { useContext } from 'react';
 import { create } from 'zustand';
 import type {
     AgentKind,
@@ -344,7 +344,7 @@ export function useReportedModels(provider: AgentKind): ReadonlySet<string> {
         }
         return [...names].sort().join('\n');
     });
-    return useMemo(() => new Set(joined === '' ? [] : joined.split('\n')), [joined]);
+    return new Set(joined === '' ? [] : joined.split('\n'));
 }
 
 /* Whether a call still waits on the person's answer to an approval of it, when its clock is not running yet. */

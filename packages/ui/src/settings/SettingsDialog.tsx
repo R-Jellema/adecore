@@ -239,7 +239,7 @@ export function SettingsDialog({
     useEffect(() => {
         latestShown.current = onTargetShown;
     });
-    const targetValue = useMemo(() => ({ target, shown: () => latestShown.current?.() }), [target]);
+    const targetValue = { target, shown: () => latestShown.current?.() };
 
     const labelOf = (id: string): string => sections.find((entry) => entry.id === id)?.label ?? id;
     const pick = (result: SettingsSearchResult): void => onNavigate({ section: result.section, target: result.id });

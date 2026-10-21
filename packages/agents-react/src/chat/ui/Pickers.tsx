@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useContext, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Bookmark, ChevronDown, ChevronRight, Search, Star, Trash2 } from 'lucide-react';
 import type { AgentKind, ModelSelection, ProviderInfo, UsageProvider } from '@adecore/agent-contracts';
@@ -78,9 +78,8 @@ export function ModelPicker({
 
     const favorites = useChatPreferences((preferences) => preferences.favoriteModels);
     const starredHere = (row: PickerEntry | undefined): boolean => row?.kind === 'model' && favorites[row.provider.kind]?.includes(row.model.slug) === true;
-    const entries = useMemo(
-        () => pickerEntriesOf(providers, trimmed, legacyOpen, expanded, { provider, model: selection.model }, (kind) => favoriteModelsOf(favorites, kind)),
-        [providers, trimmed, legacyOpen, expanded, provider, selection.model, favorites]
+    const entries = pickerEntriesOf(providers, trimmed, legacyOpen, expanded, { provider, model: selection.model }, (kind) =>
+        favoriteModelsOf(favorites, kind)
     );
     const scope = useContext(ChatScopeContext);
     const machine = useHostMachineLabel(scope?.id ?? '');

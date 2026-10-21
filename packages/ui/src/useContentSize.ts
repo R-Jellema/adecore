@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export interface ContentSize {
     width: number;
@@ -10,7 +10,7 @@ export function useContentSize(): [(node: HTMLElement | null) => void, ContentSi
     const [size, setSize] = useState<ContentSize>({ width: 0, height: 0 });
     const observer = useRef<ResizeObserver | null>(null);
     useEffect(() => () => observer.current?.disconnect(), []);
-    const measure = useCallback((node: HTMLElement | null): void => {
+    const measure = (node: HTMLElement | null): void => {
         observer.current?.disconnect();
         if (node === null) {
             return;
@@ -22,6 +22,6 @@ export function useContentSize(): [(node: HTMLElement | null) => void, ContentSi
         update(node.clientWidth, node.clientHeight);
         observer.current = new ResizeObserver(([entry]) => update(entry!.contentRect.width, entry!.contentRect.height));
         observer.current.observe(node);
-    }, []);
+    };
     return [measure, size];
 }

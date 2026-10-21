@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const NOTICE_MS = 4000;
 
@@ -24,7 +24,7 @@ export function useNotice(): ComposerNotice {
         return () => clearTimeout(timer);
     }, [shown]);
 
-    const setNotice = useCallback((notice: string | null, tone: NoticeTone = 'error'): void => setShown(notice ? { text: notice, tone } : null), []);
+    const setNotice = (notice: string | null, tone: NoticeTone = 'error'): void => setShown(notice ? { text: notice, tone } : null);
 
     return {
         notice: shown?.text ?? null,

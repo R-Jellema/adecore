@@ -1,4 +1,4 @@
-import { createContext, memo, useContext, useMemo, type ReactNode } from 'react';
+import { createContext, memo, useContext, type ReactNode } from 'react';
 import clsx from 'clsx';
 import { Zap } from 'lucide-react';
 import ReactMarkdown, { type Components, type ExtraProps, type Options } from 'react-markdown';
@@ -393,7 +393,7 @@ export const ReplyMarkdown = memo(function ReplyMarkdown({
     arriving?: boolean;
     reply?: ShellCodeBlockReply;
 }) {
-    const blocks = useMemo(() => splitMarkdownBlocks(text), [text]);
+    const blocks = splitMarkdownBlocks(text);
     return (
         <div className="chat-markdown prose prose-sm max-w-none text-sm" data-arriving={arriving || undefined}>
             {blocks.map((block, index) =>
@@ -420,7 +420,7 @@ export const ReplyMarkdown = memo(function ReplyMarkdown({
  * it was, and the files and skills picked in the composer are chips again.
  */
 export const MessageMarkdown = memo(function MessageMarkdown({ text, mentions, skills }: { text: string; mentions?: string[]; skills?: string[] }) {
-    const rehypePlugins = useMemo((): [typeof rehypeChips, ChipOptions][] => [[rehypeChips, { mentions, skills }]], [mentions, skills]);
+    const rehypePlugins: [typeof rehypeChips, ChipOptions][] = [[rehypeChips, { mentions, skills }]];
     return (
         <div className="chat-markdown prose prose-sm max-w-none text-sm">
             <ReactMarkdown remarkPlugins={MESSAGE_PLUGINS} rehypePlugins={rehypePlugins} components={messageComponents}>
@@ -449,7 +449,7 @@ export const Markdown = memo(function Markdown({
     rehypePlugins?: Options['rehypePlugins'];
     componentOverrides?: Components;
 }) {
-    const renderComponents = useMemo(() => ({ ...(fileLinks ? components : plainComponents), ...componentOverrides }), [fileLinks, componentOverrides]);
+    const renderComponents = { ...(fileLinks ? components : plainComponents), ...componentOverrides };
     return (
         <div className="chat-markdown prose prose-sm max-w-none text-sm" data-muted={muted || undefined}>
             <ReactMarkdown remarkPlugins={breaks ? PLUGINS_WITH_BREAKS : PLUGINS} rehypePlugins={rehypePlugins} components={renderComponents}>

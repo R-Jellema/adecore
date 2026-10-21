@@ -157,10 +157,7 @@ export function useComposerMenus({ chatId, info, capabilities, providerName, dra
     const mentionMenuOpen = !commandMenuOpen && !skillMenuOpen && mention !== null;
     // Results belong to the query that asked for them; a closed picker shows none while the next answer is on its way.
     const files = mention === null ? [] : searched.files;
-    const chatMatches = useMemo(
-        () => (mention === null ? [] : chatSuggestions(chats, mention.query, [chatId, ...draft.chats], CHAT_RESULTS)),
-        [chatId, chats, draft.chats, mention]
-    );
+    const chatMatches = mention === null ? [] : chatSuggestions(chats, mention.query, [chatId, ...draft.chats], CHAT_RESULTS);
     const mentionCount = chatMatches.length + files.length;
     // One menu is open at a time, so they share an id.
     const listId = useId();
@@ -168,10 +165,7 @@ export function useComposerMenus({ chatId, info, capabilities, providerName, dra
     const menuCount = commandMenuOpen ? commands.length : skillMenuOpen ? skillMatches.length : mentionCount;
     // The list can shrink under a stale index; every reader takes the one that still points at an option.
     const activeIndex = clampMenuIndex(menuIndex, menuCount);
-    const inputAria = useMemo(
-        () => composerMenuAria({ label: t('composer.inputLabel'), listId, open: menuOpen, activeIndex, count: menuCount }),
-        [t, listId, menuOpen, activeIndex, menuCount]
-    );
+    const inputAria = composerMenuAria({ label: t('composer.inputLabel'), listId, open: menuOpen, activeIndex, count: menuCount });
 
     /* Which picker the caret opens: `@` for a file, `$` for a skill, or neither. In code a sigil is just text. */
     const trackTriggers = (value: string, selection: TextRange, state: EditorState): void => {

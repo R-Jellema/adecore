@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import clsx from 'clsx';
 import { useShallow } from 'zustand/shallow';
 import { useTranslation } from 'react-i18next';
@@ -31,29 +31,21 @@ export function ChatActivity({ chatId }: { chatId: string }) {
     const order = useChatRow(chatId, (row) => row?.order) ?? NO_ITEMS;
     const before = useChatRow(chatId, (row) => row?.subagentsBefore) ?? NO_ITEMS;
     const structure = useChatRow(chatId, (row) => row?.structure);
-    const subagents = useMemo(() => (structure === undefined ? [] : flyoutSubagents([...before, ...order], structure)), [before, order, structure]);
+    const subagents = structure === undefined ? [] : flyoutSubagents([...before, ...order], structure);
     const { id, keyOf } = useChatScope();
     const tasks = useHostTasks(id);
     // The infos of these sub-agents' own chats, so the info of any other chat changing does not draw this again.
     const children = useChats(useShallow((s) => subagents.map((item) => (item.childId === undefined ? undefined : s.statusByKey[keyOf(item.childId)]?.info))));
-    const progress = useMemo(
-        () =>
-            progressOf(
-                subagents.map((item, index) => {
-                    const taskId = taskIdOf(item);
-                    return taskRowStateOf(item, taskId === null ? null : (tasks?.[taskId] ?? null), children[index]);
-                })
-            ),
-        [subagents, tasks, children]
+    const progress = progressOf(
+        subagents.map((item, index) => {
+            const taskId = taskIdOf(item);
+            return taskRowStateOf(item, taskId === null ? null : (tasks?.[taskId] ?? null), children[index]);
+        })
     );
-    const words = useMemo(
-        () =>
-            subagents.map((item) => {
-                const taskId = taskIdOf(item);
-                return statusWordOf(item, taskId === null ? null : (tasks?.[taskId] ?? null));
-            }),
-        [subagents, tasks]
-    );
+    const words = subagents.map((item) => {
+        const taskId = taskIdOf(item);
+        return statusWordOf(item, taskId === null ? null : (tasks?.[taskId] ?? null));
+    });
     const background = useChatRow(chatId, (row) => row?.info.background) ?? NO_TASKS;
     if (subagents.length === 0 && background.length === 0) {
         return null;

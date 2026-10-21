@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type MouseEvent, type PointerEvent } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type MouseEvent, type PointerEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import { ChevronDown } from 'lucide-react';
@@ -154,10 +154,7 @@ export function Composer({ chatId, info, focused, answerPromptsElsewhere, disabl
     const pending = usePendingRequests(chatId);
     const compactionOffer = useCompactionOffer(chatId, info, capabilities?.compaction);
     const placeholder = useHintedPlaceholder({ chatId, disabled, readOnly, mentionable: capabilities?.mentions !== false, hasSkills: menus.hasSkills });
-    const editorExtensions = useMemo(
-        () => [chipDecorations({ mentions: draft.mentions, skills: draft.skills }), LEAVE_DROPS_TO_THE_CARD],
-        [draft.mentions, draft.skills]
-    );
+    const editorExtensions = [chipDecorations({ mentions: draft.mentions, skills: draft.skills }), LEAVE_DROPS_TO_THE_CARD];
     /* The timeline owns the scroller; this is the one bit of it the composer needs to know. */
     const atEnd = useSyncExternalStore(
         subscribeTimelineEnd,

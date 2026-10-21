@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { registerCustomTheme, type ThemesType } from '@pierre/diffs';
 import { useChatHost, type ChatHost } from '../../host';
 import { useHostCodeThemes } from '../../host-hooks';
@@ -25,5 +24,5 @@ export function useDiffTheme(): ThemesType {
     const { code } = useChatHost();
     registerThemes(code.custom);
     const { light, dark } = useHostCodeThemes();
-    return useMemo(() => ({ light, dark }), [light, dark]);
+    return { light, dark };
 }

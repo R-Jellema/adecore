@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, ChevronRight, X } from 'lucide-react';
@@ -123,8 +123,8 @@ function Places({ language, view }: { language: EditorLanguage; view: PeekView }
     const { t } = useTranslation('editor');
     const activeRow = useRef<HTMLButtonElement>(null);
     const folder = language.project.folder;
-    const paths = useMemo(() => view.files.map((file) => relativeTo(fileUriToPath(file.uri) ?? file.uri, folder)), [view.files, folder]);
-    const folders = useMemo(() => distinguishingFolders(paths), [paths]);
+    const paths = view.files.map((file) => relativeTo(fileUriToPath(file.uri) ?? file.uri, folder));
+    const folders = distinguishingFolders(paths);
 
     useEffect(() => {
         activeRow.current?.scrollIntoView({ block: 'nearest' });

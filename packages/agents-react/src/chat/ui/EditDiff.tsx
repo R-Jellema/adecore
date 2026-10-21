@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { LazyBoundary } from '@adecore/ui';
 import { useTranslation } from 'react-i18next';
 import { lazyNamed } from '../../lazy';
@@ -17,9 +16,9 @@ export default function EditDiff({ change, allowEditor = true, maxHeight }: { ch
     const host = useChatHost();
     const { t } = useTranslation('agent-chat');
     const loadEngine = host.code.editor;
-    const sourceAllowed = useMemo(() => diffSourceBudget(change.before, change.after), [change.before, change.after]);
+    const sourceAllowed = diffSourceBudget(change.before, change.after);
     const legacyMode = !allowEditor || loadEngine === undefined;
-    const legacyAllowed = useMemo(() => legacyMode && legacyDiffBudget(change.before, change.after), [legacyMode, change.before, change.after]);
+    const legacyAllowed = legacyMode && legacyDiffBudget(change.before, change.after);
     const omitted = <DiffOmitted path={change.path} />;
     const fallback = legacyAllowed ? (
         <DiffFallbackBoundary fallback={omitted} resetKeys={[change.path, change.before, change.after]}>

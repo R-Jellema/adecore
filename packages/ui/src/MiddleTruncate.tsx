@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useState, type Ref } from 'react';
+import { useLayoutEffect, useState, type Ref } from 'react';
 import clsx from 'clsx';
 import { fitMiddle, type MiddleCut } from './middle-truncate.ts';
 import { mergeRefs } from './merge-refs.ts';
@@ -42,7 +42,7 @@ function sameCut(first: MiddleCut | null, second: MiddleCut | null): boolean {
 export function MiddleTruncate({ text, tooltip = true, className, ref }: MiddleTruncateProps) {
     const [element, setElement] = useState<HTMLSpanElement | null>(null);
     const [cut, setCut] = useState<MiddleCut | null>(null);
-    const rootRef = useMemo(() => mergeRefs(setElement, ref), [ref]);
+    const rootRef = mergeRefs(setElement, ref);
 
     useLayoutEffect(() => {
         if (element === null) {

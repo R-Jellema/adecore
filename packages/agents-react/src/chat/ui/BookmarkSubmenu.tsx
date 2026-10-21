@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { Bookmark, Pencil, X } from 'lucide-react';
@@ -18,7 +17,7 @@ export function BookmarkSubmenu({ chatId }: { chatId: string }) {
     const order = useChatRow(chatId, (row) => row?.order);
     const host = useChatHost();
     const place = useHostChatPlace(chatId);
-    const sorted = useMemo(() => bookmarksInThreadOrder(bookmarks ?? [], order ?? []), [bookmarks, order]);
+    const sorted = bookmarksInThreadOrder(bookmarks ?? [], order ?? []);
     if (sorted.length === 0) {
         return null;
     }

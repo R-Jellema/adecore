@@ -1,5 +1,5 @@
 import { useReviewSettled } from './review-settle';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getFiletypeFromFileName } from '@pierre/diffs';
 import type { EditorEngine } from '@adecore/editor';
@@ -77,7 +77,7 @@ export function EditorDocumentDiff({
     maxHeight?: number;
 }) {
     const { t } = useTranslation('agent-chat');
-    const withinLimits = useMemo(() => canRenderEditorDiff(document), [document]);
+    const withinLimits = canRenderEditorDiff(document);
     const [loaded, setLoaded] = useState<{ load: EngineLoader; engine: EditorEngine | null }>();
     useEffect(() => {
         if (!withinLimits || engines.has(loadEngine)) {
@@ -131,13 +131,10 @@ export default function EditorEditDiff({
     fallback: ReactNode;
     maxHeight?: number;
 }) {
-    const document = useMemo(
-        () =>
-            sourceChecked || diffSourceBudget(change.before, change.after)
-                ? diffDocument(patchOf(change.before, change.after, 3, { maxWork: EDITOR_DIFF_WORK }), { old: change.before, new: change.after })
-                : undefined,
-        [change.before, change.after, sourceChecked]
-    );
+    const document =
+        sourceChecked || diffSourceBudget(change.before, change.after)
+            ? diffDocument(patchOf(change.before, change.after, 3, { maxWork: EDITOR_DIFF_WORK }), { old: change.before, new: change.after })
+            : undefined;
     if (document === undefined) {
         return <DiffOmitted path={change.path} />;
     }

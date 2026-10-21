@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import type { TFunction } from 'i18next';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
@@ -439,7 +439,7 @@ function DrawnChart({
     const [measure, width] = useMeasuredWidth();
     const character = useChartCharacter();
     const [measureRows, rowsCut] = useTruncated<HTMLDivElement>(true);
-    const values = useMemo(() => uiChartValues(data), [data]);
+    const values = uiChartValues(data);
     const { kind } = chart;
     return (
         <figure className="chat-ui-flat flex flex-col gap-2.5 rounded-xl bg-ui-tile p-3.5">
@@ -473,7 +473,7 @@ function DrawnChart({
  */
 export function ChartRenderer({ node, context }: UiRendererProps<UiProps<'Chart'>>) {
     const { kind, data, unit } = node.props;
-    const chart = useMemo(() => (node.complete ? uiChartData(data, kind) : null), [node.complete, data, kind]);
+    const chart = node.complete ? uiChartData(data, kind) : null;
     if (!node.complete) {
         return <div aria-hidden className="rounded-xl bg-ui-tile" style={{ height: chartHeight(kind, data.length) }} />;
     }

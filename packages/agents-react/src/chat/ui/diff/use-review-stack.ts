@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { planReview, type ReviewEntry, type ReviewSlot } from './review-plan';
 
 export interface ReviewStack {
@@ -10,7 +10,7 @@ export interface ReviewStack {
 
 export function useReviewStack(entries: readonly ReviewEntry[]): ReviewStack {
     const [promoted, setPromoted] = useState<string | null>(null);
-    const slots = useMemo(() => planReview(entries, promoted), [entries, promoted]);
+    const slots = planReview(entries, promoted);
     const selected = [...slots].filter(([, slot]) => slot === 'editor').map(([key]) => key);
     const [admitted, setAdmitted] = useState<string[]>(() => selected.slice(0, 1));
     const retained = admitted.filter((key) => selected.includes(key));
@@ -22,9 +22,9 @@ export function useReviewStack(entries: readonly ReviewEntry[]): ReviewStack {
     if ([...settled].some((key) => !selected.includes(key))) {
         setSettled(new Set([...settled].filter((key) => selected.includes(key))));
     }
-    const settle = useCallback((key: string) => {
+    const settle = (key: string) => {
         setSettled((previous) => (previous.has(key) ? previous : new Set([...previous, key])));
-    }, []);
+    };
     const allSettled = live.every((key) => settled.has(key));
     const next = selected.find((key) => !live.includes(key));
     useEffect(() => {

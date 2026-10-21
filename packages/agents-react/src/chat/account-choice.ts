@@ -80,5 +80,5 @@ export function newAccountChoiceOf(row: ProviderAccountsRow, kind: AgentKind | n
 export function useNewAccountChoice(kind: AgentKind | null): NewAccountChoice {
     const row = useProviderAccounts((entry) => entry);
     const providerName = useProviders((entry) => entry.providers.find((provider) => provider.kind === kind)?.name) ?? kind ?? '';
-    return useMemo(() => newAccountChoiceOf(row, kind, providerName), [row, kind, providerName]);
+    return newAccountChoiceOf(row, kind, providerName);
 }

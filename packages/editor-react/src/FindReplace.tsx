@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@adecore/ui';
 import { formatNumber } from '@adecore/ui/format';
@@ -12,7 +12,7 @@ export function FindReplace({ editor, className, onClose }: { editor: Editor; cl
     const [preserveCase, setPreserveCase] = useState(false);
     const [state, setState] = useState<EditorFindState>({ count: 0, current: null });
     const root = useRef<HTMLDivElement>(null);
-    const compiled = useMemo(() => compileFind(query), [query]);
+    const compiled = compileFind(query);
     useEffect(() => editor.onFind(setState), [editor]);
     useEffect(() => {
         editor.find(compiled.kind === 'pattern' ? query : null);

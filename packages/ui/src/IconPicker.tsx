@@ -1,4 +1,4 @@
-import { useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type Ref } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type Ref } from 'react';
 import clsx from 'clsx';
 import { Ban, Search, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -74,8 +74,8 @@ export function IconPicker({
     const [focused, setFocused] = useState<string | null>(null);
     const headed = isGrouped(icons);
     const framed = searchable || rows !== undefined;
-    const sections = useMemo(() => sectionsOf(icons), [icons]);
-    const shown = useMemo(() => filterSections(sections, query, keywords), [sections, query, keywords]);
+    const sections = sectionsOf(icons);
+    const shown = filterSections(sections, query, keywords);
     const tabStop = tabStopOf(
         shown.flatMap((section) => section.icons.map(([name]) => name)),
         focused,

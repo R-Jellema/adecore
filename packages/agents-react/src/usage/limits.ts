@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import type { UsageLimitsSnapshot } from '@adecore/agent-contracts';
 import { useChatScope, type ChatScope } from '../scope';
 import { useProviderAccountsStore } from '../state/provider-accounts';
@@ -67,5 +67,5 @@ export function useUsageLimits(): UsageLimitsSnapshot | null {
 export function useLimitGroups(limits: UsageLimitsSnapshot | null): LimitGroup[] {
     const { id } = useChatScope();
     const accounts = useProviderAccountsStore((s) => s.byScope[id]?.accounts ?? null);
-    return useMemo(() => (limits === null ? [] : limitGroups(limits, accounts)), [limits, accounts]);
+    return limits === null ? [] : limitGroups(limits, accounts);
 }

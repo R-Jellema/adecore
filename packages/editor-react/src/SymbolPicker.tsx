@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { AtSign, Hash } from 'lucide-react';
@@ -51,7 +51,7 @@ export function SymbolPicker({ language, view }: { language: EditorLanguage; vie
     const filterText = mode.mode === 'symbol' ? mode.text : '';
     const searchText = mode.mode === 'workspace' ? mode.text : '';
 
-    const groups = useMemo(() => groupEntries(filterEntries(view.entries, filterText)), [view.entries, filterText]);
+    const groups = groupEntries(filterEntries(view.entries, filterText));
     const flat: SymbolEntry[] = groups.flatMap((group) => group.entries);
     const places = mode.mode === 'workspace' && found.text === mode.text ? found.entries : [];
     const count = mode.mode === 'workspace' ? places.length : mode.mode === 'line' ? (mode.line === null ? 0 : 1) : flat.length;

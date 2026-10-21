@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 
 function cut(element: HTMLElement): boolean {
     return element.scrollWidth > element.clientWidth + 1;
@@ -11,23 +11,20 @@ function cut(element: HTMLElement): boolean {
  */
 export function useTruncated<T extends HTMLElement>(within = false): [(element: T | null) => (() => void) | undefined, boolean] {
     const [truncated, setTruncated] = useState(false);
-    const measure = useCallback(
-        (element: T | null) => {
-            if (element === null || typeof ResizeObserver === 'undefined') {
-                return undefined;
-            }
-            const check = () => setTruncated(within ? [...element.querySelectorAll<HTMLElement>('.truncate')].some(cut) : cut(element));
-            check();
-            const resize = new ResizeObserver(check);
-            resize.observe(element);
-            const text = new MutationObserver(check);
-            text.observe(element, { characterData: true, childList: true, subtree: true });
-            return () => {
-                resize.disconnect();
-                text.disconnect();
-            };
-        },
-        [within]
-    );
+    const measure = (element: T | null) => {
+        if (element === null || typeof ResizeObserver === 'undefined') {
+            return undefined;
+        }
+        const check = () => setTruncated(within ? [...element.querySelectorAll<HTMLElement>('.truncate')].some(cut) : cut(element));
+        check();
+        const resize = new ResizeObserver(check);
+        resize.observe(element);
+        const text = new MutationObserver(check);
+        text.observe(element, { characterData: true, childList: true, subtree: true });
+        return () => {
+            resize.disconnect();
+            text.disconnect();
+        };
+    };
     return [measure, truncated];
 }

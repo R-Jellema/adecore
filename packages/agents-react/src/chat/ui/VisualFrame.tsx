@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import { visualThemeFragment, type ChatVisual, type VisualAppearance, type VisualTheme } from '@adecore/agent-contracts/visual';
@@ -44,13 +44,10 @@ export function VisualFrame({ chatId, visual, fill = false, className }: VisualF
     const controllerRef = useRef<VisualViewportController | null>(null);
     const [viewportReady, setViewportReady] = useState(false);
     const [measure, width] = useMeasuredWidth();
-    const setBox = useCallback(
-        (node: HTMLDivElement | null) => {
-            boxRef.current = node;
-            measure(node);
-        },
-        [measure]
-    );
+    const setBox = (node: HTMLDivElement | null) => {
+        boxRef.current = node;
+        measure(node);
+    };
     const theme = useVisualTheme(boxRef);
     const widthRef = useRef(width);
     const [reported, setReported] = useState<number | null>(null);

@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import type { ChatInfo } from '@adecore/agent-contracts';
 import { forkIdsAfter, forkedTurnIds } from './logic/fork';
 import { useChatScope } from '../scope';
@@ -40,15 +39,15 @@ function splitIds(joined: string): string[] {
 /* The turns of this chat a fork went on after, for the thread to put a line under. */
 export function useForkedTurns(chatId: string): ReadonlySet<string> {
     const { owns } = useChatScope();
-    const select = useMemo(() => joinedForks(owns, (infos) => forkedTurnIds(infos, chatId)), [owns, chatId]);
+    const select = joinedForks(owns, (infos) => forkedTurnIds(infos, chatId));
     const joined = useChats(select);
-    return useMemo(() => new Set(splitIds(joined)), [joined]);
+    return new Set(splitIds(joined));
 }
 
 /* The forks that went on after this turn of this chat. */
 export function useForkIdsAfter(chatId: string, turnId: string): string[] {
     const { owns } = useChatScope();
-    const select = useMemo(() => joinedForks(owns, (infos) => forkIdsAfter(infos, chatId, turnId)), [owns, chatId, turnId]);
+    const select = joinedForks(owns, (infos) => forkIdsAfter(infos, chatId, turnId));
     const joined = useChats(select);
-    return useMemo(() => splitIds(joined), [joined]);
+    return splitIds(joined);
 }

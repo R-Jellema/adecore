@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Bot, LoaderCircle } from 'lucide-react';
 import { deriveTimelineRows } from '../logic/timeline';
@@ -34,8 +34,8 @@ export function SubagentTimeline({ chatId, toolUseId }: { chatId: string; toolUs
     const scope = useChatScope();
     const { commandLooks } = useChatHost();
     const connected = useSyncExternalStore(
-        useCallback((changed) => scope.transport.subscribeStatus(changed), [scope]),
-        useCallback(() => scope.transport.status === 'open', [scope]),
+        (changed) => scope.transport.subscribeStatus(changed),
+        () => scope.transport.status === 'open',
         () => false
     );
     const { trail, show } = useSubagentTrail(chatId);
@@ -46,9 +46,9 @@ export function SubagentTimeline({ chatId, toolUseId }: { chatId: string; toolUs
     const threadRef = useRef<HTMLDivElement>(null);
     const [target, setTarget] = useState<TimelineTarget>(EMPTY_TARGET);
     const followRef = useRef(true);
-    const stopFollowing = useCallback(() => {
+    const stopFollowing = () => {
         followRef.current = false;
-    }, []);
+    };
     const groups = useToggleSet(stopFollowing);
     const subagents = useToggleSet(stopFollowing);
     // The row being read when an earlier page was asked for, so it stays where it was once that page is in.
@@ -72,17 +72,13 @@ export function SubagentTimeline({ chatId, toolUseId }: { chatId: string; toolUs
         }
     }, [state.unsupported, scope]);
 
-    const rows = useMemo(
-        () =>
-            deriveTimelineRows(state.items, {
-                expandedGroups: groups.ids,
-                expandedTurns: NO_TURNS,
-                expandedSubagents: subagents.ids,
-                activeTurnId: null,
-                commandLooks
-            }),
-        [state.items, groups.ids, subagents.ids, commandLooks]
-    );
+    const rows = deriveTimelineRows(state.items, {
+        expandedGroups: groups.ids,
+        expandedTurns: NO_TURNS,
+        expandedSubagents: subagents.ids,
+        activeTurnId: null,
+        commandLooks
+    });
 
     useLayoutEffect(() => {
         const element = scrollRef.current;

@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { useUsage } from '../state/usage';
 import { moneyFormat } from './format';
 
@@ -6,5 +5,5 @@ import { moneyFormat } from './format';
 export function useMoney(): (usd: number) => string {
     const currency = useUsage((s) => s.currency);
     const rate = useUsage((s) => s.summary?.rate ?? null);
-    return useMemo(() => moneyFormat(currency, rate), [currency, rate]);
+    return moneyFormat(currency, rate);
 }

@@ -1,4 +1,4 @@
-import { useMemo, useRef, type KeyboardEvent, type PointerEvent, type Ref } from 'react';
+import { useRef, type KeyboardEvent, type PointerEvent, type Ref } from 'react';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { formatClockDuration } from './format/duration.ts';
@@ -80,12 +80,12 @@ export function Waveform({
 }: WaveformProps) {
     const { t } = useTranslation('ui');
     const [measure, width] = useMeasuredWidth();
-    const rootRef = useMemo(() => mergeRefs(ref, measure), [ref, measure]);
+    const rootRef = mergeRefs(ref, measure);
     const dragged = useRef(0);
     const [from, to] = range ?? [0, duration];
     const span = to - from;
     const count = Math.floor(width / BAR_PITCH);
-    const bars = useMemo(() => barsOf(levels, duration, from, to, count), [levels, duration, from, to, count]);
+    const bars = barsOf(levels, duration, from, to, count);
 
     const positionOf = (time: number): number => (span > 0 ? (time - from) / span : 0);
     const inView = (time: number): boolean => positionOf(time) >= 0 && positionOf(time) <= 1;

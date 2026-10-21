@@ -1,6 +1,5 @@
 import { LegacyDiffPool } from './LegacyDiffPool';
 import { useReviewSettled } from './review-settle';
-import { useMemo } from 'react';
 import clsx from 'clsx';
 import { FileDiff, PatchDiff } from '@pierre/diffs/react';
 import type { ChatFileChange } from '@adecore/agent-contracts';
@@ -48,26 +47,20 @@ export default function LegacyUnifiedDiff({ change, overflow = 'wrap', diffStyle
     useReviewSettled();
     const resolved = useHostCodeMode();
     const theme = useDiffTheme();
-    const patch = useMemo(() => asPatch(change), [change]);
+    const patch = asPatch(change);
     const oldText = contents?.old;
     const newText = contents?.new;
-    const full = useMemo(
-        () => (patch === null || oldText === undefined || newText === undefined ? null : fullFileDiff(patch, change.path, { old: oldText, new: newText })),
-        [patch, change.path, oldText, newText]
-    );
+    const full = patch === null || oldText === undefined || newText === undefined ? null : fullFileDiff(patch, change.path, { old: oldText, new: newText });
     const unfolds = full !== null;
-    const options = useMemo(
-        () => ({
-            theme,
-            themeType: resolved,
-            disableFileHeader: true,
-            diffStyle,
-            overflow,
-            hunkSeparators: unfolds ? ('line-info' as const) : ('simple' as const),
-            unsafeCSS: fill ? FILL_CSS : undefined
-        }),
-        [diffStyle, overflow, theme, resolved, fill, unfolds]
-    );
+    const options = {
+        theme,
+        themeType: resolved,
+        disableFileHeader: true,
+        diffStyle,
+        overflow,
+        hunkSeparators: unfolds ? ('line-info' as const) : ('simple' as const),
+        unsafeCSS: fill ? FILL_CSS : undefined
+    };
     if (patch === null) {
         return (
             <pre className="max-h-64 overflow-auto px-3 py-2 font-mono text-code select-text" style={fill ? undefined : { maxHeight }}>

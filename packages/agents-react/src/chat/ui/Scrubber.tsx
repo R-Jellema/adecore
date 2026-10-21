@@ -104,9 +104,9 @@ export const Scrubber = memo(function Scrubber({
         return () => observer.disconnect();
     }, [strip]);
 
-    const kinds = useMemo(() => ticks.map((tick) => tick.kind), [ticks]);
-    const marked = useMemo(() => ticks.map((tick) => tick.bookmark !== null), [ticks]);
-    const layout = useMemo(() => layoutTicks(kinds, height, marked, found), [kinds, height, marked, found]);
+    const kinds = ticks.map((tick) => tick.kind);
+    const marked = ticks.map((tick) => tick.bookmark !== null);
+    const layout = layoutTicks(kinds, height, marked, found);
     const currentSlot = foundCurrent === null ? null : slotOf(layout, foundCurrent);
     const inView = firstInView === null || lastInView === null ? null : { first: firstInView, last: lastInView };
     const hoveredTick = hovered === null ? null : (ticks[hovered] ?? null);
