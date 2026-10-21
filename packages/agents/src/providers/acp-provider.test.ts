@@ -251,7 +251,7 @@ test('writes the effort names a store kept in lowercase with a capital, and keep
     const effort = {
         id: 'effort',
         label: 'Reasoning',
-        type: 'select',
+        type: 'select' as const,
         defaultChoice: 'max',
         choices: [
             { id: 'low', label: 'low' },
