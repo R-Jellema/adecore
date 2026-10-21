@@ -147,8 +147,14 @@ export const ProviderInstallSchema = z.object({
     // A system without a command is one the CLI does not install on in one line.
     commands: z.object({ darwin: z.string().optional(), linux: z.string().optional(), win32: z.string().optional() }),
     guideUrl: z.string().optional(),
-    // In the order the CLI prefers them.
-    signIn: z.array(ProviderSignInSchema)
+    // In the order the CLI prefers them. A way a newer host names that this version does not know is left out,
+    // so it never fails the whole provider.
+    signIn: z.array(z.unknown()).transform((ways) =>
+        ways.flatMap((way) => {
+            const parsed = ProviderSignInSchema.safeParse(way);
+            return parsed.success ? [parsed.data] : [];
+        })
+    )
 });
 export type ProviderInstall = z.infer<typeof ProviderInstallSchema>;
 
