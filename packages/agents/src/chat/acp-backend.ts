@@ -16,6 +16,7 @@ import {
     sessionIdOf,
     type AcpAgentCapabilities,
     type AcpModeMap,
+    type AcpPermissionRequest,
     type AcpSessionInfo,
     type AcpTurnUsage
 } from './acp-protocol.ts';
@@ -53,6 +54,9 @@ export interface AcpAgentSpec {
     onSession?(info: AcpSessionInfo): void;
     // The tokens of every turn whose `session/prompt` response reports them, for a host that keeps a usage log.
     onUsage?(usage: AcpUsageReport): void;
+    // A permission request the host answers itself, in any runtime mode: true allows it once without asking the
+    // person, for a call the host already guards. A throw counts as false.
+    autoAllow?(request: AcpPermissionRequest): boolean;
 }
 
 /* One turn's usage, with the session, folder and model it ran in. */
@@ -452,7 +456,7 @@ export class AcpBackend implements ChatBackend {
             }
             return;
         }
-        if (autoAllows(this.launch.runtimeMode, permission.kind)) {
+        if (autoAllows(this.launch.runtimeMode, permission.kind) || this.hostAllows(permission.request)) {
             this.emitAll(permission.events.filter((event) => event.type !== 'approval.requested'));
             const answer = this.protocol.answer(permission.requestId, 'allow');
             if (answer) {
@@ -461,6 +465,14 @@ export class AcpBackend implements ChatBackend {
             return;
         }
         this.emitAll(permission.events);
+    }
+
+    private hostAllows(request: AcpPermissionRequest): boolean {
+        try {
+            return this.spec.autoAllow?.(request) === true;
+        } catch {
+            return false;
+        }
     }
 
     private handleExit(transport: JsonRpcTransport, exitCode: number | null, stderr: string | null): void {

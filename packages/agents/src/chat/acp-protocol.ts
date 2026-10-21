@@ -482,11 +482,22 @@ function toolOutput(tool: ToolState): string | null {
     return null;
 }
 
+/* What an agent asks permission for, in the plain form a host's `autoAllow` judges it by. */
+export interface AcpPermissionRequest {
+    // The ACP tool kind (`execute`, `edit`, `fetch`, ...), or null when the agent names none.
+    kind: string | null;
+    title: string | null;
+    // Every text the call carries that may be what it runs: the command in its raw input and each text in its
+    // content. The agent decides which one it runs, so a host allows the call only when every one passes.
+    commands: string[];
+}
+
 /* A permission request as the backend acts on it: the event it raises, and the tool kind a runtime mode may answer it by. */
 export interface AcpPermission {
     requestId: string;
     rpcId: number | string;
     kind: string | null;
+    request: AcpPermissionRequest;
     events: BackendEvent[];
 }
 
@@ -604,7 +615,9 @@ export class AcpProtocol {
             description: tool.title === '' ? null : tool.title,
             canAllowAlways: options.some((option) => option.kind === 'allow_always')
         });
-        return { requestId, rpcId, kind: tool.kind, events };
+        const command = rawField(tool.rawInput, 'command', 'cmd');
+        const asked = { kind: tool.kind, title: tool.title === '' ? null : tool.title, commands: [...(command === null ? [] : [command]), ...tool.text] };
+        return { requestId, rpcId, kind: tool.kind, request: asked, events };
     }
 
     /*

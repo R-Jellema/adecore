@@ -36,6 +36,7 @@ Put it in the `ProviderRegistry` beside the others. A `kind` is any name the hos
 | `onSession(info)` | What each session offers (`AcpSessionInfo`), for a host that fills its catalog from the agent. |
 | `onUsage(report)` | The tokens of every turn whose response reports them (`AcpUsageReport`), with the session, folder and model it ran in. |
 | `usageLog` | A folder the provider logs every such turn to, for the usage page. See [Usage](#usage). |
+| `autoAllow(request)` | Answers a permission request without asking the person, in any runtime mode. See [Calls the host guards](#calls-the-host-guards). |
 | `accountProbe` | `false` leaves the provider without `askAccount`, so the host's own reader asks about its accounts. |
 | `adoptModels` | `false` keeps `catalog` as the host built it instead of taking the models a session reports. |
 | `capabilities` | Over `ACP_CAPABILITIES`, for an agent that reports its cost or context window. |
@@ -67,6 +68,19 @@ The agent then asks with `session/request_permission` for what its mode does not
 | `full-access` | Everything |
 
 Everything else becomes an approval in the thread.
+
+## Calls the host guards
+
+A host that already checks some calls itself, such as its own command line tool, passes `autoAllow`. The backend calls it for every permission request the runtime mode does not answer, in every runtime mode, with an `AcpPermissionRequest`: the tool `kind`, the `title`, and in `commands` every text that may be what the call runs, the `command` of its raw input and each text in its content. True answers the request with the agent's allow once option, never allow always; the call shows in the thread as any other, and no approval appears. False, or a throw, leaves it to the person.
+
+`isOnlyCommands(command, allowed)` from `@adecore/agents/providers` answers whether a command line is only simple commands, joined by `&&`, `||`, `;` or newlines, each of which starts with a word in `allowed`. Quotes and backslash escapes are read as a shell reads them. Anything it cannot prove simple answers false: a pipe, a redirect or here-doc, command, process or variable substitution, a subshell or group, a background `&`, an unquoted glob, brace, tilde, comment or `!`, an unbalanced quote, and an empty command between separators.
+
+```ts
+const spec: AcpProviderSpec = {
+    // ...
+    autoAllow: (request) => request.kind === 'execute' && request.commands.length > 0 && request.commands.every((command) => isOnlyCommands(command, ['my-tool', 'echo']))
+};
+```
 
 ## Turns, approvals and cancels
 
