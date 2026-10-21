@@ -1,4 +1,4 @@
-import { describe, expect, jest, test } from 'bun:test';
+import { describe, expect, jest, spyOn, test } from 'bun:test';
 import type { LineTokenizer } from './types.ts';
 import { setup, settle } from './engine.fixture.test.ts';
 
@@ -116,8 +116,14 @@ describe('prepared line tokens', () => {
         editor.setText('old\nnewer');
         await settle();
         expect(tokenizeLine).not.toHaveBeenCalled();
-        editor.setLineTokens(null);
-        await settle();
+        // A stopped clock, so a slow runner cannot end the first paint's slice before both lines are colored.
+        const clock = spyOn(performance, 'now').mockReturnValue(0);
+        try {
+            editor.setLineTokens(null);
+            await settle();
+        } finally {
+            clock.mockRestore();
+        }
         expect(tokenizeLine).toHaveBeenCalled();
         expect([...host.querySelectorAll('.se-run span')].map((span) => span.textContent)).toEqual(['old', 'newer']);
         editor.dispose();

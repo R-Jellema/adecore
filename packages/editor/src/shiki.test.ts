@@ -4,6 +4,9 @@ import { loadGrammar, shikiTokenizers } from './shiki.ts';
 import { DocumentModel } from '@adecore/editor-core';
 import { TokenCache } from './tokens.ts';
 
+// A stopped clock, so a slow runner never ends a slice that a test expects to finish.
+const stopped = (): number => 0;
+
 const THEME = 'github-dark';
 /* The theme's plain text color; a token in it was not colored by a grammar. */
 const PLAIN = '#E1E4E8';
@@ -203,16 +206,16 @@ test('Markdown states stay valid after a rebuild, partial recolor and edits far 
             const at = model.getLine(line).end;
             model.applyEdits([{ from: at, to: at, text }]);
         };
-        cache.advance(1000, 1000);
+        cache.advance(1000, 1000, stopped);
         insert(2, 'rust');
         expect(await tokenizer.prepare?.(model.getText())).toBe(true);
         expect(cache.revalidate()).toBe(true);
-        cache.advance(40, 1000);
+        cache.advance(40, 1000, stopped);
         insert(3, 'y');
-        cache.advance(40, 1000);
+        cache.advance(40, 1000, stopped);
         expect(cache.covers(365)).toBe(false);
         insert(300, '!');
-        expect(() => cache.advance(1000, 1000)).not.toThrow();
+        expect(() => cache.advance(1000, 1000, stopped)).not.toThrow();
         expect(cache.covers(365)).toBe(true);
         const reference = tokenizer.tokenizeLine(model.getLine(0).text, null);
         expect(cache.tokensOf(0)).toEqual(reference.tokens);

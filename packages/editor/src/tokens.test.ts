@@ -3,6 +3,9 @@ import { DocumentModel } from '@adecore/editor-core';
 import { TokenCache } from './tokens.ts';
 import type { LineTokenizer } from './types.ts';
 
+// A stopped clock, so a slow runner never ends a slice that a test expects to finish.
+const stopped = (): number => 0;
+
 /* A grammar with one block comment: a line is colored by whether it starts inside it, and the state is that flag. */
 function commentTokenizer(counter: { lines: number }): LineTokenizer {
     return {
@@ -46,11 +49,11 @@ const colors = (cache: TokenCache, count: number): (string | undefined)[] => Arr
 describe('TokenCache', () => {
     test('colors lines in order from the top, a slice at a time', () => {
         const { cache, counter } = setup('a\nb\nc\nd\ne');
-        expect(cache.advance(1, 1000)).toEqual({ from: 0, to: 1 });
+        expect(cache.advance(1, 1000, stopped)).toEqual({ from: 0, to: 1 });
         expect(cache.colored).toBe(2);
         expect(cache.tokensOf(2)).toBeNull();
         expect(counter.lines).toBe(2);
-        cache.advance(10, 1000);
+        cache.advance(10, 1000, stopped);
         expect(cache.colored).toBe(5);
         expect(cache.covers(4)).toBe(true);
     });
@@ -64,7 +67,7 @@ describe('TokenCache', () => {
 
     test('carries the grammar state from one line to the next', () => {
         const { cache } = setup('x\n/* open\nstill\nclosed */\ny');
-        cache.advance(10, 1000);
+        cache.advance(10, 1000, stopped);
         expect(colors(cache, 5)).toEqual(['code', 'comment', 'comment', 'comment', 'code']);
     });
 
@@ -80,41 +83,41 @@ describe('TokenCache', () => {
                 return answer;
             }
         });
-        cache.advance(10, 1000);
+        cache.advance(10, 1000, stopped);
         counter.lines = 0;
         stale = true;
         edit(6, 7, 'dd');
-        cache.advance(10, 1000);
+        cache.advance(10, 1000, stopped);
         expect(counter.lines).toBe(4);
     });
 
     test('recolors from the changed line and stops where the state is what it was', () => {
         const { cache, counter, edit } = setup('a\nb\nc\nd\ne\nf');
-        cache.advance(10, 1000);
+        cache.advance(10, 1000, stopped);
         counter.lines = 0;
         edit(4, 5, 'cc');
         expect(cache.colored).toBe(2);
-        cache.advance(10, 1000);
+        cache.advance(10, 1000, stopped);
         expect(counter.lines).toBe(1);
         expect(cache.colored).toBe(6);
     });
 
     test('recolors every line below an edit that opens a comment, and again when it closes', () => {
         const { cache, counter, edit } = setup('a\nb\nc\nd');
-        cache.advance(10, 1000);
+        cache.advance(10, 1000, stopped);
         counter.lines = 0;
         edit(4, 5, '/*');
-        cache.advance(10, 1000);
+        cache.advance(10, 1000, stopped);
         expect(colors(cache, 4)).toEqual(['code', 'code', 'comment', 'comment']);
         expect(counter.lines).toBe(2);
         edit(4, 6, '');
-        cache.advance(10, 1000);
+        cache.advance(10, 1000, stopped);
         expect(colors(cache, 4)).toEqual(['code', 'code', 'code', 'code']);
     });
 
     test('keeps the old colors of the lines below an edit, in their new places, until it reaches them', () => {
         const { cache, edit } = setup('a\n/* c\nd */\ne');
-        cache.advance(10, 1000);
+        cache.advance(10, 1000, stopped);
         edit(0, 0, 'x\n');
         expect(cache.colored).toBe(0);
         expect(colors(cache, 5).slice(2)).toEqual(['comment', 'comment', 'code']);
@@ -122,10 +125,10 @@ describe('TokenCache', () => {
 
     test('shifts the colors of the lines below when a line is removed', () => {
         const { cache, counter, edit } = setup('a\nb\nc\nd\ne');
-        cache.advance(10, 1000);
+        cache.advance(10, 1000, stopped);
         counter.lines = 0;
         edit(2, 4, '');
-        cache.advance(10, 1000);
+        cache.advance(10, 1000, stopped);
         expect(counter.lines).toBe(1);
         expect(cache.colored).toBe(4);
     });
@@ -134,7 +137,7 @@ describe('TokenCache', () => {
     test('takes hundreds of thousands of lines pasted into the middle of a colored document', () => {
         for (const count of [300_000, 1_000_000]) {
             const { model, cache, edit } = setup('a\n/* c\nd */\ne');
-            cache.advance(10, 1000);
+            cache.advance(10, 1000, stopped);
             expect(() => edit(2, 2, 'x\n'.repeat(count))).not.toThrow();
             expect(model.getLineCount()).toBe(count + 4);
             expect(cache.tokensOf(count + 1)).toBeNull();
@@ -144,18 +147,18 @@ describe('TokenCache', () => {
 
     test('starts over for a new tokenizer, and has no colors without one', () => {
         const { cache, counter } = setup('a\nb');
-        cache.advance(10, 1000);
+        cache.advance(10, 1000, stopped);
         cache.setTokenizer(commentTokenizer(counter));
         expect(cache.tokensOf(0)).toBeNull();
         expect(cache.colored).toBe(0);
         cache.setTokenizer(null);
-        expect(cache.advance(10, 1000)).toBeNull();
+        expect(cache.advance(10, 1000, stopped)).toBeNull();
         expect(cache.ready).toBe(false);
     });
 
     test('leaves a line too long to read uncolored', () => {
         const { cache, counter } = setup('x'.repeat(30000));
-        cache.advance(0, 1000);
+        cache.advance(0, 1000, stopped);
         expect(counter.lines).toBe(0);
         expect(cache.tokensOf(0)).toEqual([{ length: 30000, color: '', fontStyle: 0 }]);
     });
@@ -172,7 +175,7 @@ test('revalidation keeps old colors and recolors all states from the top', () =>
             return changed;
         }
     });
-    cache.advance(10, 1000);
+    cache.advance(10, 1000, stopped);
     const previous = cache.tokensOf(1);
     expect(cache.revalidate()).toBe(false);
     stale = true;
@@ -181,7 +184,7 @@ test('revalidation keeps old colors and recolors all states from the top', () =>
     expect(cache.tokensOf(1)).toBe(previous);
     expect(cache.revalidate()).toBe(false);
     counter.lines = 0;
-    cache.advance(10, 1000);
+    cache.advance(10, 1000, stopped);
     expect(counter.lines).toBe(3);
 });
 
@@ -213,19 +216,19 @@ describe('grammar generations across partial recoloring', () => {
                     cache.edited(snapshot.changes, (offset) => model.positionAt(offset).line);
                 }
             });
-            cache.advance(1000, 1000);
+            cache.advance(1000, 1000, stopped);
             generation++;
             changed = true;
             expect(cache.revalidate()).toBe(true);
             const oldColors = cache.tokensOf(300);
-            cache.advance(40, 1000);
+            cache.advance(40, 1000, stopped);
             model.applyEdits([{ from: model.getLine(3).start, to: model.getLine(3).start, text: insertion || 'x' }]);
-            cache.advance(40, 1000);
+            cache.advance(40, 1000, stopped);
             expect(cache.covers(365)).toBe(false);
             expect(cache.tokensOf(300)?.[0]?.color).toBe(oldColors?.[0]?.color);
             const target = model.getLine(300);
             model.applyEdits([{ from: target.start, to: target.start, text: 'far-' }]);
-            expect(() => cache.advance(1000, 1000)).not.toThrow();
+            expect(() => cache.advance(1000, 1000, stopped)).not.toThrow();
             expect(seen.get(model.getLine(300).text)).toBe(1);
             expect(cache.covers(model.getLineCount() - 1)).toBe(true);
             subscription.dispose();
