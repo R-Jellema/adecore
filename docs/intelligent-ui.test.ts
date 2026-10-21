@@ -2,10 +2,15 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Glob } from 'bun';
-import { describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, setSystemTime, test } from 'bun:test';
+
 // The docs workspace does not depend on the package, so the test reads its source and its zod directly.
 import { z } from '../packages/intelligent-ui/node_modules/zod';
 import { compileUi, evaluateUiBlock, UiState, type UiNode } from '../packages/intelligent-ui/src/index.ts';
+
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 const HERE = fileURLToPath(new URL('.', import.meta.url));
 
