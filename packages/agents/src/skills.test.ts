@@ -2,7 +2,7 @@ import { mkdtemp, mkdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
-import { discoverSkills, parseFrontmatter, pluginSkillRoots, SkillIndex } from './skills.ts';
+import { discoverSkills, parseFrontmatter, pluginSkillRoots, scanSkillRoots, SkillIndex } from './skills.ts';
 
 let home = '';
 let project = '';
@@ -87,6 +87,82 @@ describe('discoverSkills', () => {
 
     test('a folder with nothing in it answers nothing', async () => {
         expect(await discoverSkills('claude', join(home, 'empty'), { home, claudeConfigDir: join(home, 'nowhere') })).toEqual([]);
+    });
+});
+
+describe('a bounded scan', () => {
+    let tree = '';
+    const skill = (name: string): string => `---\nname: ${name}\ndescription: ${name}.\n---\n`;
+    const names = (skills: Array<{ name: string }>): string[] => skills.map((found) => found.name);
+
+    beforeAll(async () => {
+        tree = await mkdtemp(join(tmpdir(), 'adecore-skill-scan-'));
+    });
+
+    afterAll(async () => {
+        await rm(tree, { recursive: true, force: true });
+    });
+
+    test('never searches a dependency or build folder, and a hidden one not at all', async () => {
+        const root = join(tree, 'deps');
+        await writeSkill(join(root, 'tools'), 'helper', skill('helper'));
+        await writeSkill(join(root, 'tools', 'node_modules', 'package'), 'bundled', skill('bundled'));
+        await writeSkill(join(root, 'dist', 'copy'), 'copied', skill('copied'));
+        await writeSkill(join(root, '.cache'), 'hidden', skill('hidden'));
+        // A skill that is itself named like a build folder still counts.
+        await writeSkill(root, 'build', skill('build'));
+        expect(names(await scanSkillRoots([{ dir: root, source: 'project', depth: 5 }]))).toEqual(['build', 'helper']);
+    });
+
+    test('reads a root that a link leads to once, under the root that came first', async () => {
+        const root = join(tree, 'shared');
+        await writeSkill(root, 'review', skill('review'));
+        await symlink(root, join(tree, 'shared-link'));
+        const skills = await scanSkillRoots([
+            { dir: root, source: 'user' },
+            { dir: join(tree, 'shared-link'), source: 'plugin', prefix: 'linked' }
+        ]);
+        expect(skills).toEqual([{ name: 'review', description: 'review.', source: 'user' }]);
+    });
+
+    test('ends a link back up the tree, which costs none of the folders a skill further on needs', async () => {
+        const root = join(tree, 'cycle');
+        await mkdir(join(root, 'a-loop'), { recursive: true });
+        await symlink(root, join(root, 'a-loop', 'back'));
+        await writeSkill(join(root, 'b', 'c', 'd'), 'far', skill('far'));
+        expect(names(await scanSkillRoots([{ dir: root, source: 'user', depth: 5 }], { directories: 5, skills: 10 }))).toEqual(['far']);
+    });
+
+    test('keeps to the depth, and a deep tree hides none of the skills nearer the root', async () => {
+        const root = join(tree, 'deep');
+        let deep = join(root, 'a-tree');
+        for (let level = 0; level < 8; level++) {
+            await mkdir(join(deep, 'side'), { recursive: true });
+            deep = join(deep, 'down');
+        }
+        await writeSkill(deep, 'too-deep', skill('too-deep'));
+        await writeSkill(join(root, 'z-group'), 'near', skill('near'));
+        expect(names(await scanSkillRoots([{ dir: root, source: 'user', depth: 5 }]))).toEqual(['near']);
+        // Nearest first: the three folders it may list reach the skill before the tree beside it.
+        expect(names(await scanSkillRoots([{ dir: root, source: 'user', depth: 5 }], { directories: 3, skills: 10 }))).toEqual(['near']);
+        // A root without a depth only looks right under it.
+        expect(await scanSkillRoots([{ dir: root, source: 'user' }])).toEqual([]);
+    });
+
+    test('answers at most the skills its limit allows, each with a description of bounded length', async () => {
+        const root = join(tree, 'many');
+        for (const name of ['one', 'two', 'three']) {
+            await writeSkill(root, name, `---\nname: ${name}\ndescription: ${'x'.repeat(5000)}\n---\n`);
+        }
+        const skills = await scanSkillRoots([{ dir: root, source: 'user' }], { directories: 10, skills: 2 });
+        expect(skills).toHaveLength(2);
+        expect(skills.every((found) => found.description.length === 1024)).toBe(true);
+    });
+
+    test('Codex finds a skill grouped in a folder of its own', async () => {
+        const codexHome = join(tree, 'codex-home');
+        await writeSkill(join(codexHome, '.codex', 'skills', 'team'), 'grouped', skill('grouped'));
+        expect(names(await discoverSkills('codex', join(tree, 'nowhere'), { home: codexHome }))).toEqual(['grouped']);
     });
 });
 

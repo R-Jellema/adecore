@@ -1,5 +1,5 @@
 import { existsSync, type Dirent } from 'node:fs';
-import { readdir, readFile } from 'node:fs/promises';
+import { open, readdir, readFile, realpath, stat } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { dirname, join, parse } from 'node:path';
 import type { AgentKind, ChatSkill, ChatSkillSource } from '@adecore/agent-contracts';
@@ -10,7 +10,45 @@ export interface SkillRoot {
     source: ChatSkillSource;
     // A plugin names its skills `<plugin>:<skill>`, the way the CLI's init frame does.
     prefix?: string;
+    // How many folders below `dir` a skill folder may sit; absent is one, right under it.
+    depth?: number;
 }
+
+/* How far one scan reaches, so a home or a project of any size answers quickly. */
+export interface SkillScanLimits {
+    // Folders listed under one root, nearest first, so a deep tree never costs the skills near the top.
+    directories: number;
+    skills: number;
+}
+
+const SCAN_LIMITS: SkillScanLimits = { directories: 2000, skills: 1000 };
+
+// Codex finds skills up to five folders below a root (`MAX_SCAN_DEPTH` of 6 in its skill loader counts the root itself).
+const CODEX_SKILL_DEPTH = 5;
+
+// Folders a package manager or a build fills. One may hold a SKILL.md of its own, but nothing under it is listed.
+const DEPENDENCY_FOLDERS = new Set([
+    'node_modules',
+    'bower_components',
+    'jspm_packages',
+    'vendor',
+    'Pods',
+    'Carthage',
+    'DerivedData',
+    '__pycache__',
+    'venv',
+    'site-packages',
+    'target',
+    'dist',
+    'build',
+    'out',
+    'coverage'
+]);
+
+// What a scan reads of a SKILL.md; the front matter sits at its top.
+const HEAD_BYTES = 64 * 1024;
+
+const MAX_DESCRIPTION = 1024;
 
 export interface SkillRootOptions {
     // The person's home directory; a test points it at a temporary tree.
@@ -118,9 +156,9 @@ export async function skillRootsFor(kind: AgentKind, cwd: string, options: Skill
     const home = options.home ?? homedir();
     if (kind === 'codex') {
         return [
-            { dir: join(home, '.agents', 'skills'), source: 'user' },
-            { dir: join(home, '.codex', 'skills'), source: 'user' },
-            ...projectDirs(cwd, home).map((dir): SkillRoot => ({ dir: join(dir, '.agents', 'skills'), source: 'project' }))
+            { dir: join(home, '.agents', 'skills'), source: 'user', depth: CODEX_SKILL_DEPTH },
+            { dir: join(home, '.codex', 'skills'), source: 'user', depth: CODEX_SKILL_DEPTH },
+            ...projectDirs(cwd, home).map((dir): SkillRoot => ({ dir: join(dir, '.agents', 'skills'), source: 'project', depth: CODEX_SKILL_DEPTH }))
         ];
     }
     const configDir = options.claudeConfigDir ?? join(home, '.claude');
@@ -131,37 +169,118 @@ export async function skillRootsFor(kind: AgentKind, cwd: string, options: Skill
     ];
 }
 
-async function readSkill(root: SkillRoot, folder: string): Promise<ChatSkill | null> {
-    let text: string;
+/* The top of a folder's SKILL.md, or null when it has none. */
+async function skillHead(folder: string): Promise<string | null> {
+    let handle;
     try {
-        text = await readFile(join(root.dir, folder, 'SKILL.md'), 'utf8');
+        handle = await open(join(folder, 'SKILL.md'), 'r');
     } catch {
         return null;
     }
+    try {
+        if (!(await handle.stat()).isFile()) {
+            return null;
+        }
+        const buffer = Buffer.alloc(HEAD_BYTES);
+        const { bytesRead } = await handle.read(buffer, 0, HEAD_BYTES, 0);
+        return buffer.subarray(0, bytesRead).toString('utf8');
+    } catch {
+        return null;
+    } finally {
+        await handle.close();
+    }
+}
+
+function skillOf(root: SkillRoot, folder: string, text: string): ChatSkill | null {
     const fields = parseFrontmatter(text);
     const own = fields.name && NAME.test(fields.name) ? fields.name : folder;
     const name = root.prefix ? `${root.prefix}:${own}` : own;
     if (!NAME.test(name)) {
         return null;
     }
-    return { name, description: fields.description ?? '', source: root.source };
+    return { name, description: (fields.description ?? '').slice(0, MAX_DESCRIPTION), source: root.source };
+}
+
+/* The folder a path leads to after every link, or null when it leads to no folder. */
+async function realFolder(path: string): Promise<string | null> {
+    try {
+        const real = await realpath(path);
+        return (await stat(real)).isDirectory() ? real : null;
+    } catch {
+        return null;
+    }
+}
+
+/*
+ * The skills under one root, nearest first, down to the root's depth. A folder with a SKILL.md is a skill and is not
+ * searched further. `visited` holds every folder already read by its real path, across roots, so a root or a skill two
+ * links lead to is read once and a link back up ends there.
+ */
+async function scanRoot(root: SkillRoot, visited: Set<string>, limits: SkillScanLimits): Promise<ChatSkill[]> {
+    const start = await realFolder(root.dir);
+    if (start === null || visited.has(start)) {
+        return [];
+    }
+    visited.add(start);
+    const depth = root.depth ?? 1;
+    const skills: ChatSkill[] = [];
+    let level = [root.dir];
+    let listed = 0;
+    for (let below = 1; below <= depth && level.length > 0; below++) {
+        const next: string[] = [];
+        for (const folder of level) {
+            if (listed >= limits.directories || skills.length >= limits.skills) {
+                return skills;
+            }
+            listed++;
+            let entries: Dirent[];
+            try {
+                entries = await readdir(folder, { withFileTypes: true });
+            } catch {
+                continue;
+            }
+            // A skill manager links each skill in from a shared folder, so a link counts as much as a folder.
+            const candidates = entries
+                .filter((entry) => (entry.isDirectory() || entry.isSymbolicLink()) && !entry.name.startsWith('.'))
+                .map((entry) => ({ name: entry.name, path: join(folder, entry.name) }))
+                .sort((a, b) => a.name.localeCompare(b.name));
+            const reals = await Promise.all(candidates.map((candidate) => realFolder(candidate.path)));
+            const fresh = candidates.filter((_, index) => {
+                const real = reals[index];
+                if (real === null || real === undefined || visited.has(real)) {
+                    return false;
+                }
+                visited.add(real);
+                return true;
+            });
+            const heads = await Promise.all(fresh.map((candidate) => skillHead(candidate.path)));
+            for (const [index, candidate] of fresh.entries()) {
+                const head = heads[index];
+                if (head !== null && head !== undefined) {
+                    const skill = skillOf(root, candidate.name, head);
+                    if (skill !== null && skills.length < limits.skills) {
+                        skills.push(skill);
+                    }
+                } else if (below < depth && !DEPENDENCY_FOLDERS.has(candidate.name)) {
+                    next.push(candidate.path);
+                }
+            }
+        }
+        level = next;
+    }
+    return skills;
 }
 
 /* Every skill under these roots, sorted by name; the first root that carries a name wins. */
-export async function scanSkillRoots(roots: SkillRoot[]): Promise<ChatSkill[]> {
+export async function scanSkillRoots(roots: SkillRoot[], limits: SkillScanLimits = SCAN_LIMITS): Promise<ChatSkill[]> {
     const found = new Map<string, ChatSkill>();
+    const visited = new Set<string>();
     for (const root of roots) {
-        let entries: Dirent[];
-        try {
-            entries = await readdir(root.dir, { withFileTypes: true });
-        } catch {
-            continue;
+        if (found.size >= limits.skills) {
+            break;
         }
-        // A skill manager links each skill in from a shared folder; a link to anything but a skill folder reads as no skill.
-        const folders = entries.filter((entry) => entry.isDirectory() || entry.isSymbolicLink());
-        const skills = await Promise.all(folders.map((entry) => readSkill(root, entry.name)));
-        for (const skill of skills) {
-            if (skill && !found.has(skill.name)) {
+        for (const skill of await scanRoot(root, visited, limits)) {
+            if (!found.has(skill.name) && found.size < limits.skills) {
                 found.set(skill.name, skill);
             }
         }
