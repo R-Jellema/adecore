@@ -1,0 +1,1050 @@
+{
+  "version": "GitHub Copilot CLI 1.0.101, `copilot --acp --stdio`",
+  "source": "Recorded from the real CLI on 2026-10-21 in an empty folder: initialize, session/new and one session/prompt asking for probe.txt, whose permission request was answered with reject_once. The command list is cut, the session id and the folder replaced; every other field is as the CLI sent it.",
+  "sessionId": "copilot-session-1",
+  "initialize": {
+    "protocolVersion": 1,
+    "agentCapabilities": {
+      "auth": {
+        "logout": {}
+      },
+      "loadSession": true,
+      "mcpCapabilities": {
+        "http": true,
+        "sse": true
+      },
+      "promptCapabilities": {
+        "image": true,
+        "audio": false,
+        "embeddedContext": true
+      },
+      "sessionCapabilities": {
+        "close": {},
+        "list": {}
+      }
+    },
+    "agentInfo": {
+      "name": "Copilot",
+      "title": "Copilot",
+      "version": "1.0.101"
+    },
+    "authMethods": [
+      {
+        "id": "copilot-login",
+        "name": "Log in with Copilot CLI",
+        "description": "Run `copilot login` in the terminal",
+        "_meta": {
+          "terminal-auth": {
+            "command": "/opt/homebrew/lib/node_modules/@github/copilot/node_modules/@github/copilot-darwin-arm64/copilot",
+            "args": [
+              "login"
+            ],
+            "label": "Copilot Login"
+          }
+        }
+      }
+    ]
+  },
+  "sessionNew": {
+    "models": {
+      "availableModels": [
+        {
+          "modelId": "auto",
+          "name": "Auto",
+          "description": "Let Copilot pick the best model"
+        },
+        {
+          "modelId": "claude-sonnet-4.6",
+          "name": "Claude Sonnet 4.6",
+          "description": "Claude Sonnet 4.6",
+          "_meta": {
+            "copilotUsage": "9x",
+            "copilotEnablement": "enabled"
+          }
+        },
+        {
+          "modelId": "claude-haiku-4.5",
+          "name": "Claude Haiku 4.5",
+          "description": "Claude Haiku 4.5",
+          "_meta": {
+            "copilotUsage": "0.33x",
+            "copilotEnablement": "enabled"
+          }
+        },
+        {
+          "modelId": "gpt-5.3-codex",
+          "name": "GPT-5.3-Codex",
+          "description": "GPT-5.3-Codex",
+          "_meta": {
+            "copilotUsage": "6x",
+            "copilotEnablement": "enabled"
+          }
+        },
+        {
+          "modelId": "mai-code-1.1-flash",
+          "name": "MAI-Code-1.1-Flash",
+          "description": "MAI-Code-1.1-Flash",
+          "_meta": {
+            "copilotUsage": "0.25x",
+            "copilotEnablement": "enabled"
+          }
+        }
+      ],
+      "currentModelId": "claude-sonnet-4.6"
+    },
+    "configOptions": [
+      {
+        "type": "select",
+        "id": "mode",
+        "name": "Mode",
+        "category": "mode",
+        "description": "Controls how Copilot responds: a conversational agent, planning multi-step work, or autonomous autopilot.",
+        "currentValue": "https://agentclientprotocol.com/protocol/session-modes#agent",
+        "options": [
+          {
+            "value": "https://agentclientprotocol.com/protocol/session-modes#agent",
+            "name": "Agent",
+            "description": "Default agent mode for conversational interactions"
+          },
+          {
+            "value": "https://agentclientprotocol.com/protocol/session-modes#plan",
+            "name": "Plan",
+            "description": "Plan mode for creating and executing multi-step plans"
+          },
+          {
+            "value": "https://agentclientprotocol.com/protocol/session-modes#autopilot",
+            "name": "Autopilot",
+            "description": "Autonomous mode that enables allow-all and runs until task completion without user interaction (experimental)"
+          }
+        ]
+      },
+      {
+        "type": "select",
+        "id": "model",
+        "name": "Model",
+        "category": "model",
+        "description": "The AI model Copilot uses to generate responses.",
+        "currentValue": "claude-sonnet-4.6",
+        "options": [
+          {
+            "value": "auto",
+            "name": "Auto",
+            "description": "Let Copilot pick the best model",
+            "_meta": null
+          },
+          {
+            "value": "claude-sonnet-4.6",
+            "name": "Claude Sonnet 4.6",
+            "description": "Claude Sonnet 4.6",
+            "_meta": {
+              "copilotUsage": "9x",
+              "copilotEnablement": "enabled"
+            }
+          },
+          {
+            "value": "claude-haiku-4.5",
+            "name": "Claude Haiku 4.5",
+            "description": "Claude Haiku 4.5",
+            "_meta": {
+              "copilotUsage": "0.33x",
+              "copilotEnablement": "enabled"
+            }
+          },
+          {
+            "value": "gpt-5.3-codex",
+            "name": "GPT-5.3-Codex",
+            "description": "GPT-5.3-Codex",
+            "_meta": {
+              "copilotUsage": "6x",
+              "copilotEnablement": "enabled"
+            }
+          },
+          {
+            "value": "mai-code-1.1-flash",
+            "name": "MAI-Code-1.1-Flash",
+            "description": "MAI-Code-1.1-Flash",
+            "_meta": {
+              "copilotUsage": "0.25x",
+              "copilotEnablement": "enabled"
+            }
+          }
+        ]
+      },
+      {
+        "type": "select",
+        "id": "reasoning_effort",
+        "name": "Reasoning Effort",
+        "category": "thought_level",
+        "description": "How much reasoning the model performs before responding. Higher effort can improve quality at the cost of speed.",
+        "currentValue": "medium",
+        "options": [
+          {
+            "value": "low",
+            "name": "low",
+            "description": "Minimal reasoning before responding."
+          },
+          {
+            "value": "medium",
+            "name": "medium",
+            "description": "Balanced reasoning and speed."
+          },
+          {
+            "value": "high",
+            "name": "high",
+            "description": "More thorough reasoning; slower responses."
+          },
+          {
+            "value": "max",
+            "name": "max",
+            "description": "Maximum reasoning; slowest but most thorough."
+          }
+        ]
+      },
+      {
+        "type": "select",
+        "id": "allow_all",
+        "name": "Allow All",
+        "category": "permissions",
+        "description": "Controls whether Copilot prompts for approval before using tools, accessing paths, or fetching URLs.",
+        "currentValue": "off",
+        "options": [
+          {
+            "value": "on",
+            "name": "On",
+            "description": "Automatically approve all tool, path, and URL requests"
+          },
+          {
+            "value": "off",
+            "name": "Off",
+            "description": "Require approval for tool, path, and URL requests"
+          }
+        ]
+      }
+    ],
+    "modes": {
+      "availableModes": [
+        {
+          "id": "https://agentclientprotocol.com/protocol/session-modes#agent",
+          "name": "Agent",
+          "description": "Default agent mode for conversational interactions"
+        },
+        {
+          "id": "https://agentclientprotocol.com/protocol/session-modes#plan",
+          "name": "Plan",
+          "description": "Plan mode for creating and executing multi-step plans"
+        },
+        {
+          "id": "https://agentclientprotocol.com/protocol/session-modes#autopilot",
+          "name": "Autopilot",
+          "description": "Autonomous mode that enables allow-all and runs until task completion without user interaction (experimental)"
+        }
+      ],
+      "currentModeId": "https://agentclientprotocol.com/protocol/session-modes#agent"
+    },
+    "sessionId": "copilot-session-1"
+  },
+  "commands": [
+    {
+      "name": "add-dir",
+      "description": "Allow file access to a directory and load its .github skills and agents as trusted configuration",
+      "input": {
+        "hint": "directory"
+      }
+    },
+    {
+      "name": "allow-all",
+      "description": "Enable all permissions",
+      "input": {
+        "hint": "[on|off|show]"
+      }
+    },
+    {
+      "name": "permissions",
+      "description": "Switch between permission modes",
+      "input": {
+        "hint": "[default|allow-all|show]"
+      }
+    }
+  ],
+  "setConfigOption": {
+    "configOptions": [
+      {
+        "type": "select",
+        "id": "mode",
+        "name": "Mode",
+        "category": "mode",
+        "description": "Controls how Copilot responds: a conversational agent, planning multi-step work, or autonomous autopilot.",
+        "currentValue": "https://agentclientprotocol.com/protocol/session-modes#agent",
+        "options": [
+          {
+            "value": "https://agentclientprotocol.com/protocol/session-modes#agent",
+            "name": "Agent",
+            "description": "Default agent mode for conversational interactions"
+          },
+          {
+            "value": "https://agentclientprotocol.com/protocol/session-modes#plan",
+            "name": "Plan",
+            "description": "Plan mode for creating and executing multi-step plans"
+          },
+          {
+            "value": "https://agentclientprotocol.com/protocol/session-modes#autopilot",
+            "name": "Autopilot",
+            "description": "Autonomous mode that enables allow-all and runs until task completion without user interaction (experimental)"
+          }
+        ]
+      },
+      {
+        "type": "select",
+        "id": "model",
+        "name": "Model",
+        "category": "model",
+        "description": "The AI model Copilot uses to generate responses.",
+        "currentValue": "claude-sonnet-4.6",
+        "options": [
+          {
+            "value": "auto",
+            "name": "Auto",
+            "description": "Let Copilot pick the best model",
+            "_meta": null
+          },
+          {
+            "value": "claude-sonnet-4.6",
+            "name": "Claude Sonnet 4.6",
+            "description": "Claude Sonnet 4.6",
+            "_meta": {
+              "copilotUsage": "9x",
+              "copilotEnablement": "enabled"
+            }
+          },
+          {
+            "value": "claude-haiku-4.5",
+            "name": "Claude Haiku 4.5",
+            "description": "Claude Haiku 4.5",
+            "_meta": {
+              "copilotUsage": "0.33x",
+              "copilotEnablement": "enabled"
+            }
+          },
+          {
+            "value": "gpt-5.3-codex",
+            "name": "GPT-5.3-Codex",
+            "description": "GPT-5.3-Codex",
+            "_meta": {
+              "copilotUsage": "6x",
+              "copilotEnablement": "enabled"
+            }
+          },
+          {
+            "value": "mai-code-1.1-flash",
+            "name": "MAI-Code-1.1-Flash",
+            "description": "MAI-Code-1.1-Flash",
+            "_meta": {
+              "copilotUsage": "0.25x",
+              "copilotEnablement": "enabled"
+            }
+          }
+        ]
+      },
+      {
+        "type": "select",
+        "id": "reasoning_effort",
+        "name": "Reasoning Effort",
+        "category": "thought_level",
+        "description": "How much reasoning the model performs before responding. Higher effort can improve quality at the cost of speed.",
+        "currentValue": "medium",
+        "options": [
+          {
+            "value": "low",
+            "name": "low",
+            "description": "Minimal reasoning before responding."
+          },
+          {
+            "value": "medium",
+            "name": "medium",
+            "description": "Balanced reasoning and speed."
+          },
+          {
+            "value": "high",
+            "name": "high",
+            "description": "More thorough reasoning; slower responses."
+          },
+          {
+            "value": "max",
+            "name": "max",
+            "description": "Maximum reasoning; slowest but most thorough."
+          }
+        ]
+      },
+      {
+        "type": "select",
+        "id": "allow_all",
+        "name": "Allow All",
+        "category": "permissions",
+        "description": "Controls whether Copilot prompts for approval before using tools, accessing paths, or fetching URLs.",
+        "currentValue": "off",
+        "options": [
+          {
+            "value": "on",
+            "name": "On",
+            "description": "Automatically approve all tool, path, and URL requests"
+          },
+          {
+            "value": "off",
+            "name": "Off",
+            "description": "Require approval for tool, path, and URL requests"
+          }
+        ]
+      }
+    ]
+  },
+  "promptUpdates": [
+    {
+      "sessionUpdate": "session_info_update",
+      "title": "First say in one short sentence that you will create probe.txt. Then create the file probe.txt in the current folder containing the word hi. If that is not possible, say so in one sentence and stop.",
+      "updatedAt": "2026-10-21T14:54:13.197Z"
+    },
+    {
+      "sessionUpdate": "config_option_update",
+      "configOptions": [
+        {
+          "type": "select",
+          "id": "mode",
+          "name": "Mode",
+          "category": "mode",
+          "description": "Controls how Copilot responds: a conversational agent, planning multi-step work, or autonomous autopilot.",
+          "currentValue": "https://agentclientprotocol.com/protocol/session-modes#agent",
+          "options": [
+            {
+              "value": "https://agentclientprotocol.com/protocol/session-modes#agent",
+              "name": "Agent",
+              "description": "Default agent mode for conversational interactions"
+            },
+            {
+              "value": "https://agentclientprotocol.com/protocol/session-modes#plan",
+              "name": "Plan",
+              "description": "Plan mode for creating and executing multi-step plans"
+            },
+            {
+              "value": "https://agentclientprotocol.com/protocol/session-modes#autopilot",
+              "name": "Autopilot",
+              "description": "Autonomous mode that enables allow-all and runs until task completion without user interaction (experimental)"
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "model",
+          "name": "Model",
+          "category": "model",
+          "description": "The AI model Copilot uses to generate responses.",
+          "currentValue": "claude-haiku-4.5",
+          "options": [
+            {
+              "value": "auto",
+              "name": "Auto",
+              "description": "Let Copilot pick the best model",
+              "_meta": null
+            },
+            {
+              "value": "claude-sonnet-4.6",
+              "name": "Claude Sonnet 4.6",
+              "description": "Claude Sonnet 4.6",
+              "_meta": {
+                "copilotUsage": "9x",
+                "copilotEnablement": "enabled"
+              }
+            },
+            {
+              "value": "claude-haiku-4.5",
+              "name": "Claude Haiku 4.5",
+              "description": "Claude Haiku 4.5",
+              "_meta": {
+                "copilotUsage": "0.33x",
+                "copilotEnablement": "enabled"
+              }
+            },
+            {
+              "value": "gpt-5.3-codex",
+              "name": "GPT-5.3-Codex",
+              "description": "GPT-5.3-Codex",
+              "_meta": {
+                "copilotUsage": "6x",
+                "copilotEnablement": "enabled"
+              }
+            },
+            {
+              "value": "mai-code-1.1-flash",
+              "name": "MAI-Code-1.1-Flash",
+              "description": "MAI-Code-1.1-Flash",
+              "_meta": {
+                "copilotUsage": "0.25x",
+                "copilotEnablement": "enabled"
+              }
+            }
+          ]
+        },
+        {
+          "type": "select",
+          "id": "allow_all",
+          "name": "Allow All",
+          "category": "permissions",
+          "description": "Controls whether Copilot prompts for approval before using tools, accessing paths, or fetching URLs.",
+          "currentValue": "off",
+          "options": [
+            {
+              "value": "on",
+              "name": "On",
+              "description": "Automatically approve all tool, path, and URL requests"
+            },
+            {
+              "value": "off",
+              "name": "Off",
+              "description": "Require approval for tool, path, and URL requests"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sessionUpdate": "usage_update",
+      "used": 19822,
+      "size": 128000
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "The user wants me"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " to:\n1"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": ". Say"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " in one short sentence"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " that I will create"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " probe.txt"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "\n2. Create the"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " file probe.txt"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " in the current folder"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " containing the word \""
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "hi\"\n3"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": ". If not"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " possible, say so"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " in one sentence and"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " stop\n\nThe"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " current working"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " directory is /tmp"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "/a"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "cp"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "-"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "cop"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "ilot."
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "Ee"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "0"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "O"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "\n\nI need to use"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " the `create`"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " tool"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " to create a file"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "."
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " The create"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " tool requires:"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "\n- path: Full"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " absolute"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " path to file"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " to create."
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " File"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " MUST not"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " exist before"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " creating"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "."
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "\n- file_"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "text"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": ": The"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " content of"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " the file to be"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " created.\n\nSo"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " I should"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " create /"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "tmp/acp"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "-copilot"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": ".Ee0"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "O/probe."
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "txt with content \""
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "hi\".\n\nLet"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " me first"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " say the sentence,"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " then make"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " the tool"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " call."
+      }
+    },
+    {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "I"
+      }
+    },
+    {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": " will create probe."
+      }
+    },
+    {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "txt in the current"
+      }
+    },
+    {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": " folder."
+      }
+    },
+    {
+      "sessionUpdate": "tool_call",
+      "toolCallId": "toolu_01GHHk4KWN6rbDyLge1bmvzf",
+      "title": "Creating /work/probe.txt",
+      "kind": "edit",
+      "status": "pending",
+      "rawInput": {
+        "path": "/work/probe.txt",
+        "file_text": "hi"
+      },
+      "locations": [
+        {
+          "path": "/work/probe.txt"
+        }
+      ],
+      "content": [
+        {
+          "type": "diff",
+          "path": "/work/probe.txt",
+          "oldText": "",
+          "newText": "hi"
+        }
+      ]
+    },
+    {
+      "permission": {
+        "sessionId": "copilot-session-1",
+        "toolCall": {
+          "toolCallId": "toolu_01GHHk4KWN6rbDyLge1bmvzf",
+          "title": "Create file",
+          "kind": "edit",
+          "status": "pending",
+          "rawInput": {
+            "fileName": "/work/probe.txt",
+            "diff": "\ndiff --git a/work/probe.txt b/work/probe.txt\ncreate file mode 100644\nindex 0000000..0000000\n--- a/dev/null\n+++ b/work/probe.txt\n@@ -1,0 +1,1 @@\n+hi\n"
+          },
+          "locations": [
+            {
+              "path": "/work/probe.txt"
+            }
+          ]
+        },
+        "options": [
+          {
+            "optionId": "allow_once",
+            "kind": "allow_once",
+            "name": "Allow once"
+          },
+          {
+            "optionId": "allow_always",
+            "kind": "allow_always",
+            "name": "Always allow"
+          },
+          {
+            "optionId": "reject_once",
+            "kind": "reject_once",
+            "name": "Deny"
+          }
+        ]
+      }
+    },
+    {
+      "sessionUpdate": "tool_call_update",
+      "toolCallId": "toolu_01GHHk4KWN6rbDyLge1bmvzf",
+      "status": "failed",
+      "rawOutput": {
+        "message": "The user rejected this tool call.",
+        "code": "rejected"
+      }
+    },
+    {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "Info: Operation cancelled by user"
+      }
+    }
+  ],
+  "promptResponse": {
+    "stopReason": "end_turn",
+    "usage": {
+      "inputTokens": 22983,
+      "outputTokens": 278,
+      "totalTokens": 23261,
+      "thoughtTokens": 176,
+      "cachedReadTokens": 8167,
+      "cachedWriteTokens": 14806
+    }
+  }
+}

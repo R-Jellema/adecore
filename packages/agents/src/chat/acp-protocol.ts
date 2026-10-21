@@ -452,6 +452,8 @@ interface ToolState {
     // What the thread last heard, so an update that changes nothing about the row sends nothing.
     shown: string | null;
     settled: boolean;
+    // A person turned the call down, so whatever diff it carries was never written.
+    refused: boolean;
 }
 
 // `Edit` would have the thread draw a diff of nothing until the agent sends one.
@@ -466,6 +468,9 @@ const KIND_NAMES: Record<string, string> = {
 
 // A session's title comes from its opening prompts; later ones are not kept.
 const KEPT_PROMPTS = 3;
+
+// What Copilot CLI 1.0.101 writes as a message of its own after a call a person turned down; the thread shows the refusal already.
+const REFUSAL_LINE = 'Info: Operation cancelled by user';
 
 function foldSpace(text: string): string {
     return text.replace(/\s+/g, ' ').trim();
@@ -551,7 +556,7 @@ function toolOutput(tool: ToolState): string | null {
         return tool.rawOutput;
     }
     if (isRecord(tool.rawOutput)) {
-        const text = rawField(tool.rawOutput, 'output', 'stdout', 'content', 'result', 'error');
+        const text = rawField(tool.rawOutput, 'output', 'stdout', 'content', 'result', 'error', 'message');
         return text ?? JSON.stringify(tool.rawOutput);
     }
     return null;
@@ -601,18 +606,25 @@ export class AcpProtocol {
     private readonly modes: AcpModeMap;
     private readonly words: AcpStopWords;
     private readonly tools = new Map<string, ToolState>();
-    private readonly permissions = new Map<string, { rpcId: number | string; options: Array<z.infer<typeof PermissionOptionSchema>> }>();
-    private text: { ref: string; messageId: string | null; text: string } | null = null;
+    private readonly permissions = new Map<string, { rpcId: number | string; toolCallId: string; options: Array<z.infer<typeof PermissionOptionSchema>> }>();
+    // `held` while the message may still be the refusal line, whose chunks the thread has not heard yet.
+    private text: { ref: string; messageId: string | null; text: string; held: boolean } | null = null;
+    // Set by a refusal until the next message shows whether it is the refusal line.
+    private refusalLine = false;
     private thought: { ref: string; text: string } | null = null;
     private counter = 0;
     private costUsd = 0;
     // The opening prompts of the process, whitespace folded, which an agent may hand back as the session's title.
     private readonly prompts: string[] = [];
 
-    constructor(generation: number, modes: AcpModeMap, words: AcpStopWords) {
+    private readonly titles: boolean;
+
+    // `titles` takes the session titles the agent sends as the chat's suggested title.
+    constructor(generation: number, modes: AcpModeMap, words: AcpStopWords, titles = false) {
         this.generation = generation;
         this.modes = modes;
         this.words = words;
+        this.titles = titles;
     }
 
     /* One `session/update` notification; empty for another session, an unknown update or one that does not parse. */
@@ -658,6 +670,9 @@ export class AcpProtocol {
                 return [{ type: 'usage', contextTokens: usage.data.used, contextWindow: usage.data.size, ...(cost === undefined ? {} : { costUsd: cost }) }];
             }
             case 'session_info_update': {
+                if (!this.titles) {
+                    return [];
+                }
                 const title = cleanTitle(update.title);
                 return title === null || this.restatesPrompt(title) ? [] : [{ type: 'title', title }];
             }
@@ -698,7 +713,7 @@ export class AcpProtocol {
         const tool = this.tools.get(request.data.toolCall.toolCallId)!;
         const row = toolRow(tool);
         const options = request.data.options;
-        this.permissions.set(requestId, { rpcId, options });
+        this.permissions.set(requestId, { rpcId, toolCallId: request.data.toolCall.toolCallId, options });
         events.push({
             type: 'approval.requested',
             requestId,
@@ -716,9 +731,9 @@ export class AcpProtocol {
     /*
      * The answer to a permission request: allow once, reject, or allow always only when the agent offered it.
      * A decision the agent offered no option for falls to the narrower one, and a refusal with no reject option
-     * at all is a cancelled outcome.
+     * at all is a cancelled outcome. A refusal draws the call's row again without its diff.
      */
-    answer(requestId: string, decision: ApprovalDecision): { rpcId: number | string; result: unknown } | null {
+    answer(requestId: string, decision: ApprovalDecision): { rpcId: number | string; result: unknown; events: BackendEvent[] } | null {
         const pending = this.permissions.get(requestId);
         if (!pending) {
             return null;
@@ -739,7 +754,14 @@ export class AcpProtocol {
                 : decision === 'allow'
                   ? byKind('allow_once', 'allow_always')
                   : byKind('reject_once', 'reject_always');
-        return { rpcId: pending.rpcId, result: { outcome: optionId === null ? { outcome: 'cancelled' } : { outcome: 'selected', optionId } } };
+        const result = { outcome: optionId === null ? { outcome: 'cancelled' } : { outcome: 'selected', optionId } };
+        const tool = this.tools.get(pending.toolCallId);
+        if (decision !== 'deny' || tool === undefined) {
+            return { rpcId: pending.rpcId, result, events: [] };
+        }
+        tool.refused = true;
+        this.refusalLine = true;
+        return { rpcId: pending.rpcId, result, events: this.toolCall({ toolCallId: pending.toolCallId }, false) };
     }
 
     /* Every permission request still open, answered as cancelled, which the protocol asks of a client that cancels a turn. */
@@ -757,10 +779,16 @@ export class AcpProtocol {
         return this.permissions.has(requestId);
     }
 
-    /* The end of a turn, from the `stopReason` of its `session/prompt` response. */
-    finish(result: unknown, promptId: string | undefined): BackendEvent[] {
+    /*
+     * The end of a turn, from the `stopReason` of its `session/prompt` response. Only a turn the client cancelled
+     * (`cancelled`) ends aborted: Grok 1.0.62 answers `cancelled` by itself when a person turns a call down, and
+     * that ends its turn the way any answer does.
+     */
+    finish(result: unknown, promptId: string | undefined, cancelled = false): BackendEvent[] {
         const parsed = PromptResponseSchema.safeParse(result);
-        const reason = parsed.success ? parsed.data.stopReason : 'end_turn';
+        const stopReason = parsed.success ? parsed.data.stopReason : 'end_turn';
+        const reason = cancelled ? 'cancelled' : stopReason === 'cancelled' ? 'end_turn' : stopReason;
+        this.refusalLine = false;
         const events = [...this.closeText(), ...this.closeThought()];
         const base = { ...(promptId === undefined ? {} : { promptId }), costUsd: this.costUsd };
         switch (reason) {
@@ -784,6 +812,7 @@ export class AcpProtocol {
 
     /* A turn that ended without a `stopReason`: the request failed, or was cancelled before the agent said so. */
     abort(promptId: string | undefined, error: string | null): BackendEvent[] {
+        this.refusalLine = false;
         const base = { ...(promptId === undefined ? {} : { promptId }), costUsd: this.costUsd };
         return [
             ...this.closeText(),
@@ -803,10 +832,17 @@ export class AcpProtocol {
             events.push(...this.closeText());
         }
         if (this.text === null) {
-            this.text = { ref: messageId === null ? `message-${++this.counter}` : `message-${messageId}`, messageId, text: '' };
+            this.text = { ref: messageId === null ? `message-${++this.counter}` : `message-${messageId}`, messageId, text: '', held: this.refusalLine };
+            this.refusalLine = false;
         }
-        this.text.text += chunk.data.content.text;
-        events.push({ type: 'text.delta', ref: this.text.ref, text: chunk.data.content.text });
+        const text = this.text;
+        text.text += chunk.data.content.text;
+        if (text.held && !REFUSAL_LINE.startsWith(text.text)) {
+            text.held = false;
+            events.push({ type: 'text.delta', ref: text.ref, text: text.text });
+        } else if (!text.held) {
+            events.push({ type: 'text.delta', ref: text.ref, text: chunk.data.content.text });
+        }
         return events;
     }
 
@@ -827,7 +863,10 @@ export class AcpProtocol {
     private closeText(): BackendEvent[] {
         const text = this.text;
         this.text = null;
-        return text === null ? [] : [{ type: 'text.done', ref: text.ref, text: text.text }];
+        if (text === null || (text.held && text.text === REFUSAL_LINE)) {
+            return [];
+        }
+        return [{ type: 'text.done', ref: text.ref, text: text.text }];
     }
 
     private closeThought(): BackendEvent[] {
@@ -850,7 +889,8 @@ export class AcpProtocol {
             diffs: [],
             text: [],
             shown: null,
-            settled: false
+            settled: false,
+            refused: false
         };
         tool.title = call.title ?? tool.title;
         tool.name = call.name ?? tool.name;
@@ -869,7 +909,7 @@ export class AcpProtocol {
         }
         this.tools.set(call.toolCallId, tool);
         const events: BackendEvent[] = [];
-        const row = toolRow(tool);
+        const row = toolRow(tool.refused ? { ...tool, diffs: [] } : tool);
         const shown = JSON.stringify(row);
         if (shown !== tool.shown) {
             tool.shown = shown;

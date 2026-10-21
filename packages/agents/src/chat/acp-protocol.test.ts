@@ -36,7 +36,7 @@ function replay(protocol: AcpProtocol): BackendEvent[] {
             const { id, response } = frame as unknown as { id: number; response: { decision: 'allow'; result: unknown } };
             const permission = protocol.permission(id, turnCapture.sessionId, frame.params);
             events.push(...(permission?.events ?? []));
-            expect(protocol.answer(permission!.requestId, response.decision)).toEqual({ rpcId: id, result: response.result });
+            expect(protocol.answer(permission!.requestId, response.decision)).toMatchObject({ rpcId: id, result: response.result });
             continue;
         }
         events.push(...protocol.update(turnCapture.sessionId, frame.params));
@@ -151,7 +151,7 @@ describe('AcpProtocol', () => {
     });
 
     test('maps a captured turn onto backend events', () => {
-        const events = replay(new AcpProtocol(1, MODES, acpStopWords('Example')));
+        const events = replay(new AcpProtocol(1, MODES, acpStopWords('Example'), true));
         expect(events).toEqual([
             { type: 'session', agentSessionId: null, model: null, slashCommands: ['review', 'init'] },
             { type: 'thinking.delta', ref: 'thought-1', text: 'The test fails on ' },
@@ -254,7 +254,7 @@ describe('AcpProtocol', () => {
     });
 
     test('takes a session title as a client can show it, and leaves out one that only repeats the prompt', () => {
-        const protocol = new AcpProtocol(1, MODES, acpStopWords('Example'));
+        const protocol = new AcpProtocol(1, MODES, acpStopWords('Example'), true);
         const titled = (title: unknown) => protocol.update('s', { sessionId: 's', update: { sessionUpdate: 'session_info_update', title } });
         const prompt = `You work in a workspace of projects.\n\n${'Read every file of it and say what it holds. '.repeat(4)}`;
         protocol.prompted(prompt);
@@ -267,10 +267,17 @@ describe('AcpProtocol', () => {
         expect(titled(42)).toEqual([]);
     });
 
+    test('takes no session title unless asked, so the host names the chat', () => {
+        const protocol = new AcpProtocol(1, MODES, acpStopWords('Example'));
+        expect(protocol.update('s', { sessionId: 's', update: { sessionUpdate: 'session_info_update', title: 'Workspace overview' } })).toEqual([]);
+    });
+
     test('a stop reason other than the end of the turn says why', () => {
         const words = acpStopWords('Example');
-        const finish = (stopReason: string) => new AcpProtocol(1, MODES, words).finish({ stopReason }, undefined);
-        expect(finish('cancelled')).toEqual([{ type: 'turn.done', costUsd: 0, state: 'aborted' }]);
+        const finish = (stopReason: string, cancelled = false) => new AcpProtocol(1, MODES, words).finish({ stopReason }, undefined, cancelled);
+        expect(finish('end_turn', true)).toEqual([{ type: 'turn.done', costUsd: 0, state: 'aborted' }]);
+        // Only a cancel the client sent stops the turn; an agent that cancels by itself has ended it.
+        expect(finish('cancelled')).toEqual([{ type: 'turn.done', costUsd: 0, state: 'done' }]);
         expect(finish('refusal')).toEqual([{ type: 'turn.done', costUsd: 0, state: 'error', error: words.refusal }]);
         expect(finish('max_tokens')).toEqual([
             { type: 'note', level: 'warning', text: words.maxTokens },
@@ -278,6 +285,27 @@ describe('AcpProtocol', () => {
         ]);
         expect(finish('max_turn_requests')[0]).toEqual({ type: 'note', level: 'warning', text: words.maxTurnRequests });
         expect(finish('a_future_reason')).toEqual([{ type: 'turn.done', costUsd: 0, state: 'done' }]);
+    });
+
+    test('after a refusal, a message that only starts like the refusal line still reaches the thread', () => {
+        const protocol = new AcpProtocol(1, MODES, acpStopWords('Example'));
+        const permission = protocol.permission(7, 's', {
+            sessionId: 's',
+            toolCall: { toolCallId: 'c', title: 'Write a.txt', kind: 'edit', content: [{ type: 'diff', path: 'a.txt', newText: 'hi' }] },
+            options: [{ optionId: 'no', name: 'Deny', kind: 'reject_once' }]
+        })!;
+        expect(protocol.answer(permission.requestId, 'deny')?.events).toEqual([
+            { type: 'tool.started', ref: 'c', name: 'Change', input: { description: 'Write a.txt' }, parentRef: null }
+        ]);
+        const chunk = (text: string) =>
+            protocol.update('s', { sessionId: 's', update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text } } });
+        expect(chunk('Info: ')).toEqual([]);
+        expect(chunk('the file stays as it was.')).toEqual([{ type: 'text.delta', ref: 'message-1', text: 'Info: the file stays as it was.' }]);
+        expect(protocol.finish({ stopReason: 'end_turn' }, undefined)[0]).toEqual({
+            type: 'text.done',
+            ref: 'message-1',
+            text: 'Info: the file stays as it was.'
+        });
     });
 
     test('answers a permission with an option the agent offered, never a wider one', () => {

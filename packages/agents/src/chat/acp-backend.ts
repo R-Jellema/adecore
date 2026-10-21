@@ -63,6 +63,9 @@ export interface AcpAgentSpec {
     onContextReport?(): void;
     // The slash commands a session offers (without the slash), each time the agent lists them.
     onCommands?(commands: string[]): void;
+    // True takes the session titles the agent sends (`session_info_update`) as the chat's suggested title. Absent leaves
+    // naming the chat to the host, since an agent may rename the session after every turn.
+    adoptTitles?: boolean;
     // A permission request the host answers itself, in any runtime mode: true allows it once without asking the
     // person, for a call the host already guards. A throw counts as false.
     autoAllow?(request: AcpPermissionRequest): boolean;
@@ -121,7 +124,7 @@ export class AcpBackend implements ChatBackend {
         this.host = host;
         this.spec = spec;
         this.client = spec.client ?? DEFAULT_ACP_CLIENT;
-        this.protocol = new AcpProtocol(launch.generation, spec.modes ?? {}, acpStopWords(spec.name));
+        this.protocol = new AcpProtocol(launch.generation, spec.modes ?? {}, acpStopWords(spec.name), spec.adoptTitles === true);
     }
 
     get running(): boolean {
@@ -420,7 +423,7 @@ export class AcpBackend implements ChatBackend {
                 if (this.transport === transport && this.prompt === turn) {
                     this.prompt = null;
                     this.report(result);
-                    this.emitAll(this.protocol.finish(turn.cancelled ? { stopReason: 'cancelled' } : result, turn.promptId));
+                    this.emitAll(this.protocol.finish(result, turn.promptId, turn.cancelled));
                 }
             })
             .catch((error: unknown) => {
@@ -469,7 +472,11 @@ export class AcpBackend implements ChatBackend {
         if (!answer) {
             return false;
         }
-        return this.respond(requestId, answer.rpcId, answer.result);
+        if (!this.respond(requestId, answer.rpcId, answer.result)) {
+            return false;
+        }
+        this.emitAll(answer.events);
+        return true;
     }
 
     /* ACP asks no questions of its own; an agent asks in its message and the next prompt answers. */

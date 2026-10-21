@@ -41,6 +41,7 @@ Put it in the `ProviderRegistry` beside the others. A `kind` is any name the hos
 | `adoptModels` | `false` keeps `catalog` as the host built it instead of taking the models a session reports. |
 | `catalogStore` | Where the provider keeps what the agent reported, so a host that starts again offers it at once (`AcpCatalogStore`). See [Models](#models). |
 | `onCommands(commands)` | The slash commands a session offers, without the slash, each time the agent lists them. |
+| `adoptTitles` | `true` takes the titles the agent sends for its session as the chat's suggested title. Absent leaves naming the chat to the host. See [Updates](#updates). |
 | `onContextReport()` | Called once per process, at the first `usage_update` that names the context window. |
 | `capabilities` | Over `ACP_CAPABILITIES` and what the agent showed it can do (see [Capabilities](#capabilities)), for what the host knows better. |
 | `resumeCommand`, `home`, `detect`, `oneShotArgs`, `oneShotStdinArgs`, `firstPromptArgs`, `enabled`, `ignoresProjectConfig` | As on any `ChatProvider`. Without `firstPromptArgs` the agent is offered as a chat only, and without `detect` the executable is asked for `--version`. |
@@ -94,13 +95,13 @@ A turn is one `session/prompt` and ends on its response. `stopReason` maps onto 
 | `stopReason` | Turn |
 | --- | --- |
 | `end_turn` | Done |
-| `cancelled` | Aborted |
+| `cancelled` | Aborted after `interrupt`, else done |
 | `max_tokens`, `max_turn_requests` | Done, with a warning note |
 | `refusal` | Error |
 
-A failed request ends the turn as an error and leaves the process running.
+A failed request ends the turn as an error and leaves the process running. An agent may answer `cancelled` without a cancel, as Grok CLI does when a person turns a call down; that turn ends as done, since nobody stopped it.
 
-An approval offers allow, allow always and deny. Allow answers with the agent's `allow_once` option, allow always with `allow_always` (offered only when the agent has one), and deny with `reject_once` or `reject_always`. A decision without a matching option falls to the narrower one; a denial without any reject option answers `cancelled`.
+An approval offers allow, allow always and deny. Allow answers with the agent's `allow_once` option, allow always with `allow_always` (offered only when the agent has one), and deny with `reject_once` or `reject_always`. A decision without a matching option falls to the narrower one; a denial without any reject option answers `cancelled`. A denied call draws again without its diff, since nothing was written, and ends as a failed call when the agent says so. The line Copilot CLI writes as a message after a denial, `Info: Operation cancelled by user`, stays out of the thread, since the denial shows already.
 
 `interrupt` answers every open permission request as `cancelled`, withdraws its approval and sends `session/cancel`. The turn ends when the agent answers the prompt, as the protocol asks.
 
@@ -116,7 +117,7 @@ An approval offers allow, allow always and deny. Allow answers with the agent's 
 | `current_mode_update` | `permissions`, with the runtime mode `modes` puts that agent mode under |
 | `config_option_update` | `model` and `permissions` for the model and mode options |
 | `usage_update` | `usage` with the context tokens and window, and the cost when it is in USD |
-| `session_info_update` | `title`, cut to `SUGGESTED_TITLE_LIMIT`. A title that only repeats the start of a prompt the backend sent is left out: Copilot CLI names a session that way, a host's instructions included, which would leave the host no room to name the chat. |
+| `session_info_update` | Nothing, unless the spec sets `adoptTitles`: an agent may name its session after its own prompts and rename it after every turn, and the host names the chat as it does for every provider. With `adoptTitles`, a `title` cut to `SUGGESTED_TITLE_LIMIT`. A title that only repeats the start of a prompt the backend sent is left out: Copilot CLI names a session that way, a host's instructions included, which would leave the host no room to name the chat. |
 
 Any other update, and any field the backend does not know, is ignored. A request of the agent the backend does not handle (the file system and terminal methods among them) is answered with "method not found".
 

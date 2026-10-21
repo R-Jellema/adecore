@@ -1,0 +1,630 @@
+{
+  "version": "Grok 1.0.62, `grok --no-auto-update agent stdio`",
+  "source": "Recorded from the real CLI on 2026-10-21 in an empty folder: initialize, session/new and one session/prompt asking for probe.txt, whose permission request was answered with reject-once. Only session/update frames are kept (the CLI also sends notifications of its own under _x.ai); the command list is cut, the _meta of initialize and session/new left out, the session id and the folder replaced. Every other field is as the CLI sent it.",
+  "sessionId": "grok-session-1",
+  "initialize": {
+    "protocolVersion": 1,
+    "agentCapabilities": {
+      "loadSession": true,
+      "promptCapabilities": {
+        "image": false,
+        "audio": false,
+        "embeddedContext": true
+      },
+      "mcpCapabilities": {
+        "http": true,
+        "sse": true
+      },
+      "sessionCapabilities": {
+        "list": {},
+        "resume": {},
+        "close": {}
+      },
+      "auth": {},
+      "_meta": {
+        "x.ai/fs_notify": true,
+        "x.ai/hooks": {
+          "blockingEvents": [
+            "pre_tool_use",
+            "stop",
+            "subagent_stop"
+          ],
+          "decisions": [
+            "deny",
+            "block"
+          ],
+          "stopSignals": [
+            "continue",
+            "stopReason",
+            "additionalContext"
+          ]
+        },
+        "x.ai/capabilities": {
+          "toolOverrides": {
+            "x_keyword_search": true,
+            "x_semantic_search": true,
+            "x_user_search": false,
+            "x_thread_fetch": false
+          }
+        }
+      }
+    },
+    "authMethods": [
+      {
+        "id": "cached_token",
+        "name": "cached_token",
+        "description": "Cached token from ~/.grok/auth.json"
+      },
+      {
+        "id": "grok.com",
+        "name": "Grok",
+        "description": "Sign in with Grok"
+      }
+    ]
+  },
+  "sessionNew": {
+    "sessionId": "grok-session-1",
+    "models": {
+      "currentModelId": "grok-4.7",
+      "availableModels": [
+        {
+          "modelId": "grok-4.7",
+          "name": "Grok 4.7",
+          "description": "SpaceXAI's latest frontier model",
+          "_meta": {
+            "totalContextTokens": 256000,
+            "agentType": "grok-build-plan",
+            "supportsReasoningEffort": true,
+            "reasoningEffort": "high",
+            "reasoningEfforts": [
+              {
+                "id": "xhigh",
+                "value": "xhigh",
+                "label": "Extra High",
+                "description": "Maximum reasoning for the hardest tasks.",
+                "default": false
+              },
+              {
+                "id": "high",
+                "value": "high",
+                "label": "High",
+                "description": "Thorough reasoning and quality. Recommended.",
+                "default": true
+              },
+              {
+                "id": "medium",
+                "value": "medium",
+                "label": "Medium",
+                "description": "Strong quality with a faster turnaround.",
+                "default": false
+              },
+              {
+                "id": "low",
+                "value": "low",
+                "label": "Low",
+                "description": "Fastest responses. Best for simple tasks.",
+                "default": false
+              }
+            ],
+            "contextWindows": [
+              256000,
+              500000
+            ]
+          }
+        },
+        {
+          "modelId": "grok-4.7-build-fast",
+          "name": "Grok 4.7 Fast",
+          "description": "Fast variant. 2x the price.",
+          "_meta": {
+            "totalContextTokens": 256000,
+            "agentType": "grok-build-plan",
+            "supportsReasoningEffort": true,
+            "reasoningEffort": "high",
+            "reasoningEfforts": [
+              {
+                "id": "xhigh",
+                "value": "xhigh",
+                "label": "Extra High",
+                "description": "Maximum reasoning for the hardest tasks.",
+                "default": false
+              },
+              {
+                "id": "high",
+                "value": "high",
+                "label": "High",
+                "description": "Thorough reasoning and quality. Recommended.",
+                "default": true
+              },
+              {
+                "id": "medium",
+                "value": "medium",
+                "label": "Medium",
+                "description": "Strong quality with a faster turnaround.",
+                "default": false
+              },
+              {
+                "id": "low",
+                "value": "low",
+                "label": "Low",
+                "description": "Fastest responses. Best for simple tasks.",
+                "default": false
+              }
+            ],
+            "contextWindows": [
+              256000,
+              500000
+            ]
+          }
+        },
+        {
+          "modelId": "grok-4.6",
+          "name": "Grok 4.6",
+          "_meta": {
+            "totalContextTokens": 256000,
+            "agentType": "grok-build-plan",
+            "supportsReasoningEffort": true,
+            "reasoningEffort": "high",
+            "reasoningEfforts": [
+              {
+                "id": "xhigh",
+                "value": "xhigh",
+                "label": "Extra High",
+                "description": "Highest effort and reasoning level",
+                "default": false
+              },
+              {
+                "id": "high",
+                "value": "high",
+                "label": "High",
+                "description": "Higher implementation quality with extensive reasoning",
+                "default": true
+              },
+              {
+                "id": "medium",
+                "value": "medium",
+                "label": "Medium",
+                "description": "Balanced effort with standard implementation and testing",
+                "default": false
+              },
+              {
+                "id": "low",
+                "value": "low",
+                "label": "Low",
+                "description": "Quick, fast implementations",
+                "default": false
+              }
+            ],
+            "contextWindows": [
+              256000,
+              500000
+            ]
+          }
+        },
+        {
+          "modelId": "grok-4.5",
+          "name": "Grok 4.5",
+          "_meta": {
+            "totalContextTokens": 256000,
+            "agentType": "grok-build-plan",
+            "supportsReasoningEffort": true,
+            "reasoningEffort": "high",
+            "reasoningEfforts": [
+              {
+                "id": "high",
+                "value": "high",
+                "label": "High",
+                "description": "Highest implementation quality with extensive reasoning",
+                "default": true
+              },
+              {
+                "id": "medium",
+                "value": "medium",
+                "label": "Medium",
+                "description": "Balanced effort with standard implementation and testing",
+                "default": false
+              },
+              {
+                "id": "low",
+                "value": "low",
+                "label": "Low",
+                "description": "Quick, fast implementations",
+                "default": false
+              }
+            ],
+            "contextWindows": [
+              256000,
+              500000
+            ]
+          }
+        }
+      ]
+    },
+    "configOptions": [
+      {
+        "id": "model",
+        "name": "Model",
+        "category": "model",
+        "type": "select",
+        "currentValue": "grok-4.7",
+        "options": [
+          {
+            "value": "grok-4.7",
+            "name": "Grok 4.7"
+          },
+          {
+            "value": "grok-4.7-build-fast",
+            "name": "Grok 4.7 Fast"
+          },
+          {
+            "value": "grok-4.6",
+            "name": "Grok 4.6"
+          },
+          {
+            "value": "grok-4.5",
+            "name": "Grok 4.5"
+          }
+        ]
+      },
+      {
+        "id": "reasoning_effort",
+        "name": "Reasoning Effort",
+        "category": "thought_level",
+        "type": "select",
+        "currentValue": "high",
+        "options": [
+          {
+            "value": "xhigh",
+            "name": "Extra High",
+            "description": "Maximum reasoning for the hardest tasks."
+          },
+          {
+            "value": "high",
+            "name": "High",
+            "description": "Thorough reasoning and quality. Recommended."
+          },
+          {
+            "value": "medium",
+            "name": "Medium",
+            "description": "Strong quality with a faster turnaround."
+          },
+          {
+            "value": "low",
+            "name": "Low",
+            "description": "Fastest responses. Best for simple tasks."
+          }
+        ]
+      }
+    ]
+  },
+  "commands": [
+    {
+      "name": "compact",
+      "description": "Compress conversation history to save context window",
+      "input": null
+    },
+    {
+      "name": "always-approve",
+      "description": "Toggle always-approve mode (skip all permission prompts)",
+      "input": {
+        "hint": "on|off"
+      }
+    },
+    {
+      "name": "context",
+      "description": "Show context window usage and session stats",
+      "input": null
+    }
+  ],
+  "setConfigOption": {
+    "configOptions": [
+      {
+        "id": "model",
+        "name": "Model",
+        "category": "model",
+        "type": "select",
+        "currentValue": "grok-4.7",
+        "options": [
+          {
+            "value": "grok-4.7",
+            "name": "Grok 4.7"
+          },
+          {
+            "value": "grok-4.7-build-fast",
+            "name": "Grok 4.7 Fast"
+          },
+          {
+            "value": "grok-4.6",
+            "name": "Grok 4.6"
+          },
+          {
+            "value": "grok-4.5",
+            "name": "Grok 4.5"
+          }
+        ]
+      },
+      {
+        "id": "reasoning_effort",
+        "name": "Reasoning Effort",
+        "category": "thought_level",
+        "type": "select",
+        "currentValue": "high",
+        "options": [
+          {
+            "value": "xhigh",
+            "name": "Extra High",
+            "description": "Maximum reasoning for the hardest tasks."
+          },
+          {
+            "value": "high",
+            "name": "High",
+            "description": "Thorough reasoning and quality. Recommended."
+          },
+          {
+            "value": "medium",
+            "name": "Medium",
+            "description": "Strong quality with a faster turnaround."
+          },
+          {
+            "value": "low",
+            "name": "Low",
+            "description": "Fastest responses. Best for simple tasks."
+          }
+        ]
+      }
+    ]
+  },
+  "promptUpdates": [
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "I will create probe.txt."
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "\n\nI will write the word"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " \"hi\" to probe.txt in"
+      }
+    },
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": " the current folder."
+      }
+    },
+    {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "Ik"
+      }
+    },
+    {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": " maak"
+      }
+    },
+    {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": " `"
+      }
+    },
+    {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "probe"
+      }
+    },
+    {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": ".txt"
+      }
+    },
+    {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "`"
+      }
+    },
+    {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": " aan"
+      }
+    },
+    {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "."
+      }
+    },
+    {
+      "sessionUpdate": "tool_call",
+      "toolCallId": "call-02be341c-3155-4b9b-b400-9607396f108a-0",
+      "title": "write",
+      "rawInput": {
+        "file_path": "/work/probe.txt",
+        "content": "hi"
+      },
+      "_meta": {
+        "x.ai/tool": {
+          "version": 1,
+          "name": "write",
+          "kind": "write",
+          "namespace": "grok_build",
+          "label": "Write",
+          "read_only": false
+        }
+      }
+    },
+    {
+      "sessionUpdate": "tool_call_update",
+      "toolCallId": "call-02be341c-3155-4b9b-b400-9607396f108a-0",
+      "kind": "edit",
+      "title": "Write `/work/probe.txt`",
+      "content": [
+        {
+          "type": "diff",
+          "path": "/work/probe.txt",
+          "oldText": "",
+          "newText": "hi"
+        }
+      ],
+      "locations": [
+        {
+          "path": "/work/probe.txt"
+        }
+      ],
+      "rawInput": {
+        "variant": "Write",
+        "file_path": "/work/probe.txt",
+        "content": "hi"
+      },
+      "_meta": {
+        "x.ai/tool": {
+          "version": 1,
+          "name": "write",
+          "kind": "write",
+          "namespace": "grok_build",
+          "label": "Write",
+          "read_only": false,
+          "input": {
+            "path": "/work/probe.txt"
+          }
+        }
+      }
+    },
+    {
+      "permission": {
+        "sessionId": "grok-session-1",
+        "toolCall": {
+          "toolCallId": "call-02be341c-3155-4b9b-b400-9607396f108a-0",
+          "kind": "edit",
+          "title": "Write `/work/probe.txt`",
+          "rawInput": {
+            "variant": "Write",
+            "file_path": "/work/probe.txt",
+            "content": "hi"
+          },
+          "_meta": {
+            "x.ai/tool": {
+              "version": 1,
+              "name": "write",
+              "kind": "write",
+              "namespace": "grok_build",
+              "label": "Write",
+              "read_only": false,
+              "input": {
+                "path": "/work/probe.txt"
+              }
+            },
+            "x.ai/requestingSessionId": "grok-session-1"
+          }
+        },
+        "options": [
+          {
+            "optionId": "allow-edits-session",
+            "name": "Yes, allow all edits during this session",
+            "kind": "allow_always"
+          },
+          {
+            "optionId": "allow-once",
+            "name": "Yes",
+            "kind": "allow_once"
+          },
+          {
+            "optionId": "reject-once",
+            "name": "No, and tell Grok what to do differently",
+            "kind": "reject_once"
+          }
+        ]
+      }
+    },
+    {
+      "sessionUpdate": "tool_call_update",
+      "toolCallId": "call-02be341c-3155-4b9b-b400-9607396f108a-0",
+      "status": "failed",
+      "content": [
+        {
+          "type": "content",
+          "content": {
+            "type": "text",
+            "text": "User rejected the execution for tool `write`"
+          }
+        }
+      ],
+      "_meta": {
+        "toolNotRun": "rejected"
+      }
+    },
+    {
+      "sessionUpdate": "session_info_update",
+      "title": "Create probe.txt containing word hi"
+    }
+  ],
+  "promptResponse": {
+    "stopReason": "cancelled",
+    "_meta": {
+      "sessionId": "grok-session-1",
+      "requestId": "e745fdc1-1bc8-44e2-b381-abf76cd8d09b",
+      "promptId": "e745fdc1-1bc8-44e2-b381-abf76cd8d09b",
+      "totalTokens": 22195,
+      "modelId": "grok-4.7",
+      "inputTokens": 21826,
+      "outputTokens": 362,
+      "cachedReadTokens": 2176,
+      "reasoningTokens": 325,
+      "usage": {
+        "inputTokens": 21826,
+        "outputTokens": 362,
+        "totalTokens": 22188,
+        "cachedReadTokens": 2176,
+        "cacheCreationTokens": 0,
+        "reasoningTokens": 325,
+        "modelCalls": 1,
+        "apiDurationMs": 7626,
+        "costUsdTicks": 425600000,
+        "modelUsage": {
+          "grok-4.7-build": {
+            "inputTokens": 21826,
+            "outputTokens": 362,
+            "totalTokens": 22188,
+            "cachedReadTokens": 2176,
+            "cacheCreationTokens": 0,
+            "reasoningTokens": 325,
+            "modelCalls": 1,
+            "apiDurationMs": 7626,
+            "costUsdTicks": 425600000
+          }
+        },
+        "numTurns": 1
+      },
+      "cancellationCategory": "PermissionRejected",
+      "cancellationContext": {
+        "tool_name": "write",
+        "reason": "User rejected the execution"
+      }
+    }
+  }
+}

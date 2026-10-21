@@ -2,6 +2,7 @@
     "version": "GitHub Copilot CLI 1.0.101, `copilot --acp --stdio`",
     "source": "Recorded from the real CLI on 2026-10-21: initialize, session/new and one session/prompt for \"Reply with the single word ok.\". The command list is cut to a few entries and the session id replaced; every other field is as the CLI sent it.",
     "sessionId": "copilot-session-1",
+    "titleFromPrompt": true,
     "initialize": {
         "protocolVersion": 1,
         "agentCapabilities": {

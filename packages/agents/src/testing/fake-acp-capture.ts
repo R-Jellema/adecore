@@ -1,7 +1,9 @@
 /*
  * An ACP agent that answers with the frames a real one sent, recorded in a capture: its `initialize`, its
- * `session/new`, and every update of one prompt before the response. Every prompt gets the same turn, except
- * that a `session_info_update` carries the prompt's own text as its title, as Copilot CLI names a session.
+ * `session/new`, and every update of one prompt before the response. Every prompt gets the same turn. A
+ * `{ permission }` entry among the updates is a `session/request_permission` the turn waits on until the
+ * client answers it, and with `titleFromPrompt` a `session_info_update` carries the prompt's own text as its
+ * title, as Copilot CLI names a session.
  */
 import type { FakeCli } from './fake-cli.ts';
 
@@ -16,9 +18,11 @@ export interface AcpCapture {
     setConfigOption: unknown;
     promptUpdates: unknown[];
     promptResponse: unknown;
+    titleFromPrompt?: boolean;
 }
 
-export function fakeAcpCapture(capture: AcpCapture): FakeCli {
+/* `answers` collects the client's answer to every permission request, in order. */
+export function fakeAcpCapture(capture: AcpCapture, answers: unknown[] = []): FakeCli {
     return (io) => {
         const send = (frame: Frame): void => {
             io.out({ jsonrpc: '2.0', ...frame });
@@ -26,13 +30,36 @@ export function fakeAcpCapture(capture: AcpCapture): FakeCli {
         const update = (fields: unknown): void => {
             send({ method: 'session/update', params: { sessionId: capture.sessionId, update: fields } });
         };
+        let waiting: { rpcId: number; rest: unknown[]; promptId: unknown; text: unknown } | null = null;
+        let nextRpcId = 0;
+        const play = (updates: unknown[], promptId: unknown, text: unknown): void => {
+            for (const [index, fields] of updates.entries()) {
+                const permission = (fields as Frame).permission;
+                if (permission !== undefined) {
+                    const rpcId = nextRpcId++;
+                    waiting = { rpcId, rest: updates.slice(index + 1), promptId, text };
+                    send({ id: rpcId, method: 'session/request_permission', params: permission });
+                    return;
+                }
+                const named = capture.titleFromPrompt === true && (fields as Frame).sessionUpdate === 'session_info_update';
+                update(named ? { ...(fields as Frame), title: text } : fields);
+            }
+            send({ id: promptId, result: capture.promptResponse });
+        };
         return {
             onLine: (line) => {
                 const frame = JSON.parse(line) as Frame;
                 const id = frame.id;
                 switch (frame.method) {
-                    case undefined:
+                    case undefined: {
+                        const answered = waiting;
+                        if (answered !== null && id === answered.rpcId) {
+                            waiting = null;
+                            answers.push(frame.result ?? frame.error);
+                            play(answered.rest, answered.promptId, answered.text);
+                        }
                         return;
+                    }
                     case 'initialize':
                         send({ id, result: capture.initialize });
                         return;
@@ -49,12 +76,7 @@ export function fakeAcpCapture(capture: AcpCapture): FakeCli {
                         return;
                     case 'session/prompt': {
                         const blocks = Array.isArray((frame.params as Frame | undefined)?.prompt) ? ((frame.params as Frame).prompt as Frame[]) : [];
-                        const text = blocks.find((block) => block.type === 'text')?.text;
-                        for (const fields of capture.promptUpdates) {
-                            const named = (fields as Frame).sessionUpdate === 'session_info_update';
-                            update(named ? { ...(fields as Frame), title: text } : fields);
-                        }
-                        send({ id, result: capture.promptResponse });
+                        play(capture.promptUpdates, id, blocks.find((block) => block.type === 'text')?.text);
                         return;
                     }
                     case 'session/cancel':
