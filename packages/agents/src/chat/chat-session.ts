@@ -1964,6 +1964,17 @@ export class ChatSession {
             return;
         }
         /*
+         * A CLI that counts its tokens but names no window, in a chat that has none yet: the catalog may have learned the
+         * model's window since the chat began, as an ACP agent's catalog does from the first session that reports its models.
+         */
+        if (event.type === 'usage' && event.contextWindow === undefined && event.contextTokens !== undefined && this.thread.info.usage.contextWindow === null) {
+            const contextWindow = this.options.provider.catalog.contextWindowFor(this.launchedSelection ?? this.thread.info.selection);
+            if (contextWindow !== null) {
+                this.emit(this.projector.project(generation, { ...event, contextWindow }));
+                return;
+            }
+        }
+        /*
          * A CLI reports the window it was started on. A pick made since waits for the restart the next
          * send does, so its report may not put the old size back under a meter that already reads the new one.
          */

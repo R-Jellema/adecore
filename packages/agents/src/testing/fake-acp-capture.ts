@@ -2,8 +2,8 @@
  * An ACP agent that answers with the frames a real one sent, recorded in a capture: its `initialize`, its
  * `session/new`, and every update of one prompt before the response. Every prompt gets the same turn. A
  * `{ permission }` entry among the updates is a `session/request_permission` the turn waits on until the
- * client answers it, and with `titleFromPrompt` a `session_info_update` carries the prompt's own text as its
- * title, as Copilot CLI names a session.
+ * client answers it, an `{ update, _meta }` entry is a notification with a `_meta` of its own, and with
+ * `titleFromPrompt` a `session_info_update` carries the prompt's own text as its title, as Copilot CLI names a session.
  */
 import type { FakeCli } from './fake-cli.ts';
 
@@ -28,7 +28,8 @@ export function fakeAcpCapture(capture: AcpCapture, answers: unknown[] = []): Fa
             io.out({ jsonrpc: '2.0', ...frame });
         };
         const update = (fields: unknown): void => {
-            send({ method: 'session/update', params: { sessionId: capture.sessionId, update: fields } });
+            const notification = (fields as Frame).update === undefined ? { update: fields } : (fields as Frame);
+            send({ method: 'session/update', params: { sessionId: capture.sessionId, ...notification } });
         };
         let waiting: { rpcId: number; rest: unknown[]; promptId: unknown; text: unknown } | null = null;
         let nextRpcId = 0;

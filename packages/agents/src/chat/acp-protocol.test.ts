@@ -453,3 +453,43 @@ describe('the usage of a prompt response', () => {
         expect(promptUsageOf({ stopReason: 'end_turn', usage: { totalTokens: 0, inputTokens: 0, outputTokens: 0 } })).toBeNull();
     });
 });
+
+describe('a count of the context outside the protocol', () => {
+    const chunk = (text: string, totalTokens?: number) => ({
+        sessionId: 's',
+        update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text } },
+        ...(totalTokens === undefined ? {} : { _meta: { totalTokens } })
+    });
+    const usageOf = (events: BackendEvent[]) => events.filter((event) => event.type === 'usage');
+
+    test('fills the meter from `_meta.totalTokens` of an update and of the response, once per change', () => {
+        const protocol = new AcpProtocol(1, MODES, acpStopWords('Example'));
+        expect(usageOf(protocol.update('s', chunk('o', 1457)))).toEqual([{ type: 'usage', contextTokens: 1457 }]);
+        expect(usageOf(protocol.update('s', chunk('k', 1457)))).toEqual([]);
+        expect(usageOf(protocol.update('s', chunk('!')))).toEqual([]);
+        expect(usageOf(protocol.finish({ stopReason: 'end_turn', _meta: { totalTokens: 21939 } }, 'prompt-1'))).toEqual([
+            { type: 'usage', contextTokens: 21939 }
+        ]);
+    });
+
+    test('is never read once the agent sent a standard usage update', () => {
+        const protocol = new AcpProtocol(1, MODES, acpStopWords('Example'));
+        protocol.update('s', { sessionId: 's', update: { sessionUpdate: 'usage_update', used: 300, size: 1000 } });
+        expect(usageOf(protocol.update('s', chunk('o', 1457)))).toEqual([]);
+        expect(usageOf(protocol.finish({ stopReason: 'end_turn', _meta: { totalTokens: 21939 } }, 'prompt-1'))).toEqual([]);
+    });
+
+    test("takes a model's window from the older models field where the config option names none", () => {
+        const info = parseSessionInfo(
+            {
+                configOptions: [
+                    { id: 'model', name: 'Model', category: 'model', type: 'select', currentValue: 'big', options: [{ value: 'big', name: 'Big' }] }
+                ],
+                models: { currentModelId: 'big', availableModels: [{ modelId: 'big', name: 'Big', _meta: { totalContextTokens: 256000 } }] }
+            },
+            's',
+            null
+        );
+        expect(info.models?.models).toEqual([{ id: 'big', name: 'Big', description: null, contextWindow: 256000 }]);
+    });
+});

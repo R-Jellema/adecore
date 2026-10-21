@@ -148,13 +148,15 @@ A provider starts from `ACP_CAPABILITIES` and lays over it what its agent showed
 
 The commands follow the last list the agent sent: a list without `compact` sets `compaction` back to `none`.
 
-A model whose entry carries `_meta.totalContextTokens`, a field some agents add outside the protocol, gets that size as its context window in the catalog, so the meter has a size before the first `usage_update`.
+A model whose entry carries `_meta.totalContextTokens`, a field some agents add outside the protocol, gets that size as its context window in the catalog, so the meter has a size before the first `usage_update`. An agent that offers its models as a config option and names their size only in the older `models` field keeps that size too.
 
 ## Usage
 
 A `session/prompt` response may carry `usage`, a part of the protocol that is still unstable. The backend reads it into `AcpTurnUsage`, with the kinds of token apart as a usage record keeps them. The protocol does not say whether `inputTokens` holds the cached part, so the total decides: when input, output and both cache kinds add up to more than `totalTokens`, the cache is taken out of the input. Thought tokens are kept as `reasoning`, a part of `output`. A cancelled turn still reports what it spent.
 
 The backend hands every turn with usage to `onUsage`. With `usageLog`, the provider also appends it as a `hostUsageLine` to a file per session in that folder, so the scanner reads it like any host log: the host adds a root for the folder with the provider it logs the agent under, which has to be one of `USAGE_PROVIDERS` (`copilot` is one). An agent whose own usage files the scanner reads (Grok) logs nothing, whatever `usageLog` says, so no turn is counted twice. The `usage_update` notification is the context window and the session's cost, not the tokens of a turn, so it is never logged.
+
+An agent that sends no `usage_update` may count the context outside the protocol, in `_meta.totalTokens`: Grok CLI puts it on every `session/update` notification and on the `session/prompt` response. Until the agent sends a `usage_update`, the backend takes that count as the context tokens, each time it changes, and the meter reads it against the window of the model in the catalog.
 
 ## Accounts
 

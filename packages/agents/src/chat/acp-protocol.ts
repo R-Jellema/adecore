@@ -133,6 +133,15 @@ function contextWindowOf(meta: unknown): number | null {
     return typeof tokens === 'number' && Number.isSafeInteger(tokens) && tokens > 0 ? tokens : null;
 }
 
+/*
+ * The context tokens an agent counts outside the protocol, in `_meta.totalTokens`: Grok CLI 1.0.62 sends no `usage_update`
+ * and puts the session's count there, on every `session/update` notification and on the `session/prompt` response.
+ */
+function vendorContextTokens(meta: unknown): number | null {
+    const tokens = isRecord(meta) ? meta.totalTokens : undefined;
+    return typeof tokens === 'number' && Number.isSafeInteger(tokens) && tokens > 0 ? tokens : null;
+}
+
 const AuthMethodSchema = z.looseObject({ id: z.string(), name: z.string() });
 
 const InitializeResponseSchema = z.looseObject({
@@ -296,6 +305,9 @@ function sessionState(options: ConfigOption[], modes: unknown, models: unknown):
     const thought = thoughtOption(options);
     const modeState = ModeStateSchema.safeParse(modes);
     const modelState = ModelStateSchema.safeParse(models);
+    const entries = modelState.success ? validItems(ModelEntrySchema, modelState.data.availableModels) : [];
+    // Grok CLI 1.0.62 offers its models as a config option too, but names their windows only in the older field.
+    const windows = new Map(entries.map((model) => [model.modelId, contextWindowOf(model._meta)]));
     return {
         models: modelOption
             ? {
@@ -304,14 +316,14 @@ function sessionState(options: ConfigOption[], modes: unknown, models: unknown):
                       id: value.value,
                       name: value.name,
                       description: null,
-                      contextWindow: contextWindowOf(value._meta)
+                      contextWindow: contextWindowOf(value._meta) ?? windows.get(value.value) ?? null
                   })),
                   configId: modelOption.id
               }
             : modelState.success
               ? {
                     current: modelState.data.currentModelId,
-                    models: validItems(ModelEntrySchema, modelState.data.availableModels).map((model) => ({
+                    models: entries.map((model) => ({
                         id: model.modelId,
                         name: model.name,
                         description: model.description ?? null,
@@ -614,6 +626,9 @@ export class AcpProtocol {
     private thought: { ref: string; text: string } | null = null;
     private counter = 0;
     private costUsd = 0;
+    // Set by the first `usage_update`; from then on a count outside the protocol is never read.
+    private standardUsage = false;
+    private vendorTokens: number | null = null;
     // The opening prompts of the process, whitespace folded, which an agent may hand back as the session's title.
     private readonly prompts: string[] = [];
 
@@ -633,7 +648,10 @@ export class AcpProtocol {
         if (!notification.success || notification.data.sessionId !== sessionId) {
             return [];
         }
-        const update = notification.data.update;
+        return [...this.mapUpdate(notification.data.update), ...this.vendorUsage(notification.data._meta)];
+    }
+
+    private mapUpdate(update: z.infer<typeof SessionNotificationSchema>['update']): BackendEvent[] {
         switch (update.sessionUpdate) {
             case 'agent_message_chunk':
                 return this.messageChunk(update);
@@ -663,6 +681,7 @@ export class AcpProtocol {
                 if (!usage.success) {
                     return [];
                 }
+                this.standardUsage = true;
                 const cost = usage.data.cost?.currency === 'USD' ? usage.data.cost.amount : undefined;
                 if (cost !== undefined) {
                     this.costUsd = cost;
@@ -679,6 +698,16 @@ export class AcpProtocol {
             default:
                 return [];
         }
+    }
+
+    /* The fallback for an agent that sends no `usage_update`: its own count of the context, once each time it changes. */
+    private vendorUsage(meta: unknown): BackendEvent[] {
+        const tokens = this.standardUsage ? null : vendorContextTokens(meta);
+        if (tokens === null || tokens === this.vendorTokens) {
+            return [];
+        }
+        this.vendorTokens = tokens;
+        return [{ type: 'usage', contextTokens: tokens }];
     }
 
     /* Notes a prompt sent to the agent, so a title that only repeats its start is not taken for a name. */
@@ -789,7 +818,7 @@ export class AcpProtocol {
         const stopReason = parsed.success ? parsed.data.stopReason : 'end_turn';
         const reason = cancelled ? 'cancelled' : stopReason === 'cancelled' ? 'end_turn' : stopReason;
         this.refusalLine = false;
-        const events = [...this.closeText(), ...this.closeThought()];
+        const events = [...this.closeText(), ...this.closeThought(), ...this.vendorUsage(isRecord(result) ? result._meta : undefined)];
         const base = { ...(promptId === undefined ? {} : { promptId }), costUsd: this.costUsd };
         switch (reason) {
             case 'cancelled':
