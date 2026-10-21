@@ -2,6 +2,7 @@ import { useState, type ReactNode, type Ref } from 'react';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { CircleAlert, CircleCheck, Trash, X } from 'lucide-react';
+import { useStore } from 'zustand';
 import { Button } from './Button.tsx';
 import { Icon } from './Icon.tsx';
 import { IconButton } from './IconButton.tsx';
@@ -133,7 +134,8 @@ export interface ToastsProps<T extends Toast> {
  * a deletion after eight, and a failure waits to be read.
  */
 export function Toasts<T extends Toast>({ store, footer, className, ref }: ToastsProps<T>) {
-    const toasts = store((state) => state.toasts);
+    // Through `useStore`: the compiler takes a call of the prop itself for a plain function and would skip it on a later draw.
+    const toasts = useStore(store, (state) => state.toasts);
     // Stays mounted with nothing in it: a screen reader skips what a live region says the moment it is inserted.
     return (
         <div
