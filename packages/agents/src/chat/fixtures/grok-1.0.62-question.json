@@ -1,0 +1,99 @@
+{
+  "version": "Grok 1.0.62, `grok --no-auto-update agent stdio`",
+  "source": "Not recorded: a question needs the model to choose to ask one. Built from the source of xai-org/grok-build at 2bdd1d6a, the closest to 1.0.62 it publishes: the ext request `_x.ai/ask_user_question` (acp_session_impl/spawn.rs) with the params of ask_user_question/types.rs; its answer is `{ outcome: \"accepted\", answers, annotations? }`, keyed by the question's text.",
+  "sessionId": "grok-session-1",
+  "initialize": {
+    "protocolVersion": 1,
+    "agentCapabilities": {
+      "loadSession": true,
+      "promptCapabilities": {
+        "image": false,
+        "embeddedContext": true
+      }
+    },
+    "authMethods": []
+  },
+  "sessionNew": {
+    "sessionId": "grok-session-1"
+  },
+  "commands": [],
+  "setConfigOption": {},
+  "promptUpdates": [
+    {
+      "sessionUpdate": "tool_call",
+      "toolCallId": "call-ask-1",
+      "title": "Ask the user",
+      "kind": "other",
+      "status": "pending"
+    },
+    {
+      "request": {
+        "method": "_x.ai/ask_user_question",
+        "params": {
+          "sessionId": "grok-session-1",
+          "toolCallId": "call-ask-1",
+          "mode": "default",
+          "questions": [
+            {
+              "question": "Which database should the service use?",
+              "options": [
+                {
+                  "label": "Postgres",
+                  "description": "The one the other services run on"
+                },
+                {
+                  "label": "SQLite",
+                  "description": "A file beside the service"
+                }
+              ],
+              "multiSelect": false
+            },
+            {
+              "question": "Which checks should run before a release?",
+              "options": [
+                {
+                  "label": "Tests",
+                  "description": "The unit tests"
+                },
+                {
+                  "label": "Lint, strict",
+                  "description": "Every warning fails"
+                },
+                {
+                  "label": "Types",
+                  "description": "The type check"
+                }
+              ],
+              "multiSelect": true
+            },
+            {
+              "question": "Anything else to keep in mind?",
+              "options": [
+                {
+                  "label": "No",
+                  "description": "Nothing"
+                }
+              ],
+              "multiSelect": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "sessionUpdate": "tool_call_update",
+      "toolCallId": "call-ask-1",
+      "status": "completed"
+    },
+    {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "Noted."
+      }
+    }
+  ],
+  "promptResponse": {
+    "stopReason": "end_turn"
+  }
+}

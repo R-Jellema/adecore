@@ -1,4 +1,4 @@
-import { isRecord, type ChatFileChange, type RuntimeMode } from '@adecore/agent-contracts';
+import { isRecord, type ChatFileChange, type ChatQuestion, type ChatTurnLimit, type RuntimeMode } from '@adecore/agent-contracts';
 import { z } from 'zod';
 import { MODE_ORDER } from '../modes.ts';
 import { cleanTitle } from '../title-file.ts';
@@ -54,6 +54,32 @@ const PermissionRequestSchema = z.looseObject({
     toolCall: ToolCallSchema,
     options: z.array(PermissionOptionSchema)
 });
+
+/*
+ * Grok's questions to the person (`_x.ai/ask_user_question` in xai-org/grok-build, `ask_user_question/types.rs`). The
+ * answer goes back keyed by the question's text, each a list of the labels picked.
+ */
+export const GROK_QUESTION_METHODS: readonly string[] = ['_x.ai/ask_user_question', 'x.ai/ask_user_question'];
+
+const GrokQuestionSchema = z.looseObject({
+    question: z.string(),
+    header: z.string().nullish(),
+    options: z.array(z.unknown()).nullish(),
+    multiSelect: z.boolean().nullish()
+});
+
+const GrokChoiceSchema = z.looseObject({ label: z.string(), description: z.string().nullish() });
+
+const GrokQuestionRequestSchema = z.looseObject({ sessionId: z.string(), questions: z.array(z.unknown()) });
+
+// The label Grok takes for an answer in a person's own words, which ride along as the question's `notes`.
+const GROK_OWN_ANSWER = 'Other';
+
+/*
+ * The prefix Antigravity's ACP server 1.4.1 gives the tool call of a question it asks over `session/request_permission`,
+ * one request per question with an option per choice (`ExternalOnInteractionHook`).
+ */
+const INTERACTION_PREFIX = 'interaction_';
 
 const SessionNotificationSchema = z.looseObject({ sessionId: z.string(), update: z.looseObject({ sessionUpdate: z.string() }) });
 
@@ -484,6 +510,17 @@ const KEPT_PROMPTS = 3;
 // What Copilot CLI 1.0.101 writes as a message of its own after a call a person turned down; the thread shows the refusal already.
 const REFUSAL_LINE = 'Info: Operation cancelled by user';
 
+/*
+ * What Antigravity's ACP server 1.4.1 writes in place of an answer once the account's quota ran out (`quota_errors.py`).
+ * Its turn still ends with `end_turn`, so this text is all that tells the limit apart.
+ */
+const QUOTA_HEAD = 'Usage Limit Reached\n\nYou have reached your current quota for this period.';
+
+/* Whether a message may still turn out to be one the thread does not show: the refusal line after a refusal, or a limit message. */
+function withheld(text: string, afterRefusal: boolean): boolean {
+    return (afterRefusal && REFUSAL_LINE.startsWith(text)) || QUOTA_HEAD.startsWith(text) || text.startsWith(QUOTA_HEAD);
+}
+
 function foldSpace(text: string): string {
     return text.replace(/\s+/g, ' ').trim();
 }
@@ -596,19 +633,117 @@ export interface AcpPermission {
     events: BackendEvent[];
 }
 
-/* The words a turn that ended for another reason than its end leaves in the thread. */
+/* A question an agent asks the person, as the backend acts on it. */
+export interface AcpQuestion {
+    requestId: string;
+    rpcId: number | string;
+    events: BackendEvent[];
+}
+
+/* The words a turn that ended for another reason than its end leaves in the thread, and a question it could not answer. */
 export interface AcpStopWords {
     maxTokens: string;
     maxTurnRequests: string;
     refusal: string;
+    ownAnswer: string;
 }
 
 export function acpStopWords(agentName: string): AcpStopWords {
     return {
         maxTokens: `${agentName} stopped: the response reached its token limit.`,
         maxTurnRequests: `${agentName} stopped: the turn reached its limit of model requests.`,
-        refusal: `${agentName} refused to continue this turn.`
+        refusal: `${agentName} refused to continue this turn.`,
+        ownAnswer: `${agentName} only takes one of the answers it offered, so the question was turned down.`
     };
+}
+
+// Grok's code for a request its API turned down with a 429, after its own retry (`RATE_LIMITED_ERROR_CODE` in xai-org/grok-build).
+const GROK_RATE_LIMITED = -32003;
+
+// What that 429 says when an account on the free tier spent its usage; any other 429 is a rate limit.
+const GROK_FREE_USAGE = 'subscription:free-usage-exhausted';
+
+// The stream error types of an overloaded model, as Grok passes them on in its error text.
+const OVERLOADED_TYPES = /\b(overloaded_error|service_unavailable_error)\b/;
+
+/*
+ * The limit a failed `session/prompt` names in its JSON-RPC error; null for any other failure. ACP 1 has no code
+ * for a limit, so this reads Grok 1.0.62's: -32003 after a 429, and -32603 with the HTTP status or the stream error
+ * of an overloaded model once its own retries ran out. Neither says when a limit lifts.
+ */
+export function acpErrorLimit(code: number | null, data: unknown): ChatTurnLimit | null {
+    const text = typeof data === 'string' ? data : isRecord(data) && typeof data.message === 'string' ? data.message : '';
+    if (code === GROK_RATE_LIMITED) {
+        return text.includes(GROK_FREE_USAGE) ? { kind: 'usage' } : { kind: 'overload' };
+    }
+    if (code !== -32603) {
+        return null;
+    }
+    const status = isRecord(data) && typeof data.http_status === 'number' ? data.http_status : null;
+    const overloaded = status === 529 || OVERLOADED_TYPES.test(text) || (status !== null && status >= 500 && /overloaded/i.test(text));
+    return overloaded ? { kind: 'overload' } : null;
+}
+
+const UNIT_MS: Record<string, number> = { second: 1000, minute: 60_000, hour: 3_600_000, day: 86_400_000 };
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/*
+ * When the quota in an Antigravity limit message lifts, rounded up: the server writes the two largest units of the
+ * delay and drops the rest (`will reset in 4 days, 23 hours.`), or the time to the minute (`will reset on Oct 21,
+ * 2026 14:05 UTC.`). Null when it names neither.
+ */
+export function quotaResetOf(text: string, now: number): number | null {
+    const relative = /will reset in ([^.]+)\./.exec(text);
+    if (relative) {
+        let total = 0;
+        let smallest = Infinity;
+        for (const part of relative[1]!.split(',')) {
+            const amount = /^(\d+) (second|minute|hour|day)s?$/.exec(part.trim());
+            if (!amount) {
+                return null;
+            }
+            const unit = UNIT_MS[amount[2]!]!;
+            total += Number(amount[1]) * unit;
+            smallest = Math.min(smallest, unit);
+        }
+        return now + total + smallest;
+    }
+    const absolute = /will reset on ([A-Z][a-z]{2}) (\d{1,2}), (\d{4}) (\d{2}):(\d{2}) UTC\./.exec(text);
+    const month = absolute ? MONTHS.indexOf(absolute[1]!) : -1;
+    if (!absolute || month === -1) {
+        return null;
+    }
+    return Date.UTC(Number(absolute[3]), month, Number(absolute[2]), Number(absolute[4]), Number(absolute[5])) + UNIT_MS.minute!;
+}
+
+/* The labels a person picked, out of the one answer a question card gives (choices joined with `, `); null for words of their own. */
+function pickedLabels(answer: string, labels: readonly string[], multiSelect: boolean): string[] | null {
+    if (labels.includes(answer)) {
+        return [answer];
+    }
+    if (!multiSelect) {
+        return null;
+    }
+    // A label may hold `, ` itself, so the pieces join up again until they make one.
+    const picked: string[] = [];
+    let part = '';
+    for (const piece of answer.split(', ')) {
+        part = part === '' ? piece : `${part}, ${piece}`;
+        if (labels.includes(part)) {
+            picked.push(part);
+            part = '';
+        }
+    }
+    return part === '' && picked.length > 0 ? picked : null;
+}
+
+type PendingQuestion =
+    | { shape: 'grok'; rpcId: number | string; questions: ChatQuestion[] }
+    | { shape: 'interaction'; rpcId: number | string; question: ChatQuestion; options: Array<z.infer<typeof PermissionOptionSchema>> };
+
+function cancelledAnswer(pending: PendingQuestion): unknown {
+    return pending.shape === 'grok' ? { outcome: 'cancelled' } : { outcome: { outcome: 'cancelled' } };
 }
 
 /*
@@ -622,10 +757,14 @@ export class AcpProtocol {
     private readonly words: AcpStopWords;
     private readonly tools = new Map<string, ToolState>();
     private readonly permissions = new Map<string, { rpcId: number | string; toolCallId: string; options: Array<z.infer<typeof PermissionOptionSchema>> }>();
-    // `held` while the message may still be the refusal line, whose chunks the thread has not heard yet.
-    private text: { ref: string; messageId: string | null; text: string; held: boolean } | null = null;
+    private readonly questions = new Map<string, PendingQuestion>();
+    // `held` while the message may still be the refusal line or a limit message, whose chunks the thread has not heard yet.
+    private text: { ref: string; messageId: string | null; text: string; held: boolean; afterRefusal: boolean } | null = null;
     // Set by a refusal until the next message shows whether it is the refusal line.
     private refusalLine = false;
+    // The limit message of this turn, which ends it as a limit instead of an answer.
+    private quota: { text: string; resetsAt: number | null } | null = null;
+    private readonly now: () => number;
     private thought: { ref: string; text: string } | null = null;
     private counter = 0;
     private costUsd = 0;
@@ -638,11 +777,12 @@ export class AcpProtocol {
     private readonly titles: boolean;
 
     // `titles` takes the session titles the agent sends as the chat's suggested title.
-    constructor(generation: number, modes: AcpModeMap, words: AcpStopWords, titles = false) {
+    constructor(generation: number, modes: AcpModeMap, words: AcpStopWords, titles = false, now: () => number = Date.now) {
         this.generation = generation;
         this.modes = modes;
         this.words = words;
         this.titles = titles;
+        this.now = now;
     }
 
     /* One `session/update` notification; empty for another session, an unknown update or one that does not parse. */
@@ -796,19 +936,131 @@ export class AcpProtocol {
         return { rpcId: pending.rpcId, result, events: this.toolCall({ toolCallId: pending.toolCallId }, false) };
     }
 
-    /* Every permission request still open, answered as cancelled, which the protocol asks of a client that cancels a turn. */
-    cancelPermissions(): Array<{ requestId: string; rpcId: number | string; result: unknown }> {
-        const cancelled = [...this.permissions].map(([requestId, pending]) => ({
-            requestId,
-            rpcId: pending.rpcId,
-            result: { outcome: { outcome: 'cancelled' } }
+    /* A Grok `ask_user_question` request; null when it does not parse or asks nothing, which the caller answers with an error. */
+    question(rpcId: number | string, sessionId: string, params: unknown): AcpQuestion | null {
+        const request = GrokQuestionRequestSchema.safeParse(params);
+        if (!request.success || request.data.sessionId !== sessionId) {
+            return null;
+        }
+        const questions = validItems(GrokQuestionSchema, request.data.questions).map((question, index): ChatQuestion => ({
+            id: String(index),
+            header: question.header ?? '',
+            question: question.question,
+            choices: validItems(GrokChoiceSchema, question.options).map((choice) => ({ label: choice.label, description: choice.description ?? '' })),
+            multiSelect: question.multiSelect === true
         }));
+        if (questions.length === 0) {
+            return null;
+        }
+        return this.ask(rpcId, { shape: 'grok', rpcId, questions });
+    }
+
+    /*
+     * A `session/request_permission` that is a question rather than a permission, as Antigravity asks one: one choice of
+     * several, never a call to run. Null for every other permission request.
+     */
+    interaction(rpcId: number | string, sessionId: string, params: unknown): AcpQuestion | null {
+        const request = PermissionRequestSchema.safeParse(params);
+        if (!request.success || request.data.sessionId !== sessionId) {
+            return null;
+        }
+        const call = request.data.toolCall;
+        const raw = call.rawInput;
+        const bare = raw === undefined || raw === null || (isRecord(raw) && Object.keys(raw).length === 0);
+        if (!call.toolCallId.startsWith(INTERACTION_PREFIX) || !bare || call.kind || request.data.options.length === 0) {
+            return null;
+        }
+        const question: ChatQuestion = {
+            id: '0',
+            header: '',
+            question: call.title ?? '',
+            choices: request.data.options.map((option) => ({ label: option.name, description: '' })),
+            multiSelect: false
+        };
+        return this.ask(rpcId, { shape: 'interaction', rpcId, question, options: request.data.options });
+    }
+
+    private ask(rpcId: number | string, pending: PendingQuestion): AcpQuestion {
+        const requestId = `acp-${this.generation}-${String(rpcId)}`;
+        this.questions.set(requestId, pending);
+        const questions = pending.shape === 'grok' ? pending.questions : [pending.question];
+        return { requestId, rpcId, events: [...this.closeText(), ...this.closeThought(), { type: 'question.requested', requestId, questions }] };
+    }
+
+    /* The answer to a question in the agent's own shape, from the card's answers keyed by question id. */
+    answerQuestion(requestId: string, answers: Record<string, string>): { rpcId: number | string; result: unknown; events: BackendEvent[] } | null {
+        const pending = this.questions.get(requestId);
+        if (!pending) {
+            return null;
+        }
+        this.questions.delete(requestId);
+        if (pending.shape === 'interaction') {
+            const given = (answers[pending.question.id] ?? '').trim();
+            const option = pending.options.find((candidate) => candidate.name === given) ?? pending.options.find((candidate) => candidate.optionId === given);
+            if (option === undefined) {
+                return {
+                    rpcId: pending.rpcId,
+                    result: { outcome: { outcome: 'cancelled' } },
+                    events: [{ type: 'note', level: 'warning', text: this.words.ownAnswer }]
+                };
+            }
+            return { rpcId: pending.rpcId, result: { outcome: { outcome: 'selected', optionId: option.optionId } }, events: [] };
+        }
+        const picked: Record<string, string[]> = {};
+        const notes: Record<string, { notes: string }> = {};
+        for (const question of pending.questions) {
+            const given = answers[question.id];
+            if (given === undefined) {
+                continue;
+            }
+            const labels = pickedLabels(
+                given,
+                question.choices.map((choice) => choice.label),
+                question.multiSelect
+            );
+            picked[question.question] = labels ?? [GROK_OWN_ANSWER];
+            if (labels === null) {
+                notes[question.question] = { notes: given };
+            }
+        }
+        return {
+            rpcId: pending.rpcId,
+            result: { outcome: 'accepted', answers: picked, ...(Object.keys(notes).length === 0 ? {} : { annotations: notes }) },
+            events: []
+        };
+    }
+
+    /* Turns one question down, in the shape its agent takes a refusal in. */
+    cancelQuestion(requestId: string): { rpcId: number | string; result: unknown } | null {
+        const pending = this.questions.get(requestId);
+        if (!pending) {
+            return null;
+        }
+        this.questions.delete(requestId);
+        return { rpcId: pending.rpcId, result: cancelledAnswer(pending) };
+    }
+
+    /* Every permission request and question still open, answered as cancelled, which the protocol asks of a client that cancels a turn. */
+    cancelRequests(): Array<{ requestId: string; rpcId: number | string; result: unknown }> {
+        const cancelled = [
+            ...[...this.permissions].map(([requestId, pending]) => ({
+                requestId,
+                rpcId: pending.rpcId,
+                result: { outcome: { outcome: 'cancelled' } } as unknown
+            })),
+            ...[...this.questions].map(([requestId, pending]) => ({ requestId, rpcId: pending.rpcId, result: cancelledAnswer(pending) }))
+        ];
         this.permissions.clear();
+        this.questions.clear();
         return cancelled;
     }
 
     hasPermission(requestId: string): boolean {
         return this.permissions.has(requestId);
+    }
+
+    hasQuestion(requestId: string): boolean {
+        return this.questions.has(requestId);
     }
 
     /*
@@ -823,6 +1075,13 @@ export class AcpProtocol {
         this.refusalLine = false;
         const events = [...this.closeText(), ...this.closeThought(), ...this.vendorUsage(isRecord(result) ? result._meta : undefined)];
         const base = { ...(promptId === undefined ? {} : { promptId }), costUsd: this.costUsd };
+        const quota = this.quota;
+        this.quota = null;
+        if (quota !== null && reason === 'end_turn') {
+            const limit: ChatTurnLimit = { kind: 'usage', ...(quota.resetsAt === null ? {} : { resetsAt: quota.resetsAt }) };
+            events.push({ type: 'turn.done', ...base, state: 'error', error: quota.text, limit });
+            return events;
+        }
         switch (reason) {
             case 'cancelled':
                 events.push({ type: 'turn.done', ...base, state: 'aborted' });
@@ -842,15 +1101,18 @@ export class AcpProtocol {
         return events;
     }
 
-    /* A turn that ended without a `stopReason`: the request failed, or was cancelled before the agent said so. */
-    abort(promptId: string | undefined, error: string | null): BackendEvent[] {
+    /* A turn that ended without a `stopReason`: the request failed, on a limit its error names, or was cancelled before the agent said so. */
+    abort(promptId: string | undefined, error: string | null, limit: ChatTurnLimit | null = null): BackendEvent[] {
         this.refusalLine = false;
         const base = { ...(promptId === undefined ? {} : { promptId }), costUsd: this.costUsd };
-        return [
-            ...this.closeText(),
-            ...this.closeThought(),
-            error === null ? { type: 'turn.done', ...base, state: 'aborted' } : { type: 'turn.done', ...base, state: 'error', error }
-        ];
+        const events = [...this.closeText(), ...this.closeThought()];
+        this.quota = null;
+        events.push(
+            error === null
+                ? { type: 'turn.done', ...base, state: 'aborted' }
+                : { type: 'turn.done', ...base, state: 'error', error, ...(limit === null ? {} : { limit }) }
+        );
+        return events;
     }
 
     private messageChunk(update: Record<string, unknown>): BackendEvent[] {
@@ -864,12 +1126,13 @@ export class AcpProtocol {
             events.push(...this.closeText());
         }
         if (this.text === null) {
-            this.text = { ref: messageId === null ? `message-${++this.counter}` : `message-${messageId}`, messageId, text: '', held: this.refusalLine };
+            const ref = messageId === null ? `message-${++this.counter}` : `message-${messageId}`;
+            this.text = { ref, messageId, text: '', held: true, afterRefusal: this.refusalLine };
             this.refusalLine = false;
         }
         const text = this.text;
         text.text += chunk.data.content.text;
-        if (text.held && !REFUSAL_LINE.startsWith(text.text)) {
+        if (text.held && !withheld(text.text, text.afterRefusal)) {
             text.held = false;
             events.push({ type: 'text.delta', ref: text.ref, text: text.text });
         } else if (!text.held) {
@@ -895,7 +1158,11 @@ export class AcpProtocol {
     private closeText(): BackendEvent[] {
         const text = this.text;
         this.text = null;
-        if (text === null || (text.held && text.text === REFUSAL_LINE)) {
+        if (text === null || (text.held && text.afterRefusal && text.text === REFUSAL_LINE)) {
+            return [];
+        }
+        if (text.held && text.text.startsWith(QUOTA_HEAD)) {
+            this.quota = { text: text.text.trim(), resetsAt: quotaResetOf(text.text, this.now()) };
             return [];
         }
         return [{ type: 'text.done', ref: text.ref, text: text.text }];

@@ -1,0 +1,69 @@
+{
+  "version": "Antigravity ACP server 1.4.1, `agy_acp_server.par`",
+  "source": "Not recorded: a question needs the model to choose to ask one. Built from `ExternalOnInteractionHook` in the server's acp_server/hooks.py inside agy_acp_server.par 1.4.1: a `tool_call` with an `interaction_` id and an empty rawInput, then one `session/request_permission` per question with an `allow_once` option per choice, answered with the chosen optionId.",
+  "sessionId": "agy-session-1",
+  "initialize": {
+    "protocolVersion": 1,
+    "agentCapabilities": {
+      "loadSession": true,
+      "promptCapabilities": {
+        "image": false,
+        "embeddedContext": true
+      }
+    },
+    "authMethods": []
+  },
+  "sessionNew": {
+    "sessionId": "agy-session-1"
+  },
+  "commands": [],
+  "setConfigOption": {},
+  "promptUpdates": [
+    {
+      "sessionUpdate": "tool_call",
+      "toolCallId": "interaction_3f9a1c2e",
+      "title": "Which test runner should I set up?",
+      "rawInput": {},
+      "status": "pending"
+    },
+    {
+      "permission": {
+        "sessionId": "agy-session-1",
+        "toolCall": {
+          "toolCallId": "interaction_3f9a1c2e",
+          "title": "Which test runner should I set up?",
+          "rawInput": {},
+          "status": "pending"
+        },
+        "options": [
+          {
+            "optionId": "opt_builtin",
+            "name": "The built-in runner",
+            "kind": "allow_once"
+          },
+          {
+            "optionId": "opt_separate",
+            "name": "A separate runner",
+            "kind": "allow_once"
+          }
+        ]
+      }
+    },
+    {
+      "sessionUpdate": "tool_call_update",
+      "toolCallId": "interaction_3f9a1c2e",
+      "status": "completed",
+      "rawOutput": "Response received"
+    },
+    {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "Setting it up."
+      }
+    }
+  ],
+  "promptResponse": {
+    "stopReason": "end_turn"
+  }
+}

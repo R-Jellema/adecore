@@ -1,0 +1,66 @@
+{
+  "version": "Grok 1.0.62, `grok --no-auto-update agent stdio`",
+  "source": "Not recorded: no account here runs into these limits on demand. Built from the source of xai-org/grok-build at 2bdd1d6a, the closest to 1.0.62 it publishes: `handle_sampling_failure` in acp_session_impl/sampler_turn.rs fails `session/prompt` with -32003 after a 429 and with -32603 for an overloaded model once its retries ran out, and sampling/error.rs builds the `data` (a string, or `message` with `http_status`). The bodies after the status line are examples.",
+  "sessionId": "grok-session-1",
+  "initialize": {
+    "protocolVersion": 1,
+    "agentCapabilities": {
+      "loadSession": true,
+      "promptCapabilities": {
+        "image": false,
+        "embeddedContext": true
+      }
+    },
+    "authMethods": []
+  },
+  "sessionNew": {
+    "sessionId": "grok-session-1"
+  },
+  "commands": [],
+  "setConfigOption": {},
+  "promptUpdates": [
+    {
+      "sessionUpdate": "agent_thought_chunk",
+      "content": {
+        "type": "text",
+        "text": "Reading the request."
+      }
+    }
+  ],
+  "promptResponse": {
+    "stopReason": "end_turn"
+  },
+  "errors": {
+    "freeUsage": {
+      "code": -32003,
+      "message": "Rate limited",
+      "data": "API error (status 429 Too Many Requests): {\"code\":\"subscription:free-usage-exhausted\",\"error\":\"You have used the free usage of this period.\"}"
+    },
+    "rateLimited": {
+      "code": -32003,
+      "message": "Rate limited",
+      "data": "API error (status 429 Too Many Requests): {\"code\":\"rate_limit_exceeded\",\"error\":\"Too many requests.\"}"
+    },
+    "overloaded": {
+      "code": -32603,
+      "message": "Internal error",
+      "data": {
+        "message": "API error (status 529): Overloaded",
+        "http_status": 529
+      }
+    },
+    "overloadedStream": {
+      "code": -32603,
+      "message": "Internal error",
+      "data": "stream error (overloaded_error): Overloaded"
+    },
+    "badRequest": {
+      "code": -32603,
+      "message": "Internal error",
+      "data": {
+        "message": "API error (status 400 Bad Request): The prompt is too long.",
+        "http_status": 400
+      }
+    }
+  }
+}

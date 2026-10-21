@@ -1,0 +1,35 @@
+{
+  "version": "Antigravity ACP server 1.4.1, `agy_acp_server.par`",
+  "source": "Not recorded: no account here runs out of quota on demand. Built from the server's own Python modules inside agy_acp_server.par 1.4.1 (acp_server/server.py and ccpa_connection/quota_errors.py): on QUOTA_EXHAUSTED it writes this message as an agent_message_chunk and answers the prompt with `end_turn`; the reset is the delay in its two largest units, or the time when only that is known.",
+  "sessionId": "agy-session-1",
+  "initialize": {
+    "protocolVersion": 1,
+    "agentCapabilities": {
+      "loadSession": true,
+      "promptCapabilities": {
+        "image": false,
+        "embeddedContext": true
+      }
+    },
+    "authMethods": []
+  },
+  "sessionNew": {
+    "sessionId": "agy-session-1"
+  },
+  "commands": [],
+  "setConfigOption": {},
+  "promptUpdates": [
+    {
+      "sessionUpdate": "agent_message_chunk",
+      "content": {
+        "type": "text",
+        "text": "Usage Limit Reached\n\nYou have reached your current quota for this period. Your limit will reset in 4 days, 23 hours."
+      }
+    }
+  ],
+  "promptResponse": {
+    "stopReason": "end_turn"
+  },
+  "resetOn": "Usage Limit Reached\n\nYou have reached your current quota for this period. Your limit will reset on Oct 23, 2026 14:05 UTC.",
+  "noReset": "Usage Limit Reached\n\nYou have reached your current quota for this period."
+}

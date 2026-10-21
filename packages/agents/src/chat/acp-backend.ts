@@ -8,8 +8,10 @@ import {
     ACP_AUTH_REQUIRED,
     ACP_PROTOCOL_VERSION,
     AcpProtocol,
+    acpErrorLimit,
     acpStopWords,
     autoAllows,
+    GROK_QUESTION_METHODS,
     parseInitialize,
     parseSessionInfo,
     promptUsageOf,
@@ -21,6 +23,7 @@ import {
     type AcpAgentCapabilities,
     type AcpModeMap,
     type AcpPermissionRequest,
+    type AcpQuestion,
     type AcpSessionInfo,
     type AcpThoughtLevel,
     type AcpTurnUsage
@@ -124,7 +127,7 @@ export class AcpBackend implements ChatBackend {
         this.host = host;
         this.spec = spec;
         this.client = spec.client ?? DEFAULT_ACP_CLIENT;
-        this.protocol = new AcpProtocol(launch.generation, spec.modes ?? {}, acpStopWords(spec.name), spec.adoptTitles === true);
+        this.protocol = new AcpProtocol(launch.generation, spec.modes ?? {}, acpStopWords(spec.name), spec.adoptTitles === true, launch.now);
     }
 
     get running(): boolean {
@@ -430,7 +433,8 @@ export class AcpBackend implements ChatBackend {
                 // A process that went has its exit tell the thread; anything else ends this turn alone.
                 if (this.transport === transport && transport.alive && this.prompt === turn) {
                     this.prompt = null;
-                    this.emitAll(this.protocol.abort(turn.promptId, turn.cancelled ? null : errorText(error)));
+                    const limit = error instanceof JsonRpcError ? acpErrorLimit(error.code, error.data) : null;
+                    this.emitAll(this.protocol.abort(turn.promptId, turn.cancelled ? null : errorText(error), limit));
                 }
             });
     }
@@ -457,7 +461,7 @@ export class AcpBackend implements ChatBackend {
         }
         this.prompt.cancelled = true;
         try {
-            for (const cancelled of this.protocol.cancelPermissions()) {
+            for (const cancelled of this.protocol.cancelRequests()) {
                 transport.respond(cancelled.rpcId, cancelled.result);
                 this.emit({ type: 'request.withdrawn', requestId: cancelled.requestId });
             }
@@ -479,12 +483,23 @@ export class AcpBackend implements ChatBackend {
         return true;
     }
 
-    /* ACP asks no questions of its own; an agent asks in its message and the next prompt answers. */
-    respondQuestion(): boolean {
-        return false;
+    respondQuestion(requestId: string, answers: Record<string, string>): boolean {
+        const answer = this.protocol.answerQuestion(requestId, answers);
+        if (!answer) {
+            return false;
+        }
+        if (!this.respond(requestId, answer.rpcId, answer.result)) {
+            return false;
+        }
+        this.emitAll(answer.events);
+        return true;
     }
 
     declineRequest(requestId: string): boolean {
+        if (this.protocol.hasQuestion(requestId)) {
+            const cancelled = this.protocol.cancelQuestion(requestId);
+            return cancelled !== null && this.respond(requestId, cancelled.rpcId, cancelled.result);
+        }
         return this.protocol.hasPermission(requestId) && this.respondApproval(requestId, 'deny');
     }
 
@@ -532,8 +547,23 @@ export class AcpBackend implements ChatBackend {
         if (id === null) {
             return;
         }
+        if (typeof frame.method === 'string' && GROK_QUESTION_METHODS.includes(frame.method)) {
+            const question = this.protocol.question(id, this.sessionId, frame.params);
+            if (question === null) {
+                transport.respondError(id, -32602, 'Not a question of this session');
+                return;
+            }
+            this.ask(transport, question);
+            return;
+        }
         if (frame.method !== 'session/request_permission') {
             transport.respondError(id, -32601, `${nameOf(this.client)} does not handle ${String(frame.method)}`);
+            return;
+        }
+        // Before any runtime mode answers it: a question is never the agent's to allow.
+        const interaction = this.protocol.interaction(id, this.sessionId, frame.params);
+        if (interaction !== null) {
+            this.ask(transport, interaction);
             return;
         }
         const permission = this.protocol.permission(id, this.sessionId, frame.params);
@@ -543,7 +573,7 @@ export class AcpBackend implements ChatBackend {
         }
         if (this.prompt?.cancelled) {
             this.emitAll(permission.events.filter((event) => event.type !== 'approval.requested'));
-            const answer = this.protocol.cancelPermissions().find((cancelled) => cancelled.requestId === permission.requestId);
+            const answer = this.protocol.cancelRequests().find((cancelled) => cancelled.requestId === permission.requestId);
             if (answer) {
                 transport.respond(answer.rpcId, answer.result);
             }
@@ -558,6 +588,19 @@ export class AcpBackend implements ChatBackend {
             return;
         }
         this.emitAll(permission.events);
+    }
+
+    /* Puts a question to the person, or turns it down at once when the turn is being cancelled. */
+    private ask(transport: JsonRpcTransport, question: AcpQuestion): void {
+        if (this.prompt?.cancelled) {
+            this.emitAll(question.events.filter((event) => event.type !== 'question.requested'));
+            const cancelled = this.protocol.cancelQuestion(question.requestId);
+            if (cancelled) {
+                transport.respond(cancelled.rpcId, cancelled.result);
+            }
+            return;
+        }
+        this.emitAll(question.events);
     }
 
     /* Holds an update until the session is known; of a history a load replays, only the commands, since the thread has the rest. */
@@ -582,7 +625,7 @@ export class AcpBackend implements ChatBackend {
         }
         this.transport = null;
         this.prompt = null;
-        this.protocol.cancelPermissions();
+        this.protocol.cancelRequests();
         this.emit({ type: 'exit', exitCode, ...(stderr === null ? {} : { stderr }) });
     }
 

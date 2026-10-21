@@ -101,9 +101,27 @@ A turn is one `session/prompt` and ends on its response. `stopReason` maps onto 
 
 A failed request ends the turn as an error and leaves the process running. An agent may answer `cancelled` without a cancel, as Grok CLI does when a person turns a call down; that turn ends as done, since nobody stopped it.
 
+ACP names no limit, so the backend reads the ones agents report in their own way and ends that turn as an error with a `limit`, as the other backends do:
+
+| Agent | What it sends | `limit` |
+| --- | --- | --- |
+| Grok CLI | `session/prompt` fails with `-32003` whose data names `subscription:free-usage-exhausted` | `usage`, without a reset |
+| Grok CLI | `session/prompt` fails with `-32003` otherwise (a 429 after its own retry) | `overload` |
+| Grok CLI | `session/prompt` fails with `-32603` and `http_status` 529, a 5xx that says overloaded, or the stream error `overloaded_error` or `service_unavailable_error` | `overload` |
+| Antigravity | A message that starts `Usage Limit Reached` and `You have reached your current quota for this period.`, then `end_turn` | `usage`, with the reset the message names, rounded up; the message is the turn's error and stays out of the thread |
+
+Any other failure stays an error without a limit.
+
 An approval offers allow, allow always and deny. Allow answers with the agent's `allow_once` option, allow always with `allow_always` (offered only when the agent has one), and deny with `reject_once` or `reject_always`. A decision without a matching option falls to the narrower one; a denial without any reject option answers `cancelled`. A denied call draws again without its diff, since nothing was written, and ends as a failed call when the agent says so. The line Copilot CLI writes as a message after a denial, `Info: Operation cancelled by user`, stays out of the thread, since the denial shows already.
 
-`interrupt` answers every open permission request as `cancelled`, withdraws its approval and sends `session/cancel`. The turn ends when the agent answers the prompt, as the protocol asks.
+`interrupt` answers every open permission request and question as `cancelled`, withdraws it and sends `session/cancel`. The turn ends when the agent answers the prompt, as the protocol asks.
+
+## Questions
+
+Two agents ask a person questions outside the protocol, and both become a `question.requested`, answered with `respondQuestion` and turned down with `declineRequest`:
+
+- Grok CLI sends `_x.ai/ask_user_question` with its questions, each with its options and `multiSelect`. The answer goes back as `{ outcome: 'accepted', answers }`, keyed by the question's text, each a list of labels; an answer in a person's own words is `['Other']` with the words under `annotations[question].notes`. A refusal is `{ outcome: 'cancelled' }`.
+- Antigravity asks one question per `session/request_permission`, on a tool call whose id starts with `interaction_` and whose raw input is empty, with an option per choice. It takes one choice only, so the answer is the option whose name was picked; an answer in other words turns the question down, with a warning note. No runtime mode or `autoAllow` answers such a request.
 
 ## Updates
 
@@ -166,4 +184,4 @@ A reading carries no email or plan: `initialize` names the agent, not the person
 
 ## What it leaves out
 
-Plan limits, the file system and terminal client capabilities, MCP servers for the agent, elicitations, notices and compaction updates. ACP has no call to fold the context, so `compaction` is `none` unless the agent lists a `compact` command (see [Capabilities](#capabilities)). The test fakes in `@adecore/agents/testing` include `fakeAcp`, an agent for backend tests, and `fakeAcpWith`, which can also require a login (`authMethod`), advertise `session/close` (`closeSession`), report `usage` on every prompt response (`turnUsage`), name each model's context window (`contextWindows`) or list slash commands (`commands`).
+Plan limits, the file system and terminal client capabilities, MCP servers for the agent, the protocol's own elicitations (`elicitation/create`, which none of these agents sends), notices and compaction updates. ACP has no call to fold the context, so `compaction` is `none` unless the agent lists a `compact` command (see [Capabilities](#capabilities)). The test fakes in `@adecore/agents/testing` include `fakeAcp`, an agent for backend tests, and `fakeAcpWith`, which can also require a login (`authMethod`), advertise `session/close` (`closeSession`), report `usage` on every prompt response (`turnUsage`), name each model's context window (`contextWindows`) or list slash commands (`commands`).

@@ -351,11 +351,11 @@ describe('AcpProtocol', () => {
         const params = { sessionId: 's', toolCall: { toolCallId: 'c' }, options: [{ optionId: 'once', name: 'Once', kind: 'allow_once' }] };
         protocol.permission(1, 's', params);
         protocol.permission('two', 's', params);
-        expect(protocol.cancelPermissions()).toEqual([
+        expect(protocol.cancelRequests()).toEqual([
             { requestId: 'acp-2-1', rpcId: 1, result: { outcome: { outcome: 'cancelled' } } },
             { requestId: 'acp-2-two', rpcId: 'two', result: { outcome: { outcome: 'cancelled' } } }
         ]);
-        expect(protocol.cancelPermissions()).toEqual([]);
+        expect(protocol.cancelRequests()).toEqual([]);
         expect(protocol.answer('acp-2-1', 'allow')).toBeNull();
     });
 

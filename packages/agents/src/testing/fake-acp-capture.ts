@@ -2,7 +2,8 @@
  * An ACP agent that answers with the frames a real one sent, recorded in a capture: its `initialize`, its
  * `session/new`, and every update of one prompt before the response. Every prompt gets the same turn. A
  * `{ permission }` entry among the updates is a `session/request_permission` the turn waits on until the
- * client answers it, an `{ update, _meta }` entry is a notification with a `_meta` of its own, and with
+ * client answers it, a `{ request: { method, params } }` entry is any other request of the agent the turn waits on the
+ * same way, an `{ update, _meta }` entry is a notification with a `_meta` of its own, and with
  * `titleFromPrompt` a `session_info_update` carries the prompt's own text as its title, as Copilot CLI names a session.
  */
 import type { FakeCli } from './fake-cli.ts';
@@ -18,6 +19,8 @@ export interface AcpCapture {
     setConfigOption: unknown;
     promptUpdates: unknown[];
     promptResponse: unknown;
+    // The JSON-RPC error a prompt fails with instead of the response, when set.
+    promptError?: unknown;
     titleFromPrompt?: boolean;
 }
 
@@ -36,16 +39,17 @@ export function fakeAcpCapture(capture: AcpCapture, answers: unknown[] = []): Fa
         const play = (updates: unknown[], promptId: unknown, text: unknown): void => {
             for (const [index, fields] of updates.entries()) {
                 const permission = (fields as Frame).permission;
-                if (permission !== undefined) {
+                const request = (fields as Frame).request as { method: string; params: unknown } | undefined;
+                if (permission !== undefined || request !== undefined) {
                     const rpcId = nextRpcId++;
                     waiting = { rpcId, rest: updates.slice(index + 1), promptId, text };
-                    send({ id: rpcId, method: 'session/request_permission', params: permission });
+                    send({ id: rpcId, method: request?.method ?? 'session/request_permission', params: request?.params ?? permission });
                     return;
                 }
                 const named = capture.titleFromPrompt === true && (fields as Frame).sessionUpdate === 'session_info_update';
                 update(named ? { ...(fields as Frame), title: text } : fields);
             }
-            send({ id: promptId, result: capture.promptResponse });
+            send(capture.promptError === undefined ? { id: promptId, result: capture.promptResponse } : { id: promptId, error: capture.promptError });
         };
         return {
             onLine: (line) => {
