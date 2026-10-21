@@ -493,6 +493,9 @@ function str(value: unknown): string | null {
 }
 
 /* A field of the agent's own input, which no schema promises; the first one that is a non-empty string. */
+// Where agents put the command a call runs; Antigravity names it `CommandLine`.
+const COMMAND_KEYS = ['command', 'cmd', 'CommandLine'];
+
 function rawField(raw: unknown, ...keys: string[]): string | null {
     if (!isRecord(raw)) {
         return null;
@@ -541,7 +544,7 @@ export function toolRow(tool: Pick<ToolState, 'title' | 'name' | 'kind' | 'rawIn
     const raw = isRecord(tool.rawInput) ? tool.rawInput : {};
     switch (tool.kind) {
         case 'execute':
-            return { name: 'Bash', input: { ...raw, description, command: rawField(tool.rawInput, 'command', 'cmd') ?? description } };
+            return { name: 'Bash', input: { ...raw, description, command: rawField(tool.rawInput, ...COMMAND_KEYS) ?? description } };
         case 'read':
             return { name: 'Read', input: { ...raw, description, ...(path === null ? {} : { file_path: path }) } };
         case 'search':
@@ -752,7 +755,7 @@ export class AcpProtocol {
             description: tool.title === '' ? null : tool.title,
             canAllowAlways: options.some((option) => option.kind === 'allow_always')
         });
-        const command = rawField(tool.rawInput, 'command', 'cmd');
+        const command = rawField(tool.rawInput, ...COMMAND_KEYS);
         const asked = { kind: tool.kind, title: tool.title === '' ? null : tool.title, commands: [...(command === null ? [] : [command]), ...tool.text] };
         return { requestId, rpcId, kind: tool.kind, request: asked, events };
     }
