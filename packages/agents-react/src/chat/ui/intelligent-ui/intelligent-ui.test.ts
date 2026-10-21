@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, setSystemTime, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, setSystemTime, test } from 'bun:test';
 import { createElement, Fragment, type ComponentType, type ReactElement, type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { compileUiBlock, evaluateUiBlock, UI_CATALOG, UiState, type UiComponentName, type UiViewNode } from '@adecore/intelligent-ui';
@@ -16,6 +16,8 @@ import { ChecklistRenderer } from './renderers/inputs';
 import { uiTableCell, uiTableColumns } from './table-data';
 import { UiBlockFrame, type UiBlockFrameProps } from './UiBlockFrame';
 
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
 afterEach(() => setSystemTime());
 
 /* A component whose children go in as the children of `createElement`, as JSX would pass them. */
