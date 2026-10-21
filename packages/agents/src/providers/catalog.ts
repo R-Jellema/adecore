@@ -4,6 +4,8 @@ import manifest from './claude-models.json' with { type: 'json' };
 // What a host builds a catalog from; one that is never replaced needs no date.
 export type ModelCatalogInput = Omit<ModelCatalogData, 'updatedAt'> & { updatedAt?: string };
 
+const ADOPTED_PROFILE = 'agent';
+
 function timeOf(data: ModelCatalogInput): number {
     return data.updatedAt === undefined ? 0 : Date.parse(data.updatedAt);
 }
@@ -31,6 +33,27 @@ export class ModelCatalog {
         if (timeOf(data) < this.shippedAt) {
             return false;
         }
+        const changed = JSON.stringify(data) !== JSON.stringify(this.data);
+        this.data = data;
+        return changed;
+    }
+
+    /*
+     * Takes the models an agent reported for itself in place of the list, the agent's current model as the
+     * default and its order kept; answers whether the models changed. Every model gets the profile the
+     * default has now, as an agent names its models but not what each can be asked for.
+     */
+    adopt(models: ReadonlyArray<{ slug: string; name: string }>, defaultModel: string): boolean {
+        if (models.length === 0 || !models.some((model) => model.slug === defaultModel)) {
+            return false;
+        }
+        const profile = this.profileOf(this.data.defaultModel) ?? { options: [], contextWindowTokens: {} };
+        const data: ModelCatalogInput = {
+            ...(this.data.updatedAt === undefined ? {} : { updatedAt: this.data.updatedAt }),
+            defaultModel,
+            profiles: { [ADOPTED_PROFILE]: profile },
+            models: models.map((model) => ({ slug: model.slug, name: model.name, profile: ADOPTED_PROFILE }))
+        };
         const changed = JSON.stringify(data) !== JSON.stringify(this.data);
         this.data = data;
         return changed;

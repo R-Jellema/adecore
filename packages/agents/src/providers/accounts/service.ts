@@ -32,7 +32,7 @@ import {
 } from './accounts.ts';
 import { AccountError, isDefaultAccountOf, type AccountLaunches } from './launch.ts';
 import { prepareShadowHome, type ShadowHomeReport } from './shadow-home.ts';
-import { askAccountAs, type AskAccount } from './status.ts';
+import { ASKED_KINDS, askAccountAs, type AskAccount } from './status.ts';
 import { acceptAccounts, accountsPath, InvalidAccountError, readAccounts, wireAccounts, writeAccounts, type StoredAccounts } from './store.ts';
 import { DEFAULT_ACCOUNTS_HOST, platformSecrets, secretKey, SecretsUnavailableError, type AccountsHost, type SecretStore } from './variables.ts';
 
@@ -52,7 +52,7 @@ export interface ProviderAccountsOptions {
     // `kinds` are the CLIs that get a default account; absent, every kind this version knows.
     providers: { list(): Promise<ProviderInfo[]>; get(kind: AgentKind): ChatProvider; enabled?(kind: AgentKind): boolean; kinds?(): readonly AgentKind[] };
     env?: Env;
-    // How to ask a CLI who is signed in; a test answers without starting one.
+    // How to ask a CLI who is signed in, for every kind whose provider has no reader of its own; a test answers without starting one.
     ask?: AskAccount;
     prepareShadow?: (home: string, shadow: string) => Promise<ShadowHomeReport>;
     folderExists?: (path: string) => boolean;
@@ -127,6 +127,8 @@ export class ProviderAccountsService implements AccountLaunches {
     private readonly providers: ProviderAccountsOptions['providers'];
     private readonly env: Env;
     private readonly ask: AskAccount;
+    // A host's own `ask` is taken to answer for every kind; the default only for `ASKED_KINDS`.
+    private readonly asksEveryKind: boolean;
     private readonly prepareShadow: NonNullable<ProviderAccountsOptions['prepareShadow']>;
     private readonly folderExists: NonNullable<ProviderAccountsOptions['folderExists']>;
     private readonly install: ProviderAccountsOptions['install'];
@@ -154,6 +156,7 @@ export class ProviderAccountsService implements AccountLaunches {
         this.providers = options.providers;
         this.env = options.env ?? process.env;
         this.ask = options.ask ?? askAccountAs(options.client ?? DEFAULT_CODEX_CLIENT);
+        this.asksEveryKind = options.ask !== undefined;
         this.prepareShadow = options.prepareShadow ?? prepareShadowHome;
         this.folderExists = options.folderExists ?? isFolder;
         this.install = options.install;
@@ -176,10 +179,15 @@ export class ProviderAccountsService implements AccountLaunches {
     snapshot(): ProviderAccounts {
         const loginCommands: Partial<Record<AgentKind, string>> = {};
         const chatLogins: AgentKind[] = [];
+        const silentLogins: AgentKind[] = [];
         for (const kind of this.kinds()) {
-            const home = this.providers.get(kind).home;
+            const provider = this.providers.get(kind);
+            const home = provider.home;
             if (home?.loginCommand !== undefined) {
                 loginCommands[kind] = home.loginCommand;
+                if (provider.askAccount === undefined && !this.asksEveryKind && !ASKED_KINDS.includes(kind)) {
+                    silentLogins.push(kind);
+                }
             } else if (home !== undefined) {
                 chatLogins.push(kind);
             }
@@ -189,7 +197,8 @@ export class ProviderAccountsService implements AccountLaunches {
             statuses: Object.entries(this.accounts).map(([id, account]) => this.statusOf(id, account)),
             secretsAvailable: this.secrets !== null,
             loginCommands,
-            ...(chatLogins.length > 0 ? { chatLogins } : {})
+            ...(chatLogins.length > 0 ? { chatLogins } : {}),
+            ...(silentLogins.length > 0 ? { silentLogins } : {})
         };
     }
 
@@ -619,7 +628,8 @@ export class ProviderAccountsService implements AccountLaunches {
             if (provider.home.loginCommand === undefined) {
                 return this.status(id, account, 'ready', { message });
             }
-            const reading = await this.ask(kind, provider.command, accountEnv(id, account, provider, this.env, values));
+            const env = accountEnv(id, account, provider, this.env, values);
+            const reading = await (provider.askAccount ? provider.askAccount(provider.command, env) : this.ask(kind, provider.command, env));
             return this.status(id, account, reading.signedIn ? 'ready' : 'signed-out', {
                 email: reading.email,
                 plan: reading.plan,

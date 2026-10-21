@@ -85,7 +85,9 @@ export const ProviderAccountsSchema = z.object({
     // Per agent kind, what a terminal types to sign that CLI in under an account, which the account's environment points at.
     loginCommands: z.partialRecord(AgentKindSchema, z.string()).optional(),
     // The agent kinds that keep accounts in folders of their own but sign in from a chat, with no command to type.
-    chatLogins: z.array(AgentKindSchema).optional()
+    chatLogins: z.array(AgentKindSchema).optional(),
+    // The agent kinds of `loginCommands` whose CLI cannot say who is signed in, so nothing notices a login end.
+    silentLogins: z.array(AgentKindSchema).optional()
 });
 export type ProviderAccounts = z.infer<typeof ProviderAccountsSchema>;
 

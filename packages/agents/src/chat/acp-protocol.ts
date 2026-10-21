@@ -95,7 +95,8 @@ const InitializeResponseSchema = z.looseObject({
             sessionCapabilities: z
                 .looseObject({
                     resume: z.unknown().optional(),
-                    additionalDirectories: z.unknown().optional()
+                    additionalDirectories: z.unknown().optional(),
+                    close: z.unknown().optional()
                 })
                 .optional()
         })
@@ -126,6 +127,8 @@ export interface AcpAgentCapabilities {
     loadSession: boolean;
     resumeSession: boolean;
     additionalDirectories: boolean;
+    // Whether the agent takes `session/close`, which ends a session it would otherwise keep.
+    closeSession: boolean;
     images: boolean;
     authMethods: string[];
     agent: AcpAgentInfo | null;
@@ -144,6 +147,7 @@ export function parseInitialize(result: unknown): AcpAgentCapabilities {
         loadSession: capabilities?.loadSession === true,
         resumeSession: sessions?.resume !== undefined && sessions.resume !== null,
         additionalDirectories: sessions?.additionalDirectories !== undefined && sessions.additionalDirectories !== null,
+        closeSession: sessions?.close !== undefined && sessions.close !== null,
         images: capabilities?.promptCapabilities?.image === true,
         authMethods: validItems(AuthMethodSchema, parsed.data.authMethods).map((method) => method.id),
         agent: agent ? { name: agent.name, title: agent.title ?? null, version: agent.version } : null

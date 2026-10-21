@@ -1,5 +1,6 @@
 import type { AgentKind, ProviderCapabilities, ProviderInstall } from '@adecore/agent-contracts';
 import type { BackendHost, BackendLaunch, ChatBackend } from '../chat/backend.ts';
+import type { AccountReading } from './accounts/status.ts';
 import type { ModelCatalog } from './catalog.ts';
 import type { CliDetection } from './detect.ts';
 
@@ -47,5 +48,7 @@ export interface ChatProvider {
     detect(command: string, env: Record<string, string | undefined>): Promise<CliDetection>;
     // Whether a person turned this provider on, for one that is off until they do; absent is always on.
     enabled?(): boolean;
+    /* Asks the CLI, started in an account's environment, who is signed in there. Absent leaves the host's own reader. */
+    askAccount?(command: readonly string[], env: Record<string, string | undefined>): Promise<AccountReading>;
     createBackend(launch: BackendLaunch, host: BackendHost): ChatBackend;
 }

@@ -50,6 +50,7 @@ describe('AcpProtocol', () => {
             loadSession: true,
             resumeSession: false,
             additionalDirectories: true,
+            closeSession: false,
             images: true,
             authMethods: ['api-key'],
             agent: { name: 'example-agent', title: 'Example Agent', version: '1.4.0' }

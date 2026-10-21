@@ -81,6 +81,7 @@ The registry, the model catalogs, the runtime modes and the accounts of each CLI
 | Module | Exports |
 | --- | --- |
 | [`providers/acp-provider`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/providers/acp-provider.ts) | `ACP_CAPABILITIES`, `AcpProviderSpec`, `createAcpProvider` |
+| [`providers/accounts/acp-account`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/providers/accounts/acp-account.ts) | `AcpAccountProbe`, `askAcpAccount`, `ProbeTimer` |
 | [`providers/accounts/launch`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/providers/accounts/launch.ts) | `AccountError`, `AccountLaunches`, `storedAccount`, `launchEnv` |
 | [`providers/accounts/service`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/providers/accounts/service.ts) | `ProviderAccountsService`, `ProviderAccountsOptions` |
 | [`providers/accounts/shadow-home`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/providers/accounts/shadow-home.ts) | `ShadowHomeReport` |

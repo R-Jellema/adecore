@@ -1,5 +1,7 @@
 import type { AgentKind, ProviderCapabilities, ProviderInstall } from '@adecore/agent-contracts';
 import { createAcpBackend, type AcpAgentSpec } from '../chat/acp-backend.ts';
+import type { AcpSessionInfo } from '../chat/acp-protocol.ts';
+import { askAcpAccount } from './accounts/acp-account.ts';
 import type { ModelCatalog } from './catalog.ts';
 import { detectCli, type CliDetection } from './detect.ts';
 import type { ChatProvider, ProviderHome } from './provider.ts';
@@ -47,10 +49,25 @@ export interface AcpProviderSpec extends AcpAgentSpec {
     // Absent asks the executable for `--version`.
     detect?(command: string, env: Record<string, string | undefined>): Promise<CliDetection>;
     enabled?(): boolean;
+    // Absent or true asks the agent over ACP whether an account is signed in; false leaves that to the host.
+    accountProbe?: boolean;
+    // Absent or true lets the models a session reports replace the catalog's; false keeps the catalog as the host built it.
+    adoptModels?: boolean;
+}
+
+/* An agent's model id may reach a command line, so one that reads as a flag is left out. */
+function adoptableModels(info: AcpSessionInfo): Array<{ slug: string; name: string }> {
+    return (info.models?.models ?? []).filter((model) => model.id !== '' && !model.id.startsWith('-')).map((model) => ({ slug: model.id, name: model.name }));
 }
 
 export function createAcpProvider(spec: AcpProviderSpec): ChatProvider {
     const capabilities = { ...ACP_CAPABILITIES, ...spec.capabilities };
+    const onSession = (info: AcpSessionInfo): void => {
+        if (spec.adoptModels !== false && info.models !== null) {
+            spec.catalog.adopt(adoptableModels(info), info.models.current);
+        }
+        spec.onSession?.(info);
+    };
     return {
         kind: spec.kind,
         name: spec.name,
@@ -70,6 +87,18 @@ export function createAcpProvider(spec: AcpProviderSpec): ChatProvider {
                 throw new Error(`${spec.name} is only available as a chat.`);
             }),
         detect: spec.detect ?? ((command, env) => detectCli(command, env)),
-        createBackend: createAcpBackend(spec)
+        ...(spec.accountProbe === false
+            ? {}
+            : {
+                  askAccount: (command, env) =>
+                      askAcpAccount({
+                          name: spec.name,
+                          command,
+                          env: { ...env, ...spec.env },
+                          ...(spec.client ? { client: spec.client } : {}),
+                          onSession
+                      })
+              }),
+        createBackend: createAcpBackend({ ...spec, onSession })
     };
 }

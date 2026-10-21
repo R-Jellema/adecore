@@ -34,6 +34,8 @@ Put it in the `ProviderRegistry` beside the others. A `kind` is any name the hos
 | `authMethod`, `loginHint` | The method `authenticate` is called with when the agent needs a login, and what the error says when there is no method. |
 | `client` | How the host names itself in `initialize` (`AcpClientInfo`). |
 | `onSession(info)` | What each session offers (`AcpSessionInfo`), for a host that fills its catalog from the agent. |
+| `accountProbe` | `false` leaves the provider without `askAccount`, so the host's own reader asks about its accounts. |
+| `adoptModels` | `false` keeps `catalog` as the host built it instead of taking the models a session reports. |
 | `capabilities` | Over `ACP_CAPABILITIES`, for an agent that reports its cost or context window. |
 | `resumeCommand`, `home`, `detect`, `oneShotArgs`, `oneShotStdinArgs`, `firstPromptArgs`, `enabled`, `ignoresProjectConfig` | As on any `ChatProvider`. Without `firstPromptArgs` the agent is offered as a chat only, and without `detect` the executable is asked for `--version`. |
 
@@ -101,8 +103,14 @@ Any other update, and any field the backend does not know, is ignored. A request
 
 `AcpSessionInfo.models` holds the models a session offers: a config option of the `model` category, or the `models` field agents sent before config options. The backend switches to the selected model through the option, or through `session/set_model` for the older field. A model the agent does not offer leaves the agent its own, with a note. The `effort` option of a selection sets a `thought_level` config option when the agent offers that value.
 
-A host that wants its catalog from the agent reads `onSession`; otherwise it ships the catalog itself.
+The provider takes the models a session reports into its `catalog` (`ModelCatalog.adopt`): the agent's current model becomes the default, the others follow in the agent's order under the names it gives them, and each gets the profile the catalog's default had. A model id that starts with a dash is left out, as it could pass for a flag. A session that reports no models leaves the catalog as it was, so the host's catalog is the fallback. A session is opened by every chat and by every account check, so the list is there before the first chat. Set `adoptModels: false` to keep the host's catalog; `onSession` still sees every session. A host that lists the models to its clients asks the catalog again after a check, since the catalog says nothing when it changes.
+
+## Accounts
+
+ACP has no request that says who is signed in, so `askAccount` asks by opening a session: `askAcpAccount` starts the agent in the account's environment, runs `initialize` and then `session/new` in an empty temporary folder with no MCP servers. A session means signed in; an answer with the "authentication required" code (`-32000`) means signed out. Any other error, an exit or no answer within 20 seconds fails the check with a short message. The probe never calls `authenticate`, since that could start a login. It closes the session with `session/close` when the agent advertises `sessionCapabilities.close`, then ends the process and its children and removes the folder. An agent that cannot close a session may keep an empty one in its history.
+
+A reading carries no email or plan: `initialize` names the agent, not the person. `askAcpAccount` also takes a `spawn` and a `timer` (`ProbeTimer`), for a test that runs a fake agent on a clock of its own.
 
 ## What it leaves out
 
-Usage readers and plan limits, the file system and terminal client capabilities, MCP servers for the agent, elicitations, notices and compaction updates. ACP has no call to fold the context, so `compaction` is `none`; an agent with a command for it can set `compaction: 'prompt'`. The test fakes in `@adecore/agents/testing` include `fakeAcp`, an agent for backend tests.
+Usage readers and plan limits, the file system and terminal client capabilities, MCP servers for the agent, elicitations, notices and compaction updates. ACP has no call to fold the context, so `compaction` is `none`; an agent with a command for it can set `compaction: 'prompt'`. The test fakes in `@adecore/agents/testing` include `fakeAcp`, an agent for backend tests, and `fakeAcpWith`, which can also require a login (`authMethod`) or advertise `session/close` (`closeSession`).

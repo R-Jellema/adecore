@@ -5,7 +5,7 @@ import { CodexTransport, type CodexClientInfo } from '../../chat/codex-transport
 import { runProcess } from '../../run-process.ts';
 
 /* A CLI that has not said who is signed in by now is not going to; the next pass asks again. */
-const ASK_TIMEOUT_MS = 20_000;
+export const ASK_TIMEOUT_MS = 20_000;
 
 /* Who a CLI says is signed in, from the CLI itself; the host never opens a credential. */
 export interface AccountReading {
@@ -88,6 +88,9 @@ async function askCodex(command: readonly string[], env: Record<string, string |
         transport.kill();
     }
 }
+
+/* The kinds `askAccountAs` can ask; a provider with a reader of its own answers for itself. */
+export const ASKED_KINDS: readonly AgentKind[] = ['claude', 'codex'];
 
 /* Starts the CLI in the account's environment and asks it; only Claude Code and Codex can say. */
 export function askAccountAs(client: CodexClientInfo): AskAccount {

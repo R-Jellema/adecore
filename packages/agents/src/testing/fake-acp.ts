@@ -20,6 +20,8 @@ export interface FakeAcpOptions {
     modes?: readonly string[];
     // Reports models the way agents did before config options: `models` and `session/set_model`.
     legacyModels?: boolean;
+    // Advertises and answers `session/close`.
+    closeSession?: boolean;
 }
 
 export function fakeAcpWith(options: FakeAcpOptions): FakeCli {
@@ -212,7 +214,7 @@ export function fakeAcpWith(options: FakeAcpOptions): FakeCli {
                         agentCapabilities: {
                             loadSession: options.loadSession ?? true,
                             promptCapabilities: { image: true, audio: false, embeddedContext: false },
-                            sessionCapabilities: options.resumeSession ? { resume: {} } : {}
+                            sessionCapabilities: { ...(options.resumeSession ? { resume: {} } : {}), ...(options.closeSession ? { close: {} } : {}) }
                         },
                         authMethods: options.authMethod === undefined ? [] : [{ id: options.authMethod, name: 'Sign in' }],
                         agentInfo: { name: 'fake-acp', title: 'Fake ACP', version: '0.0.1' }
@@ -252,6 +254,14 @@ export function fakeAcpWith(options: FakeAcpOptions): FakeCli {
                     respond(id, sessionState());
                     return;
                 }
+                case 'session/close':
+                    if (!options.closeSession) {
+                        refuse(id, -32601, 'Method not found: session/close');
+                        return;
+                    }
+                    sessionHistory.delete(String(params.sessionId));
+                    respond(id, {});
+                    return;
                 case 'session/set_mode':
                     mode = String(params.modeId);
                     respond(id, {});

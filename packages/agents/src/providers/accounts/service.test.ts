@@ -546,3 +546,66 @@ describe('ProviderAccountsService for a CLI that signs in from its chat', () => 
         expect(asked).not.toContain('acme');
     });
 });
+
+describe('ProviderAccountsService for a CLI with a reader of its own', () => {
+    const reading = { signedIn: true, email: null, plan: null, organization: null };
+    const askedBy: string[] = [];
+    const home = (kind: string) => ({ env: `${kind.toUpperCase()}_HOME`, fallback: `.${kind}`, loginEnv: [], loginCommand: `${kind} login` });
+    const reader = {
+        ...providerFor('claude'),
+        kind: 'reader',
+        name: 'Reader',
+        home: home('reader'),
+        askAccount: async (_command: readonly string[], askedEnv: Record<string, string | undefined>) => {
+            askedBy.push(`reader ${askedEnv.READER_HOME}`);
+            return reading;
+        }
+    };
+    const silent = { ...providerFor('claude'), kind: 'silent', name: 'Silent', home: home('silent') };
+    const kinds: AgentKind[] = ['claude', 'reader', 'silent'];
+    const withReaders = {
+        list: async () => kinds.map((kind) => ({ kind, installed: true }) as ProviderInfo),
+        get: (kind: AgentKind) => (kind === 'reader' ? reader : kind === 'silent' ? silent : providerFor(kind)),
+        kinds: () => kinds
+    };
+    let dir: string;
+
+    beforeEach(async () => {
+        dir = await mkdtemp(join(tmpdir(), 'ruimte-accounts-'));
+        askedBy.length = 0;
+    });
+
+    afterEach(async () => {
+        await rm(dir, { recursive: true, force: true });
+    });
+
+    const make = async (ask?: () => Promise<AccountReading>): Promise<ProviderAccountsService> => {
+        const service = new ProviderAccountsService({
+            home: dir,
+            providers: withReaders,
+            env,
+            secrets: null,
+            ...(ask ? { ask } : {}),
+            folderExists: () => true,
+            prepareShadow: async () => ({ linked: [], unshared: [], sharedLogin: false })
+        });
+        await service.load();
+        return service;
+    };
+
+    test('asks the provider before the host', async () => {
+        const service = await make(async () => {
+            askedBy.push('host');
+            return reading;
+        });
+        await service.save({ reader_work: { kind: 'reader', home: '~/.reader_work' } });
+        await service.refresh();
+        expect(service.snapshot().statuses.find((status) => status.id === 'reader_work')).toMatchObject({ state: 'ready' });
+        expect(askedBy).toContain(`reader ${join(HOME, '.reader_work')}`);
+    });
+
+    test('names the CLIs whose login nothing notices', async () => {
+        expect((await make()).snapshot().silentLogins).toEqual(['silent']);
+        expect((await make(async () => reading)).snapshot().silentLogins).toBeUndefined();
+    });
+});
