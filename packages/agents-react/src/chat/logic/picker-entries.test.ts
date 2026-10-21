@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { ModelInfo, ProviderInfo } from '@adecore/agent-contracts';
-import { pickerEntriesOf, shortlistOf } from './picker-entries';
+import { pickerEntriesOf, searchModels, shortlistOf, wantsModelSearch } from './picker-entries';
 
 const model = (slug: string, extra: Partial<ModelInfo> = {}): ModelInfo => ({ slug, name: slug, legacy: false, isDefault: false, options: [], ...extra });
 const provider = (models: ModelInfo[]): ProviderInfo => ({ kind: 'claude', name: 'Claude Code', version: '1.0.0', models }) as ProviderInfo;
@@ -56,6 +56,17 @@ describe('a provider with many models', () => {
         expect(shortlistOf('claude', big.models, { provider: 'claude', model: 'm07' })?.map((model) => model.slug)).toEqual(['m07', 'm03']);
         expect(shortlistOf('claude', big.models, { provider: 'codex', model: 'm07' })?.map((model) => model.slug)).toEqual(['m03']);
         expect(shortlistOf('claude', big.models.slice(0, 8), null)).toBeNull();
+    });
+
+    test('the composer searches every model by name, slug or maker, legacy ones too', () => {
+        const withLegacy = provider([...big.models, { slug: 'old', name: 'Old Qwen', legacy: true, isDefault: false, options: [] }]);
+        expect(wantsModelSearch([withLegacy])).toBe(true);
+        expect(wantsModelSearch([provider(big.models.slice(0, 8))])).toBe(false);
+        const found = searchModels([withLegacy], ' qwen ');
+        expect(found).toHaveLength(1);
+        expect(found[0]!.models.every((model) => model.vendor === 'Qwen' || model.name.includes('Qwen'))).toBe(true);
+        expect(found[0]!.models.map((model) => model.slug)).toContain('old');
+        expect(searchModels([withLegacy], 'nothing like it')).toEqual([]);
     });
 
     test('a provider with eight models or fewer is listed whole, as before', () => {

@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import {
@@ -10,6 +10,7 @@ import {
     FilePen,
     Gauge,
     Hand,
+    Search,
     Settings,
     Shield,
     ShieldAlert,
@@ -24,7 +25,7 @@ import { AgentIcon } from '../../agents/AgentIcon';
 import type { AccountChoice } from '../account-choice';
 import { modelName, shortModelName } from '../../agents/model-name';
 import { ModelMarks } from './ModelMarks';
-import { modelsByVendor, shortlistOf } from '../logic/picker-entries';
+import { modelsByVendor, searchModels, shortlistOf, wantsModelSearch } from '../logic/picker-entries';
 import { CONTEXT_OPTION, contextFraction, contextSegments, orderOptions, type ContextPart } from '../logic/context-usage';
 import { RUNTIME_MODES } from '../runtime-modes';
 import { formatClock, formatWeekdayClock, isSameDay, formatPercent, formatTokens } from '@adecore/ui/format';
@@ -137,6 +138,8 @@ export function RunSettings({
     account
 }: RunSettingsProps) {
     const { t } = useTranslation('agent-chat');
+    const [query, setQuery] = useState('');
+    const searchRef = useRef<HTMLInputElement>(null);
     const owner = providers.find((entry) => entry.kind === provider);
     const current = modelName(selection.model, owner?.models);
     const short = shortModelName(current, owner?.models);
@@ -165,6 +168,47 @@ export function RunSettings({
     const chooseModel = (value: string): void => {
         const slash = value.indexOf('/');
         onModel(value.slice(0, slash) as AgentKind, value.slice(slash + 1));
+    };
+
+    const searchable = wantsModelSearch(providers);
+    const found = query.trim() === '' ? null : searchModels(providers, query);
+
+    // The menu moves the focus to its popup as it opens, so the search field takes it a frame later.
+    useEffect(() => {
+        if (!open || !searchable) {
+            return;
+        }
+        const frame = requestAnimationFrame(() => searchRef.current?.focus());
+        return () => cancelAnimationFrame(frame);
+    }, [open, searchable]);
+
+    const changeOpen = (next: boolean): void => {
+        if (!next) {
+            setQuery('');
+        }
+        onOpenChange(next);
+    };
+
+    // The menu reads letters as a jump to an item and arrows as moving through them; the field keeps what it types.
+    const onSearchKey = (event: KeyboardEvent<HTMLInputElement>): void => {
+        if (event.key === 'Escape' && query !== '') {
+            event.preventDefault();
+            event.stopPropagation();
+            setQuery('');
+            return;
+        }
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            const first = found?.[0];
+            if (first !== undefined) {
+                onModel(first.entry.kind, first.models[0]!.slug);
+                changeOpen(false);
+            }
+            return;
+        }
+        if (event.key !== 'Escape' && event.key !== 'ArrowDown' && event.key !== 'ArrowUp' && event.key !== 'Tab') {
+            event.stopPropagation();
+        }
     };
 
     const modelRow = (entry: ProviderInfo, row: ModelInfo) => (
@@ -219,7 +263,7 @@ export function RunSettings({
         ));
 
     return (
-        <Menu.Root open={open} onOpenChange={onOpenChange}>
+        <Menu.Root open={open} onOpenChange={changeOpen}>
             <Tooltip label={permissionHint ?? t('pickers.settings.title')} kbd="/model">
                 {/* Styled from `open`: the tooltip puts `data-popup-open` on the same trigger. */}
                 <Menu.Trigger
@@ -266,61 +310,100 @@ export function RunSettings({
             </Tooltip>
             <Menu.Popup side="top" sideOffset={8} align="start" className="w-80">
                 {providers.length === 0 && <div className="px-2.5 py-3 text-xs text-text-faint">{t('pickers.model.noProvider')}</div>}
-                <Menu.RadioGroup value={chosenModel} onValueChange={chooseModel}>
-                    {modelGroups(live)}
-                </Menu.RadioGroup>
-                {legacy.length > 0 && (
-                    <Menu.SubmenuRoot>
-                        <Menu.SubmenuTrigger className="text-text-muted">
-                            <span className="min-w-0 grow truncate">
-                                {t('pickers.model.legacyGroup', { count: legacy.reduce((count, group) => count + group.models.length, 0) })}
-                            </span>
-                            {chosenLegacy && <Menu.Hint className="truncate">{chosenLegacy.name}</Menu.Hint>}
-                        </Menu.SubmenuTrigger>
-                        <Menu.Popup className="min-w-56">
-                            <Menu.RadioGroup value={chosenModel} onValueChange={chooseModel}>
-                                {modelGroups(legacy)}
-                            </Menu.RadioGroup>
-                        </Menu.Popup>
-                    </Menu.SubmenuRoot>
+                {searchable && (
+                    <div className="flex items-center gap-2 border-b border-border px-2.5">
+                        <Icon icon={Search} size={14} className="shrink-0 text-text-faint" />
+                        <input
+                            ref={searchRef}
+                            className="h-8 w-full bg-transparent text-sm text-text outline-none placeholder:text-text-faint"
+                            placeholder={t('pickers.model.search')}
+                            aria-label={t('pickers.model.search')}
+                            spellCheck={false}
+                            value={query}
+                            onChange={(event) => setQuery(event.target.value)}
+                            onKeyDown={onSearchKey}
+                        />
+                    </div>
                 )}
-                <Menu.Separator />
-                {account !== null && <AccountSubmenu provider={provider} account={account} />}
-                <Menu.SubmenuRoot>
-                    <Menu.SubmenuTrigger className="text-text-muted">
-                        <Icon icon={MODE_ICONS[runtimeMode]} size={14} className={clsx('shrink-0', fullAccess ? 'text-status-needs-you' : 'text-text-faint')} />
-                        <span className="min-w-0 grow truncate">{t('pickers.mode.label')}</span>
-                        <Menu.Hint className="truncate">{t(`modes.${runtimeMode}.label`)}</Menu.Hint>
-                    </Menu.SubmenuTrigger>
-                    <Menu.Popup className="w-72">
-                        {permissionHint !== null && <p className="px-2.5 py-2 text-xs text-text-muted">{permissionHint}</p>}
-                        <Menu.RadioGroup value={runtimeMode} onValueChange={(mode: RuntimeMode) => onMode(mode)}>
-                            {RUNTIME_MODES.map((mode) => (
-                                <Menu.RadioItem key={mode} value={mode} className="items-start">
-                                    {/* The hint makes the row two lines high; the box keeps the icon on the label's line. */}
-                                    <span className="grid h-lh w-4 shrink-0 place-items-center">
-                                        <Icon
-                                            icon={MODE_ICONS[mode]}
-                                            size={14}
-                                            className={mode === 'full-access' ? 'text-status-needs-you' : 'text-text-faint'}
-                                        />
-                                    </span>
-                                    <span className="flex min-w-0 grow flex-col">
-                                        {t(`modes.${mode}.label`)}
-                                        <span className="text-xs text-text-faint">{t(`modes.${mode}.hint`)}</span>
-                                    </span>
-                                </Menu.RadioItem>
-                            ))}
-                        </Menu.RadioGroup>
-                    </Menu.Popup>
-                </Menu.SubmenuRoot>
-                {options.map((option) => (
-                    <OptionRow key={option.id} option={option} selection={selection} onChange={(value) => onOption(option.id, value)} />
-                ))}
-                {(hasContextOption || standaloneContext) && (
+                {found !== null && found.length === 0 && <div className="px-2.5 py-3 text-xs text-text-faint">{t('pickers.model.noMatch')}</div>}
+                {found !== null && found.length > 0 && (
+                    <Menu.RadioGroup value={chosenModel} onValueChange={chooseModel}>
+                        {found.map(({ entry, models }) => (
+                            <Menu.Group key={entry.kind}>
+                                {grouped && (
+                                    <Menu.GroupLabel className="flex items-center gap-1.5">
+                                        <AgentIcon kind={entry.kind} size={12} />
+                                        {entry.name}
+                                    </Menu.GroupLabel>
+                                )}
+                                {byMaker(entry, models)}
+                            </Menu.Group>
+                        ))}
+                    </Menu.RadioGroup>
+                )}
+                {found === null && (
                     <>
+                        <Menu.RadioGroup value={chosenModel} onValueChange={chooseModel}>
+                            {modelGroups(live)}
+                        </Menu.RadioGroup>
+                        {legacy.length > 0 && (
+                            <Menu.SubmenuRoot>
+                                <Menu.SubmenuTrigger className="text-text-muted">
+                                    <span className="min-w-0 grow truncate">
+                                        {t('pickers.model.legacyGroup', { count: legacy.reduce((count, group) => count + group.models.length, 0) })}
+                                    </span>
+                                    {chosenLegacy && <Menu.Hint className="truncate">{chosenLegacy.name}</Menu.Hint>}
+                                </Menu.SubmenuTrigger>
+                                <Menu.Popup className="min-w-56">
+                                    <Menu.RadioGroup value={chosenModel} onValueChange={chooseModel}>
+                                        {modelGroups(legacy)}
+                                    </Menu.RadioGroup>
+                                </Menu.Popup>
+                            </Menu.SubmenuRoot>
+                        )}
                         <Menu.Separator />
-                        <ContextUsage usage={usage} disabled={compactDisabled} onCompact={onCompact} />
+                        {account !== null && <AccountSubmenu provider={provider} account={account} />}
+                        <Menu.SubmenuRoot>
+                            <Menu.SubmenuTrigger className="text-text-muted">
+                                <Icon
+                                    icon={MODE_ICONS[runtimeMode]}
+                                    size={14}
+                                    className={clsx('shrink-0', fullAccess ? 'text-status-needs-you' : 'text-text-faint')}
+                                />
+                                <span className="min-w-0 grow truncate">{t('pickers.mode.label')}</span>
+                                <Menu.Hint className="truncate">{t(`modes.${runtimeMode}.label`)}</Menu.Hint>
+                            </Menu.SubmenuTrigger>
+                            <Menu.Popup className="w-72">
+                                {permissionHint !== null && <p className="px-2.5 py-2 text-xs text-text-muted">{permissionHint}</p>}
+                                <Menu.RadioGroup value={runtimeMode} onValueChange={(mode: RuntimeMode) => onMode(mode)}>
+                                    {RUNTIME_MODES.map((mode) => (
+                                        <Menu.RadioItem key={mode} value={mode} className="items-start">
+                                            {/* The hint makes the row two lines high; the box keeps the icon on the label's line. */}
+                                            <span className="grid h-lh w-4 shrink-0 place-items-center">
+                                                <Icon
+                                                    icon={MODE_ICONS[mode]}
+                                                    size={14}
+                                                    className={mode === 'full-access' ? 'text-status-needs-you' : 'text-text-faint'}
+                                                />
+                                            </span>
+                                            <span className="flex min-w-0 grow flex-col">
+                                                {t(`modes.${mode}.label`)}
+                                                <span className="text-xs text-text-faint">{t(`modes.${mode}.hint`)}</span>
+                                            </span>
+                                        </Menu.RadioItem>
+                                    ))}
+                                </Menu.RadioGroup>
+                            </Menu.Popup>
+                        </Menu.SubmenuRoot>
+                        {options.map((option) => (
+                            <OptionRow key={option.id} option={option} selection={selection} onChange={(value) => onOption(option.id, value)} />
+                        ))}
+                        {(hasContextOption || standaloneContext) && (
+                            <>
+                                <Menu.Separator />
+                                <ContextUsage usage={usage} disabled={compactDisabled} onCompact={onCompact} />
+                            </>
+                        )}
                     </>
                 )}
             </Menu.Popup>

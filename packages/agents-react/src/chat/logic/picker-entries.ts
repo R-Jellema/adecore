@@ -48,6 +48,19 @@ export function shortlistOf(kind: AgentKind, models: ModelInfo[], current: Picke
     return modelsByVendor(models.filter((model) => model.isDefault || (current?.provider === kind && current.model === model.slug)));
 }
 
+/* Whether the providers offer enough models together that a search is quicker than reading the list. */
+export function wantsModelSearch(providers: readonly ProviderInfo[]): boolean {
+    return providers.reduce((count, entry) => count + entry.models.length, 0) > COMPACT_MODEL_LIMIT;
+}
+
+/* Every model of every provider that a search finds, legacy ones included, by maker; a provider with none is left out. */
+export function searchModels(providers: readonly ProviderInfo[], query: string): Array<{ entry: ProviderInfo; models: ModelInfo[] }> {
+    const needle = query.trim().toLowerCase();
+    return providers
+        .map((entry) => ({ entry, models: modelsByVendor(entry.models.filter((model) => matches(model, needle))) }))
+        .filter((group) => group.models.length > 0);
+}
+
 const NONE: ReadonlySet<AgentKind> = new Set();
 
 /*
