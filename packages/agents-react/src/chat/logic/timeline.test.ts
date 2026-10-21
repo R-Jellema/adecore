@@ -117,6 +117,31 @@ describe('deriveTimelineRows', () => {
         expect(rows[2]).toMatchObject({ tools: [{ id: 'e1' }] });
     });
 
+    test('a turn that ends on a refused call keeps the answer before it in sight, with the call and its denial', () => {
+        const refusal = (decision: 'deny' | 'allow'): ChatItem[] => [
+            { id: 't5', kind: 'turn', createdAt: 1000, turnId: 't5', state: 'done', endedAt: 9000, costUsd: 0 },
+            { id: 'u5', kind: 'user', createdAt: 1000, turnId: 't5', text: 'create probe.txt' },
+            tool('r5', 'Read', { file_path: 'a.ts' }, 'done', 't5'),
+            { id: 'a5', kind: 'assistant', createdAt: 2000, turnId: 't5', text: 'I will create probe.txt.', streaming: false },
+            tool('c5', 'Change', { description: 'Create probe.txt' }, 'error', 't5'),
+            {
+                id: 'p5',
+                kind: 'approval',
+                createdAt: 3000,
+                turnId: 't5',
+                requestId: 'r5',
+                toolUseId: 'c5',
+                toolName: 'Write',
+                input: {},
+                description: null,
+                canAllowAlways: false,
+                decision
+            }
+        ];
+        expect(deriveTimelineRows(refusal('deny'), options).map((row) => row.id)).toEqual(['u5', 'fold-t5', 'a5', 'c5', 'p5']);
+        expect(deriveTimelineRows(refusal('allow'), options).map((row) => row.kind)).toEqual(['user', 'turn-fold']);
+    });
+
     test('a line leads to the forks under a settled turn a fork went on after', () => {
         const rows = deriveTimelineRows(thread, { ...options, forkedTurns: new Set(['t1']) });
         expect(rows.map((row) => row.kind)).toEqual(['user', 'turn-fold', 'changed-files', 'assistant', 'forks']);

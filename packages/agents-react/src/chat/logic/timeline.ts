@@ -409,11 +409,23 @@ function changedFilesRow(turn: ChatTurnItem, items: ChatItem[]): TimelineRow | n
     };
 }
 
+/*
+ * The closing answer of a settled turn. A turn may end on a call the person turned down, as an agent that stops
+ * there does: the answer before it closes the turn, and the refused call and its denial stay in sight with it.
+ */
 function lastAssistantRow(rows: TimelineRow[]): TimelineRow | null {
+    const refused = new Set<string>();
     for (let i = rows.length - 1; i >= 0; i--) {
         const row = rows[i]!;
         if (row.kind === 'assistant') {
             return row;
+        }
+        if (row.kind === 'approval' && row.item.decision === 'deny' && row.item.toolUseId !== null) {
+            refused.add(row.item.toolUseId);
+            continue;
+        }
+        if (row.kind === 'work' && refused.has(row.tool.toolUseId)) {
+            continue;
         }
         if (row.kind !== 'note' && !isImageRow(row)) {
             return null;
