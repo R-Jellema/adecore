@@ -14,12 +14,12 @@ The pane needs the scope's accounts, so run `watchProviderAccounts(scopeId, tran
 
 ## Props
 
-| Prop       | Type                                           |                                                                                     |
-| ---------- | ---------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `target`   | `string \| null`                               | The `searchId` of a settings search result; the pane opens on its CLI.              |
-| `detailOf` | `(provider: ProviderInfo) => ReactNode \| null` | A detail of your own for a CLI; `null` draws the usual one.                         |
-| `defaults` | `boolean`                                      | Shows what a new chat starts with. `true` by default; pass `false` when your app decides that elsewhere. |
-| `installStepOf` | `(provider: ProviderInfo) => ProviderInstallStep \| null` | A step of your own on a CLI's install page, after its install; `null` adds none. |
+| Prop            | Type                                                      |                                                                                                                                             |
+| --------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `target`        | `string \| null`                                          | The `searchId` of a settings search result; the pane opens on its CLI. `providers.install.<kind>` opens on a CLI's install page; see below. |
+| `detailOf`      | `(provider: ProviderInfo) => ReactNode \| null`           | A detail of your own for a CLI; `null` draws the usual one.                                                                                 |
+| `defaults`      | `boolean`                                                 | Shows what a new chat starts with. `true` by default; pass `false` when your app decides that elsewhere.                                    |
+| `installStepOf` | `(provider: ProviderInfo) => ProviderInstallStep \| null` | A step of your own on a CLI's install page, after its install; `null` adds none.                                                            |
 
 ## Install page
 
@@ -29,13 +29,17 @@ The first step offers a command per system the provider lists and opens on the s
 
 The page says the CLI was not found yet and that it is checked again when the person comes back. Checking again is the host's: report the provider anew and the page follows, with the version in the header and the first step done. Once the CLI is installed, signed in and any step of your own is done, the pane shows the CLI's usual detail. A host that sends no `install` gets a short note in place of the steps.
 
+To send a person straight to that page, from a note that a CLI is missing for example, pass `target="providers.install.<kind>"` with the provider's `kind`. The pane opens on the install page, the same one picking the CLI under "Not installed" opens. A CLI that is already installed opens on its usual detail instead, and one the host has not reported yet is taken as missing.
+
+```tsx
+<ProvidersPane target="providers.install.example" />
+```
+
 A CLI whose chat needs more than the CLI, such as a server your app installs beside it, gets that as a step of its own through `installStepOf`. Hand back a `ProviderInstallStep`: its `title`, whether it is `done`, and the `body` you draw under the title. The page numbers it, places it after the install and holds sign-in back until it is done.
 
 ```tsx
 <ProvidersPane
-    installStepOf={(provider) =>
-        provider.kind === 'example' ? { title: 'Install the chat server', done: server.installed, body: <ServerInstall /> } : null
-    }
+    installStepOf={(provider) => (provider.kind === 'example' ? { title: 'Install the chat server', done: server.installed, body: <ServerInstall /> } : null)}
 />
 ```
 

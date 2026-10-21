@@ -14,12 +14,10 @@ import { AddAccountForm } from './AddAccountForm';
 import { CliDetail } from './CliDetail';
 import { InstallPage } from './InstallPage';
 import type { ProviderInstallStep } from './install-steps';
+import { pickOfTarget, type Picked } from './pane-target';
 import { CliMark } from './parts';
 import { useProviderAccounts } from '../state/provider-accounts';
 import { useProviders } from '../state/providers';
-
-// `install` is a CLI picked while it was missing: its install page stays until it is installed and signed in.
-type Picked = { kind: 'cli'; cli: AgentKind } | { kind: 'install'; cli: AgentKind } | { kind: 'account'; id: string } | { kind: 'add'; cli: AgentKind };
 
 /* A row of the list with a control of its own beside the part that picks it, so the two never nest. */
 function ListRow({
@@ -51,7 +49,7 @@ function ListRow({
 }
 
 interface ProvidersPaneProps {
-    /* The row a search result leads to, by its `searchId`; the pane opens on the CLI it belongs to. */
+    /* The row a search result leads to, by its `searchId`; the pane opens on the CLI it belongs to. `providers.install.<kind>` opens on that CLI's install page, or on its detail once it is installed. */
     target?: string | null;
     /* The detail of a provider the app draws itself, such as a model the host runs on its own; null draws the CLI's own. */
     detailOf?(provider: ProviderInfo): ReactNode | null;
@@ -71,7 +69,7 @@ export function ProvidersPane({ target = null, detailOf, defaults = true, instal
     const host = useChatHost();
     const { openLogin } = host;
     const loginBlocked = host.useLoginBlocked(scopeId);
-    const [picked, setPicked] = useState<Picked | null>(() => (target === 'providers.apple' ? { kind: 'cli', cli: 'apple' } : null));
+    const [picked, setPicked] = useState<Picked | null>(() => pickOfTarget(target, providers));
 
     // A provider that never runs in a terminal is no CLI to install: it is turned on in its own detail, so it is always listed.
     const installed = useMemo(() => providers.filter((provider) => provider.installed || !provider.capabilities.terminal), [providers]);
@@ -92,8 +90,9 @@ export function ProvidersPane({ target = null, detailOf, defaults = true, instal
     const [seenTarget, setSeenTarget] = useState(target);
     if (target !== seenTarget) {
         setSeenTarget(target);
-        if (target === 'providers.apple') {
-            setPicked({ kind: 'cli', cli: 'apple' });
+        const opened = pickOfTarget(target, providers);
+        if (opened !== null) {
+            setPicked(opened);
         } else if (target?.startsWith('providers.') && current?.kind !== 'cli' && provider !== null) {
             setPicked({ kind: 'cli', cli: provider.kind });
         }
