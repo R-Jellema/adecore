@@ -12,10 +12,13 @@ const demos = [...new Glob('demos/**/*.tsx').scanSync(HERE)]
     .filter((path) => !path.startsWith('demos/shared/'))
     .sort();
 
+// Loaded with the file, so the time a slow machine takes to load a package is not a demo's to spend.
+const modules = new Map(await Promise.all(demos.map(async (path) => [path, ((await import(`./${path}`)) as { default: ComponentType }).default] as const)));
+
 describe('the demos', () => {
     // A static render runs no effect and opens no popup, but a demo that throws while it draws fails here before it fails on the site.
-    test.each(demos)('%s renders', async (path) => {
-        const { default: Demo } = (await import(`./${path}`)) as { default: ComponentType };
+    test.each(demos)('%s renders', (path) => {
+        const Demo = modules.get(path)!;
         const render = (): string =>
             renderToStaticMarkup(
                 <DemoFrame src={path}>
