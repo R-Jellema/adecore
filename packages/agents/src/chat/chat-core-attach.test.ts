@@ -35,12 +35,19 @@ const providers = new ProviderRegistry({
 /* Visuals that answer only when the test says so, so a bookmark can change while they are on their way. */
 class SlowVisuals extends VisualStore {
     private readonly released = Promise.withResolvers<void>();
+    private readonly asked = Promise.withResolvers<void>();
+
+    /* Resolves once an attach is waiting on the visuals. */
+    reading(): Promise<void> {
+        return this.asked.promise;
+    }
 
     release(): void {
         this.released.resolve();
     }
 
     override async list(chatId: string): Promise<ChatVisual[]> {
+        this.asked.resolve();
         await this.released.promise;
         return super.list(chatId);
     }
@@ -61,7 +68,7 @@ test('a bookmark made while the visuals are read reaches the client that attache
             }
         });
         const attaching = manager.attachWithBookmarks('chat', 'client');
-        await Bun.sleep(10);
+        await visuals.reading();
         await bookmarks.add('chat', { itemId: 'late', excerpt: 'Late' }, 1);
         visuals.release();
         const attached = await attaching;
