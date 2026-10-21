@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from 'bun:test';
+import { afterEach, describe, expect, jest, test } from 'bun:test';
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { EditorView } from '@codemirror/view';
@@ -815,5 +815,32 @@ describe('the mode of a chat', () => {
         await settle();
         expect(composer.calls).toContainEqual(['configure', CHAT, { runtimeMode: 'supervised' }]);
         expect(readChatPreferences().runtimeMode).toBe('full-access');
+    });
+});
+
+describe('a cold prompt cache', () => {
+    test('offers compacting by itself once the cache the CLI named expires, and Compact compacts', async () => {
+        const start = 1_800_000_000_000;
+        jest.useFakeTimers();
+        jest.setSystemTime(start);
+        cleanups.push(() => {
+            jest.useRealTimers();
+        });
+        const turn = { id: 'turn-1', kind: 'turn', createdAt: start - 60_000, turnId: 'turn-1', state: 'done', endedAt: start - 30_000, costUsd: 0 };
+        const composer = await mount({
+            capabilities: { compaction: 'prompt' },
+            info: infoOf({
+                usage: { turns: 3, contextTokens: 150_000, contextWindow: 1_000_000, costUsd: 1, cacheTtlMs: 300_000, cacheExpiresAt: start + 240_000 }
+            }),
+            items: [turn as ChatItem]
+        });
+        expect(composer.page.host.textContent).not.toContain('Prompt cache expired');
+        await act(async () => {
+            jest.advanceTimersByTime(240_000);
+        });
+        expect(composer.page.host.textContent).toContain('Prompt cache expired');
+        const compact = [...composer.page.host.querySelectorAll('button')].find((button) => button.textContent === 'Compact')!;
+        await composer.click(compact);
+        expect(composer.calls).toContainEqual(['compact', CHAT]);
     });
 });

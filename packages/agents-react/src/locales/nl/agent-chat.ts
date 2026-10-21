@@ -47,7 +47,11 @@ export default {
         title: 'Hervatten met minder context',
         carried: '{{tokens}} tokens van eerder',
         keep: 'Hele geschiedenis houden',
-        compact: 'Comprimeren'
+        compact: 'Comprimeren',
+        cacheExpired: {
+            title: 'Promptcache verlopen',
+            carried: 'Het volgende bericht leest {{tokens}} tokens opnieuw helemaal in'
+        }
     },
     goal: {
         status: {

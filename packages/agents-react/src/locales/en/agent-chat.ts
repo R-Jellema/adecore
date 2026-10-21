@@ -47,7 +47,11 @@ export default {
         title: 'Resume with less context',
         carried: '{{tokens}} tokens from earlier',
         keep: 'Keep full history',
-        compact: 'Compact'
+        compact: 'Compact',
+        cacheExpired: {
+            title: 'Prompt cache expired',
+            carried: 'The next message reads {{tokens}} tokens again in full'
+        }
     },
     goal: {
         status: {

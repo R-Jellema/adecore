@@ -232,6 +232,7 @@ export function Composer({ chatId, info, focused, answerPromptsElsewhere, disabl
                         {compactionOffer && (
                             <ResumeCompactionDock
                                 tokens={compactionOffer.tokens}
+                                reason={compactionOffer.reason}
                                 onCompact={controls.compact}
                                 onDismiss={() => dismissResumeCompaction(scope, chatId, compactionOffer.turnId)}
                             />
