@@ -1,4 +1,4 @@
-import type { UsageLimitsProvider, UsageLimitsSnapshot, UsageProvider } from '@adecore/agent-contracts';
+import { USAGE_PROVIDERS, type UsageLimitsProvider, type UsageLimitsSnapshot, type UsageProvider } from '@adecore/agent-contracts';
 import type { CodexClientInfo } from '../../chat/codex-transport.ts';
 import { ClientSinks } from '../../client-sinks.ts';
 import { errorText } from '../../error-text.ts';
@@ -14,7 +14,7 @@ const MAX_BACKOFF_MS = 60 * 60_000;
 /* An account other than the default one that nobody started a CLI under for this long is only read when a person asks. */
 const RECENT_USE_MS = 24 * 60 * 60_000;
 
-const PROVIDERS: readonly UsageProvider[] = ['claude', 'codex', 'nanogpt'];
+const PROVIDERS: readonly UsageProvider[] = USAGE_PROVIDERS;
 
 export type ProbeEnv = Record<string, string>;
 

@@ -9,7 +9,7 @@ import { asObject, asString, int, type UsageRecord } from '../record.ts';
  * the APIs do not agree: some report a prompt that holds its cached part, some report the input apart from both
  * cache kinds, and only some have a cache write at all.
  */
-export interface ApiUsageEntry {
+export interface HostUsageEntry {
     at: number;
     model: string;
     session: string;
@@ -21,17 +21,17 @@ export interface ApiUsageEntry {
     reasoning: number;
 }
 
-export function apiUsageLine(entry: ApiUsageEntry): string {
+export function hostUsageLine(entry: HostUsageEntry): string {
     return `${JSON.stringify(entry)}\n`;
 }
 
 /* A line of this log names its model, which keeps `JSON.parse` off anything else a folder holds. */
-export function apiLogMightCarryUsage(line: string): boolean {
+export function hostLogMightCarryUsage(line: string): boolean {
     return line.includes('"model"');
 }
 
 /* The provider is the root's, so one reader serves every API a host logs. */
-export function parseApiLogLine(line: string, provider: UsageProvider): UsageRecord | null {
+export function parseHostUsageLine(line: string, provider: UsageProvider): UsageRecord | null {
     let parsed: unknown;
     try {
         parsed = JSON.parse(line);
