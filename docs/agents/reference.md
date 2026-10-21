@@ -104,10 +104,11 @@ Transcripts, prices and plan limits.
 | --- | --- |
 | [`usage/accounts`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/usage/accounts.ts) | `usageAccountsOf`, `usageRootsOf`, `limitAccountsOf`, `chatSessionAccounts` |
 | [`usage/limits/monitor`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/usage/limits/monitor.ts) | `UsageMonitor`, `ProbeEnv`, `LimitAccount`, `LimitAccounts`, `UsageMonitorOptions` |
-| [`usage/limits/normalize`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/usage/limits/normalize.ts) | `LimitsUpdate`, `ProviderReading` |
+| [`usage/limits/normalize`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/usage/limits/normalize.ts) | `fraction`, `LimitsUpdate`, `ProviderReading` |
 | [`usage/limits/probe`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/usage/limits/probe.ts) | `ProbeResult` |
 | [`usage/pricing`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/usage/pricing.ts) | `LITELLM_URL` |
 | [`usage/projects`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/usage/projects.ts) | `KnownProject` |
+| [`usage/readers/host-log`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/usage/readers/host-log.ts) | `hostUsageLine`, `HostUsageEntry` |
 | [`usage/roots`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/usage/roots.ts) | `UsageRootPath`, `usageRoots` |
 | [`usage/scanner`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/usage/scanner.ts) | `UsageScannerOptions` |
 | [`usage/usage-service`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/usage/usage-service.ts) | `UsageService`, `UsageServiceOptions` |

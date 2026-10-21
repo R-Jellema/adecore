@@ -9,8 +9,8 @@ export interface UsageRootPath {
     accounts?: string[];
 }
 
-/* Where in its config folder each CLI leaves its transcripts. */
-const TRANSCRIPTS: Record<UsageProvider, string> = { claude: 'projects', codex: 'sessions' };
+/* Where in its config folder each CLI leaves its transcripts. A provider with no CLI has a log its host passes as a root of its own. */
+const TRANSCRIPTS: Partial<Record<UsageProvider, string>> & Record<'claude' | 'codex', string> = { claude: 'projects', codex: 'sessions' };
 
 /* The transcripts of the default accounts, found through the variables the CLIs themselves read. */
 export function usageRoots(env: Record<string, string | undefined> = process.env): UsageRootPath[] {
@@ -25,7 +25,11 @@ export function usageRoots(env: Record<string, string | undefined> = process.env
 export function accountRoots(folders: ReadonlyArray<{ id: string; kind: UsageProvider; folder: string }>): UsageRootPath[] {
     const roots = new Map<string, UsageRootPath & { accounts: string[] }>();
     for (const { id, kind, folder } of folders) {
-        const path = join(folder, TRANSCRIPTS[kind]);
+        const transcripts = TRANSCRIPTS[kind];
+        if (transcripts === undefined) {
+            continue;
+        }
+        const path = join(folder, transcripts);
         const key = `${kind}\0${path}`;
         const root = roots.get(key);
         if (root === undefined) {

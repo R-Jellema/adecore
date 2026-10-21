@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { kindOfDuration, mergeWindows, readClaudeEvent, readClaudeUsage, readCodexLimits } from './normalize.ts';
+import { fraction, kindOfDuration, mergeWindows, readClaudeEvent, readClaudeUsage, readCodexLimits } from './normalize.ts';
 
 const claudeAnswer = {
     session: { total_cost_usd: 1.5 },
@@ -100,5 +100,11 @@ describe('folding an update onto a reading', () => {
     test('a window nobody drew yet is added, and one without a number is ignored', () => {
         expect(mergeWindows(known, [{ id: 'overage', used: 0.1 }])).toHaveLength(3);
         expect(mergeWindows(known, [{ id: 'five_hour' }])[0]!.used).toBe(0.2);
+    });
+});
+
+describe('a share of a plan', () => {
+    test('is held between empty and full', () => {
+        expect([fraction(-0.2), fraction(0.4), fraction(1.1)]).toEqual([0, 0.4, 1]);
     });
 });

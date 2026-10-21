@@ -26,7 +26,8 @@ function num(value: unknown): number | null {
     return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
-function fraction(value: number): number {
+/* A share of a plan used, held to the bar: a provider may report more than all of it. */
+export function fraction(value: number): number {
     return Math.min(1, Math.max(0, value));
 }
 
