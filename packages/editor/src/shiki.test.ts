@@ -1,8 +1,12 @@
-import { beforeAll, describe, expect, spyOn, test } from 'bun:test';
+import { afterEach, beforeAll, beforeEach, describe, expect, setSystemTime, spyOn, test } from 'bun:test';
 import { createHighlighter, type Highlighter } from 'shiki';
 import { loadGrammar, shikiTokenizers } from './shiki.ts';
 import { DocumentModel } from '@adecore/editor-core';
 import { TokenCache } from './tokens.ts';
+
+// A stopped clock, so a slow runner cannot reach the time limit Shiki puts on a line.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 // A stopped clock, so a slow runner never ends a slice that a test expects to finish.
 const stopped = (): number => 0;

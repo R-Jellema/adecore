@@ -1,6 +1,10 @@
-import { describe, expect, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, setSystemTime, spyOn, test } from 'bun:test';
 import { createHighlighter, type Highlighter, type ThemedToken } from 'shiki';
 import { documentLanguageOf, loadGrammar, shikiDocumentTokens } from './shiki.ts';
+
+// A stopped clock, so a slow runner cannot reach the time limit Shiki puts on a line.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 const THEME = 'github-dark';
 

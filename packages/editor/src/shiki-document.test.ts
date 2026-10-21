@@ -1,7 +1,11 @@
-import { describe, expect, spyOn, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, setSystemTime, spyOn, test } from 'bun:test';
 import { parseHTML } from 'linkedom';
 import { createHighlighter, type Highlighter, type ShikiTransformer } from 'shiki';
 import { documentLanguageOf, loadGrammar, shikiDocumentHighlighter } from './shiki.ts';
+
+// A stopped clock, so a slow runner cannot reach the time limit Shiki puts on a line.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 const THEME = 'github-dark';
 const DROP_LINE_BREAKS: ShikiTransformer = {
