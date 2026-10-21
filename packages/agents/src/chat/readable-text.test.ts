@@ -1,7 +1,11 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, setSystemTime, test } from 'bun:test';
 import type { ChatAssistantItem } from '@adecore/agent-contracts';
 import { compileUi } from '@adecore/intelligent-ui';
 import { readableAssistantText } from './readable-text.ts';
+
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 function reply(text: string, fenceLanguage?: string): ChatAssistantItem {
     const ui = compileUi(text, { id: 'reply', final: true, ...(fenceLanguage ? { fenceLanguage } : {}) });

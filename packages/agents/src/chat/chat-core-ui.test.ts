@@ -1,4 +1,4 @@
-import { expect, test } from 'bun:test';
+import { afterEach, beforeEach, expect, setSystemTime, test } from 'bun:test';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -13,6 +13,10 @@ import { ProviderRegistry } from '../providers/registry.ts';
 import { parseLog } from './chat-log.ts';
 import { z } from 'zod';
 import type { ChatUiHost } from './ui-queries.ts';
+
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 /* A Claude provider whose backend does nothing but hand its host to `onHost`. */
 function fakeProviders(onHost: (host: BackendHost) => void): ProviderRegistry {

@@ -1,9 +1,13 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, setSystemTime, test } from 'bun:test';
 import type { ChatAssistantItem, ChatEvent, ChatInfo } from '@adecore/agent-contracts';
 import { claudeProvider } from '../providers/claude-provider.ts';
 import { ManualClock } from '../testing/manual-clock.ts';
 import { ChatThread } from './thread.ts';
 import { UiReplies } from './ui-replies.ts';
+
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 function info(): ChatInfo {
     return {
