@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, spyOn, test } from 'bun:test';
 import { mkdir, mkdtemp, open, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { UsageScanner } from './scanner.ts';
+import { UsageScanner, forEachLine } from './scanner.ts';
 import type { UsageRootPath } from './roots.ts';
 
 const made: string[] = [];
@@ -302,6 +303,26 @@ describe('the usage scanner', () => {
         }
     });
 
+    test('reads a large transcript a chunk at a time, never whole', async () => {
+        const { home, claude, roots } = await workspace();
+        const path = join(claude, 'a.jsonl');
+        const filler = `${JSON.stringify({ type: 'progress', padding: 'x'.repeat(100_000) })}\n`;
+        const content = filler.repeat(40) + assistant('msg_1', 0, 40);
+        await writeFile(path, content);
+        const probe = await open(path, 'r');
+        const read = spyOn(Object.getPrototypeOf(probe), 'read');
+        await probe.close();
+        try {
+            const scanner = new UsageScanner(home, roots);
+            await scanner.scan();
+            const largest = Math.max(...read.mock.calls.map((call) => Number(call[2])));
+            expect(largest).toBeLessThanOrEqual(1 << 20);
+            expect(scanner.records().map((record) => record.dedupeKey)).toEqual(['msg_1']);
+        } finally {
+            read.mockRestore();
+        }
+    });
+
     test('a line still being written is counted once, not twice', async () => {
         const { home, claude, roots } = await workspace();
         const path = join(claude, 'a.jsonl');
@@ -379,5 +400,26 @@ describe('the usage scanner', () => {
         expect(report.changedFiles).toBe(0);
         expect(scanner.records()).toHaveLength(2);
         expect(scanner.records().every((record) => record.account === undefined)).toBe(true);
+    });
+});
+
+describe('forEachLine', () => {
+    async function* pieces(bytes: Buffer, size: number): AsyncGenerator<Uint8Array> {
+        for (let at = 0; at < bytes.length; at += size) {
+            yield bytes.subarray(at, at + size);
+        }
+    }
+
+    test('gives the same lines, hash and rest whatever the chunks cut through', async () => {
+        const bytes = Buffer.from('first line\r\nzweite Zeile mit Umlaut ä und 😀\n\nthird\nstill being writ');
+        const committed = bytes.subarray(0, bytes.lastIndexOf('\n') + 1);
+        for (const size of [1, 2, 3, 7, 64, bytes.length]) {
+            const lines: string[] = [];
+            const hash = createHash('sha256');
+            const read = await forEachLine(pieces(bytes, size), hash, (line) => lines.push(line));
+            expect(lines).toEqual(['first line\r', 'zweite Zeile mit Umlaut ä und 😀', '', 'third']);
+            expect(read).toEqual({ consumed: committed.length, rest: 'still being writ' });
+            expect(hash.digest('hex')).toBe(createHash('sha256').update(committed).digest('hex'));
+        }
     });
 });

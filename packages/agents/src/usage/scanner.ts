@@ -1,7 +1,8 @@
 import { createHash, type Hash } from 'node:crypto';
 import { mkdir, open, readFile, readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { zstdDecompressSync } from 'node:zlib';
+import { Readable } from 'node:stream';
+import { createZstdDecompress } from 'node:zlib';
 import type { UsageProvider, UsageRoot } from '@adecore/agent-contracts';
 import { errorText } from '../error-text.ts';
 import { isNotFound, writeAtomic } from '../fs.ts';
@@ -14,47 +15,65 @@ import { cloneCodexState, codexMightCarryUsage, createCodexState, parseCodexLine
 import { usageRoots, type UsageRootPath } from './roots.ts';
 
 const HASH_CHUNK_BYTES = 65536;
+// How much of a transcript is read at once. Codex writes sessions of more than a gigabyte, which read whole held several times their size.
+const READ_CHUNK_BYTES = 1 << 20;
 const CODEX_PARSER_VERSION = 2;
+const NEWLINE = 0x0a;
 
-interface HashedRead {
-    /* Everything from `from` to the end of the file, as it is at the read. */
-    bytes: Buffer;
-    /* Over the bytes before `from`, left open so the caller can carry it on over `bytes`. */
-    hash: Hash;
-}
-
-/*
- * Hashes the bytes before `from` and returns the rest, in one pass over one handle, so verifying
- * what a transcript committed and parsing what it added never reads a byte twice.
- */
-async function readHashed(path: string, from: number): Promise<HashedRead> {
+/* Hashes the first `length` bytes of a file into `hash`, a chunk at a time. */
+async function hashPrefix(path: string, length: number, hash: Hash): Promise<Hash> {
     const handle = await open(path, 'r');
     try {
-        const hash = createHash('sha256');
-        const chunk = Buffer.alloc(Math.min(from, HASH_CHUNK_BYTES));
+        const chunk = Buffer.alloc(Math.min(length, HASH_CHUNK_BYTES));
         let offset = 0;
-        while (offset < from) {
-            const { bytesRead } = await handle.read(chunk, 0, Math.min(chunk.length, from - offset), offset);
+        while (offset < length) {
+            const { bytesRead } = await handle.read(chunk, 0, Math.min(chunk.length, length - offset), offset);
             if (bytesRead === 0) {
                 break;
             }
             hash.update(chunk.subarray(0, bytesRead));
             offset += bytesRead;
         }
-        const { size } = await handle.stat();
-        const bytes = Buffer.alloc(Math.max(0, size - from));
-        let filled = 0;
-        while (filled < bytes.length) {
-            const { bytesRead } = await handle.read(bytes, filled, bytes.length - filled, from + filled);
-            if (bytesRead === 0) {
-                break;
-            }
-            filled += bytesRead;
-        }
-        return { bytes: bytes.subarray(0, filled), hash };
+        return hash;
     } finally {
         await handle.close();
     }
+}
+
+export interface LineRead {
+    /* The bytes of every whole line, newlines included. */
+    consumed: number;
+    /* What follows the last newline: a line still being written. */
+    rest: string;
+}
+
+/*
+ * Hands every whole line of a byte stream to `onLine` and hashes it with its newline, holding no more
+ * than a chunk and the line it is in. Lines are split on the byte, which never occurs inside a UTF-8 sequence.
+ */
+export async function forEachLine(chunks: AsyncIterable<Uint8Array>, hash: Hash, onLine: (line: string) => void): Promise<LineRead> {
+    let consumed = 0;
+    let pending: Buffer[] = [];
+    for await (const piece of chunks) {
+        const chunk = Buffer.from(piece.buffer, piece.byteOffset, piece.byteLength);
+        let start = 0;
+        let newline = chunk.indexOf(NEWLINE, start);
+        while (newline !== -1) {
+            const end = newline + 1;
+            const line = pending.length === 0 ? chunk.subarray(start, end) : Buffer.concat([...pending, chunk.subarray(start, end)]);
+            pending = [];
+            hash.update(line);
+            consumed += line.length;
+            onLine(line.toString('utf8', 0, line.length - 1));
+            start = end;
+            newline = chunk.indexOf(NEWLINE, start);
+        }
+        if (start < chunk.length) {
+            // A copy: the stream may hand the same memory out again for its next chunk.
+            pending.push(Buffer.from(chunk.subarray(start)));
+        }
+    }
+    return { consumed, rest: Buffer.concat(pending).toString('utf8') };
 }
 
 /* Covers every committed byte, since a transcript can be rewritten after an unchanged session header. */
@@ -106,54 +125,76 @@ async function listUsageFiles(dir: string, provider: UsageProvider, out: string[
     return out;
 }
 
+/* The bytes of a file from `from` to its end, a chunk at a time. */
+async function* fileChunks(path: string, from: number): AsyncGenerator<Uint8Array> {
+    const handle = await open(path, 'r');
+    try {
+        let position = from;
+        for (;;) {
+            // A buffer per chunk: a decompressor may still hold the one before.
+            const chunk = Buffer.alloc(READ_CHUNK_BYTES);
+            const { bytesRead } = await handle.read(chunk, 0, chunk.length, position);
+            if (bytesRead === 0) {
+                return;
+            }
+            position += bytesRead;
+            yield chunk.subarray(0, bytesRead);
+        }
+    } finally {
+        await handle.close();
+    }
+}
+
+/* The bytes of a file from `from` on, decompressed for a `.zst` one; a failure on either side ends the iteration with it. */
+function readBytes(path: string, from: number, compressed: boolean): AsyncIterable<Uint8Array> {
+    if (!compressed) {
+        return fileChunks(path, from);
+    }
+    const source = Readable.from(fileChunks(path, from));
+    const decompressed = createZstdDecompress();
+    source.on('error', (error) => decompressed.destroy(error));
+    return source.pipe(decompressed);
+}
+
+/* The usage record of one transcript line, when it carries one. */
+function parseLine(raw: string, provider: UsageProvider, codex: CodexParserState | null): UsageRecord | null {
+    const line = raw.endsWith('\r') ? raw.slice(0, -1) : raw;
+    if (line === '') {
+        return null;
+    }
+    if (provider === 'claude') {
+        return claudeMightCarryUsage(line) ? parseClaudeLine(line) : null;
+    }
+    if (provider === 'codex') {
+        return codex !== null && codexMightCarryUsage(line) ? parseCodexLine(line, codex) : null;
+    }
+    // Claude Code and Codex write transcripts of their own, Grok a file read whole; every other provider is a log its host keeps.
+    return hostLogMightCarryUsage(line) ? parseHostUsageLine(line, provider) : null;
+}
+
 /*
  * Reads what a file added since the last scan. Only whole lines count towards the offset; the piece
  * after the last newline is a line still being written, so it is parsed for what it is worth and
  * read again next time. The Codex state is snapshotted before that tail for the same reason.
  */
-function parseChunk(text: string, provider: UsageProvider, from: number, state: CodexParserState | null): ParsedFile {
-    const end = text.lastIndexOf('\n');
-    const whole = end === -1 ? '' : text.slice(0, end);
-    const tail = text.slice(end + 1);
-    const read = (chunk: string, codex: CodexParserState | null): UsageRecord[] => {
-        const records: UsageRecord[] = [];
-        for (const raw of chunk.split('\n')) {
-            const line = raw.endsWith('\r') ? raw.slice(0, -1) : raw;
-            if (line === '') {
-                continue;
-            }
-            if (provider === 'claude') {
-                if (claudeMightCarryUsage(line)) {
-                    const record = parseClaudeLine(line);
-                    if (record !== null) {
-                        records.push(record);
-                    }
-                }
-                continue;
-            }
-            if (provider === 'codex') {
-                if (codex !== null && codexMightCarryUsage(line)) {
-                    const record = parseCodexLine(line, codex);
-                    if (record !== null) {
-                        records.push(record);
-                    }
-                }
-                continue;
-            }
-            // Claude Code and Codex write transcripts of their own, Grok a file read whole; every other provider is a log its host keeps.
-            if (hostLogMightCarryUsage(line)) {
-                const record = parseHostUsageLine(line, provider);
-                if (record !== null) {
-                    records.push(record);
-                }
-            }
-        }
-        return records;
-    };
+async function parseLines(
+    chunks: AsyncIterable<Uint8Array>,
+    hash: Hash,
+    provider: UsageProvider,
+    from: number,
+    state: CodexParserState | null
+): Promise<ParsedFile> {
     const codex = provider === 'codex' ? (state ?? createCodexState()) : null;
-    const counted = read(whole, codex);
+    const records: UsageRecord[] = [];
+    const read = await forEachLine(chunks, hash, (line) => {
+        const record = parseLine(line, provider, codex);
+        if (record !== null) {
+            records.push(record);
+        }
+    });
     const committed = codex === null ? null : cloneCodexState(codex);
-    return { records: counted, tail: read(tail, codex), offset: from + (end === -1 ? 0 : Buffer.byteLength(whole, 'utf8') + 1), codex: committed };
+    const tail = parseLine(read.rest, provider, codex);
+    return { records, tail: tail === null ? [] : [tail], offset: from + read.consumed, codex: committed };
 }
 
 export interface UsageScannerOptions {
@@ -320,18 +361,13 @@ export class UsageScanner {
             known.provider === provider &&
             info.size > known.size &&
             known.head?.startsWith('sha256:') === true;
-        let read = compressed
-            ? { bytes: zstdDecompressSync(await readFile(path)), hash: createHash('sha256') }
-            : await readHashed(path, appended ? known.offset : 0);
         // A file only counts as grown while it starts the way it did; one rewritten larger is read again from the start.
-        const grown = appended && headOf(read.hash) === known.head;
-        if (appended && !grown) {
-            read = await readHashed(path, 0);
-        }
-        const from = grown ? known.offset : 0;
-        const parsed = parseChunk(read.bytes.toString('utf8'), provider, from, grown ? known.codex : null);
-        read.hash.update(read.bytes.subarray(0, parsed.offset - from));
-        const before = grown ? known.records : [];
+        const prefix = appended ? await hashPrefix(path, known.offset, createHash('sha256')) : null;
+        const grown = prefix !== null && known !== undefined && headOf(prefix) === known.head ? known : null;
+        const hash = grown === null || prefix === null ? createHash('sha256') : prefix;
+        const from = grown?.offset ?? 0;
+        const parsed = await parseLines(readBytes(path, from, compressed), hash, provider, from, grown?.codex ?? null);
+        const before = grown?.records ?? [];
         const entry: IndexedFile = {
             provider,
             size: info.size,
@@ -341,7 +377,7 @@ export class UsageScanner {
             records: foldByKey([...before, ...withAccount(parsed.records, accountOf)]),
             tail: withAccount(parsed.tail, accountOf),
             codex: parsed.codex,
-            head: headOf(read.hash),
+            head: headOf(hash),
             ...(provider === 'codex' ? { parserVersion: CODEX_PARSER_VERSION, compressed } : {})
         };
         this.index.set(key, entry);
