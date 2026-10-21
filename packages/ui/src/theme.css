@@ -372,6 +372,8 @@
        mark that has to be findable, the pointer's is the lift under the cursor. */
     .menu-item[data-highlighted] { background: var(--surface-active); }
     :root[data-modality='pointer'] .menu-item[data-highlighted] { background: var(--surface-hover); }
+    /* A menu that keeps the focus in a field of its own (`highlightItemOnHover={false}`) still lifts the row under the cursor. */
+    :root[data-modality='pointer'] .menu-item:not([data-disabled]):hover { background: var(--surface-hover); }
     .menu-item[data-disabled] { opacity: .5; }
     /* Two lines against each other divide nothing, and so does a line at the top or the bottom of a
        menu. A menu is composed out of rows that each decide whether they are there, so the last word
