@@ -1,8 +1,7 @@
 import { asObject, asString, int, type UsageRecord } from '../record.ts';
 
-/* A `token_count` line carries the counts; the other two carry the model and the directory they belong to. */
 export function codexMightCarryUsage(line: string): boolean {
-    return line.includes('token_count') || line.includes('turn_context') || line.includes('session_meta');
+    return ['token_count', 'turn_context', 'session_meta', 'thread_settings_applied', 'token_usage_record', 'compacted'].some((type) => line.includes(type));
 }
 
 /* A fork replays its ancestors' events into the new file the moment it is created, so anything this
@@ -34,6 +33,11 @@ export interface CodexParserState {
     anchorMs: number;
     /* The last counts as they were written, so a line repeated verbatim is not counted twice. */
     lastSignature: string | null;
+    serviceTier: string | null;
+    pendingCompactions: Record<string, { record: UsageRecord; counts: CodexCounts; threadTotal: CodexCounts | null }>;
+    compacted: string[];
+    handledResponses: string[];
+    latestResponse: string | null;
 }
 
 export function createCodexState(): CodexParserState {
@@ -45,12 +49,17 @@ export function createCodexState(): CodexParserState {
         sawSessionMeta: false,
         suppressing: false,
         anchorMs: 0,
-        lastSignature: null
+        lastSignature: null,
+        serviceTier: null,
+        pendingCompactions: {},
+        compacted: [],
+        handledResponses: [],
+        latestResponse: null
     };
 }
 
 export function cloneCodexState(state: CodexParserState): CodexParserState {
-    return { ...state, total: state.total === null ? null : { ...state.total } };
+    return structuredClone(state);
 }
 
 function countsOf(usage: Record<string, unknown>): CodexCounts {
@@ -87,13 +96,8 @@ export function isForkOrSubagent(payload: Record<string, unknown>): boolean {
     return typeof asObject(spawn)?.parent_thread_id === 'string';
 }
 
-/*
- * One line of `~/.codex/sessions/**\/*.jsonl`, against the state of the file it came from. Codex
- * reports a cumulative total per turn, so the call is the difference with the line before it; when
- * that difference falls the run started over and `last_token_usage` is the turn on its own. Codex
- * counts cache reads and writes inside `input_tokens`, unlike Anthropic, so what is left after
- * taking both out is the input that was actually paid for at the full rate.
- */
+/* Codex includes cache reads and writes in input_tokens. Compaction can appear separately from
+   cumulative token_count events, so response identities prevent charging the same request twice. */
 export function parseCodexLine(line: string, state: CodexParserState): UsageRecord | null {
     let parsed: unknown;
     try {
@@ -134,6 +138,18 @@ export function parseCodexLine(line: string, state: CodexParserState): UsageReco
         return null;
     }
 
+    if (payload.type === 'thread_settings_applied') {
+        const settings = asObject(payload.thread_settings);
+        if (settings !== null && typeof settings.service_tier === 'string') {
+            state.serviceTier = settings.service_tier;
+        }
+        return null;
+    }
+
+    if (record.type === 'token_usage_record' || record.type === 'compacted') {
+        return parseCompaction(record, payload, state);
+    }
+
     if (payload.type !== 'token_count') {
         return null;
     }
@@ -170,6 +186,62 @@ export function parseCodexLine(line: string, state: CodexParserState): UsageReco
         state.suppressing = false;
     }
 
+    let dedupeKey: string | null = null;
+    const pending = state.latestResponse === null ? undefined : state.pendingCompactions[state.latestResponse];
+    if (pending !== undefined && (sameCounts(pending.counts, counts) || sameCounts(pending.threadTotal, cumulative))) {
+        dedupeKey = `codex:response:${state.latestResponse}`;
+        delete state.pendingCompactions[state.latestResponse!];
+        state.handledResponses.push(state.latestResponse!);
+    }
+    return usageRecord(counts, timestampMs, state.model, state, dedupeKey);
+}
+
+function sameCounts(first: CodexCounts | null, second: CodexCounts): boolean {
+    return (
+        first !== null &&
+        first.input === second.input &&
+        first.cached === second.cached &&
+        first.cacheWrite === second.cacheWrite &&
+        first.output === second.output &&
+        first.reasoning === second.reasoning
+    );
+}
+
+function parseCompaction(record: Record<string, unknown>, payload: Record<string, unknown>, state: CodexParserState): UsageRecord | null {
+    const id = asString(record.type === 'compacted' ? payload.compaction_response_id : payload.response_id);
+    if (id === '' || state.handledResponses.includes(id)) {
+        return null;
+    }
+    if (record.type === 'compacted') {
+        if (!state.compacted.includes(id)) {
+            state.compacted.push(id);
+        }
+    } else {
+        const usage = asObject(payload.usage);
+        const model = asString(payload.model) || state.model;
+        const timestampMs = Date.parse(asString(record.timestamp));
+        if (usage === null || model === null || !Number.isFinite(timestampMs)) {
+            return null;
+        }
+        const counts = countsOf(usage);
+        const parsed = usageRecord(counts, timestampMs, model, state, `codex:response:${id}`);
+        if (parsed === null) {
+            return null;
+        }
+        state.latestResponse = id;
+        const threadTotal = asObject(payload.thread_token_usage);
+        state.pendingCompactions[id] ??= { record: parsed, counts, threadTotal: threadTotal === null ? null : countsOf(threadTotal) };
+    }
+    const pending = state.pendingCompactions[id];
+    if (!state.compacted.includes(id) || pending === undefined) {
+        return null;
+    }
+    state.handledResponses.push(id);
+    delete state.pendingCompactions[id];
+    return pending.record;
+}
+
+function usageRecord(counts: CodexCounts, timestampMs: number, model: string, state: CodexParserState, dedupeKey: string | null): UsageRecord | null {
     const uncached = Math.max(0, counts.input - counts.cached - counts.cacheWrite);
     const totals = {
         calls: 1,
@@ -186,11 +258,11 @@ export function parseCodexLine(line: string, state: CodexParserState): UsageReco
     return {
         provider: 'codex',
         timestampMs,
-        model: state.model,
+        model,
         sessionId: state.sessionId,
         cwd: state.cwd,
         totals,
-        // Fork copies are gone by here, so every event that is left is a call of its own.
-        dedupeKey: null
+        ...(state.serviceTier === null ? {} : { serviceTier: state.serviceTier }),
+        dedupeKey
     };
 }

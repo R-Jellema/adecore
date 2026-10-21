@@ -2,8 +2,8 @@ import { UsageProviderSchema, type UsageProvider } from '@adecore/agent-contract
 import type { UsageRecord } from './record.ts';
 import type { CodexParserState } from './readers/codex.ts';
 
-/* Another version is thrown away rather than migrated, since rebuilding costs one cold scan; version 1 is read as it is. */
-const INDEX_VERSION = 2;
+/* Old records survive deleted transcripts; the scanner reparses existing Codex files with its current reader. */
+const INDEX_VERSION = 3;
 /* Before accounts: every record was the default account's, so it reads as that without a scan. */
 const ACCOUNTLESS_VERSION = 1;
 
@@ -21,18 +21,14 @@ export interface IndexedFile {
     codex: CodexParserState | null;
     /* A versioned hash of all bytes before the offset; absent in indexes that cannot verify an append. */
     head: string | null;
+    parserVersion?: number;
+    compressed?: boolean;
 }
 
 export type UsageIndex = Map<string, IndexedFile>;
 
-/*
- * The index is a few hundred thousand records of seven numbers each, and the same model, session,
- * directory and account strings over and over. Interning those and writing a record as a tuple is
- * what keeps the file at a few megabytes instead of tens of them. The account is one past its place
- * in its table, and 0 for the default account, which is also what a version 1 row without it means.
- * A cost the CLI reported itself rides last, only on a row that has one, so every other row keeps its length.
- */
-type RecordRow = [number, number, number, number, number, number, number, number, number, number, number, string | 0, number?, number?];
+/* Interned names keep the index compact; optional cost and tier fields preserve per-call pricing. */
+type RecordRow = [number, number, number, number, number, number, number, number, number, number, number, string | 0, number?, number?, string?];
 
 interface FileRow {
     p: UsageProvider;
@@ -43,6 +39,8 @@ interface FileRow {
     t: RecordRow[];
     c: CodexParserState | null;
     h?: string;
+    v?: number;
+    z?: boolean;
 }
 
 interface IndexFile {
@@ -92,8 +90,11 @@ export function encodeIndex(index: UsageIndex): string {
             record.dedupeKey ?? 0,
             record.account === undefined ? 0 : accounts.index(record.account) + 1
         ];
-        if (record.costUsd !== undefined) {
-            counted.push(record.costUsd);
+        if (record.costUsd !== undefined || record.serviceTier !== undefined) {
+            counted[13] = record.costUsd;
+        }
+        if (record.serviceTier !== undefined) {
+            counted[14] = record.serviceTier;
         }
         return counted;
     };
@@ -106,7 +107,9 @@ export function encodeIndex(index: UsageIndex): string {
             c: file.codex,
             r: file.records.map(row),
             t: file.tail.map(row),
-            ...(file.head === null ? {} : { h: file.head })
+            ...(file.head === null ? {} : { h: file.head }),
+            ...(file.parserVersion === undefined ? {} : { v: file.parserVersion }),
+            ...(file.compressed === undefined ? {} : { z: file.compressed })
         };
     }
     const document: IndexFile = {
@@ -123,11 +126,12 @@ export function encodeIndex(index: UsageIndex): string {
 function isRow(row: unknown, version: number): row is RecordRow {
     return (
         Array.isArray(row) &&
-        (version === ACCOUNTLESS_VERSION ? row.length === 12 : row.length === 13 || row.length === 14) &&
+        (version === ACCOUNTLESS_VERSION ? row.length === 12 : row.length >= 13 && row.length <= (version === INDEX_VERSION ? 15 : 14)) &&
         row.slice(0, 11).every((value) => typeof value === 'number') &&
         (typeof row[11] === 'string' || row[11] === 0) &&
         (version === ACCOUNTLESS_VERSION || typeof row[12] === 'number') &&
-        (row.length < 14 || typeof row[13] === 'number')
+        (row.length < 14 || row[13] === null || row[13] === undefined || typeof row[13] === 'number') &&
+        (row.length < 15 || typeof row[14] === 'string')
     );
 }
 
@@ -145,7 +149,7 @@ export function decodeIndex(text: string): UsageIndex {
     }
     const version = document?.version;
     if (
-        (version !== INDEX_VERSION && version !== ACCOUNTLESS_VERSION) ||
+        (version !== INDEX_VERSION && version !== 2 && version !== ACCOUNTLESS_VERSION) ||
         !Array.isArray(document.models) ||
         !Array.isArray(document.sessions) ||
         !Array.isArray(document.folders)
@@ -184,7 +188,8 @@ export function decodeIndex(text: string): UsageIndex {
                     cwd,
                     ...(account === undefined ? {} : { account }),
                     totals: { calls: row[4], input: row[5], cacheRead: row[6], cacheWrite: row[7], cacheWrite1h: row[8], output: row[9], reasoning: row[10] },
-                    ...(row[13] === undefined ? {} : { costUsd: row[13] }),
+                    ...(typeof row[13] === 'number' ? { costUsd: row[13] } : {}),
+                    ...(typeof row[14] === 'string' ? { serviceTier: row[14] } : {}),
                     dedupeKey: row[11] === 0 ? null : row[11]
                 });
             }
@@ -201,7 +206,9 @@ export function decodeIndex(text: string): UsageIndex {
                 records,
                 tail,
                 codex: file.c ?? null,
-                head: typeof file.h === 'string' ? file.h : null
+                head: typeof file.h === 'string' ? file.h : null,
+                ...(typeof file.v === 'number' ? { parserVersion: file.v } : {}),
+                ...(typeof file.z === 'boolean' ? { compressed: file.z } : {})
             });
         }
     }

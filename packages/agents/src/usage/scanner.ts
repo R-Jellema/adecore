@@ -1,6 +1,7 @@
 import { createHash, type Hash } from 'node:crypto';
 import { mkdir, open, readFile, readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
+import { zstdDecompressSync } from 'node:zlib';
 import type { UsageProvider, UsageRoot } from '@adecore/agent-contracts';
 import { errorText } from '../error-text.ts';
 import { isNotFound, writeAtomic } from '../fs.ts';
@@ -13,6 +14,7 @@ import { cloneCodexState, codexMightCarryUsage, createCodexState, parseCodexLine
 import { usageRoots, type UsageRootPath } from './roots.ts';
 
 const HASH_CHUNK_BYTES = 65536;
+const CODEX_PARSER_VERSION = 2;
 
 interface HashedRead {
     /* Everything from `from` to the end of the file, as it is at the read. */
@@ -82,7 +84,7 @@ function readsWhole(provider: UsageProvider): boolean {
 }
 
 function isUsageFile(provider: UsageProvider, name: string): boolean {
-    return readsWhole(provider) ? name === GROK_USAGE_FILE : name.endsWith('.jsonl');
+    return readsWhole(provider) ? name === GROK_USAGE_FILE : name.endsWith('.jsonl') || (provider === 'codex' && name.endsWith('.jsonl.zst'));
 }
 
 async function listUsageFiles(dir: string, provider: UsageProvider, out: string[] = []): Promise<string[]> {
@@ -255,7 +257,12 @@ export class UsageScanner {
             }
             let failure: string | null = null;
             const accountOf = accountResolver(root, sessionAccounts);
-            for (const path of await listUsageFiles(root.path, root.provider)) {
+            const paths = await listUsageFiles(root.path, root.provider);
+            const plain = new Set(paths);
+            for (const path of paths) {
+                if (root.provider === 'codex' && path.endsWith('.jsonl.zst') && plain.has(path.slice(0, -4))) {
+                    continue;
+                }
                 files += 1;
                 try {
                     if (await this.readFileInto(path, root.provider, accountOf)) {
@@ -288,15 +295,34 @@ export class UsageScanner {
 
     private async readFileInto(path: string, provider: UsageProvider, accountOf: AccountOf): Promise<boolean> {
         const info = await stat(path);
-        const known = this.index.get(path);
-        if (known !== undefined && known.provider === provider && known.size === info.size && known.mtimeMs === info.mtimeMs) {
+        const compressed = provider === 'codex' && path.endsWith('.jsonl.zst');
+        const key = compressed ? path.slice(0, -4) : path;
+        const known = this.index.get(key);
+        const currentParser = provider !== 'codex' || known?.parserVersion === CODEX_PARSER_VERSION;
+        if (
+            currentParser &&
+            known !== undefined &&
+            known.provider === provider &&
+            (known.compressed ?? false) === compressed &&
+            known.size === info.size &&
+            known.mtimeMs === info.mtimeMs
+        ) {
             return false;
         }
         if (readsWhole(provider)) {
             return this.readWholeInto(path, provider, accountOf, info);
         }
-        const appended = known !== undefined && known.provider === provider && info.size > known.size && known.head?.startsWith('sha256:') === true;
-        let read = await readHashed(path, appended ? known.offset : 0);
+        const appended =
+            !compressed &&
+            currentParser &&
+            known?.compressed !== true &&
+            known !== undefined &&
+            known.provider === provider &&
+            info.size > known.size &&
+            known.head?.startsWith('sha256:') === true;
+        let read = compressed
+            ? { bytes: zstdDecompressSync(await readFile(path)), hash: createHash('sha256') }
+            : await readHashed(path, appended ? known.offset : 0);
         // A file only counts as grown while it starts the way it did; one rewritten larger is read again from the start.
         const grown = appended && headOf(read.hash) === known.head;
         if (appended && !grown) {
@@ -315,9 +341,10 @@ export class UsageScanner {
             records: foldByKey([...before, ...withAccount(parsed.records, accountOf)]),
             tail: withAccount(parsed.tail, accountOf),
             codex: parsed.codex,
-            head: headOf(read.hash)
+            head: headOf(read.hash),
+            ...(provider === 'codex' ? { parserVersion: CODEX_PARSER_VERSION, compressed } : {})
         };
-        this.index.set(path, entry);
+        this.index.set(key, entry);
         this.dirty = true;
         return true;
     }

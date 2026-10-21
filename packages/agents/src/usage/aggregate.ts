@@ -186,7 +186,7 @@ export async function aggregate(
         if (day < payload.from || day > payload.to) {
             continue;
         }
-        const lookup = prices.look(record.model);
+        const lookup = prices.look(record.model, record.serviceTier, record.timestampMs);
         const cost = record.costUsd ?? (lookup.price === null ? 0 : costOf(record.totals, lookup.price));
         foldBucket(buckets, slot, record, account, lookup.price, cost);
         foldModel(models, record, account, lookup, cost);

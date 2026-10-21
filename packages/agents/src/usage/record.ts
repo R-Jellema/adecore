@@ -13,6 +13,7 @@ export interface UsageRecord {
     totals: UsageTotals;
     /* What the CLI itself says the call cost, which wins over a price from the table; absent where it says nothing. */
     costUsd?: number;
+    serviceTier?: string;
     /* What identifies the message this line reports on, or null when nothing does. */
     dedupeKey: string | null;
 }

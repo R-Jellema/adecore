@@ -98,7 +98,7 @@ describe('the usage index file', () => {
 
     test('starts over from an empty index for text that is no index of this version', () => {
         expect(decodeIndex('not json').size).toBe(0);
-        expect(decodeIndex(JSON.stringify({ version: 3, models: [], sessions: [], folders: [], files: {} })).size).toBe(0);
+        expect(decodeIndex(JSON.stringify({ version: 4, models: [], sessions: [], folders: [], files: {} })).size).toBe(0);
         expect(decodeIndex(JSON.stringify({ version: 2, models: 'x', sessions: [], folders: [], files: {} })).size).toBe(0);
         expect(decodeIndex('null').size).toBe(0);
     });

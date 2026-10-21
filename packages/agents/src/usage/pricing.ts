@@ -22,6 +22,7 @@ export interface ModelPrice {
     cacheRead: number;
     cacheWrite: number;
     cacheWrite1h: number;
+    tiers?: Partial<Record<string, ModelPrice>>;
 }
 
 export type PriceTable = Map<string, ModelPrice>;
@@ -40,6 +41,7 @@ const PROVIDERS = new Set(['anthropic', 'openai']);
 const MODES = new Set(['chat', 'responses']);
 
 interface LiteLlmEntry {
+    [key: string]: unknown;
     input_cost_per_token?: unknown;
     output_cost_per_token?: unknown;
     cache_read_input_token_cost?: unknown;
@@ -84,6 +86,23 @@ export function parsePriceTable(document: unknown): PriceTable {
             cacheWrite: rate(value.cache_creation_input_token_cost) ?? input * CACHE_WRITE_SHARE,
             cacheWrite1h: input * CACHE_WRITE_1H_SHARE
         };
+        const tiers: Partial<Record<string, ModelPrice>> = {};
+        for (const [tier, multiplier] of [
+            ['priority', 2],
+            ['flex', 0.5],
+            ['ultrafast', 6]
+        ] as const) {
+            tiers[tier] = {
+                input: rate(value[`input_cost_per_token_${tier}`]) ?? input * multiplier,
+                output: rate(value[`output_cost_per_token_${tier}`]) ?? output * multiplier,
+                cacheRead: rate(value[`cache_read_input_token_cost_${tier}`]) ?? price.cacheRead * multiplier,
+                cacheWrite: rate(value[`cache_creation_input_token_cost_${tier}`]) ?? price.cacheWrite * multiplier,
+                cacheWrite1h: price.cacheWrite1h * multiplier
+            };
+        }
+        if (value.litellm_provider === 'openai') {
+            price.tiers = tiers;
+        }
         const key = name.trim().toLowerCase();
         table.set(key, price);
         const bare = key.slice(key.lastIndexOf('/') + 1);
@@ -100,12 +119,25 @@ function withoutDate(key: string): string | null {
     return match === null ? null : match[1]!;
 }
 
-/*
- * Exact first, then the same name without its date, then the longest family the table knows. A name
- * nobody prices is left unpriced rather than guessed at: `$0.00` for a model that costs money is a
- * worse answer than a question mark.
- */
-export function lookupPrice(table: PriceTable, model: string): PriceLookup {
+// The internal review alias has no published price; expose ccusage's dated estimate as a family match.
+// https://github.com/ccusage/ccusage/blob/main/rust/adapters/codex/src/codex-auto-review-fallbacks.json
+const REVIEW_MODELS = [
+    ['2026-07-30', 'gpt-5.6-luna'],
+    ['2026-03-05', 'gpt-5.4'],
+    ['2026-02-05', 'gpt-5.3-codex'],
+    ['2025-12-11', 'gpt-5.2-codex'],
+    ['2025-11-13', 'gpt-5.1-codex'],
+    ['2025-09-15', 'gpt-5-codex'],
+    ['2025-08-07', 'gpt-5']
+] as const;
+
+export function lookupPrice(table: PriceTable, model: string, serviceTier?: string, timestampMs?: number): PriceLookup {
+    const found = lookupBasePrice(table, model, timestampMs);
+    const tier = serviceTier === 'fast' ? 'priority' : serviceTier;
+    return { ...found, price: (tier === undefined ? undefined : found.price?.tiers?.[tier]) ?? found.price };
+}
+
+function lookupBasePrice(table: PriceTable, model: string, timestampMs?: number): PriceLookup {
     const key = model.trim().toLowerCase().split('[')[0]!;
     const bare = key.slice(key.lastIndexOf('/') + 1);
     if (bare === '' || AMBIGUOUS.has(bare)) {
@@ -114,6 +146,12 @@ export function lookupPrice(table: PriceTable, model: string): PriceLookup {
     const exact = table.get(key) ?? table.get(bare);
     if (exact !== undefined) {
         return { price: exact, basis: 'exact', pricedAs: null };
+    }
+    if (bare === 'codex-auto-review' && timestampMs !== undefined && Number.isFinite(timestampMs)) {
+        const date = new Date(timestampMs).toISOString().slice(0, 10);
+        const fallback = REVIEW_MODELS.find(([released]) => date >= released)?.[1] ?? 'gpt-5';
+        const found = lookupBasePrice(table, fallback);
+        return { price: found.price, basis: found.price === null ? 'unknown' : 'family', pricedAs: found.price === null ? null : fallback };
     }
     const dated = withoutDate(bare);
     const undated = dated === null ? undefined : table.get(dated);
@@ -177,8 +215,8 @@ export class PriceBook {
         return { source: this.table.size === 0 ? 'none' : this.source, fetchedAt: this.fetchedAt, models: this.table.size };
     }
 
-    look(model: string): PriceLookup {
-        return lookupPrice(this.table, model);
+    look(model: string, serviceTier?: string, timestampMs?: number): PriceLookup {
+        return lookupPrice(this.table, model, serviceTier, timestampMs);
     }
 
     /* Reads the table an earlier run stored, once; asking LiteLLM is left to `ensure`. */
