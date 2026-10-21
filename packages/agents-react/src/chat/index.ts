@@ -4,6 +4,8 @@ export { transportActions, actionsOf, useChatActions } from './actions';
 export { type ChatSendExtras, ChatClient } from './chat-client';
 export type { ProjectChat } from './chat-references';
 export { sendFromComposer, type ComposerSend } from './composer-send';
+export { stepEffortFromComposer } from './composer-effort';
+export type { EffortStep } from './logic/effort';
 export { EMPTY_DRAFT, useDrafts, readDraft, writeDraft, offerDraft, type ChatDraft } from './drafts';
 export { stripAnsi } from './logic/ansi';
 export {

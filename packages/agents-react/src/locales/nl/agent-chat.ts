@@ -309,6 +309,10 @@ export default {
             anyCli: 'CLI'
         },
         notice: {
+            effort: 'Denkniveau op {{effort}}',
+            effortHighest: '{{effort}} is het hoogste denkniveau van {{model}}',
+            effortLowest: '{{effort}} is het laagste denkniveau van {{model}}',
+            noEffort: '{{model}} heeft geen denkniveau',
             clearFailed: 'De thread kon niet worden gewist',
             stashChatsDropped_one: '1 bijgevoegde chat hoort niet bij dit project en is weggelaten',
             stashChatsDropped_other: '{{count}} bijgevoegde chats horen niet bij dit project en zijn weggelaten',

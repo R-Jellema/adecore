@@ -309,6 +309,10 @@ export default {
             anyCli: 'CLI'
         },
         notice: {
+            effort: 'Reasoning set to {{effort}}',
+            effortHighest: '{{effort}} is the most reasoning {{model}} takes',
+            effortLowest: '{{effort}} is the least reasoning {{model}} takes',
+            noEffort: '{{model}} takes no reasoning effort',
             clearFailed: 'The thread could not be cleared',
             stashChatsDropped_one: '1 attached chat is not in this project and was left out',
             stashChatsDropped_other: '{{count}} attached chats are not in this project and were left out',

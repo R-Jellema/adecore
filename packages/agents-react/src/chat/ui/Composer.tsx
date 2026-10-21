@@ -35,6 +35,7 @@ import { useCompactionOffer } from './composer/use-compaction-offer';
 import { useComposerDraft } from './composer/use-composer-draft';
 import { useComposerMenus } from './composer/use-composer-menus';
 import { useComposerSubmit } from './composer/use-composer-submit';
+import { useEffortStepper } from './composer/use-effort-stepper';
 import { LEAVE_DROPS_TO_THE_CARD, useDraftFiles } from './composer/use-draft-files';
 import { useContinuableTurn } from './composer/use-continuable-turn';
 import { useNotice } from './composer/use-notice';
@@ -96,6 +97,14 @@ export function Composer({ chatId, info, focused, answerPromptsElsewhere, disabl
     const menus = useComposerMenus({ chatId, info, capabilities, providerName: provider?.name, draft: box, inputRef });
     const files = useDraftFiles({ capabilities, providerName: provider?.name, writable, draft: box, inputRef, setNotice: notice.setNotice });
     const controls = useChatControls({ chatId, info, notice, onRetarget });
+    useEffortStepper({
+        chatId,
+        info,
+        model: provider?.models.find((entry) => entry.slug === info.selection.model),
+        writable,
+        controls,
+        setNotice: notice.setNotice
+    });
     const guard = promptGuard(withQuote(draft.quote, draft.text));
     const continuable = useContinuableTurn(chatId, info);
     // The stopped turn something went out for, since the chat takes a moment to answer and Continue must not stand there meanwhile.

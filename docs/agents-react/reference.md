@@ -30,10 +30,12 @@ A chat outside its views: the client, actions, drafts, preferences, mentions, fo
 | [`chat/actions`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/chat/actions.ts) | `transportActions`, `actionsOf`, `useChatActions` |
 | [`chat/chat-client`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/chat/chat-client.ts) | `ChatSendExtras`, `ChatClient` |
 | [`chat/chat-references`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/chat/chat-references.ts) | `ProjectChat` |
+| [`chat/composer-effort`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/chat/composer-effort.ts) | `stepEffortFromComposer` |
 | [`chat/composer-send`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/chat/composer-send.ts) | `sendFromComposer`, `ComposerSend` |
 | [`chat/drafts`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/chat/drafts.ts) | `EMPTY_DRAFT`, `useDrafts`, `readDraft`, `writeDraft`, `offerDraft`, `ChatDraft` |
 | [`chat/logic/ansi`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/chat/logic/ansi.ts) | `stripAnsi` |
 | [`chat/logic/command-looks`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/chat/logic/command-looks.ts) | `matchCommandLook`, `CommandLookRun`, `CommandLookWord` |
+| [`chat/logic/effort`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/chat/logic/effort.ts) | `EffortStep` |
 | [`chat/logic/fork`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/chat/logic/fork.ts) | `FORKABLE_PROVIDERS`, `forkRefusal`, `summaryRefusal`, `lastSettledTurn`, `forkPointOf`, `forkPointLabel`, `ForkShape`, `forkShapes`, `ForkCliChoice`, `forkPayload`, `branchRefusal`, `ForkPoint`, `ForkWorktreeChoice` |
 | [`chat/logic/handback`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/chat/logic/handback.ts) | `handbackReportOf` |
 | [`chat/logic/limit`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/chat/logic/limit.ts) | `limitView`, `LimitView` |

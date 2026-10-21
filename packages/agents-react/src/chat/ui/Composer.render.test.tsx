@@ -2,7 +2,7 @@ import { afterEach, describe, expect, jest, test } from 'bun:test';
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { EditorView } from '@codemirror/view';
-import type { ChatInfo, ChatItem, ChatSkill, ProviderCapabilities, ProviderInfo } from '@adecore/agent-contracts';
+import type { ChatInfo, ChatItem, ChatSkill, ModelInfo, ProviderCapabilities, ProviderInfo } from '@adecore/agent-contracts';
 import { createPage } from '@adecore/editor/testing';
 import { ChatHostProvider, type ChatActions, type ChatHost } from '../../host';
 import { ChatScopeContext, type ChatScope } from '../../scope';
@@ -13,6 +13,7 @@ import type { ChatSendExtras } from '../chat-client';
 import { EMPTY_DRAFT, readDraft, writeDraft } from '../drafts';
 import { readChatPreferences, rememberChatPreferences } from '../preferences';
 import { useStash, type StashedPrompt } from '../stash';
+import { stepEffortFromComposer } from '../composer-effort';
 import { Composer } from './Composer';
 
 const SCOPE_ID = 'composer-test';
@@ -37,13 +38,15 @@ const CAPABILITIES: ProviderCapabilities = {
     steer: true
 };
 
-function providerOf(capabilities: Partial<ProviderCapabilities>): ProviderInfo {
+const MODEL: ModelInfo = { slug: 'model', name: 'Model', legacy: false, isDefault: true, options: [] };
+
+function providerOf(capabilities: Partial<ProviderCapabilities>, model: ModelInfo = MODEL): ProviderInfo {
     return {
         kind: 'claude',
         name: 'Claude Code',
         installed: true,
         version: '2.1.0',
-        models: [{ slug: 'model', name: 'Model', legacy: false, isDefault: true, options: [] }],
+        models: [model],
         defaultModel: 'model',
         capabilities: { ...CAPABILITIES, ...capabilities },
         resumeCommand: 'claude --resume {id}'
@@ -72,6 +75,7 @@ function infoOf(patch: Partial<ChatInfo> = {}): ChatInfo {
 interface Options {
     info?: ChatInfo;
     capabilities?: Partial<ProviderCapabilities>;
+    model?: ModelInfo;
     host?: Partial<ChatHost>;
     actions?: Partial<ChatActions>;
     skills?: ChatSkill[];
@@ -243,7 +247,7 @@ async function mount(options: Options = {}): Promise<Mounted> {
         chats: { listSkills: async () => options.skills ?? [] }
     } as unknown as ChatScope;
     const info = options.info ?? infoOf();
-    useProvidersStore.getState().setProviders(SCOPE_ID, [providerOf(options.capabilities ?? {})]);
+    useProvidersStore.getState().setProviders(SCOPE_ID, [providerOf(options.capabilities ?? {}, options.model)]);
     useChats.getState().reset(scope.keyOf(CHAT), info, options.items ?? []);
     const element = (
         <ChatHostProvider host={host}>
@@ -842,5 +846,49 @@ describe('a cold prompt cache', () => {
         const compact = [...composer.page.host.querySelectorAll('button')].find((button) => button.textContent === 'Compact')!;
         await composer.click(compact);
         expect(composer.calls).toContainEqual(['compact', CHAT]);
+    });
+});
+
+describe('stepping the reasoning effort', () => {
+    const thinking: ModelInfo = {
+        ...MODEL,
+        options: [
+            {
+                id: 'effort',
+                label: 'Reasoning',
+                type: 'select',
+                defaultChoice: 'medium',
+                choices: [
+                    { id: 'low', label: 'Low' },
+                    { id: 'medium', label: 'Medium' },
+                    { id: 'high', label: 'High' }
+                ]
+            }
+        ]
+    };
+
+    test('a command of the host raises the effort of the chat on screen one step and says so', async () => {
+        const composer = await mount({ model: thinking });
+        let reached = false;
+        await act(async () => {
+            reached = stepEffortFromComposer(`${SCOPE_ID}/${CHAT}`, 'up');
+        });
+        await settle();
+        expect(reached).toBe(true);
+        expect(composer.calls).toContainEqual(['configure', CHAT, { selection: { model: 'model', options: { effort: 'high' } } }]);
+        expect(composer.page.host.textContent).toContain('Reasoning set to High');
+    });
+
+    test('at the end of what the model offers nothing changes, and the composer says why', async () => {
+        const composer = await mount({ model: thinking, info: infoOf({ selection: { model: 'model', options: { effort: 'low' } } }) });
+        await act(async () => {
+            stepEffortFromComposer(`${SCOPE_ID}/${CHAT}`, 'down');
+        });
+        expect(composer.calls.filter(([name]) => name === 'configure')).toEqual([]);
+        expect(composer.page.host.textContent).toContain('Low is the least reasoning Model takes');
+    });
+
+    test('a chat with no composer on screen is not reached', () => {
+        expect(stepEffortFromComposer(`${SCOPE_ID}/elsewhere`, 'up')).toBe(false);
     });
 });

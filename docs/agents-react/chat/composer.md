@@ -30,6 +30,8 @@ import { Composer } from '@adecore/agents-react/chat/ui';
 
 A command of your own, such as a menu row, sends what a composer on screen holds the way its keys do: `sendFromComposer(key, how)` from `@adecore/agents-react/chat`, with the scope's `keyOf(chatId)` and a `ComposerSend` (`default`, `alternate` or `and-new`). It answers `false` when that chat has no composer on screen; each composer registers itself. `SEND_AND_NEW_SHORTCUT` is Mod+Alt+Enter, for a menu or a list of keys to print.
 
+`stepEffortFromComposer(key, step)` steps the reasoning effort of that chat one choice `up` or `down`, within the `effort` choices of its model, as picking it in the pill does. The composer says where it landed in its notice line, and at either end, or for a model without an effort, says so and changes nothing. It answers `false` when that chat has no composer on screen. The key that runs it is the host's to bind.
+
 Before the first message, picking another CLI's model calls `onRetarget(provider, selection)`, which moves the empty chat. After it, or with `providerFixed`, the picker offers only the chat's own CLI.
 
 A model picked in the composer becomes the one new chats of that CLI start on. A runtime mode picked there is the chat's own: the mode new chats start in changes only through `rememberChatPreferences`, from a settings page of your own.
