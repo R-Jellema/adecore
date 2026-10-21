@@ -33,7 +33,8 @@ export function createClaudeProvider(options: ClaudeBackendOptions = {}): ChatPr
                 { kind: 'env', variable: 'ANTHROPIC_API_KEY' }
             ]
         },
-        detect: detectCli,
+        // The version probe must never be the start that updates the CLI.
+        detect: (command, env) => detectCli(command, { ...env, DISABLE_AUTOUPDATER: '1' }),
         oneShotArgs: (prompt) => ['-p', prompt, '--output-format', 'text'],
         // `-p` without a prompt argument reads the prompt from stdin.
         oneShotStdinArgs: ['-p', '--output-format', 'text'],

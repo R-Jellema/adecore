@@ -72,12 +72,46 @@ export class ProviderRegistry {
     private readonly detect: ((command: string) => Promise<CliDetection>) | null;
     private readonly env: Record<string, string | undefined>;
     private readonly cache = new Map<AgentKind, { at: number; detection: CliDetection }>();
+    private readonly listeners = new Set<(kind: AgentKind) => void>();
+    // What the registry listens to on each provider, so one taken away is let go.
+    private readonly stops = new Map<ChatProvider, () => void>();
 
     constructor(options: ProviderRegistryOptions = {}) {
-        this.providers = options.providers ?? [...BUILT_IN_PROVIDERS];
+        this.providers = [...(options.providers ?? BUILT_IN_PROVIDERS)];
         this.commands = options.commands ?? {};
         this.detect = options.detect ?? null;
         this.env = options.env ?? process.env;
+    }
+
+    /*
+     * Offers one more provider after the host started, such as a CLI a person installed since, or puts it in the
+     * place of the one of its kind. The `onChange` listeners hear its kind, so a host hands its clients the new list.
+     */
+    add(provider: ChatProvider): void {
+        const index = this.providers.findIndex((entry) => entry.kind === provider.kind);
+        if (index === -1) {
+            this.providers.push(provider);
+        } else {
+            this.unfollow(this.providers[index]!);
+            this.providers[index] = provider;
+        }
+        this.cache.delete(provider.kind);
+        if (this.listeners.size > 0) {
+            this.follow(provider);
+        }
+        this.changed(provider.kind);
+    }
+
+    /* Stops offering a kind; a record that names it gets the stand-in `get` answers for a kind the host does not offer. */
+    remove(kind: AgentKind): void {
+        const index = this.providers.findIndex((entry) => entry.kind === kind);
+        if (index === -1) {
+            return;
+        }
+        this.unfollow(this.providers[index]!);
+        this.providers.splice(index, 1);
+        this.cache.delete(kind);
+        this.changed(kind);
     }
 
     async list(): Promise<ProviderInfo[]> {
@@ -128,12 +162,24 @@ export class ProviderRegistry {
         return this.get(kind).enabled?.() !== false;
     }
 
-    /* Calls the listener with the kind of every provider whose models or capabilities changed, so a host can list them again; answers how to stop. */
+    /*
+     * Calls the listener with the kind of every provider whose models or capabilities changed, and of every one
+     * added or removed, so a host can list them again; answers how to stop.
+     */
     onChange(listener: (kind: AgentKind) => void): () => void {
-        const stops = this.providers.flatMap((provider) => (provider.onChange ? [provider.onChange(() => listener(provider.kind))] : []));
+        if (this.listeners.size === 0) {
+            for (const provider of this.providers) {
+                this.follow(provider);
+            }
+        }
+        this.listeners.add(listener);
         return () => {
-            for (const stop of stops) {
-                stop();
+            this.listeners.delete(listener);
+            if (this.listeners.size === 0) {
+                for (const stop of this.stops.values()) {
+                    stop();
+                }
+                this.stops.clear();
             }
         };
     }
@@ -144,6 +190,26 @@ export class ProviderRegistry {
 
     protected fallback(kind: AgentKind): ChatProvider {
         return unofferedProvider(kind);
+    }
+
+    private follow(provider: ChatProvider): void {
+        if (provider.onChange && !this.stops.has(provider)) {
+            this.stops.set(
+                provider,
+                provider.onChange(() => this.changed(provider.kind))
+            );
+        }
+    }
+
+    private unfollow(provider: ChatProvider): void {
+        this.stops.get(provider)?.();
+        this.stops.delete(provider);
+    }
+
+    private changed(kind: AgentKind): void {
+        for (const listener of [...this.listeners]) {
+            listener(kind);
+        }
     }
 
     private async detection(provider: ChatProvider): Promise<CliDetection> {
