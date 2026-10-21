@@ -1,0 +1,3 @@
+[test]
+# Only the wall-clock performance gates, which the default run leaves out.
+preload = ["./packages/ui/src/testing/dedupe.ts", "./scripts/test-preload.ts"]

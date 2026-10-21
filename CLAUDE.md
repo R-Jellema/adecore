@@ -63,6 +63,7 @@ Bun workspaces: every package in `packages/`, published from its own folder with
 
 - `bun run check`: typecheck and oxlint; a warning fails.
 - `bun run test`: `bun test`, tests next to the code.
+- `bun run test:perf`: the `*.perf.test.ts` gates on wall-clock time, left out of `test` and CI; run them after a change to the editor or the language mirror.
 - `bun run build`: `dist`.
 - `bun run format`: oxfmt.
 
