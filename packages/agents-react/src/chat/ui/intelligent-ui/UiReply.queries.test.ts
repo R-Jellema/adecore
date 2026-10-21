@@ -267,7 +267,10 @@ test.skipIf(typeof document === 'undefined')('a citation reveals and focuses its
         expect(section.getAttribute('aria-expanded')).toBe('false');
         await act(async () => {
             chip.click();
-            await new Promise((resolve) => setTimeout(resolve, 30));
+            // The reveal opens one enclosing section or tab per task before it focuses the source.
+            for (let turn = 0; turn < 10 && document.activeElement !== element.querySelector('[data-ui-source]'); turn++) {
+                await new Promise((resolve) => setTimeout(resolve, 0));
+            }
         });
         expect(section.getAttribute('aria-expanded')).toBe('true');
         expect(document.activeElement).toBe(element.querySelector('[data-ui-source]'));
