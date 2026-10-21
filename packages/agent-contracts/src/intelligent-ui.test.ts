@@ -1,7 +1,11 @@
-import { expect, test } from 'bun:test';
+import { afterEach, beforeEach, expect, setSystemTime, test } from 'bun:test';
 import { z } from 'zod';
 import { compileUi } from '@adecore/intelligent-ui';
 import { ChatAssistantItemSchema, ChatEventSchema, ChatUiPlaceReadingSchema, ChatUiQueryStateSchema } from './chat.ts';
+
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 test('future UI components stay open on the chat wire and legacy decoders retain the reply', () => {
     const text = '```ui\n<Summary>Readable</Summary>\n```';
