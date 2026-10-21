@@ -39,7 +39,9 @@ export const ModelInfoSchema = z.object({
     isDefault: z.boolean(),
     options: z.array(ModelOptionDescriptorSchema),
     // The oldest CLI that offers this model; absent when no minimum is known.
-    minCliVersion: z.string().optional()
+    minCliVersion: z.string().optional(),
+    // Whether the model can call tools, for a provider whose models differ in that. Absent when the provider does not say.
+    tools: z.boolean().optional()
 });
 export type ModelInfo = z.infer<typeof ModelInfoSchema>;
 
@@ -70,7 +72,8 @@ export const ModelCatalogEntrySchema = z.object({
     minCliVersion: z
         .string()
         .regex(/^\d+\.\d+(\.\d+)?$/, 'Expected a version such as 2.1 or 2.1.4')
-        .optional()
+        .optional(),
+    tools: z.boolean().optional()
 });
 export type ModelCatalogEntry = z.infer<typeof ModelCatalogEntrySchema>;
 

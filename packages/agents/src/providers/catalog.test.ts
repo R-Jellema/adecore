@@ -33,6 +33,21 @@ describe('ModelCatalog', () => {
         expect(catalog.list().some((model) => model.vendor !== undefined)).toBe(false);
     });
 
+    test('a model says whether it can call tools only when the catalog does', () => {
+        const own = new ModelCatalog({
+            updatedAt: '2026-10-21T00:00:00.000Z',
+            defaultModel: 'a/one',
+            profiles: { plain: { options: [], contextWindowTokens: {} } },
+            models: [
+                { slug: 'a/one', name: 'One', profile: 'plain', tools: true },
+                { slug: 'b/two', name: 'Two', profile: 'plain', tools: false },
+                { slug: 'c/three', name: 'Three', profile: 'plain' }
+            ]
+        });
+        expect(own.list().map((model) => model.tools)).toEqual([true, false, undefined]);
+        expect('tools' in own.list()[2]!).toBe(false);
+    });
+
     test('fast mode is an option of the models that offer it, off by default', () => {
         const options = (slug: string) => catalog.list().find((model) => model.slug === slug)?.options ?? [];
         expect(options('claude-opus-5').find((option) => option.id === 'fastMode')).toMatchObject({ type: 'boolean', defaultValue: false });

@@ -439,6 +439,7 @@ export default {
             legacyGroup_one: 'Legacy models ({{count}})',
             legacyGroup_other: 'Legacy models ({{count}})',
             legacy: 'Legacy',
+            tools: 'Can use tools',
             requires: 'Requires {{cli}} {{version}} or later on {{machine}}',
             requiresHere: 'Requires {{cli}} {{version}} or later',
             providerSettings: 'Provider settings'

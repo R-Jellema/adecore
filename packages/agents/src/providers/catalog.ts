@@ -85,7 +85,8 @@ export class ModelCatalog {
             legacy: model.legacy === true,
             isDefault: model.slug === this.data.defaultModel,
             options: this.profileOf(model.slug)?.options ?? [],
-            ...(model.minCliVersion === undefined ? {} : { minCliVersion: model.minCliVersion })
+            ...(model.minCliVersion === undefined ? {} : { minCliVersion: model.minCliVersion }),
+            ...(model.tools === undefined ? {} : { tools: model.tools })
         }));
     }
 
