@@ -26,7 +26,7 @@ import { useChatHost, type CommandLook } from '../../../host';
 import { lazyNamed } from '../../../lazy';
 import { useChatActions } from '../../actions';
 import { ChatScopeContext, useChatScope } from '../../../scope';
-import { useCurrentItem } from '../../../state/chats';
+import { useAwaitsApproval, useCurrentItem } from '../../../state/chats';
 import { useTimelineFlash } from '../../timeline-flash';
 import { formatClockDuration, formatElapsedShort } from '@adecore/ui/format';
 import { Icon, LazyBoundary, MiddleTruncate, Spinner, useTickingText } from '@adecore/ui';
@@ -378,6 +378,8 @@ export function WorkLiveRow({ chatId, tool: derived }: { chatId: string; tool: C
     const shell = shellCommand(tool.name, tool.input);
     const { commandLooks } = useChatHost();
     const run = shell === null ? null : matchCommandLook(shell, commandLooks);
+    const awaiting = useAwaitsApproval(chatId, tool.toolUseId);
+    const { t } = useTranslation('agent-chat');
     return (
         <div>
             <ToggleLine
@@ -390,7 +392,13 @@ export function WorkLiveRow({ chatId, tool: derived }: { chatId: string; tool: C
                 path={summary !== '' && toolSummaryIsPath(tool.name, tool.input)}
                 open={open && opens}
                 onToggle={opens ? () => setOpen((o) => !o) : undefined}
-                trailing={<RunningFor startedAt={toolStartedAt(tool)} />}
+                trailing={
+                    awaiting ? (
+                        <span className="shrink-0 text-xs text-text-faint">{t('work.awaitingApproval')}</span>
+                    ) : (
+                        <RunningFor startedAt={toolStartedAt(tool)} />
+                    )
+                }
                 live
             />
             {open && opens && <ToolBody tool={tool} />}

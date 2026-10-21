@@ -183,6 +183,7 @@ export default {
         loadingDiff: 'Loading diff',
         diffUnavailable: 'Could not load this diff',
         runningFor: 'running for {{elapsed}}',
+        awaitingApproval: 'waiting for you',
         forksAfter_one: 'A fork goes on after this turn',
         forksAfter_other: '{{count}} forks go on after this turn',
         omitted: {

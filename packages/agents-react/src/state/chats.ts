@@ -347,6 +347,11 @@ export function useReportedModels(provider: AgentKind): ReadonlySet<string> {
     return useMemo(() => new Set(joined === '' ? [] : joined.split('\n')), [joined]);
 }
 
+/* Whether a call still waits on the person's answer to an approval of it, when its clock is not running yet. */
+export function useAwaitsApproval(chatId: string, toolUseId: string): boolean {
+    return useChatRow(chatId, (row) => waitingRequestsOf(row).some((request) => request.kind === 'approval' && request.toolUseId === toolUseId));
+}
+
 /* The item as the thread holds it now, for a row derived from the structure, which a delta leaves alone. */
 export function useCurrentItem<T extends ChatItem>(chatId: string, derived: T): T {
     return useChatRow(chatId, (row) => {
