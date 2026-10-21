@@ -39,7 +39,7 @@ function Elapsed({ startedAt }: { startedAt: number }) {
 function StateLine({ state, task }: { state: TaskRowState; task: SubagentTask | null }) {
     const { t } = useTranslation('agent-chat');
     const until = state === 'paused' ? task?.paused?.until : undefined;
-    const now = useNow(60_000, until === undefined);
+    const now = useNow(60_000, until !== undefined);
     return (
         <span className={clsx('truncate text-2xs', STATE_TONE[state])}>
             {until === undefined ? t(`rows.task.${state}`) : t('rows.task.pausedUntil', { time: formatMoment(until, now) })}
