@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, setSystemTime, test } from 'bun:test';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -8,6 +8,10 @@ import type { AgentEvent } from '../events.ts';
 import { writeAtomic } from '../fs.ts';
 import { TaskCoordinator, resultOfTurn } from './task-coordinator.ts';
 import { TaskStore } from './task-store.ts';
+
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 let home: string;
 let tasks: TaskStore;

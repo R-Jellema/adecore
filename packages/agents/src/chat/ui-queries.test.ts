@@ -1,10 +1,14 @@
-import { afterEach, describe, expect, jest, setSystemTime, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, jest, setSystemTime, test } from 'bun:test';
 import { z } from 'zod';
 import type { ChatAssistantItem, ChatEvent, ChatInfo, ChatUiPlaceReading } from '@adecore/agent-contracts';
 import { compileUiBlock, evaluateUiBlock, resolveUiChoice, uiQueryArguments } from '@adecore/intelligent-ui';
 import { claudeProvider } from '../providers/claude-provider.ts';
 import { ChatSession } from './chat-session.ts';
 import { ChatUiQueries, ChatUiRefusal, type ChatUiHost } from './ui-queries.ts';
+
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 function rig() {
     let permitted = true;
