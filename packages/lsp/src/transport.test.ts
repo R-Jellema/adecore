@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test';
+import { describe, expect, it, setSystemTime } from 'bun:test';
 import { ContentLengthDecoder, connectWebSocket, createMemoryTransportPair, createStreamTransport, encodeMessage, type ByteStream } from './transport.ts';
 import type { RpcMessage } from './protocol.ts';
 
@@ -158,11 +158,17 @@ describe('WebSocket transport', () => {
         socket.open();
         const transport = await connecting;
         socket.bufferedAmount = 9 * 1024 * 1024;
-        const sending = transport.send(hello);
-        await new Promise((resolve) => setTimeout(resolve, 30));
-        expect(socket.sent).toEqual([]);
-        socket.bufferedAmount = 0;
-        await sending;
+        // A stopped clock, so a slow runner cannot reach the deadline while the send is held on purpose.
+        setSystemTime(new Date(0));
+        try {
+            const sending = transport.send(hello);
+            await new Promise((resolve) => setTimeout(resolve, 30));
+            expect(socket.sent).toEqual([]);
+            socket.bufferedAmount = 0;
+            await sending;
+        } finally {
+            setSystemTime();
+        }
         expect(socket.sent.map((data) => JSON.parse(data))).toEqual([hello]);
 
         const stuck = new FakeSocket();
