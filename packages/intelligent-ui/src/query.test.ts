@@ -1,9 +1,13 @@
-import { expect, test } from 'bun:test';
+import { afterEach, beforeEach, expect, setSystemTime, test } from 'bun:test';
 import { z } from 'zod';
 import { compileUiBlock } from './compiler.ts';
 import { uiLinkTargets } from './links.ts';
 import { uiQueryArguments, uiQueryFallback, uiValidatedState } from './query.ts';
 import { resolveUiChoice } from './runtime.ts';
+
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 const schemas = { rows: z.object({ limit: z.number().int().min(1).max(10), repo: z.string() }).strict() };
 

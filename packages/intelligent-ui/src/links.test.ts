@@ -1,6 +1,10 @@
-import { expect, test } from 'bun:test';
+import { afterEach, beforeEach, expect, setSystemTime, test } from 'bun:test';
 import { compileUiBlock } from './compiler.ts';
 import { uiLinkTargets } from './links.ts';
+
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 test('link targets come only from visible complete supported nodes', () => {
     const block = compileUiBlock('<File path="a.md" line={3}/><Show when={false}><File path="hidden.md"/></Show><Commit sha="--help"/><Node id="node-1"/>', {

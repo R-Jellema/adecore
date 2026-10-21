@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, setSystemTime, test } from 'bun:test';
 import { z } from 'zod';
 import { UiBudget } from './budget.ts';
 import { compileUi, compileUiBlock, uiHasFence, uiMayReferenceHost } from './compiler.ts';
@@ -7,6 +7,10 @@ import { copyUiValue, evaluateUiExpression, parseUiExpression, sameUiValue } fro
 import { evaluateUiBlock, UiState } from './runtime.ts';
 import { UiBlockSchema, UiNodeSchema } from './protocol.ts';
 import { uiCompactCatalog, uiFallbackText, uiGroupReference, uiReferenceText, uiSessionNote } from './text.ts';
+
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 function expression(source: string, variables = {}): unknown {
     return evaluateUiExpression(parseUiExpression(source, new UiBudget({ milliseconds: 5000 })), variables, new UiBudget({ milliseconds: 5000 }));

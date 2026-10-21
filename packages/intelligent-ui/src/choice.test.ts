@@ -1,7 +1,11 @@
-import { expect, test } from 'bun:test';
+import { afterEach, beforeEach, expect, setSystemTime, test } from 'bun:test';
 import { compileUiBlock } from './compiler.ts';
 import { uiValidatedState } from './query.ts';
 import { evaluateUiBlock, resolveUiChoice, UiState, uiInputValues } from './runtime.ts';
+
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 const source = `$count = 2
 $readOnly = "original"

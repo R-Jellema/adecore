@@ -1,7 +1,11 @@
-import { describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, setSystemTime, test } from 'bun:test';
 import { UI_CATALOG, type UiComponentName } from './catalog.ts';
 import { compileUiBlock } from './compiler.ts';
 import { evaluateUiBlock, resolveUiChoice, uiChoiceLabel, type UiViewNode } from './runtime.ts';
+
+// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
+beforeEach(() => setSystemTime(Date.now()));
+afterEach(() => setSystemTime());
 
 function block(source: string, final = true) {
     return compileUiBlock(source, { id: 'block', final, limits: { milliseconds: 5000 } });
