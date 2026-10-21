@@ -89,7 +89,8 @@ export class ProviderRegistry {
                 models: provider.catalog.list(),
                 defaultModel: provider.catalog.defaultModel || null,
                 capabilities: provider.capabilities,
-                resumeCommand: provider.resumeCommand
+                resumeCommand: provider.resumeCommand,
+                ...(provider.install ? { install: provider.install } : {})
             }))
         );
     }

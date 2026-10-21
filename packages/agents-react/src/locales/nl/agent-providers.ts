@@ -18,9 +18,46 @@ export default {
         addAccount: 'Een {{provider}}-account toevoegen',
         notInstalled: 'Niet geïnstalleerd',
         missing: 'Ontbreekt',
-        notInstalledNote: 'Installeer er een en start Ruimte op die machine opnieuw om hem toe te voegen.',
+        notInstalledNote: 'Installeer er een op deze machine om hem hier te gebruiken.',
         none: "Geen agent-CLI's gevonden op deze machine.",
         noAccounts: 'Deze machine houdt nog geen accounts bij. Werk Ruimte daar bij om er een toe te voegen.'
+    },
+    install: {
+        notInstalled: 'Niet geïnstalleerd',
+        steps: '{{provider}} instellen in stappen',
+        platform: 'Systeem',
+        platforms: {
+            darwin: 'macOS',
+            linux: 'Linux',
+            win32: 'Windows'
+        },
+        copy: 'Kopiëren',
+        copied: 'Gekopieerd',
+        run: 'In een terminal uitvoeren',
+        guide: 'Installatiegids',
+        install: {
+            title: 'Installeer de CLI',
+            none: 'Er is geen installatiecommando voor dit systeem.',
+            done: 'Geïnstalleerd, versie {{version}}.',
+            doneNoVersion: 'Geïnstalleerd.'
+        },
+        signIn: {
+            title: 'Log in',
+            command: 'Voer dit uit in een terminal en volg de stappen:',
+            env: 'Zet <code>{{variable}}</code> in de omgeving waarin de CLI start.',
+            chat: 'De eerste chat vraagt je om in te loggen.',
+            or: 'Of',
+            unknown: 'De CLI vraagt je om in te loggen als hij voor het eerst draait.'
+        },
+        start: {
+            title: 'Aan de slag',
+            description: 'Kies {{provider}} voor je volgende chat of terminal.'
+        },
+        footer: {
+            missing: 'Nog niet gevonden op deze machine. Er wordt opnieuw gekeken als je terugkomt in dit venster.',
+            found: 'Gevonden op deze machine.'
+        },
+        fallback: 'Installeer {{provider}} op deze machine om hem hier te gebruiken.'
     },
     abilities: {
         version: 'Versie {{version}}.',

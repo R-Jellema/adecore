@@ -328,6 +328,7 @@ exports[`the public API ./providers exports these names 1`] = `
   "type AccountEntry",
   "type AccountTone",
   "type ModelRequirement",
+  "type ProviderInstallStep",
   "useModelName",
 ]
 `;

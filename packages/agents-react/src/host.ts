@@ -14,7 +14,8 @@ import type {
     ChatUiQueryPayload,
     ChatUiQueryReading,
     ChatUiLinkPayload,
-    ChatUiLinkReading
+    ChatUiLinkReading,
+    ProviderPlatform
 } from '@adecore/agent-contracts';
 import { isApplePlatform } from '@adecore/ui';
 import type { TimelineRow } from './chat/logic/timeline';
@@ -384,6 +385,15 @@ export interface ChatHost {
     openLogin: ((scopeId: string, kind: AgentKind, accountId: string, name: string) => Promise<void>) | null;
     /* Why a login cannot start from here right now, or null when it can. */
     useLoginBlocked(scopeId: string): string | null;
+    /*
+     * Runs a command a provider's install page shows, its install or its sign-in, where a person sees it run,
+     * such as in a new terminal on the scope's machine; left out, the page offers to copy the command only.
+     */
+    runProviderCommand?(scopeId: string, kind: AgentKind, command: string): void;
+    /* The system of the machine the scope's chats run on, whose install command the page shows first; left out, or null, the system of this page. */
+    useMachinePlatform?(scopeId: string): ProviderPlatform | null;
+    /* A sentence under a key the install page asks for in the environment, such as what the app does with it; left out, or null, none. */
+    providerKeyNote?(variable: string): string | null;
     /* The name and the mark of a project of the host, for the usage per project; null draws the folder's own. */
     useProjectLook(scopeId: string, projectId: string | null): { name: string; mark: ReactNode } | null;
     /* What a person calls the machine the scope's chats run on, or null when it has no name worth saying. */

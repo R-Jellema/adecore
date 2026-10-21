@@ -56,6 +56,25 @@ A catalog is the models of one provider, as a host ships it and as a newer copy 
 | `slashCommands`        | Whether the CLI takes slash commands.                                                |
 | `goals`                | How `/goal` reaches the CLI: through calls that pause, resume and clear (`native`), as the slash command alone (`command`), or absent where the CLI has no goals. |
 
+`install` says how a person gets a CLI that is not on the machine yet, for an install page such as the one in the [providers pane](/agents-react/providers/providers-pane#install-page). A host that knows no way leaves it out, and so does one older than the field.
+
+| Field         |                                                                                                   |
+| ------------- | ------------------------------------------------------------------------------------------------- |
+| `description` | One line on what the CLI is.                                                                      |
+| `commands`    | One command per system, by `ProviderPlatform`: `darwin`, `linux` and `win32`. Leave out a system the CLI does not install on in one line. |
+| `guideUrl`    | The CLI's own install guide, optional.                                                            |
+| `signIn`      | The ways it signs in, preferred first, each a `ProviderSignIn`: `{ kind: 'command', command }` runs in a terminal, `{ kind: 'env', variable }` is a key in the environment, `{ kind: 'chat' }` asks in the first chat. |
+
+```ts
+import { ProviderInstallSchema } from '@adecore/agent-contracts/model';
+
+ProviderInstallSchema.parse({
+    description: 'A coding agent in a terminal.',
+    commands: { darwin: 'brew install example-cli', linux: 'curl -fsSL https://example.com/install.sh | sh' },
+    signIn: [{ kind: 'command', command: 'example-cli login' }, { kind: 'env', variable: 'EXAMPLE_API_KEY' }]
+});
+```
+
 `resumeCommandFor(template, sessionId, flags = [])` fills a `resumeCommand`. It quotes the session id for a shell and puts the flags where the template has a `{flags}` word. The flags go in as they are: quote any that come from outside.
 
 ```ts

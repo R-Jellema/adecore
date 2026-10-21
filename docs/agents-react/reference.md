@@ -142,6 +142,7 @@ The CLIs and their accounts: marks, model names, the providers pane and its part
 | [`agents/model-options`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/agents/model-options.ts) | `carryOptions` |
 | [`agents/model-requirement`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/agents/model-requirement.ts) | `ModelRequirement` |
 | [`providers/ProvidersPane`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/providers/ProvidersPane.tsx) | `ProvidersPane` |
+| [`providers/install-steps`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/providers/install-steps.ts) | `ProviderInstallStep` |
 | [`providers/parts`](https://github.com/basmilius/adecore/blob/main/packages/agents-react/src/providers/parts.tsx) | `CliMark`, `CliTile` |
 
 ## `@adecore/agents-react/state`

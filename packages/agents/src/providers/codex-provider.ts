@@ -18,6 +18,15 @@ export function createCodexProvider(options: CodexBackendOptions = {}): ChatProv
         ignoresProjectConfig: false,
         // The auth variables Codex 0.157 names in its own "no Codex credentials were found" advice.
         home: { env: 'CODEX_HOME', fallback: '.codex', loginEnv: ['OPENAI_API_KEY', 'CODEX_API_KEY', 'CODEX_ACCESS_TOKEN'], loginCommand: 'codex login' },
+        install: {
+            description: "OpenAI's coding agent, in a terminal and in a chat.",
+            commands: { darwin: 'npm install -g @openai/codex', linux: 'npm install -g @openai/codex', win32: 'npm install -g @openai/codex' },
+            guideUrl: 'https://github.com/openai/codex',
+            signIn: [
+                { kind: 'command', command: 'codex login' },
+                { kind: 'env', variable: 'OPENAI_API_KEY' }
+            ]
+        },
         detect: detectCli,
         // Read-only and without an approval to wait for: the run only has to read what it is handed. A chat's
         // title is asked in a folder that need not be a repository, and ephemeral keeps the run out of Codex's thread list.

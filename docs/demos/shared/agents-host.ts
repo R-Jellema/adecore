@@ -132,6 +132,7 @@ export const DEMO_CHAT_HOST: Partial<ChatHost> = {
         open: () => undefined
     },
     openLogin: async () => undefined,
+    runProviderCommand: () => undefined,
     useChatPlace: (chatId) => ({ title: FORK_TITLES[chatId] ?? null, go: () => undefined })
 };
 

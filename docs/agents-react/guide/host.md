@@ -63,6 +63,9 @@ export function Workspace() {
 | `useReferableChats()`              | No chats in the `@` picker                         | Other chats a message may point at, as `{ id, title }`.                                                |
 | `openLogin(scopeId, kind, accountId, name)` | No log in button                          | Runs a CLI's own login somewhere a command can run, such as a terminal.                                |
 | `useLoginBlocked(scopeId)`         | Login is always possible                           | Why a login cannot start right now, or `null`.                                                         |
+| `runProviderCommand(scopeId, kind, command)` | Install page offers Copy only     | Runs an install or sign-in command from a CLI's install page where a person sees it, such as a new terminal on the scope's machine. |
+| `useMachinePlatform(scopeId)`      | The system of the page                             | `darwin`, `linux` or `win32`: the system of the scope's machine, whose install command the install page shows first. `null` falls back to the page. |
+| `providerKeyNote(variable)`        | Nothing                                            | A sentence after a key the install page asks for in the environment, such as what your app does with it. `null` adds none. |
 | `useProjectLook(scopeId, projectId)` | The folder's own name                            | A project's name and mark on the usage page.                                                           |
 | `useMachineLabel(scopeId)`         | A version requirement names no machine             | What a person calls the machine the scope's chats run on, for "Requires Claude Code 2.1 or later on &lt;machine&gt;". `null` says it without a machine. |
 | `useChatPlace(chatId)`             | Links to other chats lead nowhere                  | Where another chat is (`title`, `go()`), for a fork's way back. A `null` title is a chat that is gone. |

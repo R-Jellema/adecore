@@ -18,9 +18,46 @@ export default {
         addAccount: 'Add a {{provider}} account',
         notInstalled: 'Not installed',
         missing: 'Missing',
-        notInstalledNote: 'To add one, install it and restart Ruimte on that machine.',
+        notInstalledNote: 'Install one on this machine to use it here.',
         none: 'No agent CLIs found on this machine.',
         noAccounts: 'This machine keeps no accounts yet. Update Ruimte there to add one.'
+    },
+    install: {
+        notInstalled: 'Not installed',
+        steps: 'Steps to set up {{provider}}',
+        platform: 'System',
+        platforms: {
+            darwin: 'macOS',
+            linux: 'Linux',
+            win32: 'Windows'
+        },
+        copy: 'Copy',
+        copied: 'Copied',
+        run: 'Run in a terminal',
+        guide: 'Install guide',
+        install: {
+            title: 'Install the CLI',
+            none: 'There is no install command for this system.',
+            done: 'Installed, version {{version}}.',
+            doneNoVersion: 'Installed.'
+        },
+        signIn: {
+            title: 'Sign in',
+            command: 'Run this in a terminal and follow its steps:',
+            env: 'Set <code>{{variable}}</code> in the environment the CLI starts in.',
+            chat: 'The first chat asks you to sign in.',
+            or: 'Or',
+            unknown: 'The CLI asks you to sign in the first time it runs.'
+        },
+        start: {
+            title: 'Start working',
+            description: 'Pick {{provider}} for your next chat or terminal.'
+        },
+        footer: {
+            missing: 'Not found on this machine yet. It is checked again when you come back to this window.',
+            found: 'Found on this machine.'
+        },
+        fallback: 'Install {{provider}} on this machine to use it here.'
     },
     abilities: {
         version: 'Version {{version}}.',

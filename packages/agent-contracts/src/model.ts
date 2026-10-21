@@ -128,6 +128,30 @@ export const ProviderCapabilitiesSchema = z.object({
 });
 export type ProviderCapabilities = z.infer<typeof ProviderCapabilitiesSchema>;
 
+// The systems an install command is written for, by Node's names for them.
+export const ProviderPlatformSchema = z.enum(['darwin', 'linux', 'win32']);
+export type ProviderPlatform = z.infer<typeof ProviderPlatformSchema>;
+
+// One way a CLI signs in once it is installed.
+export const ProviderSignInSchema = z.discriminatedUnion('kind', [
+    z.object({ kind: z.literal('command'), command: z.string() }),
+    z.object({ kind: z.literal('env'), variable: z.string() }),
+    z.object({ kind: z.literal('chat') })
+]);
+export type ProviderSignIn = z.infer<typeof ProviderSignInSchema>;
+
+// How a person gets a CLI that is not on the machine yet.
+export const ProviderInstallSchema = z.object({
+    // One line on what the CLI is.
+    description: z.string(),
+    // A system without a command is one the CLI does not install on in one line.
+    commands: z.object({ darwin: z.string().optional(), linux: z.string().optional(), win32: z.string().optional() }),
+    guideUrl: z.string().optional(),
+    // In the order the CLI prefers them.
+    signIn: z.array(ProviderSignInSchema)
+});
+export type ProviderInstall = z.infer<typeof ProviderInstallSchema>;
+
 export const ProviderInfoSchema = z.object({
     kind: AgentKindSchema,
     name: z.string(),
@@ -139,7 +163,9 @@ export const ProviderInfoSchema = z.object({
     capabilities: ProviderCapabilitiesSchema,
     // What a terminal runs to continue one of this CLI's sessions. `{id}` stands for the session id
     // and `{flags}` for the flags the launch carries, which is where in the line each CLI takes them.
-    resumeCommand: z.string()
+    resumeCommand: z.string(),
+    // Absent from a host that knows no way to install this CLI, and from one older than this field.
+    install: ProviderInstallSchema.optional()
 });
 export type ProviderInfo = z.infer<typeof ProviderInfoSchema>;
 

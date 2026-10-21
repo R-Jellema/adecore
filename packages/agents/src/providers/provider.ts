@@ -1,4 +1,4 @@
-import type { AgentKind, ProviderCapabilities } from '@adecore/agent-contracts';
+import type { AgentKind, ProviderCapabilities, ProviderInstall } from '@adecore/agent-contracts';
 import type { BackendHost, BackendLaunch, ChatBackend } from '../chat/backend.ts';
 import type { ModelCatalog } from './catalog.ts';
 import type { CliDetection } from './detect.ts';
@@ -34,6 +34,8 @@ export interface ChatProvider {
     /* Where this CLI keeps its login, settings and transcripts, which is what an account is. Absent on a
        CLI with no variable to move that folder, which then only has its default account. */
     readonly home?: ProviderHome;
+    /* How a person installs this CLI and signs it in, for a page that shows it while the CLI is missing. */
+    readonly install?: ProviderInstall;
     /* The arguments for one prompt in and one answer out, no session and no chat, which is how a
        host asks for a commit message or a title. Absent on a CLI that only runs interactively. */
     oneShotArgs?(prompt: string): string[];

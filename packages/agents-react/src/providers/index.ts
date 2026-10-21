@@ -8,4 +8,5 @@ export { modelName, useModelName, shortModelName } from '../agents/model-name';
 export { carryOptions } from '../agents/model-options';
 export { type ModelRequirement } from '../agents/model-requirement';
 export { ProvidersPane } from './ProvidersPane';
+export type { ProviderInstallStep } from './install-steps';
 export { CliMark, CliTile } from './parts';

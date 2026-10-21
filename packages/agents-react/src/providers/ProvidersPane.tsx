@@ -1,22 +1,25 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
-import { Plus, Terminal } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import type { AgentKind, ProviderInfo } from '@adecore/agent-contracts';
 import { AccountDot } from '../agents/AccountDot';
 import { ACCOUNT_TONE_CLASSES, accountLoginOf, accountName, accountsOfKind, accountStatusLine, type AccountEntry } from '../agents/accounts';
-import { ErrorBoundary, Icon, IconButton, SectionLabel, Skeleton } from '@adecore/ui';
+import { ErrorBoundary, IconButton, SectionLabel, Skeleton } from '@adecore/ui';
 import { MasterDetail } from '@adecore/ui/settings';
 import { useChatHost } from '../host';
 import { useChatScope } from '../scope';
 import { AccountDetail } from './AccountDetail';
 import { AddAccountForm } from './AddAccountForm';
 import { CliDetail } from './CliDetail';
+import { InstallPage } from './InstallPage';
+import type { ProviderInstallStep } from './install-steps';
 import { CliMark } from './parts';
 import { useProviderAccounts } from '../state/provider-accounts';
 import { useProviders } from '../state/providers';
 
-type Picked = { kind: 'cli'; cli: AgentKind } | { kind: 'account'; id: string } | { kind: 'add'; cli: AgentKind };
+// `install` is a CLI picked while it was missing: its install page stays until it is installed and signed in.
+type Picked = { kind: 'cli'; cli: AgentKind } | { kind: 'install'; cli: AgentKind } | { kind: 'account'; id: string } | { kind: 'add'; cli: AgentKind };
 
 /* A row of the list with a control of its own beside the part that picks it, so the two never nest. */
 function ListRow({
@@ -54,10 +57,12 @@ interface ProvidersPaneProps {
     detailOf?(provider: ProviderInfo): ReactNode | null;
     /* False leaves "Defaults for new chats" out of a CLI's detail, for an app that decides those elsewhere. */
     defaults?: boolean;
+    /* A step of the app's own on the install page of a CLI, after its install, such as a server its chat needs; null adds none. */
+    installStepOf?(provider: ProviderInfo): ProviderInstallStep | null;
 }
 
 /* The agent CLIs of the host in scope, each with its accounts, beside the detail of what is picked. */
-export function ProvidersPane({ target = null, detailOf, defaults = true }: ProvidersPaneProps) {
+export function ProvidersPane({ target = null, detailOf, defaults = true, installStepOf }: ProvidersPaneProps) {
     const { t } = useTranslation('agent-providers');
     const { id: scopeId } = useChatScope();
     const providers = useProviders((s) => s.providers);
@@ -80,7 +85,8 @@ export function ProvidersPane({ target = null, detailOf, defaults = true }: Prov
         picked !== null && (picked.kind !== 'account' || pickedEntry !== null) ? picked : installed[0] ? { kind: 'cli', cli: installed[0].kind } : null;
     const currentAccount = current?.kind === 'account' ? accounts?.accounts[current.id] : undefined;
     const currentCli = current === null ? null : current.kind === 'account' ? (currentAccount?.kind as AgentKind | undefined) : current.cli;
-    const provider = installed.find((entry) => entry.kind === currentCli) ?? null;
+    const provider = (current?.kind === 'install' ? providers : installed).find((entry) => entry.kind === currentCli) ?? null;
+    const picksCli = (kind: AgentKind): boolean => (current?.kind === 'cli' || current?.kind === 'install') && current.cli === kind;
 
     // A search result lands on a row of a CLI's detail, so a picked account makes way for its CLI.
     const [seenTarget, setSeenTarget] = useState(target);
@@ -105,7 +111,7 @@ export function ProvidersPane({ target = null, detailOf, defaults = true }: Prov
         return (
             <div key={cli.kind} className="flex min-w-0 shrink-0 flex-col gap-0.5 pt-1">
                 <ListRow
-                    selected={current?.kind === 'cli' && current.cli === cli.kind}
+                    selected={picksCli(cli.kind)}
                     onSelect={() => setPicked({ kind: 'cli', cli: cli.kind })}
                     className="pr-1"
                     trailing={
@@ -164,13 +170,13 @@ export function ProvidersPane({ target = null, detailOf, defaults = true }: Prov
                 <div className="mt-1.5 flex min-w-0 shrink-0 flex-col border-t border-border pt-2.5 pb-2">
                     <SectionLabel className="px-3 pt-1 pb-1.5">{t('list.notInstalled')}</SectionLabel>
                     {missing.map((cli) => (
-                        <div key={cli.kind} className="flex h-10 min-w-0 items-center gap-3 px-3 text-sm text-text-muted">
-                            <Icon icon={Terminal} size={14} className="shrink-0" />
-                            <span className="min-w-0 grow truncate">{cli.name}</span>
+                        <ListRow key={cli.kind} selected={picksCli(cli.kind)} onSelect={() => setPicked({ kind: 'install', cli: cli.kind })}>
+                            <CliMark kind={cli.kind} className="opacity-60" />
+                            <span className="min-w-0 grow truncate text-xs font-medium text-text-muted">{cli.name}</span>
                             <span className="shrink-0 text-xs text-text-faint">{t('list.missing')}</span>
-                        </div>
+                        </ListRow>
                     ))}
-                    <p className="mt-1 px-3 text-xs text-text-faint">{t('list.notInstalledNote')}</p>
+                    {missing.every((cli) => cli.install === undefined) && <p className="mt-1 px-3 text-xs text-text-faint">{t('list.notInstalledNote')}</p>}
                 </div>
             )}
         </>
@@ -180,7 +186,16 @@ export function ProvidersPane({ target = null, detailOf, defaults = true }: Prov
         if (current === null || provider === null) {
             return null;
         }
-        const own = current.kind === 'cli' ? (detailOf?.(provider) ?? null) : null;
+        if (current.kind === 'install') {
+            const extra = installStepOf?.(provider) ?? null;
+            const statuses = entriesOf(provider.kind).map((entry) => entry.status?.state);
+            // Without accounts to read, nothing says the CLI is signed out, so being there is all it takes.
+            const signedIn = statuses.length === 0 || statuses.includes('ready');
+            if (!provider.installed || !signedIn || (extra !== null && !extra.done)) {
+                return <InstallPage key={provider.kind} provider={provider} signedIn={signedIn} extra={extra} />;
+            }
+        }
+        const own = current.kind === 'cli' || current.kind === 'install' ? (detailOf?.(provider) ?? null) : null;
         if (own !== null) {
             return own;
         }

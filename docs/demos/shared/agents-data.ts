@@ -87,6 +87,31 @@ export const PROVIDERS: ProviderInfo[] = [
     }
 ];
 
+/* A CLI that is not on the machine, with how to get it, for the install page of the providers pane. */
+export const MISSING_PROVIDER: ProviderInfo = {
+    kind: 'acme',
+    name: 'Acme CLI',
+    installed: false,
+    version: null,
+    models: [],
+    defaultModel: null,
+    capabilities: CAPABILITIES,
+    resumeCommand: '',
+    install: {
+        description: 'A coding agent that works in a terminal and in a chat.',
+        commands: {
+            darwin: 'curl -fsSL https://example.com/acme/install.sh | bash',
+            linux: 'curl -fsSL https://example.com/acme/install.sh | bash',
+            win32: 'irm https://example.com/acme/install.ps1 | iex'
+        },
+        guideUrl: 'https://example.com/acme/install',
+        signIn: [
+            { kind: 'command', command: 'acme login' },
+            { kind: 'env', variable: 'ACME_API_KEY' }
+        ]
+    }
+};
+
 export const ACCENTS = [
     { id: 'blue', color: '#2563eb' },
     { id: 'violet', color: '#7c3aed' },

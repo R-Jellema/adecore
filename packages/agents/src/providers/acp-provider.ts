@@ -1,4 +1,4 @@
-import type { AgentKind, ProviderCapabilities } from '@adecore/agent-contracts';
+import type { AgentKind, ProviderCapabilities, ProviderInstall } from '@adecore/agent-contracts';
 import { createAcpBackend, type AcpAgentSpec } from '../chat/acp-backend.ts';
 import type { ModelCatalog } from './catalog.ts';
 import { detectCli, type CliDetection } from './detect.ts';
@@ -38,6 +38,7 @@ export interface AcpProviderSpec extends AcpAgentSpec {
     // What a terminal runs to continue one of its sessions; empty where it has none.
     resumeCommand?: string;
     home?: ProviderHome;
+    install?: ProviderInstall;
     ignoresProjectConfig?: boolean;
     oneShotArgs?(prompt: string): string[];
     oneShotStdinArgs?: readonly string[];
@@ -59,6 +60,7 @@ export function createAcpProvider(spec: AcpProviderSpec): ChatProvider {
         resumeCommand: spec.resumeCommand ?? '',
         ...(spec.ignoresProjectConfig === undefined ? {} : { ignoresProjectConfig: spec.ignoresProjectConfig }),
         ...(spec.home ? { home: spec.home } : {}),
+        ...(spec.install ? { install: spec.install } : {}),
         ...(spec.oneShotArgs ? { oneShotArgs: spec.oneShotArgs } : {}),
         ...(spec.oneShotStdinArgs ? { oneShotStdinArgs: spec.oneShotStdinArgs } : {}),
         ...(spec.enabled ? { enabled: spec.enabled } : {}),

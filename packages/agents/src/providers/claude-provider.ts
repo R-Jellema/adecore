@@ -20,6 +20,19 @@ export function createClaudeProvider(options: ClaudeBackendOptions = {}): ChatPr
             loginEnv: ['ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'CLAUDE_CODE_OAUTH_TOKEN'],
             loginCommand: 'claude auth login'
         },
+        install: {
+            description: "Anthropic's coding agent, in a terminal and in a chat.",
+            commands: {
+                darwin: 'curl -fsSL https://claude.ai/install.sh | bash',
+                linux: 'curl -fsSL https://claude.ai/install.sh | bash',
+                win32: 'irm https://claude.ai/install.ps1 | iex'
+            },
+            guideUrl: 'https://docs.anthropic.com/en/docs/claude-code/setup',
+            signIn: [
+                { kind: 'command', command: 'claude auth login' },
+                { kind: 'env', variable: 'ANTHROPIC_API_KEY' }
+            ]
+        },
         detect: detectCli,
         oneShotArgs: (prompt) => ['-p', prompt, '--output-format', 'text'],
         // `-p` without a prompt argument reads the prompt from stdin.
