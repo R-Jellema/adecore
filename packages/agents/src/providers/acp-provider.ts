@@ -9,8 +9,8 @@ import { detectCli, type CliDetection } from './detect.ts';
 import type { ChatProvider, ProviderHome } from './provider.ts';
 
 /*
- * What every ACP agent can do through this backend. A file change comes as the text before and after;
- * a message names its mentions and attachments by path, as text the agent opens with its own tools.
+ * What every ACP agent can do through this backend, before what it shows of itself. A file change comes as the text
+ * before and after; a message names its mentions and attachments by path, and carries the files themselves where the agent takes them.
  */
 export const ACP_CAPABILITIES: ProviderCapabilities = {
     chat: true,

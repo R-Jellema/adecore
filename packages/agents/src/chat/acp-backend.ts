@@ -1,4 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync, statSync } from 'node:fs';
+import { isAbsolute, relative, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { attachmentImageMime, type ChatAttachment, type ModelSelection } from '@adecore/agent-contracts';
 import { errorText } from '../error-text.ts';
 import { MODE_ORDER } from '../modes.ts';
@@ -75,6 +77,15 @@ export interface AcpUsageReport extends AcpTurnUsage {
 
 // What `initialize` and a session request may take; a prompt and a login wait for as long as the agent runs.
 const REQUEST_TIMEOUT_MS = 60_000;
+
+// What a prompt carries of mentioned files; a larger file stays a path the agent opens with its own tools.
+const MAX_EMBEDDED_FILE_BYTES = 256 * 1024;
+const MAX_EMBEDDED_BYTES = 1024 * 1024;
+
+function inside(folder: string, path: string): boolean {
+    const rest = relative(folder, path);
+    return rest === '' || (!rest.startsWith('..') && !isAbsolute(rest));
+}
 
 function nameOf(client: AcpClientInfo): string {
     return client.title ?? client.name;
@@ -346,7 +357,50 @@ export class AcpBackend implements ChatBackend {
         const named: ChatAttachment[] = input.attachments.filter((attachment) => !images.includes(attachment));
         const parts = [this.contextPending, input.preamble, input.text, attachmentNote(named)].filter((part): part is string => part !== null && part !== '');
         this.contextPending = null;
-        return [{ type: 'text', text: parts.join('\n\n') }, ...blocks];
+        return [{ type: 'text', text: parts.join('\n\n') }, ...blocks, ...this.mentionBlocks(input.mentions)];
+    }
+
+    /*
+     * The text of each mentioned file as a `resource` block, for an agent that takes embedded context. Only a text file
+     * inside the chat's folders goes along, since a mention is a path anyone who may send could name; the rest stays
+     * in the prompt as the path it is.
+     */
+    private mentionBlocks(mentions: readonly string[]): unknown[] {
+        if (this.capabilities?.embeddedContext !== true || mentions.length === 0) {
+            return [];
+        }
+        const real = (path: string): string | null => {
+            try {
+                return realpathSync(path);
+            } catch {
+                return null;
+            }
+        };
+        const folders = [this.launch.cwd, ...(this.launch.folders ?? [])].flatMap((folder) => real(folder) ?? []);
+        const blocks: unknown[] = [];
+        let budget = MAX_EMBEDDED_BYTES;
+        for (const mention of new Set(mentions)) {
+            const path = real(resolve(this.launch.cwd, mention));
+            if (path === null || !folders.some((folder) => inside(folder, path))) {
+                continue;
+            }
+            let text: string;
+            try {
+                const stat = statSync(path);
+                if (!stat.isFile() || stat.size > MAX_EMBEDDED_FILE_BYTES || stat.size > budget) {
+                    continue;
+                }
+                text = readFileSync(path, 'utf8');
+            } catch {
+                continue;
+            }
+            if (text.includes('\u0000')) {
+                continue;
+            }
+            budget -= Buffer.byteLength(text);
+            blocks.push({ type: 'resource', resource: { uri: pathToFileURL(path).href, text } });
+        }
+        return blocks;
     }
 
     sendTurn(input: TurnInput): void {

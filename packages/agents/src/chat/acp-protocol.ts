@@ -139,7 +139,7 @@ const InitializeResponseSchema = z.looseObject({
     agentCapabilities: z
         .looseObject({
             loadSession: z.boolean().optional(),
-            promptCapabilities: z.looseObject({ image: z.boolean().optional() }).optional(),
+            promptCapabilities: z.looseObject({ image: z.boolean().optional(), embeddedContext: z.boolean().optional() }).optional(),
             sessionCapabilities: z
                 .looseObject({
                     resume: z.unknown().optional(),
@@ -178,6 +178,8 @@ export interface AcpAgentCapabilities {
     // Whether the agent takes `session/close`, which ends a session it would otherwise keep.
     closeSession: boolean;
     images: boolean;
+    // Whether a prompt may carry a file's text as a `resource` block.
+    embeddedContext: boolean;
     authMethods: string[];
     agent: AcpAgentInfo | null;
 }
@@ -197,6 +199,7 @@ export function parseInitialize(result: unknown): AcpAgentCapabilities {
         additionalDirectories: sessions?.additionalDirectories !== undefined && sessions.additionalDirectories !== null,
         closeSession: sessions?.close !== undefined && sessions.close !== null,
         images: capabilities?.promptCapabilities?.image === true,
+        embeddedContext: capabilities?.promptCapabilities?.embeddedContext === true,
         authMethods: validItems(AuthMethodSchema, parsed.data.authMethods).map((method) => method.id),
         agent: agent ? { name: agent.name, title: agent.title ?? null, version: agent.version } : null
     };

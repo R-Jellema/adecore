@@ -55,6 +55,8 @@ A chat that has an agent session to continue resumes it with `session/resume` wh
 
 ACP has no system prompt. The launch's `instructions` go in front of the first prompt of a new session, and `resumeInstructions` and `resumeNote` in front of the first prompt of a resumed one.
 
+A prompt is one text block with the message, its attachments named by path. An image attachment goes along as an `image` block when the agent advertises `promptCapabilities.image`. When it advertises `promptCapabilities.embeddedContext`, each file mentioned with `@` also goes along as a `resource` block with its text, so the agent need not open it first: only a text file inside the chat's folder or its `folders`, of at most 256 KiB, and at most 1 MiB for a prompt. Anything else stays the path in the message, which the agent opens with its own tools.
+
 When `session/new`, `session/load` or `session/resume` answers that authentication is required, the backend calls `authenticate` with `authMethod` and asks once more. Without one, the start fails with `loginHint`.
 
 ## Modes

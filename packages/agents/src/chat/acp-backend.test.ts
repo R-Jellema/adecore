@@ -1,6 +1,7 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { expect, test } from 'bun:test';
 import type { ChatAttachment, RuntimeMode } from '@adecore/agent-contracts';
 import { fakeAcpWith, type FakeAcpOptions } from '../testing/fake-acp.ts';
@@ -414,4 +415,33 @@ test('compact sends the agent its own command as a prompt where it lists one, an
     expect(silent.events.find((event) => event.type === 'note')).toMatchObject({ text: 'Fake cannot fold its context on request.' });
     expect(silent.methods()).not.toContain('session/prompt');
     await silent.backend.dispose();
+});
+
+test('a mentioned text file inside the folder goes along as a resource block where the agent takes embedded context', async () => {
+    const base = realpathSync(mkdtempSync(join(tmpdir(), 'acp-mention-')));
+    const cwd = join(base, 'project');
+    mkdirSync(join(cwd, 'src'), { recursive: true });
+    writeFileSync(join(cwd, 'src', 'a.ts'), 'export const a = 1;\n');
+    writeFileSync(join(cwd, 'big.txt'), 'x'.repeat(300 * 1024));
+    writeFileSync(join(cwd, 'blob.bin'), Buffer.from([1, 0, 2]));
+    writeFileSync(join(base, 'outside.txt'), 'secret');
+    const mentions = ['src/a.ts', 'big.txt', 'blob.bin', '../outside.txt', join(base, 'outside.txt'), 'missing.ts', 'src'];
+    const prompted = async (embeddedContext: boolean): Promise<Array<Record<string, unknown>>> => {
+        const fake = run({ embeddedContext }, { cwd });
+        await fake.backend.start();
+        fake.backend.sendTurn({ ...turn('read @src/a.ts'), mentions });
+        await fake.next('turn.done');
+        await fake.backend.dispose();
+        return fake.sent.find((frame) => frame.method === 'session/prompt')?.params?.prompt as Array<Record<string, unknown>>;
+    };
+    try {
+        const embedded = await prompted(true);
+        expect(embedded).toEqual([
+            { type: 'text', text: 'read @src/a.ts' },
+            { type: 'resource', resource: { uri: pathToFileURL(join(cwd, 'src', 'a.ts')).href, text: 'export const a = 1;\n' } }
+        ]);
+        expect(await prompted(false)).toEqual([{ type: 'text', text: 'read @src/a.ts' }]);
+    } finally {
+        rmSync(base, { recursive: true, force: true });
+    }
 });

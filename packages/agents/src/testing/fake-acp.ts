@@ -31,6 +31,8 @@ export interface FakeAcpOptions {
     contextWindows?: boolean;
     // The slash commands a new session lists, sent before the answer that names the session.
     commands?: readonly string[];
+    // Advertises `promptCapabilities.embeddedContext`, so a prompt may carry files as `resource` blocks.
+    embeddedContext?: boolean;
 }
 
 export function fakeAcpWith(options: FakeAcpOptions): FakeCli {
@@ -238,7 +240,7 @@ export function fakeAcpWith(options: FakeAcpOptions): FakeCli {
                         protocolVersion: 1,
                         agentCapabilities: {
                             loadSession: options.loadSession ?? true,
-                            promptCapabilities: { image: true, audio: false, embeddedContext: false },
+                            promptCapabilities: { image: true, audio: false, embeddedContext: options.embeddedContext === true },
                             sessionCapabilities: { ...(options.resumeSession ? { resume: {} } : {}), ...(options.closeSession ? { close: {} } : {}) }
                         },
                         authMethods: options.authMethod === undefined ? [] : [{ id: options.authMethod, name: 'Sign in' }],
