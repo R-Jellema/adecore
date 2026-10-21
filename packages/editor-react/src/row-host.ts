@@ -24,6 +24,7 @@ abstract class ContainerHost {
     private readonly listeners = new Set<() => void>();
     private version = 0;
     private signature = '';
+    private shown: { version: number; containers: ReadonlyMap<string, HTMLElement> } | null = null;
 
     constructor(editor: Editor, owner: string) {
         this.editor = editor;
@@ -31,6 +32,14 @@ abstract class ContainerHost {
     }
 
     getVersion = (): number => this.version;
+
+    /* The elements by id as they stand now, one map until they change, so React can read them as a snapshot. */
+    getContainers = (): ReadonlyMap<string, HTMLElement> => {
+        if (this.shown?.version !== this.version) {
+            this.shown = { version: this.version, containers: new Map(this.containers) };
+        }
+        return this.shown.containers;
+    };
 
     subscribe = (listener: () => void): (() => void) => {
         this.listeners.add(listener);

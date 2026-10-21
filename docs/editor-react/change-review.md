@@ -87,11 +87,13 @@ const rows = new RowHost(editor, 'review');
 rows.set([{ id: 'proposal', line: 7, placement: 'below', height: 120 }]);
 
 // In the component:
-useSyncExternalStore(rows.subscribe, rows.getVersion);
-const container = rows.container('proposal');
+const containers = useSyncExternalStore(rows.subscribe, rows.getContainers);
+const container = containers.get('proposal');
 
 return container === undefined ? null : createPortal(<ChangeReview editor={editor} {...review} />, container);
 ```
+
+`getContainers` answers the same map until an element comes or goes, so a component the React Compiler memoizes draws again exactly when one does. `container(id)` and `getVersion` read the live state for code outside a render.
 
 `set(rows)` replaces the owner's rows; identical ids, lines, placements, heights and flags change nothing. `clear()` removes them. Since the element comes and goes, keep state outside it.
 

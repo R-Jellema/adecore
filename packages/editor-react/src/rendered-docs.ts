@@ -83,6 +83,7 @@ export class RenderedDocsFeature {
     private readonly revealed = new Set<DocComment>();
     private readonly listeners = new Set<() => void>();
     private version = 0;
+    private shown: { version: number; entries: readonly RenderedDocEntry[] } | null = null;
     private settleTimer: unknown;
     private caretTimer: unknown;
     private drawn = '';
@@ -202,6 +203,14 @@ export class RenderedDocsFeature {
     }
 
     getVersion = (): number => this.version;
+
+    /* What `entries` answers, one array until the version moves, so React can read it as a snapshot. */
+    getEntries = (): readonly RenderedDocEntry[] => {
+        if (this.shown?.version !== this.version) {
+            this.shown = { version: this.version, entries: this.entries() };
+        }
+        return this.shown.entries;
+    };
 
     subscribe = (listener: () => void): (() => void) => {
         this.listeners.add(listener);

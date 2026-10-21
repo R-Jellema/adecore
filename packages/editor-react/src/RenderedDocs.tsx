@@ -159,19 +159,17 @@ export const RenderedDocBlock = memo(DocBlock);
  */
 export function RenderedDocs({ language }: { language: EditorLanguage }) {
     const feature = language.renderedDocs;
-    useSyncExternalStore(feature.subscribe, feature.getVersion, feature.getVersion);
+    const entries = useSyncExternalStore(feature.subscribe, feature.getEntries, feature.getEntries);
     const linkable = feature.canFollow;
     return (
         <>
-            {feature
-                .entries()
-                .map((entry) =>
-                    createPortal(
-                        <RenderedDocBlock language={language} comment={entry.comment} parsed={entry.parsed} linkable={linkable} />,
-                        entry.container,
-                        entry.id
-                    )
-                )}
+            {entries.map((entry) =>
+                createPortal(
+                    <RenderedDocBlock language={language} comment={entry.comment} parsed={entry.parsed} linkable={linkable} />,
+                    entry.container,
+                    entry.id
+                )
+            )}
         </>
     );
 }

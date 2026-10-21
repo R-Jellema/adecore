@@ -26,12 +26,12 @@ export function DiffOverlays({
     blocked?: ReadonlySet<number>;
 }) {
     const { t } = useTranslation('editor');
-    useSyncExternalStore(mounted.rows.subscribe, mounted.rows.getVersion, mounted.rows.getVersion);
-    useSyncExternalStore(mounted.actions.subscribe, mounted.actions.getVersion, mounted.actions.getVersion);
+    const rows = useSyncExternalStore(mounted.rows.subscribe, mounted.rows.getContainers, mounted.rows.getContainers);
+    const actions = useSyncExternalStore(mounted.actions.subscribe, mounted.actions.getContainers, mounted.actions.getContainers);
     return (
         <>
             {display.gaps.map(({ row }) => {
-                const container = mounted.rows.container(`gap-${row.id}`);
+                const container = rows.get(`gap-${row.id}`);
                 if (container === undefined) {
                     return null;
                 }
@@ -63,7 +63,7 @@ export function DiffOverlays({
                 if (row.noNewline === undefined) {
                     return null;
                 }
-                const container = mounted.actions.container(`no-newline-${index}`);
+                const container = actions.get(`no-newline-${index}`);
                 return container === undefined
                     ? null
                     : createPortal(<span className="adecore-editor-diff-no-newline">{t('diff.noNewline')}</span>, container, `no-newline-${index}`);

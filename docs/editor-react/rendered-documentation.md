@@ -52,11 +52,11 @@ A link to a name is followed with Cmd (Ctrl elsewhere) held, as a definition is,
 
 The block uses the editor's code face for names and types and the interface face for prose, its colors from the theme, and is at most 520 pixels wide like a hover card. It stands at the indentation of the comment and is as tall as its content: the rows under it follow, and so does the scroll position. Folding a rendered comment shows the fold's own placeholder, and unfolding draws the formatted block again. Only the comments in view are drawn and parsed.
 
-`LanguagePopups` draws the formatted text into the elements the editor makes for the rows. A host that draws its own popups reads `language.renderedDocs.entries()` and draws each `RenderedDocEntry` into its `container`.
+`LanguagePopups` draws the formatted text into the elements the editor makes for the rows. A host that draws its own popups reads `language.renderedDocs.getEntries` through `useSyncExternalStore` with its `subscribe`, the same array until the rows change, and draws each `RenderedDocEntry` into its `container`. `entries()` builds the list anew, for code outside a render.
 
 ## Exports
 
-`RenderedDocsFeature` is the class behind `language.renderedDocs`, with `RenderedDocsSettings` for `configure` and `RenderedDocEntry` for `entries()`. The model is a `ParsedDocComment` of a description and `DocTagEntry`s, gathered into `DocTagSection`s.
+`RenderedDocsFeature` is the class behind `language.renderedDocs`, with `RenderedDocsSettings` for `configure` and `RenderedDocEntry` for `getEntries` and `entries()`. The model is a `ParsedDocComment` of a description and `DocTagEntry`s, gathered into `DocTagSection`s.
 
 ## Replacing lines in the editor
 
