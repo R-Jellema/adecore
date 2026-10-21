@@ -236,6 +236,17 @@ describe('ThreadProjector', () => {
         expect(thread.list().at(-1)).toMatchObject({ kind: 'compaction', preTokens: 5000 });
     });
 
+    test("usage keeps the prompt cache's lifetime until a response names another", () => {
+        const { thread, project } = setup();
+        project({ type: 'usage', contextTokens: 25090 });
+        expect(thread.info.usage.cacheTtlMs).toBeUndefined();
+        project({ type: 'usage', cacheTtlMs: 3_600_000, cacheExpiresAt: 3_600_500 });
+        project({ type: 'usage', contextTokens: 30000 });
+        expect(thread.info.usage).toMatchObject({ contextTokens: 30000, cacheTtlMs: 3_600_000, cacheExpiresAt: 3_600_500 });
+        project({ type: 'usage', cacheTtlMs: 300_000, cacheExpiresAt: 900_000 });
+        expect(thread.info.usage).toMatchObject({ cacheTtlMs: 300_000, cacheExpiresAt: 900_000 });
+    });
+
     test('usage estimates what the context holds and starts over after a compaction', () => {
         const { thread, project } = setup();
         project({ type: 'tool.started', ref: 'toolu_1', name: 'Read', input: { file_path: 'a.ts' }, parentRef: null });

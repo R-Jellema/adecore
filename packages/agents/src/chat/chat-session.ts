@@ -899,7 +899,9 @@ export class ChatSession {
                     ...usage,
                     contextTokens: 0,
                     contextWindow: this.options.provider.catalog.contextWindowFor(this.thread.info.selection),
-                    breakdown: undefined
+                    breakdown: undefined,
+                    cacheTtlMs: undefined,
+                    cacheExpiresAt: undefined
                 }
             })
         ]);

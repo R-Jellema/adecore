@@ -27,7 +27,11 @@ export const ChatUsageSchema = z.object({
     costUsd: z.number().nonnegative(),
     turns: z.number().int().nonnegative(),
     // Absent while nothing is in the context yet, and from a daemon that does not estimate.
-    breakdown: ChatContextBreakdownSchema.optional()
+    breakdown: ChatContextBreakdownSchema.optional(),
+    // How long the prompt cache of the main agent's last request lives, in milliseconds; absent while the CLI names no lifetime.
+    cacheTtlMs: z.number().int().positive().optional(),
+    // When that cache goes cold, in milliseconds since the epoch: its lifetime from the moment that request started.
+    cacheExpiresAt: z.number().optional()
 });
 export type ChatUsage = z.infer<typeof ChatUsageSchema>;
 

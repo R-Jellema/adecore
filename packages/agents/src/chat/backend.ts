@@ -165,7 +165,8 @@ export type BackendEvent =
     // call did; `monitor` is set when the CLI's own frame already says it is one.
     | { type: 'background.started'; taskId: string; ref: string | null; monitor: boolean; description: string | null }
     | { type: 'background.ended'; taskId: string }
-    | { type: 'usage'; contextTokens?: number; contextWindow?: number; costUsd?: number }
+    // `cacheTtlMs` and `cacheExpiresAt` come together, for a CLI that says how long its prompt cache lives.
+    | { type: 'usage'; contextTokens?: number; contextWindow?: number; costUsd?: number; cacheTtlMs?: number; cacheExpiresAt?: number }
     // What the CLI said in passing about the plan it runs on; it belongs to the machine, not the chat.
     | { type: 'limits'; update: LimitsUpdate }
     | { type: 'compaction'; preTokens: number | null }

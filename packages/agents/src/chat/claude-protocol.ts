@@ -46,6 +46,22 @@ function contextTokens(usage: unknown): number {
     return isRecord(usage) ? num(usage.input_tokens) + num(usage.cache_creation_input_tokens) + num(usage.cache_read_input_tokens) : 0;
 }
 
+// How long a prompt cache entry lives, by the field of `usage.cache_creation` that counts what a request wrote with it.
+const CACHE_TTL_MS: Record<string, number> = { ephemeral_5m_input_tokens: 5 * 60_000, ephemeral_1h_input_tokens: 60 * 60_000 };
+
+/*
+ * The lifetime of the cache a response wrote, or null when it wrote none or names no lifetime. A response that wrote
+ * with both answers the shorter, which is when the part of its context that goes cold first does.
+ */
+function cacheTtlWritten(usage: unknown): number | null {
+    const creation = isRecord(usage) && isRecord(usage.cache_creation) ? usage.cache_creation : null;
+    if (creation === null) {
+        return null;
+    }
+    const written = Object.entries(CACHE_TTL_MS).filter(([field]) => num(creation[field]) > 0);
+    return written.length === 0 ? null : Math.min(...written.map(([, ttl]) => ttl));
+}
+
 // The kinds of task Claude Code keeps beside its turns that are a command or a monitor; a subagent has a row of its own.
 const BACKGROUND_TASK_TYPES = new Set(['local_bash', 'monitor_mcp', 'monitor_ws']);
 const ENDED_TASK_STATUSES = new Set(['completed', 'failed', 'killed', 'stopped']);
@@ -202,6 +218,9 @@ export class ClaudeProtocol {
     private readonly backgroundTasks = new Set<string>();
     // Workflows still running, by task id, to the Workflow call that launched each.
     private readonly workflows = new Map<string, string>();
+    // The main-chain response whose cache lifetime the thread has, and the lifetime of the cache last written.
+    private cacheMessageId: string | null = null;
+    private cacheTtlMs: number | null = null;
     // The uuid of the last main-chain assistant frame of the turn, which is the line of the transcript the turn ends on.
     private lastUuid: string | null = null;
     // The model each subagent last answered with, so a frame only reports one it had not named yet.
@@ -572,6 +591,7 @@ export class ClaudeProtocol {
         }
         if (event.type === 'message_start') {
             const message = isRecord(event.message) ? event.message : {};
+            this.noteCache(str(message.id), message.usage, events);
             this.streamMessageId = str(message.id);
             this.streamTextCount = 0;
             this.streamThinkingCount = 0;
@@ -604,6 +624,27 @@ export class ClaudeProtocol {
             } else if (event.delta.type === 'thinking_delta') {
                 events.push({ type: 'thinking.delta', ref, text });
             }
+        }
+    }
+
+    /*
+     * When the prompt cache goes cold, from the first frame of each main-chain response: its `message_start`, or its
+     * first `assistant` frame when the CLI streams no partial messages. The lifetime runs from the start of the request,
+     * and a response that only read the cache starts the lifetime it was written with again, as a cache hit does.
+     */
+    private noteCache(messageId: string | null, usage: unknown, events: BackendEvent[]): void {
+        if (messageId === null || messageId === this.cacheMessageId || !isRecord(usage)) {
+            return;
+        }
+        this.cacheMessageId = messageId;
+        const written = cacheTtlWritten(usage);
+        if (written !== null) {
+            this.cacheTtlMs = written;
+        } else if (num(usage.cache_read_input_tokens) === 0) {
+            return;
+        }
+        if (this.cacheTtlMs !== null) {
+            events.push({ type: 'usage', cacheTtlMs: this.cacheTtlMs, cacheExpiresAt: this.now() + this.cacheTtlMs });
         }
     }
 
@@ -652,6 +693,9 @@ export class ClaudeProtocol {
         const tokens = parentRef ? 0 : contextTokens(message.usage);
         if (tokens > 0) {
             events.push({ type: 'usage', contextTokens: tokens });
+        }
+        if (!parentRef) {
+            this.noteCache(str(message.id), message.usage, events);
         }
         const error = str(frame.error);
         if (error) {

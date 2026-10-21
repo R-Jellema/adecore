@@ -22,7 +22,7 @@ The fields a client reads most:
 | `queue`, `queuePaused`                  | Messages sent during a turn, in the order they go out once it settles.                                   |
 | `background`, `delegating`              | Shell commands and monitors the CLI keeps running, and whether a subagent of its own still works.        |
 | `requests`                              | The approvals and questions that wait on a person, oldest first, at most `CHAT_REQUEST_LIMITS.perChat`.  |
-| `usage`                                 | `ChatUsage`: context tokens, context window, cost, turns and an estimated `breakdown` of the context.    |
+| `usage`                                 | `ChatUsage`: context tokens, context window, cost, turns and an estimated `breakdown` of the context. For a CLI that names the lifetime of its prompt cache, `cacheTtlMs` and `cacheExpiresAt`: the lifetime the main agent's last request wrote or read with, and when it ends, counted from the start of that request. |
 | `limit`, `resumeAt`, `resumeAtReset`    | The limit the last turn stopped on, when the host takes the chat up again, and the chat's own switch for that. |
 | `goal`                                  | `ChatGoal`: the objective the CLI works toward on its own, its status and how far it got; absent while there is none. |
 | `forkOf`, `hidden`, `suggestedTitle`    | Where a fork came from, a chat no list should show, and the title the CLI gave the session.              |

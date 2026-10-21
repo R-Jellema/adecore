@@ -11,6 +11,54 @@ import { ThreadProjector } from './projector.ts';
 const usage = { input_tokens: 8, cache_creation_input_tokens: 2671, cache_read_input_tokens: 24869, output_tokens: 1 };
 
 describe('ClaudeProtocol', () => {
+    test("reads the prompt cache's lifetime from each response of the main agent, never from a subagent's", () => {
+        let now = 0;
+        const protocol = new ClaudeProtocol(null, () => now);
+        const cache: Array<{ at: number; event: unknown }> = [];
+        for (const [index, frame] of nativeChildrenCapture.frames.entries()) {
+            // A clock that moves a second per frame, so each lifetime shows when its request started.
+            now = index * 1000;
+            for (const event of protocol.handle(frame)) {
+                if (event.type === 'usage' && event.cacheTtlMs !== undefined) {
+                    cache.push({ at: index, event });
+                }
+            }
+        }
+        // The capture runs on a subscription: the main agent writes for an hour, its subagents for five minutes.
+        expect(cache.length).toBeGreaterThan(1);
+        expect(cache[0]).toEqual({ at: 11, event: { type: 'usage', cacheTtlMs: 3_600_000, cacheExpiresAt: 11_000 + 3_600_000 } });
+        expect(
+            cache.every(
+                ({ at, event }) => JSON.stringify(event) === JSON.stringify({ type: 'usage', cacheTtlMs: 3_600_000, cacheExpiresAt: at * 1000 + 3_600_000 })
+            )
+        ).toBe(true);
+    });
+
+    test('takes the shorter lifetime of a mixed write, keeps it through a response that only read, and names none it does not know', () => {
+        let now = 0;
+        const protocol = new ClaudeProtocol(null, () => now);
+        const start = (id: string, usage: unknown) => protocol.handle({ type: 'stream_event', event: { type: 'message_start', message: { id, usage } } });
+        expect(start('msg-1', { cache_creation_input_tokens: 10, cache_read_input_tokens: 0 })).toEqual([]);
+        expect(start('msg-2', { cache_creation: { ephemeral_5m_input_tokens: 4, ephemeral_1h_input_tokens: 6 }, cache_read_input_tokens: 0 })).toEqual([
+            { type: 'usage', cacheTtlMs: 300_000, cacheExpiresAt: 300_000 }
+        ]);
+        now = 60_000;
+        expect(start('msg-3', { cache_creation: { ephemeral_5m_input_tokens: 0, ephemeral_1h_input_tokens: 0 }, cache_read_input_tokens: 900 })).toEqual([
+            { type: 'usage', cacheTtlMs: 300_000, cacheExpiresAt: 360_000 }
+        ]);
+        // A response that used no cache at all leaves the cache to go cold when it would have.
+        expect(start('msg-4', { cache_creation: { ephemeral_5m_input_tokens: 0, ephemeral_1h_input_tokens: 0 }, cache_read_input_tokens: 0 })).toEqual([]);
+        // Without partial messages, the first assistant frame of a response stands in for its start.
+        now = 90_000;
+        const assistant = (id: string) => ({
+            type: 'assistant',
+            message: { id, content: [], usage: { cache_creation: { ephemeral_1h_input_tokens: 5 }, cache_read_input_tokens: 0 } }
+        });
+        expect(protocol.handle(assistant('msg-5'))).toContainEqual({ type: 'usage', cacheTtlMs: 3_600_000, cacheExpiresAt: 3_690_000 });
+        now = 95_000;
+        expect(protocol.handle(assistant('msg-5')).some((event) => event.type === 'usage' && event.cacheTtlMs !== undefined)).toBe(false);
+    });
+
     test.each(['task-notification', { kind: 'task-notification' }])(
         'a background result with origin %j cannot finish compact or clear its refusal',
         (origin) => {

@@ -359,7 +359,10 @@ export class ThreadProjector {
                             contextTokens,
                             contextWindow: event.contextWindow ?? info.usage.contextWindow,
                             costUsd: Math.max(info.usage.costUsd, event.costUsd ?? 0),
-                            breakdown: contextTokens > 0 ? estimateContextBreakdown(this.thread.list(), contextTokens) : undefined
+                            breakdown: contextTokens > 0 ? estimateContextBreakdown(this.thread.list(), contextTokens) : undefined,
+                            ...(event.cacheTtlMs === undefined || event.cacheExpiresAt === undefined
+                                ? {}
+                                : { cacheTtlMs: event.cacheTtlMs, cacheExpiresAt: event.cacheExpiresAt })
                         }
                     })
                 );
