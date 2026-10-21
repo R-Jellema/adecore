@@ -516,6 +516,11 @@ describe('the live thought', () => {
         expect(kinds([running, asked, thought('k1'), call('b1', 'running')])).toEqual(['user', 'thinking', 'work-live', 'working']);
     });
 
+    test('is left out where only the answer stands between the thought and the call it waits to run', () => {
+        const answer: ChatItem = { id: 'a1', kind: 'assistant', createdAt: 2500, turnId: 't2', text: 'I will create probe.txt.', streaming: false };
+        expect(kinds([running, asked, thought('k1'), answer, call('b1', 'running')])).toEqual(['user', 'thinking', 'assistant', 'work-live', 'working']);
+    });
+
     test('follows only the latest thought, and none that came after the call', () => {
         const rows = deriveTimelineRows([running, asked, thought('k1'), call('r1', 'done'), thought('k2'), call('r2', 'done'), call('b1', 'running')], {
             ...options,

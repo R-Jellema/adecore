@@ -436,8 +436,9 @@ function lastAssistantRow(rows: TimelineRow[]): TimelineRow | null {
 
 /*
  * The rows of a running turn with its latest thought over the call it led to, so what the model
- * found does not scroll away behind the next tool line. Nothing when that call follows the thought
- * directly, where the thought's own row already shows it, or when a newer thought came after the call.
+ * found does not scroll away behind the next tool line. Nothing while no finished call stands between
+ * the thought's own row and that call, since the thought still shows there, or when a newer thought
+ * came after the call.
  */
 function withLiveThought(rows: TimelineRow[], items: readonly ChatItem[]): TimelineRow[] {
     const thoughtAt = items.findLastIndex((item) => item.kind === 'thinking' && parentOf(item) === null);
@@ -448,8 +449,9 @@ function withLiveThought(rows: TimelineRow[], items: readonly ChatItem[]): Timel
     const after = new Set(items.slice(thoughtAt + 1).map((item) => item.id));
     const index = rows.findIndex((row) => row.kind === 'work-live' && after.has(row.tool.id));
     const call = rows[index];
-    const previous = rows[index - 1];
-    if (call?.kind !== 'work-live' || (previous?.kind === 'thinking' && previous.id === thought.id)) {
+    const shownAt = rows.findIndex((row) => row.kind === 'thinking' && row.id === thought.id);
+    const inSight = shownAt !== -1 && shownAt < index && !rows.slice(shownAt + 1, index).some((row) => row.kind === 'work');
+    if (call?.kind !== 'work-live' || inSight) {
         return rows;
     }
     return [...rows.slice(0, index), { kind: 'live-thought', id: `live-thought-${thought.id}`, item: thought, at: call.tool.createdAt }, ...rows.slice(index)];
