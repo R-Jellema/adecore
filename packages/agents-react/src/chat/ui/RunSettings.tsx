@@ -189,7 +189,7 @@ export function RunSettings({
         onOpenChange(next);
     };
 
-    // An item under the pointer takes the focus from the field; typing there still goes to the search.
+    // An item the arrow keys moved to has the focus; typing there still goes to the search.
     const onPopupKey = (event: KeyboardEvent<HTMLDivElement>): void => {
         if (!searchable || event.target === searchRef.current || event.metaKey || event.ctrlKey || event.altKey) {
             return;
@@ -278,7 +278,7 @@ export function RunSettings({
         ));
 
     return (
-        <Menu.Root open={open} onOpenChange={changeOpen}>
+        <Menu.Root open={open} onOpenChange={changeOpen} highlightItemOnHover={!searchable}>
             <Tooltip label={permissionHint ?? t('pickers.settings.title')} kbd="/model">
                 {/* Styled from `open`: the tooltip puts `data-popup-open` on the same trigger. */}
                 <Menu.Trigger
