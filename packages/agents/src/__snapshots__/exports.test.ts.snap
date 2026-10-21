@@ -76,6 +76,8 @@ exports[`the public API ./chat exports these names 1`] = `
   "type AcpModel",
   "type AcpModelState",
   "type AcpSessionInfo",
+  "type AcpTurnUsage",
+  "type AcpUsageReport",
   "type ApprovalDecision",
   "type BackendEvent",
   "type BackendHost",

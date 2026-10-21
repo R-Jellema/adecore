@@ -58,6 +58,48 @@ const SessionNotificationSchema = z.looseObject({ sessionId: z.string(), update:
 
 const PromptResponseSchema = z.looseObject({ stopReason: z.string() });
 
+const tokenCount = z.number().int().nonnegative();
+
+// Unstable in the protocol (`PromptResponse.usage`); only the three totals are required.
+const PromptUsageSchema = z.looseObject({
+    totalTokens: tokenCount,
+    inputTokens: tokenCount,
+    outputTokens: tokenCount,
+    thoughtTokens: tokenCount.nullish(),
+    cachedReadTokens: tokenCount.nullish(),
+    cachedWriteTokens: tokenCount.nullish()
+});
+
+/* The tokens of one turn with their kinds apart, as a usage record keeps them: `reasoning` is a part of `output`. */
+export interface AcpTurnUsage {
+    input: number;
+    cacheRead: number;
+    cacheWrite: number;
+    output: number;
+    reasoning: number;
+}
+
+/*
+ * The `usage` a `session/prompt` response carries, or null where the agent reports none. The protocol
+ * leaves open whether the input holds the cached part, so the total decides: when the kinds add up
+ * to more than it, the input counted the cache too and loses it here.
+ */
+export function promptUsageOf(result: unknown): AcpTurnUsage | null {
+    const response = z.looseObject({ usage: PromptUsageSchema }).safeParse(result);
+    if (!response.success) {
+        return null;
+    }
+    const usage = response.data.usage;
+    const cacheRead = usage.cachedReadTokens ?? 0;
+    const cacheWrite = usage.cachedWriteTokens ?? 0;
+    const apart = usage.inputTokens + usage.outputTokens + cacheRead + cacheWrite <= usage.totalTokens;
+    const input = apart ? usage.inputTokens : Math.max(0, usage.inputTokens - cacheRead - cacheWrite);
+    if (input + cacheRead + cacheWrite + usage.outputTokens === 0) {
+        return null;
+    }
+    return { input, cacheRead, cacheWrite, output: usage.outputTokens, reasoning: usage.thoughtTokens ?? 0 };
+}
+
 const ModeStateSchema = z.looseObject({
     currentModeId: z.string(),
     availableModes: z.array(z.unknown())

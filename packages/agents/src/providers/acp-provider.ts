@@ -1,7 +1,8 @@
 import type { AgentKind, ProviderCapabilities, ProviderInstall } from '@adecore/agent-contracts';
-import { createAcpBackend, type AcpAgentSpec } from '../chat/acp-backend.ts';
+import { createAcpBackend, type AcpAgentSpec, type AcpUsageReport } from '../chat/acp-backend.ts';
 import type { AcpSessionInfo } from '../chat/acp-protocol.ts';
 import { askAcpAccount } from './accounts/acp-account.ts';
+import { writeAcpUsage } from './acp-usage-log.ts';
 import type { ModelCatalog } from './catalog.ts';
 import { detectCli, type CliDetection } from './detect.ts';
 import type { ChatProvider, ProviderHome } from './provider.ts';
@@ -53,7 +54,12 @@ export interface AcpProviderSpec extends AcpAgentSpec {
     accountProbe?: boolean;
     // Absent or true lets the models a session reports replace the catalog's; false keeps the catalog as the host built it.
     adoptModels?: boolean;
+    // The folder the usage of every turn the agent reports is logged to, for a usage root of the agent's kind; absent logs nothing.
+    usageLog?: string;
 }
+
+/* Agents whose own usage files the scanner reads; a log of their turns would count every one twice. */
+const OWN_USAGE_FILES: ReadonlySet<AgentKind> = new Set(['grok']);
 
 /* An agent's model id may reach a command line, so one that reads as a flag is left out. */
 function adoptableModels(info: AcpSessionInfo): Array<{ slug: string; name: string }> {
@@ -68,6 +74,14 @@ export function createAcpProvider(spec: AcpProviderSpec): ChatProvider {
         }
         spec.onSession?.(info);
     };
+    const usageLog = spec.usageLog === undefined || OWN_USAGE_FILES.has(spec.kind) ? null : spec.usageLog;
+    const onUsage =
+        usageLog === null
+            ? spec.onUsage
+            : (report: AcpUsageReport): void => {
+                  writeAcpUsage(usageLog, report, Date.now());
+                  spec.onUsage?.(report);
+              };
     return {
         kind: spec.kind,
         name: spec.name,
@@ -99,6 +113,6 @@ export function createAcpProvider(spec: AcpProviderSpec): ChatProvider {
                           onSession
                       })
               }),
-        createBackend: createAcpBackend({ ...spec, onSession })
+        createBackend: createAcpBackend({ ...spec, onSession, ...(onUsage === undefined ? {} : { onUsage }) })
     };
 }

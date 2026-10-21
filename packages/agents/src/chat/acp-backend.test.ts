@@ -5,7 +5,7 @@ import { expect, test } from 'bun:test';
 import type { ChatAttachment, RuntimeMode } from '@adecore/agent-contracts';
 import { fakeAcpWith, type FakeAcpOptions } from '../testing/fake-acp.ts';
 import { inProcess } from '../testing/fake-cli.ts';
-import { createAcpBackend, type AcpAgentSpec } from './acp-backend.ts';
+import { createAcpBackend, type AcpAgentSpec, type AcpUsageReport } from './acp-backend.ts';
 import type { AcpSessionInfo } from './acp-protocol.ts';
 import type { BackendEvent, BackendLaunch, ChatBackend, TurnInput } from './backend.ts';
 
@@ -99,6 +99,29 @@ test('a turn opens a session, carries the instructions in front of the first pro
     fake.backend.sendTurn(turn('again'));
     await fake.next('turn.done', (event) => event.promptId === 'prompt-again');
     expect(fake.events.filter((event) => event.type === 'text.done').at(-1)).toMatchObject({ text: 'echo: again' });
+    await fake.backend.dispose();
+});
+
+test('a turn whose response reports usage hands it to the spec, with the session, folder and model it ran in', async () => {
+    const reports: AcpUsageReport[] = [];
+    const usage = { totalTokens: 1500, inputTokens: 1100, outputTokens: 400, thoughtTokens: 50, cachedReadTokens: 1000 };
+    const fake = run({ turnUsage: usage }, { selection: { model: 'fake-large', options: {} } }, { ...SPEC, onUsage: (report) => reports.push(report) });
+    await fake.backend.start();
+    fake.backend.sendTurn(turn('hello'));
+    await fake.next('turn.done');
+    expect(reports).toEqual([
+        { sessionId: sessionOf(fake.events), cwd: '/tmp', model: 'fake-large', input: 100, cacheRead: 1000, cacheWrite: 0, output: 400, reasoning: 50 }
+    ]);
+    await fake.backend.dispose();
+});
+
+test('a turn without usage reports nothing', async () => {
+    const reports: AcpUsageReport[] = [];
+    const fake = run({}, {}, { ...SPEC, onUsage: (report) => reports.push(report) });
+    await fake.backend.start();
+    fake.backend.sendTurn(turn('hello'));
+    await fake.next('turn.done');
+    expect(reports).toEqual([]);
     await fake.backend.dispose();
 });
 

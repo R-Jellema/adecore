@@ -6,6 +6,7 @@ import {
     autoAllows,
     parseInitialize,
     parseSessionInfo,
+    promptUsageOf,
     resolveAcpMode,
     runtimeModeOf,
     toolRow,
@@ -326,5 +327,24 @@ describe('tool rows', () => {
     test('a unified diff of identical texts is nothing', () => {
         expect(unifiedDiff('same\n', 'same\n')).toBeNull();
         expect(unifiedDiff('a\nb\n', 'a\n')).toBe('@@ -2,1 +1,0 @@\n-b\n');
+    });
+});
+
+describe('the usage of a prompt response', () => {
+    test('keeps the input apart from the cache when the kinds add up to the total', () => {
+        const usage = { totalTokens: 1600, inputTokens: 100, outputTokens: 400, thoughtTokens: 150, cachedReadTokens: 1000, cachedWriteTokens: 100 };
+        expect(promptUsageOf({ stopReason: 'end_turn', usage })).toEqual({ input: 100, cacheRead: 1000, cacheWrite: 100, output: 400, reasoning: 150 });
+    });
+
+    test('takes the cache out of an input that holds it', () => {
+        const usage = { totalTokens: 1500, inputTokens: 1100, outputTokens: 400, cachedReadTokens: 1000, cachedWriteTokens: null };
+        expect(promptUsageOf({ stopReason: 'end_turn', usage })).toEqual({ input: 100, cacheRead: 1000, cacheWrite: 0, output: 400, reasoning: 0 });
+    });
+
+    test('is null where the agent reports none, or nothing it can count', () => {
+        expect(promptUsageOf({ stopReason: 'end_turn' })).toBeNull();
+        expect(promptUsageOf({ stopReason: 'end_turn', usage: null })).toBeNull();
+        expect(promptUsageOf({ stopReason: 'end_turn', usage: { inputTokens: 10 } })).toBeNull();
+        expect(promptUsageOf({ stopReason: 'end_turn', usage: { totalTokens: 0, inputTokens: 0, outputTokens: 0 } })).toBeNull();
     });
 });

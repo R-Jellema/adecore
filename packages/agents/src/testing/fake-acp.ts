@@ -22,6 +22,8 @@ export interface FakeAcpOptions {
     legacyModels?: boolean;
     // Advertises and answers `session/close`.
     closeSession?: boolean;
+    // The `usage` every `session/prompt` response carries; absent reports none.
+    turnUsage?: Record<string, number>;
 }
 
 export function fakeAcpWith(options: FakeAcpOptions): FakeCli {
@@ -63,7 +65,7 @@ export function fakeAcpWith(options: FakeAcpOptions): FakeCli {
                 return;
             }
             update({ sessionUpdate: 'usage_update', used: 1200, size: 200000, cost: { amount: 0.01, currency: 'USD' } });
-            respond(prompt.rpcId, { stopReason });
+            respond(prompt.rpcId, { stopReason, ...(options.turnUsage === undefined ? {} : { usage: options.turnUsage }) });
             prompt = null;
         };
 

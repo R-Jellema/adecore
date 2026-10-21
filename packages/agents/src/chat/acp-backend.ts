@@ -10,12 +10,14 @@ import {
     autoAllows,
     parseInitialize,
     parseSessionInfo,
+    promptUsageOf,
     resolveAcpMode,
     runtimeModeOf,
     sessionIdOf,
     type AcpAgentCapabilities,
     type AcpModeMap,
-    type AcpSessionInfo
+    type AcpSessionInfo,
+    type AcpTurnUsage
 } from './acp-protocol.ts';
 import type { ApprovalDecision, BackendEvent, BackendHost, BackendLaunch, ChatBackend, TurnInput } from './backend.ts';
 import { attachmentNote } from './input.ts';
@@ -49,6 +51,15 @@ export interface AcpAgentSpec {
     model?(selection: ModelSelection): string | null;
     // What every new, loaded or resumed session offers, for a host that fills its model catalog from the agent.
     onSession?(info: AcpSessionInfo): void;
+    // The tokens of every turn whose `session/prompt` response reports them, for a host that keeps a usage log.
+    onUsage?(usage: AcpUsageReport): void;
+}
+
+/* One turn's usage, with the session, folder and model it ran in. */
+export interface AcpUsageReport extends AcpTurnUsage {
+    sessionId: string;
+    cwd: string;
+    model: string;
 }
 
 // What `initialize` and a session request may take; a prompt and a login wait for as long as the agent runs.
@@ -77,6 +88,7 @@ export class AcpBackend implements ChatBackend {
     private replaying = false;
     private contextPending: string | null = null;
     private prompt: { promptId: string | undefined; cancelled: boolean } | null = null;
+    private model: string | null = null;
 
     constructor(launch: BackendLaunch, host: BackendHost, spec: AcpAgentSpec) {
         this.launch = launch;
@@ -139,6 +151,7 @@ export class AcpBackend implements ChatBackend {
         const info = await this.openSession(transport, capabilities);
         const modeId = await this.applyMode(transport, info);
         const model = await this.applyModel(transport, info);
+        this.model = model;
         await this.applyThoughtLevel(transport, info);
         this.spec.onSession?.(info);
         this.emit({
@@ -322,6 +335,7 @@ export class AcpBackend implements ChatBackend {
             .then((result) => {
                 if (this.transport === transport && this.prompt === turn) {
                     this.prompt = null;
+                    this.report(result);
                     this.emitAll(this.protocol.finish(turn.cancelled ? { stopReason: 'cancelled' } : result, turn.promptId));
                 }
             })
@@ -459,6 +473,15 @@ export class AcpBackend implements ChatBackend {
         this.emit({ type: 'exit', exitCode, ...(stderr === null ? {} : { stderr }) });
     }
 
+    /* A cancelled turn still spent what it reports. */
+    private report(result: unknown): void {
+        const usage = this.spec.onUsage === undefined ? null : promptUsageOf(result);
+        if (usage === null) {
+            return;
+        }
+        this.spec.onUsage?.({ ...usage, sessionId: this.sessionId, cwd: this.launch.cwd, model: this.model ?? this.launch.selection.model });
+    }
+
     private emitAll(events: BackendEvent[]): void {
         for (const event of events) {
             this.emit(event);
@@ -466,6 +489,9 @@ export class AcpBackend implements ChatBackend {
     }
 
     private emit(event: BackendEvent): void {
+        if (event.type === 'model') {
+            this.model = event.model;
+        }
         this.host.onEvent(event);
     }
 }
