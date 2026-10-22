@@ -95,6 +95,10 @@ function parseWorkflowProgress(entries: unknown[]): Pick<ChatWorkflow, 'phases' 
             phases.set(index, { index, title: str(entry.title) ?? '' });
         } else if (entry.type === 'workflow_agent') {
             const durationMs = intOrNull(entry.durationMs);
+            const lastToolSummary = str(entry.lastToolSummary);
+            const promptPreview = str(entry.promptPreview);
+            const resultPreview = str(entry.resultPreview);
+            const error = str(entry.error);
             agents.set(index, {
                 index,
                 label: str(entry.label) ?? '',
@@ -103,7 +107,11 @@ function parseWorkflowProgress(entries: unknown[]): Pick<ChatWorkflow, 'phases' 
                 status: WORKFLOW_AGENT_STATUS[str(entry.state) ?? ''] ?? 'running',
                 startedAt: typeof entry.startedAt === 'number' ? entry.startedAt : null,
                 durationMs: durationMs !== null && durationMs >= 0 ? durationMs : null,
-                lastTool: str(entry.lastToolName)
+                lastTool: str(entry.lastToolName),
+                ...(lastToolSummary ? { lastToolSummary } : {}),
+                ...(promptPreview ? { promptPreview } : {}),
+                ...(resultPreview ? { resultPreview } : {}),
+                ...(error ? { error } : {})
             });
         }
     }

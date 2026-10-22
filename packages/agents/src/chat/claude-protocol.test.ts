@@ -1017,6 +1017,9 @@ describe('ClaudeProtocol', () => {
                         state: 'done',
                         startedAt: 1790321942528,
                         lastToolName: 'Write',
+                        lastToolSummary: 'notes.md',
+                        promptPreview: 'Write a note',
+                        resultPreview: 'Wrote notes.md',
                         tokens: 16264,
                         toolCalls: 1,
                         durationMs: 5421
@@ -1043,7 +1046,10 @@ describe('ClaudeProtocol', () => {
                         status: 'done',
                         startedAt: 1790321942528,
                         durationMs: 5421,
-                        lastTool: 'Write'
+                        lastTool: 'Write',
+                        lastToolSummary: 'notes.md',
+                        promptPreview: 'Write a note',
+                        resultPreview: 'Wrote notes.md'
                     },
                     {
                         index: 2,
@@ -1055,7 +1061,17 @@ describe('ClaudeProtocol', () => {
                         durationMs: null,
                         lastTool: null
                     },
-                    { index: 3, label: 'check', phaseIndex: 2, agentId: null, status: 'failed', startedAt: null, durationMs: null, lastTool: null }
+                    {
+                        index: 3,
+                        label: 'check',
+                        phaseIndex: 2,
+                        agentId: null,
+                        status: 'failed',
+                        startedAt: null,
+                        durationMs: null,
+                        lastTool: null,
+                        error: 'blocked'
+                    }
                 ]
             }
         });

@@ -460,7 +460,13 @@ export const ChatWorkflowAgentSchema = z.object({
     status: ChatSubagentStatusSchema,
     startedAt: z.number().nullable(),
     durationMs: z.number().int().nonnegative().nullable(),
-    lastTool: z.string().nullable()
+    lastTool: z.string().nullable(),
+    // What the last tool was called on, such as a command or a path.
+    lastToolSummary: z.string().optional(),
+    // The CLI's own previews of what the agent was asked and answered.
+    promptPreview: z.string().optional(),
+    resultPreview: z.string().optional(),
+    error: z.string().optional()
 });
 export type ChatWorkflowAgent = z.infer<typeof ChatWorkflowAgentSchema>;
 
