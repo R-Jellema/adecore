@@ -366,7 +366,7 @@ describe('steering', () => {
     test('a running turn takes the message when the host steers and the provider can', async () => {
         const composer = await mount({ info: busy, host: { useSendDelivery: () => 'steer' } });
         await composer.type('Also this');
-        expect(composer.byLabel('Send to the running agent. Hold Option or Alt to queue after this turn.')).not.toBeNull();
+        expect(composer.byLabel('Send now. Hold Option or Alt to queue.')).not.toBeNull();
         await composer.press('Enter');
         expect(composer.sent[0]?.extras.delivery).toBe('steer');
     });
@@ -374,7 +374,7 @@ describe('steering', () => {
     test('Alt sends the other way', async () => {
         const composer = await mount({ info: busy, host: { useSendDelivery: () => 'queue' } });
         await composer.type('Also this');
-        await composer.click(composer.byLabel('Queue after this turn. Hold Option or Alt to send to the running agent.')!, { altKey: true });
+        await composer.click(composer.byLabel('Queue after this turn. Hold Option or Alt to send now.')!, { altKey: true });
         expect(composer.sent[0]?.extras.delivery).toBe('steer');
     });
 
@@ -387,7 +387,7 @@ describe('steering', () => {
 
     test('the stop button stops the turn', async () => {
         const composer = await mount({ info: busy });
-        await composer.click(composer.byLabel('Stop, Shift-click to also stop its sub-agents')!);
+        await composer.click(composer.byLabel('Stop. Shift-click stops sub-agents too')!);
         expect(composer.calls).toEqual([['stopTurn', CHAT, false]]);
     });
 });
@@ -546,7 +546,7 @@ describe('the stash', () => {
         expect(composer.text()).toBe('See there');
         expect(readDraft(CHAT).chats).toEqual(['other']);
         expect(composer.page.host.textContent).toContain('Other chat');
-        expect(composer.page.host.querySelector('[role="status"]')?.textContent).toBe('1 attached chat is not in this project and was left out');
+        expect(composer.page.host.querySelector('[role="status"]')?.textContent).toBe('Left out 1 chat from another project');
     });
 
     test('a restored prompt whose chats all remain says nothing', async () => {
@@ -838,11 +838,11 @@ describe('a cold prompt cache', () => {
             }),
             items: [turn as ChatItem]
         });
-        expect(composer.page.host.textContent).not.toContain('Prompt cache expired');
+        expect(composer.page.host.textContent).not.toContain('Cache expired');
         await act(async () => {
             jest.advanceTimersByTime(240_000);
         });
-        expect(composer.page.host.textContent).toContain('Prompt cache expired');
+        expect(composer.page.host.textContent).toContain('Cache expired');
         const compact = [...composer.page.host.querySelectorAll('button')].find((button) => button.textContent === 'Compact')!;
         await composer.click(compact);
         expect(composer.calls).toContainEqual(['compact', CHAT]);

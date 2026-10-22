@@ -26,7 +26,7 @@ test.skipIf(typeof document === 'undefined')('an event with a time nobody can re
                 )
             )
         );
-        expect(element.textContent).not.toContain('Could not draw this part');
+        expect(element.textContent).not.toContain('Could not show this part');
         const rows = [...element.querySelectorAll('li[aria-label]')];
         expect(rows).toHaveLength(2);
         expect(rows[1].getAttribute('aria-label')).toBe('soon, Rolled back, Info, later');
@@ -87,7 +87,7 @@ test.skipIf(typeof document === 'undefined')('an event written with time instead
                 )
             )
         );
-        expect(element.textContent).not.toContain('Could not draw this part');
+        expect(element.textContent).not.toContain('Could not show this part');
         const rows = [...element.querySelectorAll('li[aria-label]')];
         expect(rows).toHaveLength(2);
         expect(rows[0].querySelector('time')).not.toBeNull();

@@ -90,7 +90,7 @@ describe('a provider with no CLI', () => {
         const withWords = entry('nanogpt', undefined, { unavailable: { reason: 'no-subscription', message: 'Add an API key in Settings' } });
         expect(explain(withWords)).toBe('Add an API key in Settings');
         const claudeKey = entry('claude', undefined, { unavailable: { reason: 'no-subscription', message: null } });
-        expect(explain(claudeKey)).toBe('This account uses an API key, which has no plan limits.');
+        expect(explain(claudeKey)).toBe('API key, no plan limits.');
     });
 });
 

@@ -1,28 +1,27 @@
 export default {
     limits: {
         title: 'Limieten',
-        explain:
-            'Het streepje op een balk staat waar een gelijkmatig tempo door het venster nu zou zijn. Een balk voorbij dat streepje verbruikt sneller dan het venster teruggeeft.',
+        explain: 'De markering toont waar het verbruik bij een gelijk tempo zou staan. Voorbij de markering verbruik je sneller dan het weer vrijkomt.',
         loading: 'Limieten laden…',
         used: '{{percent}}% gebruikt',
         bar: '{{window}}, {{percent}}% gebruikt',
         windowPassed: '{{percent}}% van het venster voorbij',
-        faster: 'Verbruikt sneller dan het venster teruggeeft.',
-        slower: 'Verbruikt langzamer dan het venster teruggeeft.',
+        faster: 'Sneller verbruikt dan het weer vrijkomt.',
+        slower: 'Langzamer verbruikt dan het weer vrijkomt.',
         pace: {
             ahead: '{{percent}}% gebruikt, voor op een gelijkmatig tempo van {{pace}}%',
             behind: '{{percent}}% gebruikt, achter op een gelijkmatig tempo van {{pace}}%',
             even: '{{percent}}% gebruikt, op een gelijkmatig tempo'
         },
-        even: 'Verbruikt even snel als het venster teruggeeft.',
+        even: 'Even snel verbruikt als het vrijkomt.',
         resets: 'Reset {{at}}',
         none: 'Nog geen limieten gemeld.',
         notInstalled: 'Niet geïnstalleerd op deze machine.',
-        noSubscription: 'Dit account gebruikt een API-sleutel en kent geen abonnementslimieten.',
-        unreachable: 'De CLI was niet bereikbaar.',
-        filter: 'Accounts waarvan je de limieten ziet',
+        noSubscription: 'API-sleutel, geen abonnementslimieten.',
+        unreachable: 'Kon de limieten niet ophalen.',
+        filter: 'Getoonde accounts',
         signedOut: 'Niet ingelogd',
-        signedOutDetail: 'Niet ingelogd. Log in om de limieten te zien.',
+        signedOutDetail: 'Niet ingelogd. Log in om limieten te zien.',
         logIn: 'Inloggen',
         nextReset: '{{window}} reset {{at}}',
         checked: {
@@ -35,8 +34,8 @@ export default {
         currency: {
             label: 'Valuta',
             dollars: 'Prijzen zoals gepubliceerd, in dollars.',
-            noRate: 'Nog geen wisselkoers. De pagina toont dollars zolang die er niet is.',
-            converted: 'Omgerekend met de ECB-referentiekoers van {{date}}.',
+            noRate: 'Nog geen wisselkoers. Bedragen in dollars.',
+            converted: 'Omgerekend met de ECB-koers van {{date}}.',
             options: {
                 USD: 'Dollars',
                 EUR: "Euro's"
@@ -50,7 +49,7 @@ export default {
     },
     section: {
         label: 'Verbruik',
-        description: 'De valuta van de verbruikspagina.'
+        description: 'Valuta van de verbruikspagina.'
     },
     dialog: {
         title: 'Verbruik',
@@ -59,7 +58,7 @@ export default {
         rescan: 'Opnieuw scannen',
         period: 'Periode',
         metric: 'Eenheid',
-        failed: 'Verbruik kon niet worden getekend',
+        failed: 'Kon het verbruik niet tonen',
         periods: {
             today: 'Vandaag',
             '7d': '7 dagen',
@@ -76,20 +75,20 @@ export default {
         }
     },
     empty: {
-        noTranscripts: 'Geen transcripts van Claude of Codex gevonden. De machine leest ~/.claude/projects en ~/.codex/sessions.',
-        noUsage: 'Nog geen verbruik op deze machine.'
+        noTranscripts: 'Nog geen chats van Claude of Codex gevonden op deze machine.',
+        noUsage: 'Nog geen verbruik.'
     },
     agents: {
-        none: 'Op deze machine staat geen agent-CLI.',
-        installed: 'Deze machine heeft {{list}}.',
+        none: 'Geen agent-CLI geïnstalleerd.',
+        installed: 'Geïnstalleerd: {{list}}.',
         settings: 'Agent-instellingen'
     },
     provenance: {
-        failed: 'Kon de transcripts niet lezen. Dit is de laatste scan die wel lukte.',
+        failed: 'Kon het laatste verbruik niet lezen. Dit zijn de vorige resultaten.',
         scanned_one: 'Gescand om {{time}}, {{files}} bestand',
         scanned_other: 'Gescand om {{time}}, {{files}} bestanden',
-        bundledPrices: 'Prijzen uit de meegeleverde tabel',
-        fetchedPrices: 'Prijzen van LiteLLM, {{date}}',
+        bundledPrices: 'Ingebouwde prijzen',
+        fetchedPrices: 'Prijzen van {{date}}',
         rate: '{{currency}} tegen de ECB-koers van {{date}}'
     },
     summary: {
@@ -126,7 +125,7 @@ export default {
             cost: 'Kosten',
             share: 'Aandeel',
             pricedAs: 'Geprijsd als {{model}}',
-            noPrice: 'Geen prijs bekend voor dit model'
+            noPrice: 'Geen prijs bekend'
         },
         days: {
             day: 'Dag',

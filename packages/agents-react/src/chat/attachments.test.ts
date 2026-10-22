@@ -33,11 +33,11 @@ describe('checkAttachmentLimits', () => {
         );
         expect(checked.accepted.map((entry) => entry.name)).toEqual(['fits.txt']);
         expect(checked.rejected.map((entry) => entry.name)).toEqual(['too-big.png', 'last.png']);
-        expect(checked.rejected[0]?.reason).toBe('Attachments must total at most 10 MB per message');
+        expect(checked.rejected[0]?.reason).toBe('At most 10 MB in total per message');
     });
 
     test('rejects empty files before reading them', () => {
-        expect(checkAttachmentLimits(0, [file('empty.png', 'image/png', 0)]).rejected[0]?.reason).toBe('The file is empty');
+        expect(checkAttachmentLimits(0, [file('empty.png', 'image/png', 0)]).rejected[0]?.reason).toBe('Empty file');
     });
 });
 

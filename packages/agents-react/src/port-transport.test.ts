@@ -90,7 +90,7 @@ describe('portTransport', () => {
         const asked = transport.request('chat.list', {});
         const failure = await asked.catch((e: unknown) => e);
         expect(errorCode(failure)).toBe('not-sent');
-        expect((failure as Error).message).toBe('The request chat.list could not be sent to the agents');
+        expect((failure as Error).message).toBe('Could not reach the agents. Try again.');
     });
 
     test('closing fails what still waits as a lost connection and refuses what comes after', async () => {

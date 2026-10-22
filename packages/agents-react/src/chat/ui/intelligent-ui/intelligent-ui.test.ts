@@ -133,7 +133,7 @@ describe('the frame of a block', () => {
 test('a known reason code is worded here, and an unknown one reads as the reason the machine gave', () => {
     const t = i18next.getFixedT('en', 'agent-chat');
     expect(uiReasonText(t, 'refresh-limit', 'This query may refresh once every ten seconds.')).toBe('This source reads at most once every ten seconds.');
-    expect(uiReasonText(t, 'outside-project', 'This file is outside the project.')).toBe('This is outside the project the agent wrote this in.');
+    expect(uiReasonText(t, 'outside-project', 'This file is outside the project.')).toBe("Outside the agent's project.");
     expect(uiReasonText(t, 'newer-code', 'A reason from a newer machine.')).toBe('A reason from a newer machine.');
     expect(uiReasonText(t, undefined, 'Plain')).toBe('Plain');
 });
@@ -151,7 +151,7 @@ test('closed choices of a live block say whether data is still read or why a rea
     expect(uiLiveChoiceReason(t, { state: 'fresh', sources, readAt: 1 })).toBeNull();
     expect(uiLiveChoiceReason(t, { state: 'reading', sources, readAt: null })).toBe('Available once the live data is read');
     expect(uiLiveChoiceReason(t, { state: 'refused', sources, readAt: null, code: 'access-unavailable', reason: 'x' })).toBe(
-        'The access of the chat that wrote this is no longer available.'
+        'The chat that made this no longer has access.'
     );
     expect(uiLiveChoiceReason(t, { state: 'failed', sources, readAt: null, source: 'status' })).toBe('Could not read status');
 });
@@ -227,7 +227,7 @@ describe('a choice the host would refuse', () => {
         ]) {
             const html = markup(source, { onChoose: () => undefined });
             expect(html).not.toContain('<button');
-            expect(html).toContain('Could not draw this part');
+            expect(html).toContain('Could not show this part');
             expect(html).toContain('Run checks');
         }
         expect(markup('<Choices><Choice context="Run checks">Run checks</Choice></Choices>', { onChoose: () => undefined })).toContain('<button');
@@ -364,7 +364,7 @@ describe('text and status', () => {
         }
         const html = markup('<Timeline><Event at="15:41:55" tone="info">Deployed</Event></Timeline>');
         expect(html).toContain('<time dateTime="15:41:55"');
-        expect(html).not.toContain('Could not draw this part');
+        expect(html).not.toContain('Could not show this part');
     });
 
     test('an event writes the year once it is not this one, and a time inside a clock change as written', () => {
@@ -439,7 +439,7 @@ describe('tables', () => {
         const html = markup('<Table rows={[{at: 1e20, name: "Far"}, {at: 0, name: "Epoch"}]}><Column key="at" as="date"/><Column key="name"/></Table>');
         expect(html).toContain('<table');
         expect(html).toContain('Epoch');
-        expect(html).not.toContain('Could not draw this part');
+        expect(html).not.toContain('Could not show this part');
     });
 
     test('a table without columns shows every key of its rows', () => {
@@ -474,7 +474,7 @@ describe('tables', () => {
     });
 
     test('draw their text when no column is usable', () => {
-        expect(markup('<Table rows={[{a: 1}]}><Column key="b"/></Table>')).toContain('Could not draw this part');
+        expect(markup('<Table rows={[{a: 1}]}><Column key="b"/></Table>')).toContain('Could not show this part');
     });
 
     test('a file cell is its path as text, never a link nobody checked', () => {
@@ -515,7 +515,7 @@ describe('charts', () => {
         expect(html).toContain('role="img"');
         expect(html).toContain('highest passed for Core at 32');
         expect(html).toContain('<caption>Values</caption>');
-        expect(markup('<Chart kind="line" data={[{label: "x", value: "none"}]}/>')).toContain('Could not draw this part');
+        expect(markup('<Chart kind="line" data={[{label: "x", value: "none"}]}/>')).toContain('Could not show this part');
     });
 
     test('a horizontal chart draws a negative value from zero to the left', () => {
@@ -533,7 +533,7 @@ describe('charts', () => {
         const chart = uiChartData([{ label: 'Balance', income: 10, cost: -6 }], 'stacked')!;
         expect([chart.kind, chart.min, chart.max]).toEqual(['bar', -6, 10]);
         expect(markup('<Chart kind="stacked" data={[{label: "Balance", income: 10, cost: -6}]}/>')).toContain(
-            'Negative values cannot be stacked, so the series stand side by side.'
+            'Negative values cannot stack. Series shown side by side.'
         );
         expect(uiChartData([{ label: 'Total', a: 2, b: 3 }], 'stacked')!.kind).toBe('stacked');
     });
@@ -543,14 +543,14 @@ describe('charts', () => {
         const chart = uiChartData(rows, 'hbar')!;
         expect([chart.labels.length, chart.total, chart.truncated]).toEqual([60, 61, true]);
         const html = markup(`<Chart kind="hbar" data={${JSON.stringify(rows)}}/>`);
-        expect(html).toContain('The first 60 of 61 rows are drawn.');
+        expect(html).toContain('Showing 60 of 61 rows.');
         expect(html).toContain('Show all values');
         expect(html).toContain('61 values, highest Row 60 at 1,000,000');
         expect(html).toContain('<th scope="row">Row 60</th>');
         const wide = '<Chart kind="stacked" data={[{label: "Total", a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7}]}/>';
         expect(uiChartData([{ label: 'Total', a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7 }], 'stacked')!.omitted).toEqual(['g']);
         const seven = markup(wide);
-        expect(seven).toContain('g is not drawn.');
+        expect(seven).toContain('g not shown.');
         expect(seven).toContain('<th scope="col">g</th>');
         expect(compiled(wide).diagnostics.map((diagnostic) => diagnostic.code)).toEqual(['too_many_series']);
         expect(markup('<Chart kind="bar" data={[{label: "Core", count: 2}]}/>')).not.toContain('Show all values');
@@ -590,7 +590,7 @@ describe('charts', () => {
         ]) {
             const html = markup(source);
             expect(html).not.toMatch(/NaN|Infinity/);
-            expect(html).toContain('Could not draw this part');
+            expect(html).toContain('Could not show this part');
         }
         expect(uiChartData([{ label: 'Wide', low: -9e307, high: 9e307 }], 'bar')).toBeNull();
         expect(uiChartRange(-3, 5)).toEqual({ low: -5, high: 5 });
@@ -601,7 +601,7 @@ describe('charts', () => {
         expect(uiChartData([{ label: 'Tiny', value: Number.MIN_VALUE }], 'bar')).toBeNull();
         const tiny = markup(`<Chart kind="hbar" data={[{label: "Tiny", value: ${Number.MIN_VALUE}}]}/>`);
         expect(tiny).not.toMatch(/NaN|Infinity/);
-        expect(tiny).toContain('Could not draw this part');
+        expect(tiny).toContain('Could not show this part');
         const drawn = markup('<Chart kind="bar" data={[{label: "Big", count: 9e307}]}/>');
         expect(drawn).not.toMatch(/NaN|Infinity/);
         expect(drawn).toContain('role="img"');
@@ -698,7 +698,7 @@ describe('content', () => {
         const gone = markup('<Model attachment="gone"/>');
         expect(gone).not.toContain('<canvas');
         expect(gone).toContain('>gone</span>');
-        expect(gone).toContain('The model is not available');
+        expect(gone).toContain('Model unavailable');
         const waiting = markup('<Model attachment="waiting"/>');
         expect(waiting).toContain('aria-busy="true"');
         expect(waiting).toContain('h-80');
@@ -724,9 +724,9 @@ describe('content', () => {
         const alone = markup(source);
         expect(alone).not.toContain('role="slider"');
         expect(alone).toContain('src="blob:a1"');
-        expect(alone).toContain('One image is not available');
+        expect(alone).toContain('One image missing');
         use({ a1: { url: null, failure: 'Gone' }, a2: { url: null, failure: 'Gone' } });
-        expect(markup(source)).not.toContain('One image is not available');
+        expect(markup(source)).not.toContain('One image missing');
         use({ a1: { url: 'blob:a1', failure: null }, a2: { url: null, failure: null } });
         const loading = markup(source);
         expect(loading).not.toContain('role="slider"');

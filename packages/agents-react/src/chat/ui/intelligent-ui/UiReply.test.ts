@@ -186,7 +186,7 @@ test('an event with a time nobody can read keeps its place in the timeline with 
         '<Timeline><Event at="14:02">Alert fired</Event><Event at="soon" tone="info" detail="later">Rolled back</Event></Timeline><Summary>After</Summary>'
     );
     expect(markup).toContain('dateTime="14:02"');
-    expect(markup).not.toContain('Could not draw this part');
+    expect(markup).not.toContain('Could not show this part');
     expect(markup).not.toContain('dateTime="soon"');
     expect(markup).toContain('>soon</span>');
     expect(markup).toContain('aria-label="soon, Rolled back, Info, later"');
@@ -294,5 +294,5 @@ test('a map that left places out says so', () => {
     const stops = JSON.stringify(Array.from({ length: 53 }, (_, i) => `Stop ${i}`));
     const markup = drawn(`<Map><Each items={${stops}} as="stop"><Place lat={1} lon={5}>{stop}</Place></Each></Map>`);
     expect(markup.match(/<li>/g)).toHaveLength(50);
-    expect(markup).toContain('3 more places are not shown');
+    expect(markup).toContain('3 more places not shown');
 });

@@ -1,7 +1,7 @@
 export default {
     status: {
         checking: 'Controleren',
-        disabled: 'Uitgezet',
+        disabled: 'Uit',
         notFound: 'CLI niet gevonden',
         signedOut: 'Niet ingelogd',
         ready: 'Ingelogd',
@@ -11,24 +11,24 @@ export default {
         unavailable: 'Niet beschikbaar',
         failed: 'Controle mislukt'
     },
-    failed: 'De instellingen van de providers konden niet worden getekend',
+    failed: 'Kon de providerinstellingen niet tonen',
     list: {
         label: "Agent-CLI's en hun accounts",
         default: 'Standaard',
         ready: 'Klaar',
         needsSetup: 'Nog instellen',
-        signedOut: 'Uitgelogd',
-        addAccount: 'Een {{provider}}-account toevoegen',
+        signedOut: 'Niet ingelogd',
+        addAccount: '{{provider}}-account toevoegen',
         addProvider: 'Provider toevoegen',
         notInstalled: 'Niet geïnstalleerd',
         missing: 'Ontbreekt',
-        notInstalledNote: 'Installeer er een op deze machine om hem hier te gebruiken.',
+        notInstalledNote: 'Installeer om hem hier te gebruiken.',
         none: "Geen agent-CLI's gevonden op deze machine.",
-        noAccounts: 'Deze machine houdt nog geen accounts bij. Werk Ruimte daar bij om er een toe te voegen.'
+        noAccounts: 'Werk Ruimte op deze machine bij om accounts toe te voegen.'
     },
     install: {
         notInstalled: 'Niet geïnstalleerd',
-        steps: '{{provider}} instellen in stappen',
+        steps: '{{provider}} instellen',
         platform: 'Systeem',
         platforms: {
             darwin: 'macOS',
@@ -41,38 +41,38 @@ export default {
         guide: 'Installatiegids',
         install: {
             title: 'Installeer de CLI',
-            none: 'Er is geen installatiecommando voor dit systeem.',
+            none: 'Geen installatiecommando voor dit systeem.',
             done: 'Geïnstalleerd, versie {{version}}.',
             doneNoVersion: 'Geïnstalleerd.'
         },
         signIn: {
             title: 'Log in',
-            command: 'Voer dit uit in een terminal en volg de stappen:',
+            command: 'Voer dit uit in een terminal:',
             env: 'Zet <code>{{variable}}</code> in de omgeving waarin de CLI start.',
             chat: 'De eerste chat vraagt je om in te loggen.',
             or: 'Of',
-            unknown: 'De CLI vraagt je om in te loggen als hij voor het eerst draait.'
+            unknown: 'Vraagt bij de eerste start om in te loggen.'
         },
         start: {
             title: 'Aan de slag',
             description: 'Kies {{provider}} voor je volgende chat of terminal.'
         },
         footer: {
-            missing: 'Nog niet gevonden op deze machine. Er wordt opnieuw gekeken als je terugkomt in dit venster.',
+            missing: 'Nog niet gevonden. Ruimte kijkt opnieuw als je terugkomt in dit venster.',
             found: 'Gevonden op deze machine.'
         },
-        fallback: 'Installeer {{provider}} op deze machine om hem hier te gebruiken.'
+        fallback: 'Installeer {{provider}} om hem hier te gebruiken.'
     },
     abilities: {
         version: 'Versie {{version}}.',
         chatAndTerminal: 'Chat en terminal.',
         terminalOnly: 'Alleen terminal.',
-        reportsStatus: 'Meldt de agentstatus.',
-        noStatus: 'Meldt geen agentstatus.'
+        reportsStatus: 'Laat zien wanneer hij je nodig heeft.',
+        noStatus: 'Laat niet zien wanneer hij je nodig heeft.'
     },
     cli: {
         addAccount: 'Account toevoegen',
-        onlyDefault: '{{provider}} heeft geen instelling voor zijn configuratiemap, dus alleen zijn standaardaccount.',
+        onlyDefault: '{{provider}} kent alleen zijn standaardaccount.',
         defaults: {
             title: 'Standaarden voor nieuwe chats',
             description: 'Een model of account kiezen in een chat verandert hier ook de standaard.',
@@ -91,7 +91,7 @@ export default {
         kind: '{{provider}}-account',
         enabled: {
             label: 'Dit account gebruiken',
-            description: 'Uitgezet wordt het niet aangeboden voor nieuwe chats en agents.'
+            description: 'Staat het uit, dan zien nieuwe chats en agents het niet.'
         },
         showFolder: 'Map tonen',
         folderCopied: 'Pad van de map gekopieerd',
@@ -101,14 +101,14 @@ export default {
             title: 'Login',
             signedInAs: 'Ingelogd als {{email}}',
             signedIn: 'Ingelogd',
-            planDetail: '{{plan}}-abonnement. Opnieuw inloggen opent een terminal met de login van de CLI zelf.',
-            detail: 'Opnieuw inloggen opent een terminal met de login van de CLI zelf.',
+            planDetail: '{{plan}}-abonnement. Opnieuw inloggen opent een terminal.',
+            detail: 'Opnieuw inloggen opent een terminal.',
             signedOut: 'Niet ingelogd',
-            signedOutDetail: 'Opent een terminal die de login van de CLI met deze map draait.',
+            signedOutDetail: 'Opent een terminal waarin je inlogt op dit account.',
             logIn: 'Inloggen',
             logInAgain: 'Opnieuw inloggen',
             inChat: 'Logt in vanuit een chat',
-            inChatDetail: 'De eerste chat op dit account vraagt je in te loggen, en de CLI bewaart die login in deze map.'
+            inChatDetail: 'De eerste chat op dit account vraagt je in te loggen.'
         },
         folder: {
             label: 'Map',
@@ -117,14 +117,14 @@ export default {
         },
         variables: {
             title: 'Variabelen',
-            description: 'Extra omgeving voor alleen dit account. Gevoelige waarden blijven in de sleutelhanger.',
+            description: 'Extra omgeving voor dit account. Geheimen blijven in de sleutelhanger.',
             add: 'Variabele toevoegen',
             name: 'Naam van variabele {{index}}',
             value: 'Waarde van {{name}}',
             kept: 'Bewaard in de sleutelhanger',
             lock: '{{name}} in de sleutelhanger bewaren',
             unlock: '{{name}} als platte tekst bewaren',
-            noKeychain: 'Deze machine heeft geen sleutelhanger, dus een waarde kan niet geheim blijven.',
+            noKeychain: 'Geen sleutelhanger op deze machine, dus waarden blijven leesbaar.',
             remove: '{{name}} verwijderen',
             none: 'Geen variabelen',
             discard: 'Weggooien',
@@ -138,25 +138,25 @@ export default {
         remove: {
             label: 'Account verwijderen',
             description: 'Chats die het gebruiken vragen bij hun volgende turn om een ander account. De map blijft op de schijf.',
-            defaultNote: 'Het standaardaccount gebruikt de eigen map van de CLI en kan niet weg. Zet het in plaats daarvan hierboven uit.',
+            defaultNote: 'Het standaardaccount kan niet weg. Zet het hierboven uit.',
             button: 'Verwijderen',
             confirmTitle: '{{account}} verwijderen?',
-            confirmDescription: 'Ruimte vergeet dit account. De map blijft op de schijf staan op {{folder}}, met de login erin.',
+            confirmDescription: 'De map en de login blijven in {{folder}}.',
             confirm: 'Account verwijderen'
         },
         saveFailed: 'Kon het account niet opslaan'
     },
     add: {
-        title: 'Een {{provider}}-account toevoegen',
-        description: 'Ruimte maakt er een map voor op de machine en opent dan een terminal waarin je inlogt.',
-        chatDescription: 'Er komt een map voor op de machine. De eerste chat erop vraagt je in te loggen.',
+        title: '{{provider}}-account toevoegen',
+        description: 'Maakt een map en opent een terminal om in te loggen.',
+        chatDescription: 'Maakt een map. De eerste chat vraagt je in te loggen.',
         name: 'Naam',
         namePlaceholder: 'Werk',
         color: 'Kleur',
         advanced: 'Geavanceerd',
         link: {
             label: 'Een bestaande map koppelen',
-            description: 'Gebruik een configuratiemap die al op de machine staat in plaats van een nieuwe. Ruimte verplaatst of verwijdert hem nooit.',
+            description: 'Gebruik een bestaande configuratiemap. Ruimte verplaatst of verwijdert hem nooit.',
             placeholder: 'Pad op de machine'
         },
         create: 'Account toevoegen',
@@ -165,9 +165,9 @@ export default {
     },
     section: {
         label: 'Providers',
-        description: "De agent-CLI's op deze machine en de accounts waarmee ze inloggen."
+        description: "Agent-CLI's op deze machine en hun accounts."
     },
-    notAnswering: 'Geeft geen antwoord. Pas dit aan zodra de machine terug is.',
+    notAnswering: 'De machine geeft geen antwoord. Probeer het opnieuw zodra hij terug is.',
     common: {
         save: 'Opslaan',
         cancel: 'Annuleren'

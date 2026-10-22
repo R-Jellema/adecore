@@ -153,7 +153,7 @@ test.skipIf(typeof document === 'undefined')('draws four maps at once, offers th
     }
     expect(live()).toHaveLength(4);
     expect(buttons()).toHaveLength(2);
-    expect(element.textContent).toContain('only a few maps are drawn at once');
+    expect(element.textContent).toContain('Only a few maps show at once');
     await act(async () => buttons()[0]!.click());
     expect(live()).toHaveLength(4);
     expect(FakeMap.made).toHaveLength(5);
@@ -180,10 +180,10 @@ test.skipIf(typeof document === 'undefined')('a map whose graphics context was t
     }
     expect(buttons()).toHaveLength(2);
     await act(async () => FakeMap.made[0]!.canvas.dispatchEvent(new Event('webglcontextlost')));
-    expect(element.textContent).toContain('The map lost its graphics');
+    expect(element.textContent).toContain('Could not show the map');
     expect(live()).toHaveLength(4);
     expect(buttons()).toHaveLength(2);
-    const lost = buttons().find((button) => button.parentElement?.textContent?.includes('lost its graphics'))!;
+    const lost = buttons().find((button) => button.parentElement?.textContent?.includes('Could not show the map'))!;
     await act(async () => lost.click());
-    expect(element.textContent).not.toContain('lost its graphics');
+    expect(element.textContent).not.toContain('Could not show the map');
 });

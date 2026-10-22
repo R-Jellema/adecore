@@ -58,7 +58,7 @@ describe('groupProviders', () => {
         );
         expect(groups.ready).toEqual([]);
         expect(groups.setup.map((row) => row.note)).toEqual([
-            { text: 'Signed out', tone: 'warning' },
+            { text: 'Not logged in', tone: 'warning' },
             { text: 'Check failed', tone: 'warning' }
         ]);
     });
@@ -93,6 +93,6 @@ describe('accountNote', () => {
     });
 
     test('a turned off account is muted', () => {
-        expect(accountNote(statusOf('acme', 'acme', 'disabled'))).toEqual({ text: 'Turned off', tone: 'muted' });
+        expect(accountNote(statusOf('acme', 'acme', 'disabled'))).toEqual({ text: 'Off', tone: 'muted' });
     });
 });

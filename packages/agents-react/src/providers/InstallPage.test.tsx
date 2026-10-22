@@ -70,7 +70,7 @@ describe('InstallPage', () => {
         expect(statesIn(markup)).toEqual(['current', 'later', 'later']);
         expect(markup).toContain('Not installed');
         expect(markup).toContain('A coding agent in a terminal.');
-        expect(markup).toContain('Not found on this machine yet.');
+        expect(markup).toContain('Not found yet.');
         expect(markup).toContain('Install guide');
     });
 
@@ -111,7 +111,7 @@ describe('InstallPage', () => {
 
     test('without install data it keeps the short note', () => {
         const markup = render(providerOf({ install: undefined }));
-        expect(markup).toContain('Install Acme on this machine to use it here.');
+        expect(markup).toContain('Install Acme to use it here.');
         expect(markup).not.toContain('<ol');
     });
 });

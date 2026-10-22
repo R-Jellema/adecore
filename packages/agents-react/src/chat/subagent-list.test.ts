@@ -195,7 +195,7 @@ describe("the composer's Stop", () => {
     test('stops the turn alone on a plain click and its sub-agents too with Shift, and says so', () => {
         expect(composerStopOf(false)).toBe('turn');
         expect(composerStopOf(true)).toBe('turn-and-subagents');
-        expect(composerStopLabel()).toBe('Stop, Shift-click to also stop its sub-agents');
+        expect(composerStopLabel()).toBe('Stop. Shift-click stops sub-agents too');
     });
 });
 

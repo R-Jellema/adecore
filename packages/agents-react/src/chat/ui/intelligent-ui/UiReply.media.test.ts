@@ -103,7 +103,7 @@ test.skipIf(typeof document === 'undefined')('a model whose view throws says so 
                 )
             )
         );
-        expect(element.querySelector('[role="alert"]')?.textContent).toContain('This model failed to render');
+        expect(element.querySelector('[role="alert"]')?.textContent).toContain('Could not show this model');
         expect(element.textContent).toContain('Done');
         expect(element.querySelector('figcaption')?.textContent).toBe('Bracket');
     } finally {

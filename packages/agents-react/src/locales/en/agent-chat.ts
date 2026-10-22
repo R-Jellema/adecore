@@ -2,16 +2,16 @@ export default {
     transport: {
         notConnected: 'The agents are not reachable',
         closedBeforeAnswer: 'The connection to the agents closed before they answered',
-        badReply: 'The answer to {{type}} does not match its contract',
-        notSent: 'The request {{type}} could not be sent to the agents'
+        badReply: 'Could not read the answer from the machine',
+        notSent: 'Could not reach the agents. Try again.'
     },
     attachments: {
         rejected: {
-            empty: 'The file is empty',
+            empty: 'Empty file',
             tooLarge: 'Larger than {{size}}',
             tooMany_one: 'At most {{count}} file per message',
             tooMany_other: 'At most {{count}} files per message',
-            tooHeavy: 'Attachments must total at most {{size}} per message'
+            tooHeavy: 'At most {{size}} in total per message'
         },
         unreadable: 'Could not read {{name}}',
         unreadableThumbnail: 'Could not read the thumbnail'
@@ -24,10 +24,10 @@ export default {
     fork: {
         refusal: {
             notInConversation: 'This turn is not in the conversation',
-            cliCannotFork: 'This CLI has no conversation that can be forked',
-            noConversation: 'The CLI never started a conversation here',
+            cliCannotFork: 'This agent cannot fork its conversation',
+            noConversation: 'Nothing to fork yet. Send a message first.',
             turnRunning: 'Wait for the turn to end',
-            originalGone: 'The original is no longer in this project'
+            originalGone: 'Original no longer in this project'
         },
         point: {
             afterLast: 'After the last turn',
@@ -37,7 +37,7 @@ export default {
         },
         branch: {
             unnamed: 'Name the branch',
-            taken: 'A branch with this name exists already'
+            taken: 'Name already taken'
         },
         pill: {
             label: 'Fork'
@@ -49,8 +49,8 @@ export default {
         keep: 'Keep full history',
         compact: 'Compact',
         cacheExpired: {
-            title: 'Prompt cache expired',
-            carried: 'The next message reads {{tokens}} tokens again in full'
+            title: 'Cache expired',
+            carried: 'The next message costs {{tokens}} tokens at full price'
         }
     },
     goal: {
@@ -71,7 +71,7 @@ export default {
         pause: 'Pause',
         resume: 'Resume',
         clear: 'Clear',
-        failed: 'The goal could not be changed'
+        failed: 'Could not change goal'
     },
     limit: {
         usage: {
@@ -80,24 +80,24 @@ export default {
             pillResumes: 'Resumes {{time}}',
             title: 'Stopped on a usage limit',
             resets: 'The limit resets at {{time}}.',
-            resumes: 'Goes on by itself at {{time}}, when the limit resets.'
+            resumes: 'Resumes at {{time}}.'
         },
         overload: {
             pill: 'Overloaded',
             pillRetry: 'Retry {{time}}',
-            title: 'The model was overloaded',
+            title: 'Model overloaded',
             sendAgain: 'Send a message to try again.',
-            retries: 'Tries again by itself at {{time}}.'
+            retries: 'Retries at {{time}}.'
         },
         toggle: 'Resume at reset',
         machineOff: 'Turned off for this machine. Turn it on in Settings, Agents.',
         continueOn: 'Continue on',
         continueOnAria: 'Continue on {{account}}',
-        continueOnTip: 'Goes on under {{account}}, which has the most room left. The interrupted turn is sent again.',
+        continueOnTip: 'Switches to {{account}}, which has the most room left, and resends the turn.',
         continueFailed: 'Could not continue on {{account}}'
     },
     contextMeter: {
-        aria: '{{percent}}% of the context used',
+        aria: '{{percent}}% of context used',
         title: 'Context',
         of: '{{used}} of {{window}}',
         used: '{{tokens}} used',
@@ -116,7 +116,7 @@ export default {
             heading: 'You',
             showAll: 'Show all',
             showLess: 'Show less',
-            quoteGone: 'The reply this quote came from is no longer in this chat.'
+            quoteGone: 'Quoted reply no longer in this chat.'
         },
         report: {
             heading: 'Report'
@@ -144,7 +144,7 @@ export default {
         approval: {
             allow: 'Allowed',
             'allow-always': 'Always allowed',
-            deny: 'Declined',
+            deny: 'Denied',
             cancelled: 'No longer needed'
         },
         question: {
@@ -158,7 +158,7 @@ export default {
             doneIn: 'done in {{duration}}',
             failedIn: 'failed in {{duration}}',
             nothingYet: 'Nothing to show yet.',
-            truncated: "Only the beginning of this agent's work is kept.",
+            truncated: 'Only the start is kept.',
             showResult: 'Show result',
             hideResult: 'Hide result'
         },
@@ -176,7 +176,7 @@ export default {
             notStarted: 'not started',
             waiting: 'waiting',
             stopped: 'stopped',
-            stalled: 'No progress reported for five minutes. The workflow is still running; you can stop it.'
+            stalled: 'No progress for five minutes. It is still running, and you can stop it.'
         }
     },
     work: {
@@ -188,18 +188,18 @@ export default {
         diffUnavailable: 'Could not load this diff',
         runningFor: 'running for {{elapsed}}',
         awaitingApproval: 'waiting for you',
-        forksAfter_one: 'A fork goes on after this turn',
-        forksAfter_other: '{{count}} forks go on after this turn',
+        forksAfter_one: 'Forked after this turn',
+        forksAfter_other: '{{count}} forks after this turn',
         omitted: {
             binary: 'Binary file, no diff',
             tooLarge: 'Too large to show'
         },
         changedFiles_one: '{{count}} changed file',
         changedFiles_other: '{{count}} changed files',
-        folderChanges_one: '{{count}} change in the folder this turn',
-        folderChanges_other: '{{count}} changes in the folder this turn',
-        baseMoved: 'The branch moved during this turn ({{from}} to {{to}}), so this includes what came in with it.',
-        andMore: 'and more, truncated',
+        folderChanges_one: '{{count}} folder change this turn',
+        folderChanges_other: '{{count}} folder changes this turn',
+        baseMoved: 'Branch moved this turn ({{from}} to {{to}}). Includes its incoming changes.',
+        andMore: 'and more',
         edits_one: '{{count}} edit',
         edits_other: '{{count}} edits',
         workingFor: 'Working for',
@@ -217,14 +217,14 @@ export default {
             night: 'Still up?'
         },
         empty: {
-            ready: '{{model}} is ready. Ask it anything.',
+            ready: '{{model}} is ready.',
             ask: 'Ask anything.',
             canRead: 'It can read',
             worksIn: 'It works in'
         },
         loadingEarlier: 'Loading earlier messages',
-        stripFailed: 'The message strip failed to render',
-        cardFailed: 'This card failed to render',
+        stripFailed: 'Could not show the messages',
+        cardFailed: 'Could not show this card',
         actions: {
             label: 'Message actions',
             copied: 'Copied'
@@ -287,7 +287,7 @@ export default {
         worked: 'Worked for {{duration}}'
     },
     composer: {
-        slotFailed: 'This control failed to render',
+        slotFailed: 'Could not show this control',
         inputLabel: 'Message',
         menu: {
             commands: 'Commands',
@@ -295,15 +295,15 @@ export default {
             mentions: 'Mentions'
         },
         held: {
-            question: 'A question is waiting. It opens when you pause typing.',
-            approval: 'An approval is waiting. It opens when you pause typing.',
+            question: 'Question waiting. Opens when you pause typing.',
+            approval: 'Approval waiting. Opens when you pause typing.',
             show: 'Show now'
         },
         commands: {
-            model: 'Switch the model',
-            compact: 'Compact the context',
+            model: 'Switch model',
+            compact: 'Compact context',
             clear: 'Start a new context',
-            goal: 'Work toward an objective until it is met',
+            goal: 'Work until a goal is met',
             skill: 'Skill',
             cli: '{{cli}} command',
             anyCli: 'CLI'
@@ -313,16 +313,16 @@ export default {
             effortHighest: '{{effort}} is the most reasoning {{model}} takes',
             effortLowest: '{{effort}} is the least reasoning {{model}} takes',
             noEffort: '{{model}} takes no reasoning effort',
-            clearFailed: 'The thread could not be cleared',
-            stashChatsDropped_one: '1 attached chat is not in this project and was left out',
-            stashChatsDropped_other: '{{count}} attached chats are not in this project and were left out',
-            compactFailed: 'The context could not be compacted',
+            clearFailed: 'Could not clear thread',
+            stashChatsDropped_one: 'Left out 1 chat from another project',
+            stashChatsDropped_other: 'Left out {{count}} chats from other projects',
+            compactFailed: 'Could not compact context',
             noAttachments: '{{agent}} takes no attachments',
             thisAgent: 'This agent',
             rejected: '{{name}}: {{reason}}',
             queuedDoesNotFit: '{{name}} does not fit beside this draft ({{reason}}). The message stays queued.',
             thatFile: 'That file',
-            unreadable: 'That file could not be read'
+            unreadable: 'Could not read that file'
         },
         placeholder: {
             disconnected: 'Not connected to the machine',
@@ -333,7 +333,7 @@ export default {
             skills: 'skills',
             readOnly: 'Go back to the main agent to write'
         },
-        jumpToEnd: 'Jump to the end',
+        jumpToEnd: 'Jump to end',
         mentions: {
             here: 'Files in this folder',
             files: 'Files',
@@ -344,32 +344,32 @@ export default {
         queue: {
             attachments_one: '{{count}} attachment',
             attachments_other: '{{count}} attachments',
-            alreadySent: 'That message was already sent',
-            editFailed: 'The message could not be taken back to edit',
+            alreadySent: 'Already sent',
+            editFailed: 'Could not edit message',
             sendNow: 'Send now',
-            paused: 'Queue paused. Send a message or choose Send now to continue.'
+            paused: 'Queue paused. Send a message or choose Send now.'
         },
         quote: {
             add: 'Quote',
             remove: 'Remove quote',
-            goToSource: 'Go to the reply'
+            goToSource: 'Go to reply'
         },
         removeAttachment: 'Remove {{name}}',
         attach: 'Attach files',
         tooLong: 'characters, too long to send',
-        stop: 'Stop, Shift-click to also stop its sub-agents',
+        stop: 'Stop. Shift-click stops sub-agents too',
         queueButton: 'Queue',
         continue: 'Continue',
-        continueHint: 'Continue where the stopped turn left off',
+        continueHint: 'Continue the stopped turn',
         send: 'Send',
         clear: {
-            title: 'Clear the thread?',
-            description: 'A turn is running. Stop it and clear the thread?',
+            title: 'Clear thread?',
+            description: 'A turn is running.',
             confirm: 'Stop and clear'
         },
-        waitingBelow: 'Waiting for your answer below',
-        steerButton: 'Send to the running agent. Hold Option or Alt to queue after this turn.',
-        queueWithSteerButton: 'Queue after this turn. Hold Option or Alt to send to the running agent.'
+        waitingBelow: 'Answer below',
+        steerButton: 'Send now. Hold Option or Alt to queue.',
+        queueWithSteerButton: 'Queue after this turn. Hold Option or Alt to send now.'
     },
     activity: {
         subagents_one: '{{count}} sub-agent',
@@ -390,23 +390,23 @@ export default {
         shell: 'Shell',
         monitor: 'Monitor',
         stop: 'Stop',
-        stopFailed: 'The task could not be stopped'
+        stopFailed: 'Could not stop task'
     },
     subagents: {
         stop: {
-            task: 'Stop this task',
-            native: 'Stop this sub-agent',
-            mark: "Mark as stopped. The CLI cannot stop one sub-agent, so it may keep working until the chat's process ends."
+            task: 'Stop task',
+            native: 'Stop sub-agent',
+            mark: 'Mark as stopped. It may keep working until the chat stops.'
         },
-        stale: 'This sub-agent belongs to a process that has ended.',
+        stale: 'This sub-agent is no longer running.',
         title: 'Sub-agents',
-        backToMain: 'Back to the main agent',
-        loading: 'Loading the conversation…',
+        backToMain: 'Back to main agent',
+        loading: 'Loading conversation…',
         working: 'Working…',
-        unsupported: "This machine cannot open a sub-agent's conversation. Update Ruimte there to read it.",
-        unreadable: 'The conversation could not be read.',
+        unsupported: 'Update Ruimte on this machine to read sub-agents.',
+        unreadable: 'Could not read conversation.',
         noAnswer: 'The machine did not answer',
-        stopFailed: 'The sub-agent could not be stopped',
+        stopFailed: 'Could not stop sub-agent',
         info: {
             label: 'About this sub-agent',
             tokens: '{{tokens}} tokens'
@@ -425,7 +425,7 @@ export default {
         },
         auto: {
             label: 'Auto',
-            hint: 'The agent reviews routine actions itself',
+            hint: 'Reviews routine actions itself',
             short: 'Auto'
         },
         'full-access': {
@@ -471,11 +471,11 @@ export default {
             label: 'Account',
             manage: 'Manage accounts…',
             resets: 'resets {{time}}',
-            forkToSwitch: 'This conversation is kept in another folder than {{account}} reads. Fork the chat to go on under {{account}}.'
+            forkToSwitch: '{{account}} cannot open this conversation. Fork the chat to continue on {{account}}.'
         }
     },
     scrubber: {
-        strip: 'Messages in this thread',
+        strip: 'Messages',
         tasks: 'Tasks'
     },
     bookmarks: {
@@ -485,23 +485,23 @@ export default {
         remove: 'Remove bookmark',
         unnamed: 'Bookmark',
         nameLabel: 'Bookmark name',
-        namePlaceholder: 'Name it, or leave it empty',
+        namePlaceholder: 'Optional',
         removed: 'Bookmark removed',
-        addFailed: 'The bookmark could not be placed',
-        renameFailed: 'The bookmark could not be renamed',
-        removeFailed: 'The bookmark could not be removed'
+        addFailed: 'Could not add bookmark',
+        renameFailed: 'Could not rename bookmark',
+        removeFailed: 'Could not remove bookmark'
     },
     visuals: {
         actions: 'Actions for {{title}}',
         expand: 'Open large',
         more: 'More actions',
         remove: 'Remove visual',
-        removeTitle: 'Remove this visual?',
+        removeTitle: 'Remove visual?',
         removeDescription: '{{title}} is deleted from the chat. This cannot be undone.',
-        removeFailed: 'The visual could not be removed',
+        removeFailed: 'Could not remove visual',
         loading: 'Loading {{title}}',
         failed: 'Could not load {{title}}',
-        renderFailed: 'This visual failed to render'
+        renderFailed: 'Could not show this visual'
     },
     image: {
         zoomIn: 'Zoom in',
@@ -511,10 +511,10 @@ export default {
     generatedImage: {
         label: 'Generated image',
         generating: 'Generating image',
-        failed: 'Image generation failed',
-        empty: 'The image came back empty',
-        notImage: 'The result is not an image',
-        tooLarge: 'The image is larger than {{size}}',
+        failed: 'Could not generate image',
+        empty: 'Image is empty',
+        notImage: 'Not an image',
+        tooLarge: 'Larger than {{size}}',
         dimensions: '{{width}} × {{height}}',
         transparent: 'transparent',
         actions: 'Image actions',
@@ -525,7 +525,7 @@ export default {
         save: 'Save to project…',
         saved: 'Saved',
         savedTo: 'Saved to <file>{{path}}</file>',
-        renderFailed: 'This image failed to render'
+        renderFailed: 'Could not show this image'
     },
     account: {
         pill: '{{provider}} account {{account}}'
@@ -551,13 +551,13 @@ export default {
     },
     code: {
         actions: 'Code actions',
-        copyFailed: 'Could not copy the code. Try again.',
+        copyFailed: 'Could not copy code.',
         mermaid: {
             diagram: 'Diagram',
             showSource: 'Show source',
             showDiagram: 'Show diagram',
-            failed: 'Could not draw this diagram, so this is its source.',
-            crashed: 'This diagram failed to render'
+            failed: 'Could not show diagram. Showing its source.',
+            crashed: 'Could not show this diagram'
         }
     },
     blocks: {
@@ -594,10 +594,10 @@ export default {
             values: 'Values',
             summary: '{{count}} values, highest {{label}} at {{value}}',
             summarySeries: '{{count}} categories, highest {{series}} for {{label}} at {{value}}',
-            rowsLeftOut: 'The first {{shown}} of {{total}} rows are drawn.',
-            seriesLeftOut_one: '{{series}} is not drawn.',
-            seriesLeftOut_other: '{{series}} are not drawn.',
-            sideBySide: 'Negative values cannot be stacked, so the series stand side by side.',
+            rowsLeftOut: 'Showing {{shown}} of {{total}} rows.',
+            seriesLeftOut_one: '{{series}} not shown.',
+            seriesLeftOut_other: '{{series}} not shown.',
+            sideBySide: 'Negative values cannot stack. Series shown side by side.',
             showValues: 'Show all values',
             hideValues: 'Hide values'
         },
@@ -608,11 +608,11 @@ export default {
         map: {
             label_one: 'Map of {{count}} place',
             label_other: 'Map of {{count}} places',
-            omitted_one: '{{count}} more place is not shown',
-            omitted_other: '{{count}} more places are not shown',
+            omitted_one: '{{count}} more place not shown',
+            omitted_other: '{{count}} more places not shown',
             show: 'Show map',
-            waiting: 'The map waits for a free spot: only a few maps are drawn at once.',
-            contextLost: 'The map lost its graphics. The places stay listed.',
+            waiting: 'Waiting to draw the map. Only a few maps show at once.',
+            contextLost: 'Could not show the map. The places stay listed.',
             lookingUp: 'Looking up',
             notFound: 'Not on the map',
             zoomIn: 'Zoom in',
@@ -620,25 +620,25 @@ export default {
             showAll: 'Show all places',
             scrollHint: 'Hold ⌘ or Ctrl and scroll to zoom',
             touchHint: 'Use two fingers to move the map',
-            offline: 'Map tiles are not available offline. The places stay listed.',
+            offline: 'No map tiles offline. The places stay listed.',
             disabled: 'Map tiles are off.',
             signedOut: 'Sign in to show map tiles.',
-            unavailable: 'Map tiles are not available right now.'
+            unavailable: 'Map tiles unavailable.'
         },
         compare: {
             label: 'Compare {{before}} and {{after}}',
             before: 'Before',
             after: 'After',
-            missing: 'One image is not available'
+            missing: 'One image missing'
         },
         image: {
             label: 'Image',
-            unavailable: 'The image is not available'
+            unavailable: 'Image unavailable'
         },
         model: {
             label: '3D model',
-            unavailable: 'The model is not available',
-            crashed: 'This model failed to render'
+            unavailable: 'Model unavailable',
+            crashed: 'Could not show this model'
         },
         sources: 'Sources',
         citation: 'Source {{number}}: {{title}}',
@@ -665,8 +665,8 @@ export default {
         notes_other: '{{count}} notes',
         shownAsText: 'Shown as text',
         unknownComponent: 'This version cannot draw {{component}}',
-        renderFailed: 'Could not draw this part',
-        unreadable: 'The block could not be read',
+        renderFailed: 'Could not show this part',
+        unreadable: 'Could not read block',
         live: {
             label: 'Live',
             read: 'read {{time}}',
@@ -675,23 +675,23 @@ export default {
             refused: 'Not allowed to read {{source}}',
             notRead: 'Not read',
             reasons: {
-                'access-unavailable': 'The access of the chat that wrote this is no longer available.',
+                'access-unavailable': 'The chat that made this no longer has access.',
                 'block-stale': 'This block changed since it was drawn.',
-                busy: 'Too many live blocks are reading right now.',
+                busy: 'Too many live blocks reading.',
                 'link-unchecked': 'This link has to be checked again.',
-                'link-unsupported': 'This is not a link the machine can open.',
+                'link-unsupported': 'The machine cannot open this link.',
                 'links-unsupported': 'The machine does not open links from blocks.',
-                'no-unique-match': 'The source found no single match for that name.',
-                'outside-project': 'This is outside the project the agent wrote this in.',
+                'no-unique-match': 'No single match for that name.',
+                'outside-project': "Outside the agent's project.",
                 'query-undeclared': 'This block does not read that source.',
                 'refresh-limit': 'This source reads at most once every ten seconds.',
-                'result-too-large': 'What the source returned is too large.',
+                'result-too-large': 'Result too large.',
                 'snapshot-too-large': 'The first readings were too large to keep.',
                 'source-unregistered': 'The machine does not know this source.',
                 'stale-read': 'Read the source again before you choose.',
-                'target-unavailable': 'What this points to is no longer available.',
-                'timed-out': 'The source took too long to answer.',
-                unreadable: 'The source could not be read.'
+                'target-unavailable': 'Target no longer available.',
+                'timed-out': 'Source timed out.',
+                unreadable: 'Could not read the source.'
             }
         }
     },
@@ -699,11 +699,11 @@ export default {
         label: 'Reading width',
         narrow: {
             label: 'Narrow',
-            hint: 'A short line that is easy to follow.'
+            hint: 'Short, easy lines.'
         },
         comfortable: {
             label: 'Comfortable',
-            hint: 'A line of about 90 characters.'
+            hint: 'About 90 characters per line.'
         },
         full: {
             label: 'Full',
@@ -718,7 +718,7 @@ export default {
         },
         'mod-enter-multiline': {
             label: 'Enter, {{mod}}+Enter for more lines',
-            hint: 'Enter sends a message of one line. Once it has more lines, Enter adds a line and {{mod}}+Enter sends.'
+            hint: 'Enter sends one line. With more lines, Enter adds a line and {{mod}}+Enter sends.'
         },
         'mod-enter': {
             label: '{{mod}}+Enter',

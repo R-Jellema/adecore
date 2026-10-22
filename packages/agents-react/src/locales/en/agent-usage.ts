@@ -1,28 +1,27 @@
 export default {
     limits: {
         title: 'Limits',
-        explain:
-            'The mark on a bar is where an even pace through its window would stand by now. A bar past its mark is spending faster than the window gives back.',
+        explain: 'The mark shows where usage would be at an even pace. Past the mark, you use it up faster than it resets.',
         loading: 'Loading limits…',
         used: '{{percent}}% used',
         bar: '{{window}}, {{percent}}% used',
         windowPassed: '{{percent}}% of the window passed',
-        faster: 'Spending faster than the window gives back.',
-        slower: 'Spending slower than the window gives back.',
+        faster: 'Using it faster than it resets.',
+        slower: 'Using it slower than it resets.',
         pace: {
             ahead: '{{percent}}% used, ahead of an even pace of {{pace}}%',
             behind: '{{percent}}% used, behind an even pace of {{pace}}%',
             even: '{{percent}}% used, on an even pace'
         },
-        even: 'Spending as fast as the window gives back.',
+        even: 'Using it as fast as it resets.',
         resets: 'Resets {{at}}',
         none: 'No limits reported yet.',
         notInstalled: 'Not installed on this machine.',
-        noSubscription: 'This account uses an API key, which has no plan limits.',
-        unreachable: 'The CLI could not be reached.',
-        filter: 'Accounts to show limits of',
+        noSubscription: 'API key, no plan limits.',
+        unreachable: 'Could not check the limits.',
+        filter: 'Accounts shown',
         signedOut: 'Not logged in',
-        signedOutDetail: 'Not logged in. Log in to see its limits.',
+        signedOutDetail: 'Not logged in. Log in to see limits.',
         logIn: 'Log in',
         nextReset: '{{window}} resets {{at}}',
         checked: {
@@ -35,8 +34,8 @@ export default {
         currency: {
             label: 'Currency',
             dollars: 'Prices as published, in dollars.',
-            noRate: 'No exchange rate yet. The page shows dollars until there is one.',
-            converted: 'Converted at the ECB reference rate of {{date}}.',
+            noRate: 'No exchange rate yet. Showing dollars.',
+            converted: 'Converted at the ECB rate of {{date}}.',
             options: {
                 USD: 'Dollars',
                 EUR: 'Euros'
@@ -50,7 +49,7 @@ export default {
     },
     section: {
         label: 'Usage',
-        description: 'The currency of the usage page.'
+        description: 'Currency of the usage page.'
     },
     dialog: {
         title: 'Usage',
@@ -59,7 +58,7 @@ export default {
         rescan: 'Scan again',
         period: 'Period',
         metric: 'Metric',
-        failed: 'Usage failed to render',
+        failed: 'Could not show usage',
         periods: {
             today: 'Today',
             '7d': '7 days',
@@ -76,20 +75,20 @@ export default {
         }
     },
     empty: {
-        noTranscripts: 'No Claude or Codex transcripts found. The machine reads ~/.claude/projects and ~/.codex/sessions.',
-        noUsage: 'No usage on this machine yet.'
+        noTranscripts: 'No Claude or Codex chats found on this machine yet.',
+        noUsage: 'No usage yet.'
     },
     agents: {
-        none: 'This machine has no agent CLI installed.',
-        installed: 'This machine has {{list}}.',
-        settings: 'Agents settings'
+        none: 'No agent CLI installed.',
+        installed: 'Installed: {{list}}.',
+        settings: 'Agent settings'
     },
     provenance: {
-        failed: 'Could not read the transcripts. Showing the last successful scan.',
+        failed: 'Could not read the latest usage. Showing the last results.',
         scanned_one: 'Scanned {{time}}, {{files}} file',
         scanned_other: 'Scanned {{time}}, {{files}} files',
-        bundledPrices: 'Prices from the bundled table',
-        fetchedPrices: 'Prices from LiteLLM, {{date}}',
+        bundledPrices: 'Built-in prices',
+        fetchedPrices: 'Prices of {{date}}',
         rate: '{{currency}} at the ECB rate of {{date}}'
     },
     summary: {
@@ -126,7 +125,7 @@ export default {
             cost: 'Cost',
             share: 'Share',
             pricedAs: 'Priced as {{model}}',
-            noPrice: 'No price known for this model'
+            noPrice: 'No known price'
         },
         days: {
             day: 'Day',

@@ -2,16 +2,16 @@ export default {
     transport: {
         notConnected: 'De agents zijn niet bereikbaar',
         closedBeforeAnswer: 'De verbinding met de agents sloot voordat ze antwoordden',
-        badReply: 'Het antwoord op {{type}} past niet bij het contract',
-        notSent: 'Het verzoek {{type}} kon niet naar de agents worden gestuurd'
+        badReply: 'Kon het antwoord van de machine niet lezen',
+        notSent: 'Kon de agents niet bereiken. Probeer het opnieuw.'
     },
     attachments: {
         rejected: {
-            empty: 'Het bestand is leeg',
+            empty: 'Leeg bestand',
             tooLarge: 'Groter dan {{size}}',
             tooMany_one: 'Hoogstens {{count}} bestand per bericht',
             tooMany_other: 'Hoogstens {{count}} bestanden per bericht',
-            tooHeavy: 'Bijlagen mogen samen hoogstens {{size}} per bericht wegen'
+            tooHeavy: 'Hoogstens {{size}} in totaal per bericht'
         },
         unreadable: 'Kon {{name}} niet lezen',
         unreadableThumbnail: 'Kon de miniatuur niet lezen'
@@ -24,10 +24,10 @@ export default {
     fork: {
         refusal: {
             notInConversation: 'Deze turn zit niet in het gesprek',
-            cliCannotFork: 'Deze CLI heeft geen gesprek dat je kunt forken',
-            noConversation: 'De CLI is hier nooit een gesprek begonnen',
+            cliCannotFork: 'Deze agent kan zijn gesprek niet forken',
+            noConversation: 'Nog niets om te forken. Stuur eerst een bericht.',
             turnRunning: 'Wacht tot de turn klaar is',
-            originalGone: 'Het origineel zit niet meer in dit project'
+            originalGone: 'Origineel niet meer in dit project'
         },
         point: {
             afterLast: 'Na de laatste turn',
@@ -37,7 +37,7 @@ export default {
         },
         branch: {
             unnamed: 'Geef de branch een naam',
-            taken: 'Er bestaat al een branch met deze naam'
+            taken: 'Naam al in gebruik'
         },
         pill: {
             label: 'Fork'
@@ -49,8 +49,8 @@ export default {
         keep: 'Hele geschiedenis houden',
         compact: 'Comprimeren',
         cacheExpired: {
-            title: 'Promptcache verlopen',
-            carried: 'Het volgende bericht leest {{tokens}} tokens opnieuw helemaal in'
+            title: 'Cache verlopen',
+            carried: 'Het volgende bericht kost {{tokens}} tokens tegen de volle prijs'
         }
     },
     goal: {
@@ -71,7 +71,7 @@ export default {
         pause: 'Pauzeren',
         resume: 'Hervatten',
         clear: 'Wissen',
-        failed: 'Het doel kon niet worden gewijzigd'
+        failed: 'Kon het doel niet wijzigen'
     },
     limit: {
         usage: {
@@ -80,20 +80,20 @@ export default {
             pillResumes: 'Verder om {{time}}',
             title: 'Gestopt op een verbruikslimiet',
             resets: 'De limiet reset om {{time}}.',
-            resumes: 'Gaat om {{time}} vanzelf verder, als de limiet reset.'
+            resumes: 'Gaat verder om {{time}}.'
         },
         overload: {
             pill: 'Overbelast',
             pillRetry: 'Opnieuw om {{time}}',
-            title: 'Het model was overbelast',
+            title: 'Model overbelast',
             sendAgain: 'Stuur een bericht om het opnieuw te proberen.',
-            retries: 'Probeert het om {{time}} vanzelf opnieuw.'
+            retries: 'Probeert opnieuw om {{time}}.'
         },
         toggle: 'Verder na reset',
         machineOff: 'Uitgezet voor deze machine. Zet het aan in Instellingen, Agents.',
         continueOn: 'Verder op',
         continueOnAria: 'Verder op {{account}}',
-        continueOnTip: 'Gaat verder onder {{account}}, dat de meeste ruimte over heeft. De onderbroken turn wordt opnieuw verstuurd.',
+        continueOnTip: 'Wisselt naar {{account}}, dat de meeste ruimte over heeft, en verstuurt de turn opnieuw.',
         continueFailed: 'Kon niet verder op {{account}}'
     },
     contextMeter: {
@@ -116,7 +116,7 @@ export default {
             heading: 'Jij',
             showAll: 'Alles tonen',
             showLess: 'Minder tonen',
-            quoteGone: 'Het antwoord waar dit citaat vandaan kwam, staat niet meer in deze chat.'
+            quoteGone: 'Geciteerd antwoord staat niet meer in deze chat.'
         },
         report: {
             heading: 'Rapport'
@@ -158,7 +158,7 @@ export default {
             doneIn: 'klaar in {{duration}}',
             failedIn: 'mislukt na {{duration}}',
             nothingYet: 'Nog niets te zien.',
-            truncated: 'Alleen het begin van het werk van deze agent is bewaard.',
+            truncated: 'Alleen het begin is bewaard.',
             showResult: 'Resultaat tonen',
             hideResult: 'Resultaat verbergen'
         },
@@ -176,7 +176,7 @@ export default {
             notStarted: 'nog niet begonnen',
             waiting: 'wacht',
             stopped: 'gestopt',
-            stalled: 'Vijf minuten geen voortgang gemeld. De workflow loopt nog; je kunt hem stoppen.'
+            stalled: 'Vijf minuten geen voortgang. Hij loopt nog, en je kunt hem stoppen.'
         }
     },
     work: {
@@ -188,18 +188,18 @@ export default {
         diffUnavailable: 'Deze diff kon niet worden geladen',
         runningFor: 'loopt al {{elapsed}}',
         awaitingApproval: 'wacht op jou',
-        forksAfter_one: 'Een fork gaat verder na deze turn',
-        forksAfter_other: '{{count}} forks gaan verder na deze turn',
+        forksAfter_one: 'Fork na deze turn',
+        forksAfter_other: '{{count}} forks na deze turn',
         omitted: {
             binary: 'Binair bestand, geen diff',
             tooLarge: 'Te groot om te tonen'
         },
         changedFiles_one: '{{count}} gewijzigd bestand',
         changedFiles_other: '{{count}} gewijzigde bestanden',
-        folderChanges_one: '{{count}} wijziging in de map tijdens deze beurt',
-        folderChanges_other: '{{count}} wijzigingen in de map tijdens deze beurt',
-        baseMoved: 'De branch is tijdens deze beurt verplaatst ({{from}} naar {{to}}), dus dit omvat ook wat daarmee binnenkwam.',
-        andMore: 'en meer, afgekapt',
+        folderChanges_one: '{{count}} mapwijziging tijdens deze beurt',
+        folderChanges_other: '{{count}} mapwijzigingen tijdens deze beurt',
+        baseMoved: 'Branch verplaatst tijdens deze beurt ({{from}} naar {{to}}). Inclusief wat daarmee binnenkwam.',
+        andMore: 'en meer',
         edits_one: '{{count}} bewerking',
         edits_other: '{{count}} bewerkingen',
         workingFor: 'Werkt al',
@@ -217,14 +217,14 @@ export default {
             night: 'Nog wakker?'
         },
         empty: {
-            ready: '{{model}} staat klaar. Vraag maar raak.',
+            ready: '{{model}} staat klaar.',
             ask: 'Vraag maar raak.',
             canRead: 'Kan lezen',
             worksIn: 'Werkt in'
         },
         loadingEarlier: 'Eerdere berichten laden',
-        stripFailed: 'De berichtenstrip kon niet worden getekend',
-        cardFailed: 'Deze kaart kon niet worden getekend',
+        stripFailed: 'Kon de berichten niet tonen',
+        cardFailed: 'Kon deze kaart niet tonen',
         actions: {
             label: 'Berichtacties',
             copied: 'Gekopieerd'
@@ -287,7 +287,7 @@ export default {
         worked: 'Gewerkt, {{duration}}'
     },
     composer: {
-        slotFailed: 'Dit onderdeel kon niet worden getekend',
+        slotFailed: 'Kon dit onderdeel niet tonen',
         inputLabel: 'Bericht',
         menu: {
             commands: "Commando's",
@@ -295,15 +295,15 @@ export default {
             mentions: 'Vermeldingen'
         },
         held: {
-            question: 'Er wacht een vraag. Die opent zodra je even stopt met typen.',
-            approval: 'Er wacht een goedkeuring. Die opent zodra je even stopt met typen.',
+            question: 'Er wacht een vraag. Opent zodra je stopt met typen.',
+            approval: 'Er wacht een goedkeuring. Opent zodra je stopt met typen.',
             show: 'Nu tonen'
         },
         commands: {
             model: 'Wissel van model',
             compact: 'Comprimeer de context',
             clear: 'Begin een nieuwe context',
-            goal: 'Werk aan een doel tot het bereikt is',
+            goal: 'Werk tot een doel is bereikt',
             skill: 'Skill',
             cli: '{{cli}}-commando',
             anyCli: 'CLI'
@@ -313,16 +313,16 @@ export default {
             effortHighest: '{{effort}} is het hoogste denkniveau van {{model}}',
             effortLowest: '{{effort}} is het laagste denkniveau van {{model}}',
             noEffort: '{{model}} heeft geen denkniveau',
-            clearFailed: 'De thread kon niet worden gewist',
-            stashChatsDropped_one: '1 bijgevoegde chat hoort niet bij dit project en is weggelaten',
-            stashChatsDropped_other: '{{count}} bijgevoegde chats horen niet bij dit project en zijn weggelaten',
-            compactFailed: 'De context kon niet worden gecomprimeerd',
+            clearFailed: 'Kon de thread niet wissen',
+            stashChatsDropped_one: '1 chat uit een ander project weggelaten',
+            stashChatsDropped_other: '{{count}} chats uit andere projecten weggelaten',
+            compactFailed: 'Kon de context niet comprimeren',
             noAttachments: '{{agent}} neemt geen bijlagen aan',
             thisAgent: 'Deze agent',
             rejected: '{{name}}: {{reason}}',
             queuedDoesNotFit: '{{name}} past niet naast dit concept ({{reason}}). Het bericht blijft in de wachtrij.',
             thatFile: 'Dat bestand',
-            unreadable: 'Dat bestand kon niet worden gelezen'
+            unreadable: 'Kon dat bestand niet lezen'
         },
         placeholder: {
             disconnected: 'Niet verbonden met de machine',
@@ -344,10 +344,10 @@ export default {
         queue: {
             attachments_one: '{{count}} bijlage',
             attachments_other: '{{count}} bijlagen',
-            alreadySent: 'Dat bericht was al verstuurd',
-            editFailed: 'Het bericht kon niet worden teruggehaald om te bewerken',
+            alreadySent: 'Al verstuurd',
+            editFailed: 'Kon het bericht niet bewerken',
             sendNow: 'Nu versturen',
-            paused: 'Wachtrij gepauzeerd. Verstuur een bericht of kies Nu versturen om verder te gaan.'
+            paused: 'Wachtrij gepauzeerd. Verstuur een bericht of kies Nu versturen.'
         },
         quote: {
             add: 'Citeren',
@@ -357,19 +357,19 @@ export default {
         removeAttachment: '{{name}} verwijderen',
         attach: 'Bestanden toevoegen',
         tooLong: 'tekens, te lang om te versturen',
-        stop: 'Stoppen, Shift-klik stopt ook de sub-agents',
+        stop: 'Stoppen. Shift-klik stopt ook de sub-agents',
         queueButton: 'In de wachtrij zetten',
         continue: 'Doorgaan',
-        continueHint: 'Ga verder waar de gestopte beurt ophield',
+        continueHint: 'Ga verder met de gestopte beurt',
         send: 'Versturen',
         clear: {
             title: 'Thread wissen?',
-            description: 'Er loopt een turn. Die stoppen en de thread wissen?',
+            description: 'Er loopt een turn.',
             confirm: 'Stoppen en wissen'
         },
-        waitingBelow: 'Wacht hieronder op je antwoord',
-        steerButton: 'Stuur naar de werkende agent. Houd Option of Alt ingedrukt om te wachten tot deze beurt klaar is.',
-        queueWithSteerButton: 'Wacht tot deze beurt klaar is. Houd Option of Alt ingedrukt om naar de werkende agent te sturen.'
+        waitingBelow: 'Antwoord hieronder',
+        steerButton: 'Nu versturen. Houd Option of Alt ingedrukt om in de wachtrij te zetten.',
+        queueWithSteerButton: 'In de wachtrij na deze beurt. Houd Option of Alt ingedrukt om nu te versturen.'
     },
     activity: {
         subagents_one: '{{count}} sub-agent',
@@ -390,23 +390,23 @@ export default {
         shell: 'Shell',
         monitor: 'Monitor',
         stop: 'Stoppen',
-        stopFailed: 'De taak kon niet worden gestopt'
+        stopFailed: 'Kon de taak niet stoppen'
     },
     subagents: {
         stop: {
-            task: 'Deze taak stoppen',
-            native: 'Deze sub-agent stoppen',
-            mark: 'Markeren als gestopt. De CLI kan een losse sub-agent niet stoppen, dus die werkt mogelijk door tot het proces van de chat eindigt.'
+            task: 'Taak stoppen',
+            native: 'Sub-agent stoppen',
+            mark: 'Markeren als gestopt. Hij werkt mogelijk door tot de chat stopt.'
         },
-        stale: 'Deze sub-agent hoort bij een proces dat al gestopt is.',
+        stale: 'Deze sub-agent draait niet meer.',
         title: 'Sub-agents',
         backToMain: 'Terug naar de main agent',
         loading: 'Gesprek laden…',
         working: 'Bezig…',
-        unsupported: 'Deze machine kan het gesprek van een sub-agent niet openen. Werk Ruimte daar bij om het te lezen.',
-        unreadable: 'Het gesprek kon niet worden gelezen.',
+        unsupported: 'Werk Ruimte op deze machine bij om sub-agents te lezen.',
+        unreadable: 'Kon het gesprek niet lezen.',
         noAnswer: 'De machine antwoordde niet',
-        stopFailed: 'De sub-agent kon niet worden gestopt',
+        stopFailed: 'Kon de sub-agent niet stoppen',
         info: {
             label: 'Over deze sub-agent',
             tokens: '{{tokens}} tokens'
@@ -425,7 +425,7 @@ export default {
         },
         auto: {
             label: 'Automatisch',
-            hint: 'De agent beoordeelt routineklussen zelf',
+            hint: 'Beoordeelt routineklussen zelf',
             short: 'Automatisch'
         },
         'full-access': {
@@ -471,11 +471,11 @@ export default {
             label: 'Account',
             manage: 'Accounts beheren…',
             resets: 'reset om {{time}}',
-            forkToSwitch: 'Dit gesprek staat in een andere map dan {{account}} leest. Fork de chat om verder te gaan onder {{account}}.'
+            forkToSwitch: '{{account}} kan dit gesprek niet openen. Fork de chat om verder te gaan op {{account}}.'
         }
     },
     scrubber: {
-        strip: 'Berichten in deze thread',
+        strip: 'Berichten',
         tasks: 'Taken'
     },
     bookmarks: {
@@ -485,23 +485,23 @@ export default {
         remove: 'Bladwijzer verwijderen',
         unnamed: 'Bladwijzer',
         nameLabel: 'Naam van de bladwijzer',
-        namePlaceholder: 'Geef een naam, of laat het leeg',
+        namePlaceholder: 'Optioneel',
         removed: 'Bladwijzer verwijderd',
-        addFailed: 'De bladwijzer kon niet worden geplaatst',
-        renameFailed: 'De bladwijzer kon niet worden hernoemd',
-        removeFailed: 'De bladwijzer kon niet worden verwijderd'
+        addFailed: 'Kon de bladwijzer niet toevoegen',
+        renameFailed: 'Kon de bladwijzer niet hernoemen',
+        removeFailed: 'Kon de bladwijzer niet verwijderen'
     },
     visuals: {
         actions: 'Acties voor {{title}}',
         expand: 'Groot openen',
         more: 'Meer acties',
         remove: 'Visualisatie verwijderen',
-        removeTitle: 'Deze visualisatie verwijderen?',
+        removeTitle: 'Visualisatie verwijderen?',
         removeDescription: '{{title}} wordt uit de chat verwijderd. Dit kan niet ongedaan worden gemaakt.',
-        removeFailed: 'De visualisatie kon niet worden verwijderd',
+        removeFailed: 'Kon de visualisatie niet verwijderen',
         loading: '{{title}} wordt geladen',
-        failed: '{{title}} kon niet worden geladen',
-        renderFailed: 'Deze visualisatie kon niet worden getekend'
+        failed: 'Kon {{title}} niet laden',
+        renderFailed: 'Kon deze visualisatie niet tonen'
     },
     image: {
         zoomIn: 'Inzoomen',
@@ -511,10 +511,10 @@ export default {
     generatedImage: {
         label: 'Gegenereerde afbeelding',
         generating: 'Afbeelding wordt gemaakt',
-        failed: 'Afbeelding maken mislukt',
-        empty: 'De afbeelding kwam leeg terug',
-        notImage: 'Het resultaat is geen afbeelding',
-        tooLarge: 'De afbeelding is groter dan {{size}}',
+        failed: 'Kon de afbeelding niet maken',
+        empty: 'Afbeelding is leeg',
+        notImage: 'Geen afbeelding',
+        tooLarge: 'Groter dan {{size}}',
         dimensions: '{{width}} × {{height}}',
         transparent: 'transparant',
         actions: 'Acties voor de afbeelding',
@@ -525,7 +525,7 @@ export default {
         save: 'Opslaan in project…',
         saved: 'Opgeslagen',
         savedTo: 'Opgeslagen in <file>{{path}}</file>',
-        renderFailed: 'Deze afbeelding kon niet worden getoond'
+        renderFailed: 'Kon deze afbeelding niet tonen'
     },
     account: {
         pill: '{{provider}}-account {{account}}'
@@ -551,13 +551,13 @@ export default {
     },
     code: {
         actions: 'Codeacties',
-        copyFailed: 'De code kon niet worden gekopieerd. Probeer het opnieuw.',
+        copyFailed: 'Kon de code niet kopiëren.',
         mermaid: {
             diagram: 'Diagram',
             showSource: 'Bron tonen',
             showDiagram: 'Diagram tonen',
-            failed: 'Dit diagram kon niet worden getekend, dit is de bron.',
-            crashed: 'Dit diagram kon niet worden weergegeven'
+            failed: 'Kon het diagram niet tonen. Dit is de bron.',
+            crashed: 'Kon dit diagram niet tonen'
         }
     },
     blocks: {
@@ -594,10 +594,10 @@ export default {
             values: 'Waarden',
             summary: '{{count}} waarden, hoogste {{label}} met {{value}}',
             summarySeries: '{{count}} categorieën, hoogste {{series}} bij {{label}} met {{value}}',
-            rowsLeftOut: 'De eerste {{shown}} van {{total}} rijen zijn getekend.',
-            seriesLeftOut_one: '{{series}} is niet getekend.',
-            seriesLeftOut_other: '{{series}} zijn niet getekend.',
-            sideBySide: 'Negatieve waarden kunnen niet gestapeld worden, dus de reeksen staan naast elkaar.',
+            rowsLeftOut: '{{shown}} van {{total}} rijen getoond.',
+            seriesLeftOut_one: '{{series}} niet getoond.',
+            seriesLeftOut_other: '{{series}} niet getoond.',
+            sideBySide: 'Negatieve waarden kunnen niet stapelen. Reeksen staan naast elkaar.',
             showValues: 'Alle waarden tonen',
             hideValues: 'Waarden verbergen'
         },
@@ -608,11 +608,11 @@ export default {
         map: {
             label_one: 'Kaart met {{count}} plek',
             label_other: 'Kaart met {{count}} plekken',
-            omitted_one: '{{count}} plek meer wordt niet getoond',
-            omitted_other: '{{count}} plekken meer worden niet getoond',
+            omitted_one: '{{count}} plek meer niet getoond',
+            omitted_other: '{{count}} plekken meer niet getoond',
             show: 'Kaart tonen',
-            waiting: 'De kaart wacht op een vrije plek: er worden maar een paar kaarten tegelijk getekend.',
-            contextLost: 'De kaart is zijn beeldgeheugen kwijt. De plekken blijven in de lijst.',
+            waiting: 'Wacht om de kaart te tekenen. Er staan maar een paar kaarten tegelijk.',
+            contextLost: 'Kon de kaart niet tonen. De plekken blijven in de lijst.',
             lookingUp: 'Wordt opgezocht',
             notFound: 'Niet op de kaart',
             zoomIn: 'Inzoomen',
@@ -620,25 +620,25 @@ export default {
             showAll: 'Alle plekken tonen',
             scrollHint: 'Houd ⌘ of Ctrl ingedrukt en scrol om te zoomen',
             touchHint: 'Gebruik twee vingers om de kaart te bewegen',
-            offline: 'Kaarttegels zijn offline niet beschikbaar. De plekken blijven in de lijst.',
+            offline: 'Geen kaarttegels offline. De plekken blijven in de lijst.',
             disabled: 'Kaarttegels staan uit.',
             signedOut: 'Log in om kaarttegels te tonen.',
-            unavailable: 'Kaarttegels zijn nu niet beschikbaar.'
+            unavailable: 'Kaarttegels niet beschikbaar.'
         },
         compare: {
             label: 'Vergelijk {{before}} en {{after}}',
             before: 'Voor',
             after: 'Na',
-            missing: 'Eén afbeelding is niet beschikbaar'
+            missing: 'Eén afbeelding ontbreekt'
         },
         image: {
             label: 'Afbeelding',
-            unavailable: 'De afbeelding is niet beschikbaar'
+            unavailable: 'Afbeelding niet beschikbaar'
         },
         model: {
             label: '3D-model',
-            unavailable: 'Het model is niet beschikbaar',
-            crashed: 'Dit model kon niet worden getekend'
+            unavailable: 'Model niet beschikbaar',
+            crashed: 'Kon dit model niet tonen'
         },
         sources: 'Bronnen',
         citation: 'Bron {{number}}: {{title}}',
@@ -665,8 +665,8 @@ export default {
         notes_other: '{{count}} opmerkingen',
         shownAsText: 'Als tekst getoond',
         unknownComponent: 'Deze versie kan {{component}} niet tekenen',
-        renderFailed: 'Dit deel kon niet getekend worden',
-        unreadable: 'Het blok kon niet gelezen worden',
+        renderFailed: 'Kon dit deel niet tonen',
+        unreadable: 'Kon het blok niet lezen',
         live: {
             label: 'Live',
             read: 'gelezen {{time}}',
@@ -675,23 +675,23 @@ export default {
             refused: 'Geen toegang tot {{source}}',
             notRead: 'Niet gelezen',
             reasons: {
-                'access-unavailable': 'De toegang van de chat die dit schreef is niet meer beschikbaar.',
+                'access-unavailable': 'De chat die dit maakte heeft geen toegang meer.',
                 'block-stale': 'Dit blok is veranderd sinds het getekend werd.',
-                busy: 'Er lezen nu te veel live blokken tegelijk.',
+                busy: 'Er lezen te veel live blokken tegelijk.',
                 'link-unchecked': 'Deze link moet opnieuw gecontroleerd worden.',
-                'link-unsupported': 'Dit is geen link die de machine kan openen.',
+                'link-unsupported': 'De machine kan deze link niet openen.',
                 'links-unsupported': 'De machine opent geen links uit blokken.',
-                'no-unique-match': 'De bron vond voor die naam niet precies één overeenkomst.',
-                'outside-project': 'Dit valt buiten het project waarin de agent dit schreef.',
+                'no-unique-match': 'Geen eenduidige overeenkomst voor die naam.',
+                'outside-project': 'Buiten het project van de agent.',
                 'query-undeclared': 'Dit blok leest die bron niet.',
                 'refresh-limit': 'Deze bron leest hooguit eens per tien seconden.',
-                'result-too-large': 'Wat de bron teruggaf is te groot.',
+                'result-too-large': 'Resultaat te groot.',
                 'snapshot-too-large': 'De eerste metingen waren te groot om te bewaren.',
                 'source-unregistered': 'De machine kent deze bron niet.',
                 'stale-read': 'Lees de bron opnieuw voordat je kiest.',
-                'target-unavailable': 'Waar dit naar verwijst is niet meer beschikbaar.',
-                'timed-out': 'De bron deed er te lang over om te antwoorden.',
-                unreadable: 'De bron kon niet gelezen worden.'
+                'target-unavailable': 'Doel niet meer beschikbaar.',
+                'timed-out': 'Bron reageerde te traag.',
+                unreadable: 'Kon de bron niet lezen.'
             }
         }
     },
@@ -699,11 +699,11 @@ export default {
         label: 'Leesbreedte',
         narrow: {
             label: 'Smal',
-            hint: 'Een korte regel die makkelijk te volgen is.'
+            hint: 'Korte, makkelijke regels.'
         },
         comfortable: {
             label: 'Comfortabel',
-            hint: 'Een regel van ongeveer 90 tekens.'
+            hint: 'Ongeveer 90 tekens per regel.'
         },
         full: {
             label: 'Volledig',
@@ -718,7 +718,7 @@ export default {
         },
         'mod-enter-multiline': {
             label: 'Enter, {{mod}}+Enter bij meer regels',
-            hint: 'Enter verstuurt een bericht van één regel. Heeft het meer regels, dan voegt Enter een regel toe en verstuurt {{mod}}+Enter.'
+            hint: 'Enter verstuurt één regel. Met meer regels voegt Enter een regel toe en verstuurt {{mod}}+Enter.'
         },
         'mod-enter': {
             label: '{{mod}}+Enter',

@@ -134,7 +134,7 @@ describe('the shape of a fork', () => {
     test('a summary waits for the fork to end its turn and needs its original', () => {
         expect(summaryRefusal({ busy: false, originalPresent: true })).toBeNull();
         expect(summaryRefusal({ busy: true, originalPresent: true })).toBe('Wait for the turn to end');
-        expect(summaryRefusal({ busy: true, originalPresent: false })).toBe('The original is no longer in this project');
+        expect(summaryRefusal({ busy: true, originalPresent: false })).toBe('Original no longer in this project');
     });
 
     test('the forks after a turn are found among the chats this client knows', () => {
@@ -153,7 +153,7 @@ describe('the shape of a fork', () => {
 
     test('a branch has to be named and free', () => {
         expect(branchRefusal(' ', ['main'])).toBe('Name the branch');
-        expect(branchRefusal('main ', ['main'])).toBe('A branch with this name exists already');
+        expect(branchRefusal('main ', ['main'])).toBe('Name already taken');
         expect(branchRefusal('lexer-fork', ['main'])).toBeNull();
     });
 });
