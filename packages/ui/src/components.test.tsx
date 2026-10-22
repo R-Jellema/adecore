@@ -435,7 +435,7 @@ describe('an icon picker', () => {
         expect(markup.match(/role="group"/g)).toHaveLength(2);
         expect(markup).toMatch(/role="group" aria-labelledby="([^"]+)"[\s\S]*?<span id="\1"[^>]*>Code<\/span><span[^>]*>2<\/span>/);
         expect(markup).toMatch(/<span id="[^"]+"[^>]*>Infrastructure<\/span><span[^>]*>3<\/span>/);
-        expect(markup).toContain('placeholder="Find an icon"');
+        expect(markup).toContain('placeholder="Search icons"');
         expect(markup).toContain('sticky top-0');
         expect(markup.indexOf('<input')).toBeLessThan(markup.indexOf('role="radiogroup"'));
     });

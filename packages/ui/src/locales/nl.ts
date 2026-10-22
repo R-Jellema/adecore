@@ -17,11 +17,11 @@ export default {
         section: 'Onderdeel van de instellingen',
         sections: 'Onderdelen van de instellingen',
         close: 'Instellingen sluiten',
-        failed: 'Deze instellingenpagina kon niet worden getekend',
+        failed: 'Kon deze instellingenpagina niet tonen',
         search: {
             placeholder: 'Instellingen zoeken',
             clear: 'Zoekopdracht wissen',
-            none: 'Niets komt overeen met "{{query}}".',
+            none: 'Geen resultaten voor “{{query}}”',
             results: 'Zoekresultaten',
             pane: 'Onderdeel'
         }
@@ -36,12 +36,12 @@ export default {
     },
     select: {
         search: 'Zoeken',
-        noMatch: 'Geen optie past bij “{{query}}”'
+        noMatch: 'Geen resultaat voor “{{query}}”'
     },
     iconPicker: {
         label: 'Icoon',
         none: 'Geen icoon',
-        search: 'Zoek een icoon',
+        search: 'Iconen zoeken',
         clear: 'Zoekopdracht wissen',
         noMatch: 'Geen icoon past bij “{{query}}”'
     },

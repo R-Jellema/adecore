@@ -10,7 +10,7 @@ import { Icon } from './Icon.tsx';
 import { IconButton } from './IconButton.tsx';
 
 export interface ErrorBoundaryProps {
-    /* What failed, as the first line of the message: "This view failed to render". */
+    /* What failed, as the first line of the message: "Could not show this view". */
     label: string;
     /* What the children draw from; the boundary tries again when one of them changes. */
     resetKeys?: ResetKeys;

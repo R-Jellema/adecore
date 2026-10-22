@@ -17,11 +17,11 @@ export default {
         section: 'Settings section',
         sections: 'Settings sections',
         close: 'Close settings',
-        failed: 'This settings page failed to render',
+        failed: 'Could not show this settings page',
         search: {
             placeholder: 'Search settings',
             clear: 'Clear search',
-            none: 'Nothing matches "{{query}}".',
+            none: 'No results for “{{query}}”',
             results: 'Search results',
             pane: 'Section'
         }
@@ -36,12 +36,12 @@ export default {
     },
     select: {
         search: 'Search',
-        noMatch: 'No option matches “{{query}}”'
+        noMatch: 'No match for “{{query}}”'
     },
     iconPicker: {
         label: 'Icon',
         none: 'No icon',
-        search: 'Find an icon',
+        search: 'Search icons',
         clear: 'Clear search',
         noMatch: 'No icon matches “{{query}}”'
     },
