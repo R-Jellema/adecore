@@ -2,7 +2,7 @@ import { mkdtemp, mkdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test';
-import { discoverSkills, parseFrontmatter, pluginSkillRoots, scanSkillRoots, SkillIndex } from './skills.ts';
+import { discoverSkills, mapLimited, parseFrontmatter, pluginSkillRoots, scanSkillRoots, SkillIndex, whileBusy } from './skills.ts';
 
 let home = '';
 let project = '';
@@ -114,15 +114,53 @@ describe('a bounded scan', () => {
         expect(names(await scanSkillRoots([{ dir: root, source: 'project', depth: 5 }]))).toEqual(['build', 'helper']);
     });
 
-    test('reads a root that a link leads to once, under the root that came first', async () => {
+    test('reads a root that a link leads to under every root, each by its own name', async () => {
         const root = join(tree, 'shared');
         await writeSkill(root, 'review', skill('review'));
         await symlink(root, join(tree, 'shared-link'));
         const skills = await scanSkillRoots([
             { dir: root, source: 'user' },
-            { dir: join(tree, 'shared-link'), source: 'plugin', prefix: 'linked' }
+            { dir: join(tree, 'shared-link'), source: 'plugin', prefix: 'linked' },
+            { dir: join(tree, 'shared-link'), source: 'project' }
         ]);
-        expect(skills).toEqual([{ name: 'review', description: 'review.', source: 'user' }]);
+        expect(skills).toEqual([
+            { name: 'linked:review', description: 'review.', source: 'plugin' },
+            { name: 'review', description: 'review.', source: 'user' }
+        ]);
+    });
+
+    test('shows a skill two plugins link in under each of them', async () => {
+        const shared = join(tree, 'plugin-shared');
+        await writeSkill(shared, 'lint', skill('lint'));
+        for (const plugin of ['one', 'two']) {
+            await mkdir(join(tree, 'plugins', plugin), { recursive: true });
+            await symlink(join(shared, 'lint'), join(tree, 'plugins', plugin, 'lint'));
+        }
+        const skills = await scanSkillRoots([
+            { dir: join(tree, 'plugins', 'one'), source: 'plugin', prefix: 'one' },
+            { dir: join(tree, 'plugins', 'two'), source: 'plugin', prefix: 'two' }
+        ]);
+        expect(names(skills)).toEqual(['one:lint', 'two:lint']);
+    });
+
+    test('a folder one root passed by without reading it is still read by a root that leads there', async () => {
+        const root = join(tree, 'passed');
+        await writeSkill(join(root, 'node_modules'), 'bundled', skill('bundled'));
+        await writeSkill(join(root, 'edge', 'below'), 'deeper', skill('deeper'));
+        const skills = await scanSkillRoots([
+            { dir: root, source: 'project', depth: 2 },
+            { dir: join(root, 'node_modules'), source: 'user' },
+            { dir: join(root, 'edge', 'below'), source: 'user' }
+        ]);
+        expect(names(skills)).toEqual(['bundled', 'deeper']);
+    });
+
+    test('looks at a bounded number of entries in one folder, by name', async () => {
+        const root = join(tree, 'wide');
+        for (const name of ['alpha', 'beta', 'gamma']) {
+            await writeSkill(root, name, skill(name));
+        }
+        expect(names(await scanSkillRoots([{ dir: root, source: 'user' }], { directories: 10, skills: 10, entries: 2 }))).toEqual(['alpha', 'beta']);
     });
 
     test('ends a link back up the tree, which costs none of the folders a skill further on needs', async () => {
@@ -163,6 +201,55 @@ describe('a bounded scan', () => {
         const codexHome = join(tree, 'codex-home');
         await writeSkill(join(codexHome, '.codex', 'skills', 'team'), 'grouped', skill('grouped'));
         expect(names(await discoverSkills('codex', join(tree, 'nowhere'), { home: codexHome }))).toEqual(['grouped']);
+    });
+});
+
+describe('a scan short of file handles', () => {
+    const busy = () => Object.assign(new Error('too many open files'), { code: 'EMFILE' });
+    const noWait = async (): Promise<void> => {};
+
+    test('tries again while the process has too many files open', async () => {
+        let calls = 0;
+        const answer = await whileBusy(async () => {
+            calls++;
+            if (calls < 3) {
+                throw busy();
+            }
+            return 'read';
+        }, noWait);
+        expect(answer).toBe('read');
+        expect(calls).toBe(3);
+    });
+
+    test('reports a lack of file handles that lasts, and any other error at once', async () => {
+        let calls = 0;
+        const always = whileBusy(async () => {
+            calls++;
+            throw busy();
+        }, noWait);
+        await expect(always).rejects.toMatchObject({ code: 'EMFILE' });
+        expect(calls).toBe(4);
+        calls = 0;
+        const missing = whileBusy(async () => {
+            calls++;
+            throw Object.assign(new Error('missing'), { code: 'ENOENT' });
+        }, noWait);
+        await expect(missing).rejects.toMatchObject({ code: 'ENOENT' });
+        expect(calls).toBe(1);
+    });
+
+    test('runs at most so many at once and answers in order', async () => {
+        let running = 0;
+        let most = 0;
+        const doubled = await mapLimited([1, 2, 3, 4, 5, 6, 7], 3, async (value) => {
+            running++;
+            most = Math.max(most, running);
+            await Promise.resolve();
+            running--;
+            return value * 2;
+        });
+        expect(doubled).toEqual([2, 4, 6, 8, 10, 12, 14]);
+        expect(most).toBe(3);
     });
 });
 

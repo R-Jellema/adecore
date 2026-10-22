@@ -19,9 +19,20 @@ export interface SkillScanLimits {
     // Folders listed under one root, nearest first, so a deep tree never costs the skills near the top.
     directories: number;
     skills: number;
+    // Entries of one folder looked at, by name; absent is `ENTRIES_PER_FOLDER`.
+    entries?: number;
 }
 
 const SCAN_LIMITS: SkillScanLimits = { directories: 2000, skills: 1000 };
+
+const ENTRIES_PER_FOLDER = 1000;
+
+// Paths one folder resolves or reads at once, so a large folder never runs the process out of file handles.
+const SCAN_CONCURRENCY = 16;
+
+// A process short of file handles gets them back as other work closes its files, so a few short waits cover it.
+const BUSY_RETRIES = 3;
+const BUSY_RETRY_MS = 50;
 
 // Codex finds skills up to five folders below a root (`MAX_SCAN_DEPTH` of 6 in its skill loader counts the root itself).
 const CODEX_SKILL_DEPTH = 5;
@@ -169,12 +180,52 @@ export async function skillRootsFor(kind: AgentKind, cwd: string, options: Skill
     ];
 }
 
-/* The top of a folder's SKILL.md, or null when it has none. */
+/* Too many files open, in this process or on the system: it says nothing about the path that was asked for. */
+function isBusy(e: unknown): boolean {
+    return typeof e === 'object' && e !== null && 'code' in e && (e.code === 'EMFILE' || e.code === 'ENFILE');
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/* Runs `operation` again a few times while the process is short of file handles, and throws if it still is. */
+export async function whileBusy<T>(operation: () => Promise<T>, wait: (ms: number) => Promise<void> = sleep): Promise<T> {
+    for (let attempt = 1; ; attempt++) {
+        try {
+            return await operation();
+        } catch (e) {
+            if (!isBusy(e) || attempt > BUSY_RETRIES) {
+                throw e;
+            }
+            await wait(BUSY_RETRY_MS * attempt);
+        }
+    }
+}
+
+/* `work` over every item with at most `limit` running at once, answered in the order of `items`. */
+export async function mapLimited<T, R>(items: readonly T[], limit: number, work: (item: T) => Promise<R>): Promise<R[]> {
+    const results = new Array<R>(items.length);
+    let next = 0;
+    const worker = async (): Promise<void> => {
+        while (next < items.length) {
+            const index = next++;
+            results[index] = await work(items[index]!);
+        }
+    };
+    await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+    return results;
+}
+
+/* The top of a folder's SKILL.md, or null when it has none. A process short of file handles throws instead of finding none. */
 async function skillHead(folder: string): Promise<string | null> {
     let handle;
     try {
-        handle = await open(join(folder, 'SKILL.md'), 'r');
-    } catch {
+        handle = await whileBusy(() => open(join(folder, 'SKILL.md'), 'r'));
+    } catch (e) {
+        if (isBusy(e)) {
+            throw e;
+        }
         return null;
     }
     try {
@@ -204,25 +255,29 @@ function skillOf(root: SkillRoot, folder: string, text: string): ChatSkill | nul
 /* The folder a path leads to after every link, or null when it leads to no folder. */
 async function realFolder(path: string): Promise<string | null> {
     try {
-        const real = await realpath(path);
-        return (await stat(real)).isDirectory() ? real : null;
-    } catch {
+        const real = await whileBusy(() => realpath(path));
+        return (await whileBusy(() => stat(real))).isDirectory() ? real : null;
+    } catch (e) {
+        if (isBusy(e)) {
+            throw e;
+        }
         return null;
     }
 }
 
 /*
  * The skills under one root, nearest first, down to the root's depth. A folder with a SKILL.md is a skill and is not
- * searched further. `visited` holds every folder already read by its real path, across roots, so a root or a skill two
- * links lead to is read once and a link back up ends there.
+ * searched further. Each root keeps its own record of the folders it read or went into, by real path, so a link back
+ * up ends there, while a skill two plugins link in shows under each of them.
  */
-async function scanRoot(root: SkillRoot, visited: Set<string>, limits: SkillScanLimits): Promise<ChatSkill[]> {
+async function scanRoot(root: SkillRoot, limits: SkillScanLimits): Promise<ChatSkill[]> {
     const start = await realFolder(root.dir);
-    if (start === null || visited.has(start)) {
+    if (start === null) {
         return [];
     }
-    visited.add(start);
+    const visited = new Set([start]);
     const depth = root.depth ?? 1;
+    const entriesPerFolder = limits.entries ?? ENTRIES_PER_FOLDER;
     const skills: ChatSkill[] = [];
     let level = [root.dir];
     let listed = 0;
@@ -235,33 +290,39 @@ async function scanRoot(root: SkillRoot, visited: Set<string>, limits: SkillScan
             listed++;
             let entries: Dirent[];
             try {
-                entries = await readdir(folder, { withFileTypes: true });
-            } catch {
+                entries = await whileBusy(() => readdir(folder, { withFileTypes: true }));
+            } catch (e) {
+                if (isBusy(e)) {
+                    throw e;
+                }
                 continue;
             }
             // A skill manager links each skill in from a shared folder, so a link counts as much as a folder.
             const candidates = entries
                 .filter((entry) => (entry.isDirectory() || entry.isSymbolicLink()) && !entry.name.startsWith('.'))
                 .map((entry) => ({ name: entry.name, path: join(folder, entry.name) }))
-                .sort((a, b) => a.name.localeCompare(b.name));
-            const reals = await Promise.all(candidates.map((candidate) => realFolder(candidate.path)));
-            const fresh = candidates.filter((_, index) => {
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .slice(0, entriesPerFolder);
+            const reals = await mapLimited(candidates, SCAN_CONCURRENCY, (candidate) => realFolder(candidate.path));
+            const fresh = candidates.flatMap((candidate, index) => {
                 const real = reals[index];
-                if (real === null || real === undefined || visited.has(real)) {
-                    return false;
-                }
-                visited.add(real);
-                return true;
+                return real === null || real === undefined || visited.has(real) ? [] : [{ ...candidate, real }];
             });
-            const heads = await Promise.all(fresh.map((candidate) => skillHead(candidate.path)));
+            const heads = await mapLimited(fresh, SCAN_CONCURRENCY, (candidate) => skillHead(candidate.path));
             for (const [index, candidate] of fresh.entries()) {
+                // Two links in one folder can lead to the same place; the first one read it.
+                if (visited.has(candidate.real)) {
+                    continue;
+                }
                 const head = heads[index];
                 if (head !== null && head !== undefined) {
+                    visited.add(candidate.real);
                     const skill = skillOf(root, candidate.name, head);
                     if (skill !== null && skills.length < limits.skills) {
                         skills.push(skill);
                     }
                 } else if (below < depth && !DEPENDENCY_FOLDERS.has(candidate.name)) {
+                    visited.add(candidate.real);
                     next.push(candidate.path);
                 }
             }
@@ -274,12 +335,11 @@ async function scanRoot(root: SkillRoot, visited: Set<string>, limits: SkillScan
 /* Every skill under these roots, sorted by name; the first root that carries a name wins. */
 export async function scanSkillRoots(roots: SkillRoot[], limits: SkillScanLimits = SCAN_LIMITS): Promise<ChatSkill[]> {
     const found = new Map<string, ChatSkill>();
-    const visited = new Set<string>();
     for (const root of roots) {
         if (found.size >= limits.skills) {
             break;
         }
-        for (const skill of await scanRoot(root, visited, limits)) {
+        for (const skill of await scanRoot(root, limits)) {
             if (!found.has(skill.name) && found.size < limits.skills) {
                 found.set(skill.name, skill);
             }
