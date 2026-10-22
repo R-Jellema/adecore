@@ -88,7 +88,7 @@ function PhaseBlock({ phase, provider, onOpen }: { phase: WorkflowPhaseView; pro
     const { t } = useTranslation('agent-chat');
     const settled = phase.agents.filter((view) => view.state === 'done' || view.state === 'failed').length;
     return (
-        <div className="mt-1">
+        <div className="mt-3">
             {phase.title !== null && (
                 <div className="flex h-7 min-w-0 items-center gap-2 text-xs">
                     <span className="min-w-0 truncate font-medium text-text">{phase.title}</span>
@@ -193,7 +193,7 @@ export function WorkflowRow({
                 {running && chatId && workflow.taskId && <IconButton icon={Square} size="xs" label={t('activity.stop')} onClick={stop} />}
             </div>
             {open && opens && <ToolBody tool={tool} />}
-            <div className="ml-6">
+            <div className="mt-1.5 ml-6">
                 {workflow.name !== null && <div className="truncate text-sm font-medium text-text">{workflow.name}</div>}
                 {description !== null && <p className="mt-0.5 line-clamp-2 text-xs text-text-muted">{description}</p>}
                 {running && workflow.stalledAt !== undefined && (
