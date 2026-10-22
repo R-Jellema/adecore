@@ -423,6 +423,17 @@ describe('labels', () => {
         expect(summarizeGroup([tool('1', 'Write', { file_path: 'a' }), tool('2', 'Write', { file_path: 'b' })])).toBe('Wrote 2 files');
     });
 
+    test('an edit that failed or was refused counts as a call, never as a file edited', () => {
+        expect(summarizeTurn([tool('1', 'Write', { file_path: 'a' }, 'error')])).toEqual(['1 tool call']);
+        expect(summarizeTurn([tool('1', 'Edit', { file_path: 'a' }), tool('2', 'Write', { file_path: 'b' }, 'error')])).toEqual([
+            'Edited 1 file',
+            '1 other tool call'
+        ]);
+        expect(summarizeGroup([tool('1', 'Write', { file_path: 'a' }), tool('2', 'Write', { file_path: 'b' }, 'error')])).toBe('Edited 1 file');
+        expect(summarizeGroup([tool('1', 'Write', { file_path: 'a' }, 'error'), tool('2', 'Write', { file_path: 'b' }, 'error')])).toBe('Write 2 calls');
+        expect(summarizeGroup([tool('1', 'Edit', { file_path: 'a' }, 'error'), tool('2', 'Edit', { file_path: 'b' }, 'error')])).toBe('Edit 2 calls');
+    });
+
     test('turnLabel', () => {
         expect(turnLabel({ id: 't', kind: 'turn', createdAt: 0, turnId: 't', state: 'aborted', endedAt: 8000, costUsd: 0 })).toBe('You stopped after 8s');
         expect(turnLabel({ id: 't', kind: 'turn', createdAt: 0, turnId: 't', state: 'done', endedAt: 72_000, costUsd: 0 })).toBe('Worked for 1m 12s');

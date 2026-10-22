@@ -125,18 +125,24 @@ export function summarizeGroup(tools: ChatToolItem[], looks?: readonly CommandLo
     }
     const names = new Set(tools.map((tool) => tool.name));
     const only = names.size === 1 ? tools[0]!.name : null;
-    if (only !== null && toolEntry(only)?.grouped === true) {
+    const failed = tools.filter(failedFileChange);
+    if (only !== null && toolEntry(only)?.grouped === true && failed.length === 0) {
         return i18next.t(`agent-chat:group.tools.${only}`, { count: tools.length });
     }
     // Counts the files rather than the calls: three edits to one file are one file edited.
-    if (tools.every((tool) => isFileChange(tool.name))) {
-        const paths = new Set(tools.map(editedPath));
+    if (tools.every((tool) => isFileChange(tool.name)) && failed.length < tools.length) {
+        const paths = new Set(tools.filter((tool) => !failedFileChange(tool)).map(editedPath));
         return i18next.t('agent-chat:group.edited', { count: paths.size });
     }
     if (only !== null) {
         return i18next.t('agent-chat:group.calls', { name: only, count: tools.length });
     }
     return i18next.t('agent-chat:group.toolCalls', { count: tools.length });
+}
+
+/* A file change that failed or was refused changed nothing: it counts as a call, never as an edit. */
+function failedFileChange(tool: ChatToolItem): boolean {
+    return isFileChange(tool.name) && tool.state === 'error';
 }
 
 function editedPath(tool: ChatToolItem): string {
@@ -168,6 +174,8 @@ export function summarizeTurn(tools: readonly ChatToolItem[], looks?: readonly C
         if (run !== null && group !== undefined) {
             // Keyed by the program too, so two looks with a key in common keep their own sentences.
             add(`look:${run.look.program}:${group.key}`, group.sentence);
+        } else if (failedFileChange(tool)) {
+            other += 1;
         } else if (isFileChange(tool.name)) {
             edited.add(editedPath(tool));
             add('agent-chat:group.edited', (count) => i18next.t('agent-chat:group.edited', { count }), edited.size);
