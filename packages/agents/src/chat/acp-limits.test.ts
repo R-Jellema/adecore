@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import type { RuntimeMode } from '@adecore/agent-contracts';
+import type { AgentKind, RuntimeMode } from '@adecore/agent-contracts';
 import { fakeAcpCapture, type AcpCapture } from '../testing/fake-acp-capture.ts';
 import { inProcess } from '../testing/fake-cli.ts';
 import { createAcpBackend } from './acp-backend.ts';
@@ -12,14 +12,14 @@ const NOW = Date.UTC(2026, 9, 21, 12, 0, 0);
 const HOUR = 3_600_000;
 
 /* Runs one turn of a capture on the ACP backend and answers with every event up to its end. */
-async function turnOf(capture: AcpCapture, runtimeMode: RuntimeMode = 'supervised'): Promise<BackendEvent[]> {
+async function turnOf(capture: AcpCapture, runtimeMode: RuntimeMode = 'supervised', kind?: AgentKind): Promise<BackendEvent[]> {
     const events: BackendEvent[] = [];
     let settle: () => void = () => {};
     const done = new Promise<void>((resolve) => {
         settle = resolve;
     });
     const fake = inProcess(fakeAcpCapture(capture));
-    const backend = createAcpBackend({ name: 'Agent' })(
+    const backend = createAcpBackend({ name: 'Agent', ...(kind === undefined ? {} : { kind }) })(
         {
             command: ['agent'],
             cwd: '/tmp',
@@ -56,24 +56,31 @@ function turnDone(events: BackendEvent[]): Extract<BackendEvent, { type: 'turn.d
 
 describe('Grok 1.0.62', () => {
     const failing = (error: unknown): AcpCapture => ({ ...grokLimits, promptError: error });
+    const grokTurn = (capture: AcpCapture) => turnOf(capture, 'supervised', 'grok');
 
     test('ends a turn the free tier ran out on as a usage limit, with no reset since Grok names none', async () => {
-        const done = turnDone(await turnOf(failing(grokLimits.errors.freeUsage)));
+        const done = turnDone(await grokTurn(failing(grokLimits.errors.freeUsage)));
         expect(done).toMatchObject({ state: 'error', limit: { kind: 'usage' } });
         expect(done.limit?.resetsAt).toBeUndefined();
     });
 
     test('ends a rate limited turn as an overload, which the host tries again', async () => {
-        expect(turnDone(await turnOf(failing(grokLimits.errors.rateLimited)))).toMatchObject({ state: 'error', limit: { kind: 'overload' } });
+        expect(turnDone(await grokTurn(failing(grokLimits.errors.rateLimited)))).toMatchObject({ state: 'error', limit: { kind: 'overload' } });
     });
 
     test('ends a turn on an overloaded model as an overload, by its status or by the error of its stream', async () => {
-        expect(turnDone(await turnOf(failing(grokLimits.errors.overloaded)))).toMatchObject({ state: 'error', limit: { kind: 'overload' } });
-        expect(turnDone(await turnOf(failing(grokLimits.errors.overloadedStream)))).toMatchObject({ state: 'error', limit: { kind: 'overload' } });
+        expect(turnDone(await grokTurn(failing(grokLimits.errors.overloaded)))).toMatchObject({ state: 'error', limit: { kind: 'overload' } });
+        expect(turnDone(await grokTurn(failing(grokLimits.errors.overloadedStream)))).toMatchObject({ state: 'error', limit: { kind: 'overload' } });
+    });
+
+    test('leaves the code of its rate limit a plain error from any other agent', async () => {
+        const done = turnDone(await turnOf(failing(grokLimits.errors.freeUsage)));
+        expect(done.state).toBe('error');
+        expect(done.limit).toBeUndefined();
     });
 
     test('leaves any other failure a plain error', async () => {
-        const done = turnDone(await turnOf(failing(grokLimits.errors.badRequest)));
+        const done = turnDone(await grokTurn(failing(grokLimits.errors.badRequest)));
         expect(done.state).toBe('error');
         expect(done.limit).toBeUndefined();
     });

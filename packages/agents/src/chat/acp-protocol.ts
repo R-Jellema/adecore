@@ -1,4 +1,4 @@
-import { isRecord, type ChatFileChange, type ChatQuestion, type ChatTurnLimit, type RuntimeMode } from '@adecore/agent-contracts';
+import { isRecord, type AgentKind, type ChatFileChange, type ChatQuestion, type ChatTurnLimit, type RuntimeMode } from '@adecore/agent-contracts';
 import { z } from 'zod';
 import { MODE_ORDER } from '../modes.ts';
 import { cleanTitle } from '../title-file.ts';
@@ -668,12 +668,12 @@ const OVERLOADED_TYPES = /\b(overloaded_error|service_unavailable_error)\b/;
 
 /*
  * The limit a failed `session/prompt` names in its JSON-RPC error; null for any other failure. ACP 1 has no code
- * for a limit, so this reads Grok 1.0.62's: -32003 after a 429, and -32603 with the HTTP status or the stream error
- * of an overloaded model once its own retries ran out. Neither says when a limit lifts.
+ * for a limit, so this reads Grok 1.0.62's: -32003 after a 429, which only Grok means that way, and -32603 with the
+ * HTTP status or the stream error of an overloaded model once its own retries ran out. Neither says when a limit lifts.
  */
-export function acpErrorLimit(code: number | null, data: unknown): ChatTurnLimit | null {
+export function acpErrorLimit(code: number | null, data: unknown, kind: AgentKind | null): ChatTurnLimit | null {
     const text = typeof data === 'string' ? data : isRecord(data) && typeof data.message === 'string' ? data.message : '';
-    if (code === GROK_RATE_LIMITED) {
+    if (code === GROK_RATE_LIMITED && kind === 'grok') {
         return text.includes(GROK_FREE_USAGE) ? { kind: 'usage' } : { kind: 'overload' };
     }
     if (code !== -32603) {

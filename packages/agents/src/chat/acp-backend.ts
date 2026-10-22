@@ -1,7 +1,7 @@
 import { readFileSync, realpathSync, statSync } from 'node:fs';
 import { isAbsolute, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { attachmentImageMime, type ChatAttachment, type ModelSelection } from '@adecore/agent-contracts';
+import { attachmentImageMime, type AgentKind, type ChatAttachment, type ModelSelection } from '@adecore/agent-contracts';
 import { errorText } from '../error-text.ts';
 import { MODE_ORDER } from '../modes.ts';
 import {
@@ -45,6 +45,8 @@ export const DEFAULT_ACP_CLIENT: AcpClientInfo = { name: 'agents', title: 'Agent
 export interface AcpAgentSpec {
     // The agent as a person reads it, in the notes and errors the backend writes.
     name: string;
+    // Which agent this is, for an error code only that agent gives a meaning; absent reads none of them.
+    kind?: AgentKind;
     // Variables set over the launch's environment.
     env?: Record<string, string>;
     // The agent's own mode ids per runtime mode, best first. A runtime mode the agent has no id for runs in
@@ -433,7 +435,7 @@ export class AcpBackend implements ChatBackend {
                 // A process that went has its exit tell the thread; anything else ends this turn alone.
                 if (this.transport === transport && transport.alive && this.prompt === turn) {
                     this.prompt = null;
-                    const limit = error instanceof JsonRpcError ? acpErrorLimit(error.code, error.data) : null;
+                    const limit = error instanceof JsonRpcError ? acpErrorLimit(error.code, error.data, this.spec.kind ?? null) : null;
                     this.emitAll(this.protocol.abort(turn.promptId, turn.cancelled ? null : errorText(error), limit));
                 }
             });
