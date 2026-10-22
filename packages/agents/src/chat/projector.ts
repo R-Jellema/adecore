@@ -351,21 +351,30 @@ export class ThreadProjector {
                 break;
             }
             case 'usage': {
-                const contextTokens = event.contextTokens ?? info.usage.contextTokens;
-                events.push(
-                    this.thread.patchInfo({
-                        usage: {
-                            ...info.usage,
-                            contextTokens,
-                            contextWindow: event.contextWindow ?? info.usage.contextWindow,
-                            costUsd: Math.max(info.usage.costUsd, event.costUsd ?? 0),
-                            breakdown: contextTokens > 0 ? estimateContextBreakdown(this.thread.list(), contextTokens) : undefined,
-                            ...(event.cacheTtlMs === undefined || event.cacheExpiresAt === undefined
-                                ? {}
-                                : { cacheTtlMs: event.cacheTtlMs, cacheExpiresAt: event.cacheExpiresAt })
-                        }
-                    })
-                );
+                const usage = info.usage;
+                const contextTokens = event.contextTokens ?? usage.contextTokens;
+                const next = {
+                    ...usage,
+                    contextTokens,
+                    contextWindow: event.contextWindow ?? usage.contextWindow,
+                    costUsd: Math.max(usage.costUsd, event.costUsd ?? 0),
+                    // The estimate reads the whole thread, so only a new count of tokens is worth it.
+                    ...(contextTokens === usage.contextTokens
+                        ? {}
+                        : { breakdown: contextTokens > 0 ? estimateContextBreakdown(this.thread.list(), contextTokens) : undefined }),
+                    ...(event.cacheTtlMs === undefined || event.cacheExpiresAt === undefined
+                        ? {}
+                        : { cacheTtlMs: event.cacheTtlMs, cacheExpiresAt: event.cacheExpiresAt })
+                };
+                if (
+                    next.contextTokens !== usage.contextTokens ||
+                    next.contextWindow !== usage.contextWindow ||
+                    next.costUsd !== usage.costUsd ||
+                    next.cacheTtlMs !== usage.cacheTtlMs ||
+                    next.cacheExpiresAt !== usage.cacheExpiresAt
+                ) {
+                    events.push(this.thread.patchInfo({ usage: next }));
+                }
                 break;
             }
             case 'compaction':

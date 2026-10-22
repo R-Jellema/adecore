@@ -247,6 +247,18 @@ describe('ThreadProjector', () => {
         expect(thread.info.usage).toMatchObject({ cacheTtlMs: 300_000, cacheExpiresAt: 900_000 });
     });
 
+    test('usage that leaves the tokens as they were keeps the estimate, and usage that changes nothing says nothing', () => {
+        const { thread, project } = setup();
+        project({ type: 'tool.started', ref: 'toolu_1', name: 'Read', input: { file_path: 'a.ts' }, parentRef: null });
+        project({ type: 'usage', contextTokens: 30_000 });
+        const before = thread.info.usage.breakdown;
+        // More of the thread would move the estimate, had it been made again.
+        project({ type: 'tool.done', ref: 'toolu_1', output: 'x'.repeat(40_000), state: 'done' });
+        expect(project({ type: 'usage', cacheTtlMs: 300_000, cacheExpiresAt: 400_000 })).toEqual([{ type: 'info', info: thread.info }]);
+        expect(thread.info.usage.breakdown).toBe(before!);
+        expect(project({ type: 'usage', contextTokens: 30_000, cacheTtlMs: 300_000, cacheExpiresAt: 400_000 })).toEqual([]);
+    });
+
     test('usage estimates what the context holds and starts over after a compaction', () => {
         const { thread, project } = setup();
         project({ type: 'tool.started', ref: 'toolu_1', name: 'Read', input: { file_path: 'a.ts' }, parentRef: null });
