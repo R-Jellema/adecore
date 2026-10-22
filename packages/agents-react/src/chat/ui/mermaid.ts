@@ -1,116 +1,72 @@
-import type { MermaidConfig } from 'mermaid';
+import type { RenderOptions } from 'pele';
 
-/* The colors of a diagram, each a token of the theme resolved to an opaque color over the frame it is drawn in. */
-export interface MermaidColors {
-    ground: string;
-    node: string;
-    nodeBorder: string;
-    text: string;
-    line: string;
-    cluster: string;
-    clusterBorder: string;
-    note: string;
-}
-
-/* The token each color reads. Borders carry an alpha, so they are resolved over the ground. */
-export const MERMAID_TOKENS: Readonly<Record<keyof MermaidColors, string>> = {
-    ground: '--chat-code-bg',
-    node: '--surface-raised',
-    nodeBorder: '--border-strong',
-    text: '--text',
-    line: '--text-muted',
-    cluster: '--surface',
-    clusterBorder: '--border',
-    note: '--accent-soft'
+/* The variable of Pele each token of the theme fills. Borders carry an alpha, so every color is resolved over the ground. */
+export const DIAGRAM_TOKENS: Readonly<Record<string, string>> = {
+    '--pele-bg': '--chat-code-bg',
+    '--pele-fg': '--text',
+    '--pele-muted': '--text-muted',
+    '--pele-line': '--text-muted',
+    '--pele-surface': '--surface-raised',
+    '--pele-surface-alt': '--surface',
+    '--pele-border': '--border-strong',
+    '--pele-accent': '--accent',
+    '--pele-critical': '--status-error',
+    '--pele-series-1': '--accent',
+    '--pele-series-2': '--chart-2',
+    '--pele-series-3': '--chart-3',
+    '--pele-series-4': '--chart-4',
+    '--pele-series-5': '--chart-5',
+    '--pele-series-6': '--chart-6'
 };
 
-// Mermaid's own list plus what keeps a diagram in the theme and out of HTML: a directive in the text cannot change these.
-const SECURE_KEYS = [
-    'secure',
-    'securityLevel',
-    'startOnLoad',
-    'maxTextSize',
-    'maxEdges',
-    'suppressErrorRendering',
-    'htmlLabels',
-    'theme',
-    'themeVariables',
-    'themeCSS',
-    'darkMode',
-    'fontFamily'
-];
+export const GROUND_TOKEN = DIAGRAM_TOKENS['--pele-bg']!;
+
+export interface DiagramFont {
+    family: string;
+    mono: string;
+    size: number;
+}
 
 /*
- * Strict: no HTML in labels, no click handlers, no links that run script. What comes out is drawn as an
- * image as well, which never runs script and loads nothing, whatever the text of the diagram says.
+ * At the size it was laid out at, since an image has no container to shrink to. No links and no images, and no
+ * math or icon resolver, which are the only markup Pele inserts unfiltered. What comes out is drawn as an image as
+ * well, which never runs script and loads nothing, whatever the text of the diagram says.
  */
-export function mermaidConfig(colors: MermaidColors, dark: boolean, font: { family: string; size: string }): MermaidConfig {
+export function renderOptions(font: DiagramFont, idPrefix: string): RenderOptions {
     return {
-        startOnLoad: false,
-        securityLevel: 'strict',
-        htmlLabels: false,
-        suppressErrorRendering: true,
-        secure: SECURE_KEYS,
-        theme: 'base',
-        darkMode: dark,
+        responsive: false,
+        idPrefix,
         fontFamily: font.family,
-        themeVariables: {
-            darkMode: dark,
-            fontFamily: font.family,
-            fontSize: font.size,
-            background: colors.ground,
-            primaryColor: colors.node,
-            primaryTextColor: colors.text,
-            primaryBorderColor: colors.nodeBorder,
-            secondaryColor: colors.note,
-            tertiaryColor: colors.cluster,
-            mainBkg: colors.node,
-            nodeBorder: colors.nodeBorder,
-            textColor: colors.text,
-            titleColor: colors.text,
-            lineColor: colors.line,
-            clusterBkg: colors.cluster,
-            clusterBorder: colors.clusterBorder,
-            edgeLabelBackground: colors.ground,
-            noteBkgColor: colors.note,
-            noteTextColor: colors.text,
-            noteBorderColor: colors.nodeBorder
-        }
+        fontFamilyMono: font.mono,
+        fontSize: font.size,
+        links: false,
+        images: false
     };
 }
 
-export interface SizedSvg {
-    svg: string;
-    width: number;
-    height: number;
+const ROOT = /<svg\b[^>]*>/;
+const STYLE = /\sstyle="/;
+
+function attributeText(value: string): string {
+    return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 }
 
-const ROOT = /<svg\b[^>]*>/;
-const VIEW_BOX = /\sviewBox="([^"]*)"/;
-const SIZE_ATTRIBUTES = /\s(?:width|height|style)="[^"]*"/g;
-
 /*
- * The diagram at the size it was laid out at. Mermaid fits it to the width of its container instead,
- * which an image does not have, so the root takes the size its view box names. Null for anything
- * without one.
+ * The drawing with the colors set on its root. An image does not see the variables of the page, so they are
+ * written in, and a change of the theme only writes them again.
  */
-export function sizedSvg(svg: string): SizedSvg | null {
+export function themedSvg(svg: string, colors: Readonly<Record<string, string>>): string {
     const root = ROOT.exec(svg);
-    const viewBox = root === null ? null : VIEW_BOX.exec(root[0]);
-    if (root === null || viewBox === null) {
-        return null;
+    if (root === null) {
+        return svg;
     }
-    const [, , boxWidth, boxHeight] = viewBox[1]!
-        .trim()
-        .split(/[\s,]+/)
-        .map(Number);
-    if (!Number.isFinite(boxWidth) || !Number.isFinite(boxHeight) || boxWidth! <= 0 || boxHeight! <= 0) {
-        return null;
-    }
-    const width = Math.ceil(boxWidth!);
-    const height = Math.ceil(boxHeight!);
-    const tag = root[0].replace(SIZE_ATTRIBUTES, '').replace(/^<svg\b/, `<svg width="${width}" height="${height}"`);
-    return { svg: svg.slice(0, root.index) + tag + svg.slice(root.index + root[0].length), width, height };
+    const variables = attributeText(
+        Object.entries(colors)
+            .map(([name, value]) => `${name}:${value};`)
+            .join('')
+    );
+    const tag = STYLE.test(root[0]) ? root[0].replace(STYLE, (style) => style + variables) : root[0].replace(/^<svg\b/, `<svg style="${variables}"`);
+    return svg.slice(0, root.index) + tag + svg.slice(root.index + root[0].length);
 }
 
 export function svgDataUrl(svg: string): string {

@@ -36,13 +36,13 @@ Every block has a Copy icon that copies its `code` text, including whitespace an
 
 ## Mermaid diagrams
 
-A ```` ```mermaid ```` fence in any of the three is drawn as its diagram. [Mermaid](https://mermaid.js.org) (MIT) is large, so it loads only when the first closed diagram fence appears on the page, never with the thread. While the fence is still open the block is its highlighted source, and once it closes the diagram takes its place. A text Mermaid cannot parse or draw stays its source, with a short muted note under it.
+A ```` ```mermaid ```` fence in any of the three is drawn as its diagram, by [Pele](https://pele.run) (MIT), which reads the syntax of Mermaid 12.1 and every diagram type built into it. Pele loads only when the first closed diagram fence appears on the page, never with the thread, and then only the part a diagram of that kind needs. While the fence is still open the block is its highlighted source, and once it closes the diagram takes its place. A text Pele cannot parse or draw stays its source, with a short muted note under it.
 
-The diagram stands in the frame of a code block and scrolls sideways when it is wider than the reply. A button beside Copy switches between the diagram and its source, and Copy copies the source either way. The colors are the theme's tokens, resolved when the diagram is drawn, so it is drawn again when the mode changes between light and dark.
+The diagram stands in the frame of a code block and scrolls sideways when it is wider than the reply. A button beside Copy switches between the diagram and its source, and Copy copies the source either way. The colors are the theme's tokens, resolved over the ground of the code block; a change of the theme writes them into the drawing again without laying it out again.
 
-Mermaid draws with its strict security level and without HTML labels, so a label is text, a click directive does nothing and a link cannot run script; a directive inside the diagram cannot change those settings or the theme. The drawing is shown as an image (a `data:` URL of the SVG), which never runs script and loads nothing. A page with a Content Security Policy needs `data:` in `img-src` and `'unsafe-inline'` in `style-src` (Mermaid measures labels with a style element of its own while it draws), and no `'unsafe-eval'`.
+Pele draws labels as text and leaves out links, images and a click directive's script. No math or icon resolver is given, which are the only markup it inserts unfiltered. The drawing is shown as an image (a `data:` URL of the SVG), which never runs script and loads nothing. A page with a Content Security Policy needs `data:` in `img-src`, and no `'unsafe-eval'`.
 
-The configuration and the steps from Mermaid's SVG to the image are internal to the package.
+The options and the steps from Pele's SVG to the image are internal to the package.
 
 ## AnsiOutput and FadingWords
 

@@ -4,18 +4,21 @@ import { Code, Workflow } from 'lucide-react';
 import { IconButton } from '@adecore/ui';
 import { CodeBlock } from './CodeBlock';
 import { CodeStreamingContext } from './code-streaming';
-import { MERMAID_TOKENS, mermaidConfig, sizedSvg, svgDataUrl, type MermaidColors, type SizedSvg } from './mermaid';
+import { DIAGRAM_TOKENS, GROUND_TOKEN, renderOptions, svgDataUrl, themedSvg, type DiagramFont } from './mermaid';
 import { watchTheme } from './theme-watch';
 import { useHostCodeMode } from '../../host-hooks';
 
-type Drawing = { state: 'drawing' } | { state: 'drawn'; image: SizedSvg } | { state: 'failed' };
+interface LaidOut {
+    svg: string;
+    width: number;
+    height: number;
+}
 
-// Mermaid keeps one configuration for the page, so one diagram is drawn at a time with its own.
-let queue: Promise<unknown> = Promise.resolve();
+type Drawing = { state: 'drawing' } | { state: 'drawn'; image: LaidOut } | { state: 'failed' };
 
 let probeCanvas: HTMLCanvasElement | null = null;
 
-/* A token as an opaque `#rrggbb` over `ground`, which is what Mermaid's color math reads. */
+/* A token as an opaque `#rrggbb` over `ground`, so a border with an alpha mixes with the ground and not with what is under the image. */
 function resolveColor(element: HTMLElement, token: string, ground: string): string {
     probeCanvas ??= document.createElement('canvas');
     probeCanvas.width = 1;
@@ -33,34 +36,41 @@ function resolveColor(element: HTMLElement, token: string, ground: string): stri
     return `#${[red, green, blue].map((channel) => channel!.toString(16).padStart(2, '0')).join('')}`;
 }
 
-function themeColors(element: HTMLElement): MermaidColors {
-    const ground = resolveColor(element, MERMAID_TOKENS.ground, '#808080');
-    const entries = Object.entries(MERMAID_TOKENS).map(([name, token]) => [name, name === 'ground' ? ground : resolveColor(element, token, ground)]);
-    return Object.fromEntries(entries) as unknown as MermaidColors;
-}
-
 /* What a diagram reads of the theme where it stands. */
 interface DiagramLook {
-    colors: MermaidColors;
-    font: { family: string; size: string };
+    colors: Record<string, string>;
+    font: DiagramFont;
 }
 
 function diagramLook(element: HTMLElement): DiagramLook {
     const style = getComputedStyle(element);
-    return { colors: themeColors(element), font: { family: style.fontFamily, size: style.fontSize } };
+    const ground = resolveColor(element, GROUND_TOKEN, '#808080');
+    const colors = Object.fromEntries(
+        Object.entries(DIAGRAM_TOKENS).map(([name, token]) => [name, token === GROUND_TOKEN ? ground : resolveColor(element, token, ground)])
+    );
+    const font = {
+        family: style.fontFamily,
+        mono: style.getPropertyValue('--font-mono').trim() || 'monospace',
+        size: Number.parseFloat(style.fontSize) || 14
+    };
+    return { colors, font };
 }
 
-async function drawDiagram(id: string, source: string, look: DiagramLook, dark: boolean): Promise<SizedSvg | null> {
-    const { default: mermaid } = await import('mermaid');
-    mermaid.initialize(mermaidConfig(look.colors, dark, look.font));
-    const { svg } = await mermaid.render(id, source);
-    return sizedSvg(svg);
+/* Keeps the look on screen when nothing of it changed, so a change of the root that leaves every color alone draws nothing again. */
+function keepingSame(next: DiagramLook) {
+    return (current: DiagramLook | null) => (current !== null && JSON.stringify(current) === JSON.stringify(next) ? current : next);
+}
+
+async function layOut(id: string, source: string, font: DiagramFont): Promise<LaidOut> {
+    const { renderAsync } = await import('pele/lazy');
+    const { svg, width, height } = await renderAsync(source, renderOptions(font, id));
+    return { svg, width: Math.ceil(width), height: Math.ceil(height) };
 }
 
 /*
- * A ```mermaid fence, drawn as the diagram once the fence is closed. Mermaid is large, so it loads on
- * the first diagram of the page. While the fence grows, and when the text is no diagram Mermaid can
- * draw, it is the code block it would otherwise be.
+ * A ```mermaid fence, drawn as the diagram once the fence is closed. Pele loads on the first diagram of the
+ * page, and then only what a diagram of that kind needs. While the fence grows, and when the text is no diagram
+ * Pele can draw, it is the code block it would otherwise be.
  */
 export function MermaidBlock({ code }: { code: string }) {
     const { t } = useTranslation('agent-chat');
@@ -70,9 +80,14 @@ export function MermaidBlock({ code }: { code: string }) {
     const frame = useRef<HTMLDivElement>(null);
     const [source, setSource] = useState(false);
     const [drawing, setDrawing] = useState<Drawing>({ state: 'drawing' });
-    // The look of the diagram on screen or on its way there, null before the first.
-    const drawnLook = useRef<string | null>(null);
-    const [themeRevision, setThemeRevision] = useState(0);
+    const [look, setLook] = useState<DiagramLook | null>(null);
+
+    useEffect(() => {
+        const element = frame.current;
+        if (element !== null) {
+            setLook(keepingSame(diagramLook(element)));
+        }
+    }, [dark]);
 
     // An app may change its colors without turning light or dark, which only the root of the page tells.
     useEffect(() => {
@@ -80,34 +95,28 @@ export function MermaidBlock({ code }: { code: string }) {
         if (element === null) {
             return;
         }
-        return watchTheme(element.ownerDocument, () => {
-            if (drawnLook.current !== null && JSON.stringify(diagramLook(element)) !== drawnLook.current) {
-                setThemeRevision((revision) => revision + 1);
-            }
-        });
+        return watchTheme(element.ownerDocument, () => setLook(keepingSame(diagramLook(element))));
     }, []);
 
+    const fontFamily = look?.font.family;
+    const fontMono = look?.font.mono;
+    const fontSize = look?.font.size;
     useEffect(() => {
-        const element = frame.current;
-        if (streaming || element === null) {
+        if (streaming || fontFamily === undefined || fontMono === undefined || fontSize === undefined) {
             return;
         }
         let cancelled = false;
-        const look = diagramLook(element);
-        drawnLook.current = JSON.stringify(look);
-        // A diagram already drawn stays until the next one is there, so a change of the theme does not make it blink.
-        setDrawing((current) => (current.state === 'drawn' ? current : { state: 'drawing' }));
-        const drawn = queue.then(() => (cancelled ? null : drawDiagram(id, code, look, dark)));
-        queue = drawn.catch(() => undefined);
-        drawn.then(
-            (image) => !cancelled && setDrawing(image === null ? { state: 'failed' } : { state: 'drawn', image }),
+        // A diagram already drawn stays until the next one is there, so it does not blink.
+        layOut(id, code, { family: fontFamily, mono: fontMono, size: fontSize }).then(
+            (image) => !cancelled && setDrawing({ state: 'drawn', image }),
             () => !cancelled && setDrawing({ state: 'failed' })
         );
         return () => {
             cancelled = true;
         };
-    }, [code, dark, id, streaming, themeRevision]);
+    }, [code, fontFamily, fontMono, fontSize, id, streaming]);
 
+    const image = drawing.state === 'drawn' && look !== null ? { ...drawing.image, svg: themedSvg(drawing.image.svg, look.colors) } : null;
     const showsDiagram = !streaming && !source && drawing.state !== 'failed';
     const toggle =
         streaming || drawing.state === 'failed' ? undefined : (
@@ -127,12 +136,12 @@ export function MermaidBlock({ code }: { code: string }) {
                 actions={toggle}
                 view={
                     showsDiagram ? (
-                        <div className="overflow-x-auto p-3" aria-busy={drawing.state === 'drawing' || undefined}>
-                            {drawing.state === 'drawn' && (
+                        <div className="overflow-x-auto p-3" aria-busy={image === null || undefined}>
+                            {image !== null && (
                                 <img
-                                    src={svgDataUrl(drawing.image.svg)}
-                                    width={drawing.image.width}
-                                    height={drawing.image.height}
+                                    src={svgDataUrl(image.svg)}
+                                    width={image.width}
+                                    height={image.height}
                                     alt={t('code.mermaid.diagram')}
                                     className="m-0 max-w-none"
                                     draggable={false}

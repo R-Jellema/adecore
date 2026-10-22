@@ -61,4 +61,4 @@ The root holds the host, the scope and the transport; `/chat`, `/chat/ui`, `/pro
 
 FSL-1.1-MIT. See [LICENSE](./LICENSE).
 
-Diagrams in a reply are drawn by [Mermaid](https://github.com/mermaid-js/mermaid), a dependency under the MIT license, loaded only when a reply holds one.
+Diagrams in a reply are drawn by [Pele](https://github.com/obsidianmd/pele), a dependency under the MIT license, loaded only when a reply holds one.

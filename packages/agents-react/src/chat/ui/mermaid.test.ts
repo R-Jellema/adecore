@@ -1,53 +1,48 @@
 import { describe, expect, test } from 'bun:test';
-import { mermaidConfig, sizedSvg, svgDataUrl, type MermaidColors } from './mermaid';
+import { render } from 'pele';
+import { renderOptions, svgDataUrl, themedSvg } from './mermaid';
 
-const COLORS: MermaidColors = {
-    ground: '#ececef',
-    node: '#ffffff',
-    nodeBorder: '#bdbdbf',
-    text: '#18181b',
-    line: '#6f6f78',
-    cluster: '#ffffff',
-    clusterBorder: '#d2d2d5',
-    note: '#d9e4fd'
-};
+const FONT = { family: '"Inter", system-ui', mono: 'Menlo', size: 14 };
 
-describe('mermaidConfig', () => {
-    const config = mermaidConfig(COLORS, false, { family: 'system-ui', size: '14px' });
+describe('renderOptions', () => {
+    const options = renderOptions(FONT, 'mermaid-r1');
 
-    test('draws strictly, without HTML in a label', () => {
-        expect(config.securityLevel).toBe('strict');
-        expect(config.htmlLabels).toBe(false);
-        expect(config.startOnLoad).toBe(false);
+    test('lays the diagram out at its own size, in the font where it stands', () => {
+        expect(options).toMatchObject({ responsive: false, idPrefix: 'mermaid-r1', fontFamily: '"Inter", system-ui', fontFamilyMono: 'Menlo', fontSize: 14 });
     });
 
-    test('a directive in the diagram cannot loosen it or leave the theme', () => {
-        expect(config.secure).toEqual(expect.arrayContaining(['securityLevel', 'htmlLabels', 'theme', 'themeVariables', 'themeCSS']));
+    test('a diagram links to nothing and loads nothing', () => {
+        expect(options).toMatchObject({ links: false, images: false });
+        expect(options.math).toBeUndefined();
+        expect(options.icons).toBeUndefined();
     });
 
-    test('follows the theme it is handed', () => {
-        expect(config.theme).toBe('base');
-        expect(config.themeVariables).toMatchObject({ primaryColor: '#ffffff', textColor: '#18181b', lineColor: '#6f6f78', darkMode: false });
-        expect(mermaidConfig(COLORS, true, { family: 'system-ui', size: '14px' }).darkMode).toBe(true);
+    test('a click directive and a link in the text leave no trace in the drawing', () => {
+        const { svg } = render('flowchart LR\n  A --> B\n  click A "https://example.com"\n  click B callback', options);
+        expect(svg).not.toContain('example.com');
+        expect(svg).not.toContain('<a ');
+        expect(svg).not.toContain('<script');
     });
 });
 
-describe('sizedSvg', () => {
-    test('the root takes the size of its view box', () => {
-        const svg =
-            '<svg id="m1" width="100%" xmlns="http://www.w3.org/2000/svg" style="max-width: 210.5px;" viewBox="-8 -8 210.5 120"><g stroke-width="2"></g></svg>';
-        const sized = sizedSvg(svg)!;
-        expect(sized.width).toBe(211);
-        expect(sized.height).toBe(120);
-        expect(sized.svg).toBe(
-            '<svg width="211" height="120" id="m1" xmlns="http://www.w3.org/2000/svg" viewBox="-8 -8 210.5 120"><g stroke-width="2"></g></svg>'
-        );
+describe('themedSvg', () => {
+    test('the colors reach the variables Pele draws with', () => {
+        const { svg, width, height } = render('flowchart LR\n  A --> B', renderOptions(FONT, 'mermaid-r2'));
+        const themed = themedSvg(svg, { '--pele-fg': '#111111', '--pele-surface': '#ffffff' });
+        const root = /<svg\b[^>]*>/.exec(themed)![0];
+        expect(root).toContain('style="--pele-fg:#111111;--pele-surface:#ffffff;');
+        expect(root).toContain('var(--pele-fg,');
+        expect(root).toContain(`width="${width}"`);
+        expect(root).toContain(`height="${height}"`);
     });
 
-    test('a drawing without a view box has no size to take', () => {
-        expect(sizedSvg('<svg width="10"></svg>')).toBeNull();
-        expect(sizedSvg('<svg viewBox="0 0 0 10"></svg>')).toBeNull();
-        expect(sizedSvg('no svg')).toBeNull();
+    test('a value cannot leave the attribute it is written in', () => {
+        const themed = themedSvg('<svg viewBox="0 0 1 1"></svg>', { '--pele-fg': '"><script>' });
+        expect(themed).toBe('<svg style="--pele-fg:&quot;>&lt;script>;" viewBox="0 0 1 1"></svg>');
+    });
+
+    test('anything without a root is left as it was', () => {
+        expect(themedSvg('no svg', { '--pele-fg': '#000000' })).toBe('no svg');
     });
 });
 
