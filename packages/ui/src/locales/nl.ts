@@ -70,7 +70,7 @@ export default {
         collapse: 'Invouwen'
     },
     workspace: {
-        tabs: 'Open views',
+        tabs: 'Open weergaven',
         unsaved: 'Niet-opgeslagen wijzigingen',
         closeTab: 'Sluit {{name}}',
         resize: 'Panelen vergroten of verkleinen',
