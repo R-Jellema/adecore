@@ -159,7 +159,8 @@ export const RenderedDocBlock = memo(DocBlock);
  */
 export function RenderedDocs({ language }: { language: EditorLanguage }) {
     const feature = language.renderedDocs;
-    const entries = useSyncExternalStore(feature.subscribe, feature.getEntries, feature.getEntries);
+    const getEntries = () => feature.getEntries();
+    const entries = useSyncExternalStore((listener) => feature.subscribe(listener), getEntries, getEntries);
     const linkable = feature.canFollow;
     return (
         <>

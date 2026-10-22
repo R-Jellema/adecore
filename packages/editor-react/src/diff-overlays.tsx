@@ -26,8 +26,10 @@ export function DiffOverlays({
     blocked?: ReadonlySet<number>;
 }) {
     const { t } = useTranslation('editor');
-    const rows = useSyncExternalStore(mounted.rows.subscribe, mounted.rows.getContainers, mounted.rows.getContainers);
-    const actions = useSyncExternalStore(mounted.actions.subscribe, mounted.actions.getContainers, mounted.actions.getContainers);
+    const getRows = () => mounted.rows.getContainers();
+    const getActions = () => mounted.actions.getContainers();
+    const rows = useSyncExternalStore((listener) => mounted.rows.subscribe(listener), getRows, getRows);
+    const actions = useSyncExternalStore((listener) => mounted.actions.subscribe(listener), getActions, getActions);
     return (
         <>
             {display.gaps.map(({ row }) => {

@@ -31,22 +31,24 @@ abstract class ContainerHost {
         this.owner = owner;
     }
 
-    getVersion = (): number => this.version;
+    getVersion(): number {
+        return this.version;
+    }
 
     /* The elements by id as they stand now, one map until they change, so React can read them as a snapshot. */
-    getContainers = (): ReadonlyMap<string, HTMLElement> => {
+    getContainers(): ReadonlyMap<string, HTMLElement> {
         if (this.shown?.version !== this.version) {
             this.shown = { version: this.version, containers: new Map(this.containers) };
         }
         return this.shown.containers;
-    };
+    }
 
-    subscribe = (listener: () => void): (() => void) => {
+    subscribe(listener: () => void): () => void {
         this.listeners.add(listener);
         return () => {
             this.listeners.delete(listener);
         };
-    };
+    }
 
     container(id: string): HTMLElement | undefined {
         return this.containers.get(id);

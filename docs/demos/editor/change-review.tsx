@@ -27,7 +27,7 @@ export default function ChangeReviewDemo() {
     }, []);
     const { host, editor } = useEditor(OPTIONS, setup);
 
-    useSyncExternalStore(rows?.subscribe ?? noSubscription, rows?.getVersion ?? zero, zero);
+    useSyncExternalStore(rows === null ? noSubscription : (listener) => rows.subscribe(listener), rows === null ? zero : () => rows.getVersion(), zero);
     useEffect(() => {
         if (decided !== null) {
             rows?.clear();

@@ -202,22 +202,24 @@ export class RenderedDocsFeature {
         return result;
     }
 
-    getVersion = (): number => this.version;
+    getVersion(): number {
+        return this.version;
+    }
 
     /* What `entries` answers, one array until the version moves, so React can read it as a snapshot. */
-    getEntries = (): readonly RenderedDocEntry[] => {
+    getEntries(): readonly RenderedDocEntry[] {
         if (this.shown?.version !== this.version) {
             this.shown = { version: this.version, entries: this.entries() };
         }
         return this.shown.entries;
-    };
+    }
 
-    subscribe = (listener: () => void): (() => void) => {
+    subscribe(listener: () => void): () => void {
         this.listeners.add(listener);
         return () => {
             this.listeners.delete(listener);
         };
-    };
+    }
 
     /* Whether names in `{@link}` and `@see` can be followed, which takes a server that finds symbols by name. */
     get canFollow(): boolean {
