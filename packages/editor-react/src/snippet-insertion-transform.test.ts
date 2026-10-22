@@ -168,7 +168,7 @@ test('transform ranges count toward the combined completion limit before a worke
     await mounted.accept();
     expect(mounted.editor.getText()).toBe(text);
     expect(mounted.port.requests).toHaveLength(0);
-    expect(mounted.notices).toEqual(['Completion is too large to insert']);
+    expect(mounted.notices).toEqual(['Too large to insert']);
 });
 
 test('a deterministic worker range refusal cannot insert raw values', async () => {
@@ -180,7 +180,7 @@ test('a deterministic worker range refusal cannot insert raw values', async () =
     );
     await pending;
     expect(mounted.editor.getText()).toBe('fo');
-    expect(mounted.notices).toEqual(['Completion is too large to insert']);
+    expect(mounted.notices).toEqual(['Too large to insert']);
 });
 
 test('an invalid transform pattern refuses the whole accept without starting a worker', async () => {
@@ -253,7 +253,7 @@ test('a worker crash after ready refuses insertion and reports failure', async (
     mounted.port.fail();
     await pending;
     expect(mounted.editor.getText()).toBe('fo');
-    expect(mounted.notices).toEqual(['Snippet transform could not be applied']);
+    expect(mounted.notices).toEqual(['Could not fill in the snippet']);
 });
 
 test('a full project queue reports busy separately from completion size', async () => {
@@ -268,7 +268,7 @@ test('a full project queue reports busy separately from completion size', async 
     }
     await mounted.accept();
     expect(mounted.editor.getText()).toBe('fo');
-    expect(mounted.notices).toEqual(['Snippet transforms are busy; try again']);
+    expect(mounted.notices).toEqual(['The snippet is not ready yet. Try again.']);
     lease.dispose();
     await Promise.all(pending);
 });

@@ -224,7 +224,7 @@ describe('the list', () => {
         expect(empty.notices.map((notice) => notice.title)).toEqual(['No code actions here']);
         const off = await setup({ served: false });
         await off.language.codeActions.open();
-        expect(off.notices.map((notice) => notice.title)).toEqual(['No language server offers code actions here']);
+        expect(off.notices.map((notice) => notice.title)).toEqual(['Code actions unavailable here']);
     });
 
     test('asks only for the quick fixes of a problem, at its range', async () => {
@@ -250,7 +250,7 @@ describe('the commands', () => {
     test('says so when there is nothing to organize', async () => {
         const { language, notices } = await setup({ actions: [] });
         await language.codeActions.organizeImports();
-        expect(notices.map((notice) => notice.title)).toEqual(['The imports are already organized']);
+        expect(notices.map((notice) => notice.title)).toEqual(['Imports already organized']);
     });
 
     test('formats the document with the editor indentation as one edit', async () => {
@@ -331,7 +331,7 @@ describe('a refactor the server refuses', () => {
         const { language, notices } = await setup({ actions: [EXTRACT], resolve: refusing });
         const [entry] = (await language.codeActions.list(['refactor']))!;
         await language.codeActions.apply(entry!);
-        expect(notices).toEqual([{ id: 'language-action', kind: 'error', title: `Could not apply the action: ${REASON}` }]);
+        expect(notices).toEqual([{ id: 'language-action', kind: 'error', title: `Could not apply action: ${REASON}` }]);
     });
 
     test('a server that cannot resolve at all is tried as it is', async () => {
@@ -409,6 +409,6 @@ describe('an action that moves a file', () => {
         expect(language.popups.getState().pick?.preview).toMatchObject({ note: 'moves 1 file' });
         const [entry] = (await language.codeActions.list(['refactor']))!;
         await language.codeActions.apply(entry!);
-        expect(notices.at(-1)?.title).toBe('Could not apply the action: b.ts is taken');
+        expect(notices.at(-1)?.title).toBe('Could not apply action: b.ts is taken');
     });
 });

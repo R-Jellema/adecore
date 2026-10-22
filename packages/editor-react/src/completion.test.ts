@@ -42,7 +42,7 @@ test('a failed accept is told to the person and never rejects', async () => {
         throw new Error('The engine broke');
     });
     await expect(language.completion.accept(false)).resolves.toBeUndefined();
-    expect(notifications.map((notification) => notification.title)).toEqual(['Could not insert the suggestion: The engine broke']);
+    expect(notifications.map((notification) => notification.title)).toEqual(['Could not insert suggestion: The engine broke']);
     applyEdits.mockRestore();
     dispose();
 });

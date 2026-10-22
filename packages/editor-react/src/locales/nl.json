@@ -2,32 +2,32 @@
     "language": {
         "hover": {
             "quickFix": "Quick fix…",
-            "quickFixNone": "Deze language server biedt geen quick fixes",
+            "quickFixNone": "Geen quick fixes",
             "definition": "Ga naar definitie",
             "references_one": "{{formatted}} referentie",
             "references_other": "{{formatted}} referenties",
             "line": "Regel {{line}}",
-            "none": "Geen informatie voor deze plek"
+            "none": "Hier geen informatie"
         },
         "inlay": {
-            "failed": "De actie van de hint is mislukt: {{message}}"
+            "failed": "Kon de hintactie niet uitvoeren: {{message}}"
         },
         "edit": {
-            "staged_one": "{{count}} bestand gewijzigd en nog niet opgeslagen",
-            "staged_other": "{{count}} bestanden gewijzigd en nog niet opgeslagen",
+            "staged_one": "{{count}} niet-opgeslagen bestand",
+            "staged_other": "{{count}} niet-opgeslagen bestanden",
             "stagedMore": "{{names}} en nog {{count}}",
             "saveAll": "Alles opslaan",
-            "notSaved": "{{name}} kon niet worden opgeslagen"
+            "notSaved": "Kon {{name}} niet opslaan"
         },
         "actions": {
             "show": "Toon code actions",
             "none": "Geen code actions hier",
-            "unavailable": "Geen language server biedt hier code actions",
-            "organized": "De imports zijn al georganiseerd",
-            "noFormatter": "Geen language server formatteert dit bestand",
-            "readOnly": "Dit bestand is alleen-lezen",
-            "failed": "De actie kon niet worden toegepast: {{message}}",
-            "refused": "De wijziging is geweigerd",
+            "unavailable": "Hier geen code actions beschikbaar",
+            "organized": "Imports zijn al georganiseerd",
+            "noFormatter": "Geen formatter voor dit bestand",
+            "readOnly": "Bestand is alleen-lezen",
+            "failed": "Kon de actie niet toepassen: {{message}}",
+            "refused": "Wijziging geweigerd",
             "moreLines": "nog {{count}} regels",
             "otherFiles_one": "en nog {{count}} bestand",
             "otherFiles_other": "en nog {{count}} bestanden",
@@ -49,11 +49,11 @@
             }
         },
         "rename": {
-            "unavailable": "Geen language server hernoemt in dit bestand",
-            "nothing": "Hier is niets om te hernoemen",
-            "refused": "De language server weigerde de nieuwe naam",
-            "stale": "De tekst veranderde terwijl de hernoeming werd opgevraagd",
-            "failed": "Hernoemen mislukt: {{message}}",
+            "unavailable": "Hernoemen niet beschikbaar in dit bestand",
+            "nothing": "Niets om te hernoemen",
+            "refused": "Nieuwe naam geweigerd",
+            "stale": "De tekst veranderde voordat de hernoeming klaar was. Probeer het opnieuw.",
+            "failed": "Kon niet hernoemen: {{message}}",
             "occurrences_one": "{{formatted}} voorkomen",
             "occurrences_other": "{{formatted}} voorkomens",
             "occurrencesFiles_one": "{{formatted}} voorkomen in {{files}} bestanden",
@@ -71,9 +71,9 @@
             }
         },
         "navigation": {
-            "unavailable": "Geen language server die dat hier beantwoordt",
+            "unavailable": "Hier niet beschikbaar",
             "none": "Niets gevonden",
-            "failed": "Opzoeken mislukt: {{message}}",
+            "failed": "Kon het niet opzoeken: {{message}}",
             "titles": {
                 "definition": "Definities",
                 "declaration": "Declaraties",
@@ -86,9 +86,9 @@
             "resize": "Paneel vergroten of verkleinen"
         },
         "peek": {
-            "unavailable": "Geen language server vindt referenties in dit bestand",
+            "unavailable": "Referenties niet beschikbaar in dit bestand",
             "none": "Geen referenties gevonden",
-            "failed": "Referenties opzoeken mislukt: {{message}}",
+            "failed": "Kon de referenties niet opzoeken: {{message}}",
             "references_one": "{{formatted}} referentie",
             "references_other": "{{formatted}} referenties",
             "close": "Sluit",
@@ -97,12 +97,12 @@
             "definitions_one": "{{formatted}} definitie",
             "definitions_other": "{{formatted}} definities",
             "noDefinition": "Geen definitie gevonden",
-            "unavailableDefinition": "Geen language server vindt definities in dit bestand"
+            "unavailableDefinition": "Definities niet beschikbaar in dit bestand"
         },
         "callHierarchy": {
-            "unavailable": "Geen language server vindt aanroepen in dit bestand",
-            "none": "Hier is geen symbool met aanroepen gevonden",
-            "failed": "Aanroepen opzoeken mislukt: {{message}}",
+            "unavailable": "Aanroepen niet beschikbaar in dit bestand",
+            "none": "Hier geen aanroepen",
+            "failed": "Kon de aanroepen niet opzoeken: {{message}}",
             "label": "Aanroephiërarchie",
             "direction": "Richting",
             "incoming": "Aanroepers",
@@ -111,7 +111,7 @@
             "loading": "Laden…",
             "noIncoming": "Geen aanroepers",
             "noOutgoing": "Roept niets aan",
-            "retry": "Aanroepen laden mislukt: {{message}}. Druk om opnieuw te proberen",
+            "retry": "Kon de aanroepen niet laden: {{message}}. Klik om het opnieuw te proberen",
             "more_one": "Toon nog {{formatted}} aanroep ({{hidden}} over)",
             "more_other": "Toon nog {{formatted}} aanroepen ({{hidden}} over)",
             "sites_one": "{{formatted}} aanroep",
@@ -133,20 +133,20 @@
             "newCode": "nieuw *",
             "lines_one": "{{formatted}} regel",
             "lines_other": "{{formatted}} regels",
-            "uncommitted": "Nog niet gecommit",
+            "uncommitted": "Niet gecommit",
             "latest": "Laatste wijziging",
             "showCommit": "Commit tonen"
         },
         "symbols": {
-            "unavailable": "Geen language server kent de symbolen van dit bestand",
-            "failed": "De symbolen konden niet worden gelezen: {{message}}",
+            "unavailable": "Symbolen niet beschikbaar in dit bestand",
+            "failed": "Kon de symbolen niet lezen: {{message}}",
             "placeholder": "Ga naar symbool in {{file}}",
             "navigate": "Navigeer",
             "open": "Open",
             "workspace": "Symbolen in het project",
             "line": "Ga naar regel",
             "none": "Geen symbolen gevonden",
-            "workspaceHint": "Typ de naam van een symbool in het project",
+            "workspaceHint": "Typ een symboolnaam",
             "lineHint": "Typ een regelnummer",
             "goToLine": "Ga naar regel {{line}}",
             "groups": {
@@ -180,14 +180,14 @@
             "choices": "Snippetkeuze"
         },
         "completion": {
-            "tooLarge": "Deze aanvulling is te groot om in te voegen",
+            "tooLarge": "Te groot om in te voegen",
             "insert": "Invoegen",
             "replace": "Vervangen",
             "details": "Details",
             "none": "Geen suggesties",
-            "transformBusy": "Snippettransformaties zijn bezig; probeer het opnieuw",
-            "transformFailed": "Snippettransformatie kon niet worden toegepast",
-            "failed": "De suggestie kon niet worden ingevoegd: {{message}}"
+            "transformBusy": "Het snippet is nog niet klaar. Probeer het opnieuw.",
+            "transformFailed": "Kon het snippet niet invullen",
+            "failed": "Kon de suggestie niet invoegen: {{message}}"
         },
         "history": {
             "recent": "Recente plekken"
@@ -265,21 +265,21 @@
             "toggle": "Vervangen tonen",
             "hide": "Vervangen verbergen",
             "failed": {
-                "limit": "Te veel om ineens te vervangen ({{edits}} edits of {{characters}} uitvoertekens)",
-                "timeout": "Vervangen duurde te lang; de tekst is niet gewijzigd",
-                "unavailable": "Vervangen vereist de zoekworker",
-                "error": "Vervangen is niet gelukt; de tekst is niet gewijzigd"
+                "limit": "Te veel om ineens te vervangen (meer dan {{edits}} treffers of {{characters}} tekens)",
+                "timeout": "Vervangen duurde te lang. Er is niets gewijzigd",
+                "unavailable": "Vervangen is nu niet beschikbaar",
+                "error": "Kon niet vervangen. Er is niets gewijzigd"
             }
         },
         "countMore": "{{total}}+ resultaten",
         "searching": "Zoeken…",
-        "large": "Groot document: druk op Enter om te zoeken",
+        "large": "Dit document is groot. Druk op Enter om te zoeken",
         "replaced": "{{count}} resultaten vervangen",
         "failed": {
-            "timeout": "Zoeken duurde te lang; druk op Enter om opnieuw te proberen",
+            "timeout": "Zoeken duurde te lang. Druk op Enter om het opnieuw te proberen",
             "unavailable": "Zoeken met regex is niet beschikbaar",
             "invalid": "Ongeldige reguliere expressie",
-            "error": "Zoeken kon niet worden voltooid"
+            "error": "Kon de zoekopdracht niet voltooien"
         }
     },
     "diff": {

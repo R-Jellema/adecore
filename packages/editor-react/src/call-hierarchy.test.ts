@@ -94,7 +94,7 @@ describe('call hierarchy', () => {
         await language.callHierarchy.open();
         expect(language.popups.getState().callHierarchy).toBeNull();
         expect(calls(service, 'textDocument/prepareCallHierarchy')).toHaveLength(0);
-        expect(notices).toMatchObject([{ kind: 'error', title: 'No language server finds calls in this file' }]);
+        expect(notices).toMatchObject([{ kind: 'error', title: 'Calls unavailable in this file' }]);
     });
 
     test('is unavailable when the service has no call hierarchy methods', async () => {
@@ -252,12 +252,12 @@ describe('call hierarchy', () => {
     test('says so when no symbol is found or the question fails', async () => {
         const { language, notices, service } = await setup({}, []);
         await language.callHierarchy.open();
-        expect(notices.map((notice) => notice.title)).toEqual(['No symbol with calls found here']);
+        expect(notices.map((notice) => notice.title)).toEqual(['No calls here']);
         service.respond('textDocument/prepareCallHierarchy', () => {
             throw new Error('nope');
         });
         await language.callHierarchy.open();
-        expect(notices.at(-1)!.title).toBe('Could not look up the calls: nope');
+        expect(notices.at(-1)!.title).toBe('Could not look up calls: nope');
         expect(language.callHierarchy.isOpen).toBe(false);
     });
 

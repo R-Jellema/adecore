@@ -86,7 +86,7 @@ describe('go to symbol', () => {
         const { language, notices } = await setup([]);
         await language.symbolPicker.open();
         expect(language.popups.getState().symbols).toBeNull();
-        expect(notices.map((notice) => notice.title)).toEqual(['No language server knows the symbols of this file']);
+        expect(notices.map((notice) => notice.title)).toEqual(['Symbols unavailable in this file']);
     });
 
     test('closes when the editor lets go of the document', async () => {

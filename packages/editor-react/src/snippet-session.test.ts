@@ -593,7 +593,7 @@ test('a group exceeding the render budget leaves every caret unchanged and repor
     timers.advance(1);
     await new Promise<void>((resolve) => setImmediate(resolve));
     expect(editor.getText()).toBe('fo\nfo');
-    expect(notices).toEqual(['Completion is too large to insert']);
+    expect(notices).toEqual(['Too large to insert']);
     expect(language.snippets.isActive).toBe(false);
 });
 

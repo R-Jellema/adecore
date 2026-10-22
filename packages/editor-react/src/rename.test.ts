@@ -142,7 +142,7 @@ describe('rename', () => {
     test('says so when there is nothing to rename here', async () => {
         const { language, notices } = await setup({ prepared: null });
         await language.rename.start();
-        expect(notices.map((notice) => notice.title)).toEqual(['There is nothing to rename here']);
+        expect(notices.map((notice) => notice.title)).toEqual(['Nothing to rename here']);
     });
 
     test('keeps the input open with the reason under it when the server refuses the new name, until the name changes', async () => {
@@ -153,7 +153,7 @@ describe('rename', () => {
         expect(language.popups.getState().rename).toMatchObject({
             phase: 'input',
             busy: false,
-            error: 'Could not rename: The language server refused the new name'
+            error: 'Could not rename: New name refused'
         });
         expect(language.rename.isOpen).toBe(true);
         expect(notices).toEqual([]);
@@ -164,7 +164,7 @@ describe('rename', () => {
     test('says so when no server renames in the file', async () => {
         const { language, notices } = await setup({ prepare: 'none' });
         await language.rename.start();
-        expect(notices.map((notice) => notice.title)).toEqual(['No language server renames in this file']);
+        expect(notices.map((notice) => notice.title)).toEqual(['Rename unavailable in this file']);
     });
 });
 
