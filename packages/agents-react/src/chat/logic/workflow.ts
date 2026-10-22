@@ -49,7 +49,6 @@ export function workflowPhases(workflow: ChatWorkflow, workflowRunning: boolean)
 
 /* What the line of an agent that is not at work says about its time; one at work counts on by itself. */
 export function workflowAgentTime(view: WorkflowAgentView): string | null {
-    const duration = view.agent.durationMs === null ? null : formatElapsedShort(view.agent.durationMs);
     switch (view.state) {
         case 'running':
             return null;
@@ -59,8 +58,91 @@ export function workflowAgentTime(view: WorkflowAgentView): string | null {
             return i18next.t('agent-chat:rows.workflow.stopped');
         case 'done':
         case 'failed':
-            return duration === null
-                ? i18next.t(`agent-chat:common.status.${view.state}`)
-                : i18next.t(`agent-chat:rows.subagent.${view.state}In`, { duration });
+            return view.agent.durationMs === null ? null : formatElapsedShort(view.agent.durationMs);
     }
+}
+
+export interface WorkflowAgentPreview {
+    /* The tool an agent at work last called, drawn apart from what it was called on. */
+    tool: string | null;
+    text: string | null;
+}
+
+/* The CLI's previews start with a markdown heading as often as not, which says nothing on one line. */
+function firstLine(text: string | undefined): string | null {
+    const line = text
+        ?.split('\n')
+        .map((part) => part.replace(/^#+\s*/, '').trim())
+        .find((part) => part !== '');
+    return line === undefined ? null : line;
+}
+
+/* The second line of an agent: what it does while at work, what it answered once it stopped, what it was asked before. */
+export function workflowAgentPreview(view: WorkflowAgentView): WorkflowAgentPreview {
+    const { agent } = view;
+    switch (view.state) {
+        case 'running':
+            return agent.lastTool === null
+                ? { tool: null, text: firstLine(agent.promptPreview) }
+                : { tool: agent.lastTool, text: firstLine(agent.lastToolSummary) };
+        case 'waiting':
+            return { tool: null, text: firstLine(agent.promptPreview) };
+        case 'failed':
+            return { tool: null, text: firstLine(agent.error) ?? firstLine(agent.resultPreview) };
+        case 'done':
+        case 'stopped':
+            return { tool: null, text: firstLine(agent.resultPreview) ?? firstLine(agent.promptPreview) };
+    }
+}
+
+export type WorkflowCounts = Record<WorkflowAgentState, number> & { total: number };
+
+export function workflowCounts(phases: WorkflowPhaseView[]): WorkflowCounts {
+    const counts: WorkflowCounts = { total: 0, running: 0, waiting: 0, stopped: 0, done: 0, failed: 0 };
+    for (const view of phases.flatMap((phase) => phase.agents)) {
+        counts.total += 1;
+        counts[view.state] += 1;
+    }
+    return counts;
+}
+
+const META_START = /export\s+const\s+meta\s*=\s*\{/;
+const DESCRIPTION = /\bdescription\s*:\s*(['"`])((?:\\.|(?!\1)[^\\])*)\1/;
+
+/* The literal from its opening brace to the one that closes it, skipping braces inside strings. */
+function metaLiteral(script: string): string | null {
+    const start = META_START.exec(script);
+    if (start === null) {
+        return null;
+    }
+    const from = start.index + start[0].length - 1;
+    let depth = 0;
+    let quote: string | null = null;
+    for (let i = from; i < script.length; i++) {
+        const char = script[i]!;
+        if (quote !== null) {
+            if (char === '\\') {
+                i++;
+            } else if (char === quote) {
+                quote = null;
+            }
+            continue;
+        }
+        if (char === "'" || char === '"' || char === '`') {
+            quote = char;
+        } else if (char === '{') {
+            depth++;
+        } else if (char === '}' && --depth === 0) {
+            return script.slice(from, i + 1);
+        }
+    }
+    return null;
+}
+
+/* The script's `meta` is a pure literal by the CLI's own rule, so its description reads without running anything. A saved workflow called by name has no script here. */
+export function workflowDescription(input: unknown): string | null {
+    const script = typeof input === 'object' && input !== null && 'script' in input ? input.script : undefined;
+    const meta = typeof script === 'string' ? metaLiteral(script) : null;
+    const found = meta === null ? undefined : DESCRIPTION.exec(meta)?.[2]?.replace(/\\(.)/g, '$1').trim();
+    return found ? found : null;
 }

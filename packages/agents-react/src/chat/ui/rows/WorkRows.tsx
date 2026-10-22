@@ -283,7 +283,7 @@ function ToolOutput({ tool }: { tool: ChatToolItem }) {
 }
 
 /* An opened call without a card: what it was asked in the foreground, what it answered muted below. */
-function ToolBody({ tool }: { tool: ChatToolItem }) {
+export function ToolBody({ tool }: { tool: ChatToolItem }) {
     const patches = unifiedChanges(tool);
     const changes = patches.length > 0 ? [] : fileChanges(tool.name, tool.input);
     if (patches.length + changes.length > 0) {

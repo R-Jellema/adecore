@@ -176,7 +176,15 @@ export default {
             notStarted: 'nog niet begonnen',
             waiting: 'wacht',
             stopped: 'gestopt',
-            stalled: 'Vijf minuten geen voortgang. Hij loopt nog, en je kunt hem stoppen.'
+            stalled: 'Vijf minuten geen voortgang. Hij loopt nog, en je kunt hem stoppen.',
+            running: 'Workflow loopt',
+            done: 'Workflow klaar',
+            failed: 'Workflow mislukt',
+            agents_one: '{{count}} agent',
+            agents_other: '{{count}} agents',
+            working: '{{count}} bezig',
+            finished: '{{count}} klaar',
+            failedCount: '{{count}} mislukt'
         }
     },
     work: {

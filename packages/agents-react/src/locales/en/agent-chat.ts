@@ -176,7 +176,15 @@ export default {
             notStarted: 'not started',
             waiting: 'waiting',
             stopped: 'stopped',
-            stalled: 'No progress for five minutes. It is still running, and you can stop it.'
+            stalled: 'No progress for five minutes. It is still running, and you can stop it.',
+            running: 'Workflow running',
+            done: 'Workflow done',
+            failed: 'Workflow failed',
+            agents_one: '{{count}} agent',
+            agents_other: '{{count}} agents',
+            working: '{{count}} working',
+            finished: '{{count}} done',
+            failedCount: '{{count}} failed'
         }
     },
     work: {
