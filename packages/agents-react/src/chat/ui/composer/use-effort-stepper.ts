@@ -2,8 +2,9 @@ import { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { ChatInfo, ModelInfo } from '@adecore/agent-contracts';
 import { useChatScope } from '../../../scope';
+import { choiceWord } from '../../../agents/option-words';
 import { registerEffortStepper } from '../../composer-effort';
-import { stepEffort, type EffortStep } from '../../logic/effort';
+import { EFFORT_OPTION, stepEffort, type EffortStep } from '../../logic/effort';
 import type { ChatControls } from './use-chat-controls';
 import type { ComposerNotice } from './use-notice';
 
@@ -34,13 +35,16 @@ export function useEffortStepper({ chatId, info, model, writable, controls, setN
         }
         if (result.kind === 'edge') {
             setNotice(
-                t(direction === 'up' ? 'composer.notice.effortHighest' : 'composer.notice.effortLowest', { effort: result.choice.label, model: name }),
+                t(direction === 'up' ? 'composer.notice.effortHighest' : 'composer.notice.effortLowest', {
+                    effort: choiceWord(EFFORT_OPTION, result.choice),
+                    model: name
+                }),
                 'info'
             );
             return;
         }
         controls.configure({ selection: result.selection });
-        setNotice(t('composer.notice.effort', { effort: result.choice.label }), 'info');
+        setNotice(t('composer.notice.effort', { effort: choiceWord(EFFORT_OPTION, result.choice) }), 'info');
     };
 
     // A command means the chat as it stands when it is given, so the registration reads the latest step.

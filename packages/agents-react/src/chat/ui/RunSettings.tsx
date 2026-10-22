@@ -30,6 +30,7 @@ import { favoritesFirst, searchModels, shortlistOf, wantsModelSearch } from '../
 import { favoriteModelsOf, toggleFavoriteModel, useChatPreferences } from '../preferences';
 import { CONTEXT_OPTION, contextFraction, contextSegments, orderOptions, type ContextPart } from '../logic/context-usage';
 import { RUNTIME_MODES } from '../runtime-modes';
+import { localizedOption } from '../../agents/option-words';
 import { formatClock, formatWeekdayClock, isSameDay, formatPercent, formatTokens } from '@adecore/ui/format';
 import { Icon, Menu, Tooltip, useNow } from '@adecore/ui';
 import { useChatHost } from '../../host';
@@ -146,7 +147,7 @@ export function RunSettings({
     const owner = providers.find((entry) => entry.kind === provider);
     const current = modelName(selection.model, owner?.models);
     const short = shortModelName(current, owner?.models);
-    const options = orderOptions(model?.options ?? []);
+    const options = orderOptions((model?.options ?? []).map(localizedOption));
     const summary = options.flatMap((option) => {
         const label = optionSummary(option, selection);
         return label === null ? [] : [{ id: option.id, label, ring: option.id === CONTEXT_OPTION }];

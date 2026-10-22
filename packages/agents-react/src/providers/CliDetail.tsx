@@ -4,6 +4,7 @@ import type { AgentKind, ModelInfo, ProviderInfo } from '@adecore/agent-contract
 import { AccountDot } from '../agents/AccountDot';
 import { ModelOptionControl } from '../agents/ModelOptionControl';
 import { carryOptions } from '../agents/model-options';
+import { optionWord } from '../agents/option-words';
 import { ACCOUNT_TONE_CLASSES, accountName, accountStatusLine, type AccountEntry, type AccountLogin } from '../agents/accounts';
 import { accountFor, forgetChatSelection, rememberChatAccount, rememberChatSelection, selectionFor, useChatPreferences } from '../chat/preferences';
 import { useChatScope } from '../scope';
@@ -27,7 +28,7 @@ function ModelOptionRows({ provider, model, options }: { provider: AgentKind; mo
                     key={option.id}
                     indent
                     muted
-                    label={option.label}
+                    label={optionWord(option)}
                     control={<ModelOptionControl option={option} options={options} layout="row" onChange={(value) => setOption(option.id, value)} />}
                 />
             ))}

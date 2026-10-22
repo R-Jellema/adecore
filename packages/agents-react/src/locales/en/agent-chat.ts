@@ -695,6 +695,22 @@ export default {
             }
         }
     },
+    modelOptions: {
+        effort: {
+            label: 'Reasoning',
+            choices: {
+                low: 'Low',
+                medium: 'Medium',
+                high: 'High',
+                xhigh: 'Extra high',
+                max: 'Max'
+            }
+        },
+        contextWindow: { label: 'Context window' },
+        fastMode: { label: 'Fast mode' },
+        thinking: { label: 'Thinking' },
+        serviceTier: { label: 'Priority' }
+    },
     readingWidth: {
         label: 'Reading width',
         narrow: {

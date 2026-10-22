@@ -1,6 +1,7 @@
 import type { ModelOptionDescriptor, ModelSelection } from '@adecore/agent-contracts';
 import { Segmented, Switch, Select } from '@adecore/ui';
 import { optionValue } from './model-options';
+import { localizedOption } from './option-words';
 
 // Up to this many choices read at a glance side by side; more go into a menu.
 const MAX_SEGMENTS = 3;
@@ -26,7 +27,8 @@ type ModelOptionControlProps = {
  * descriptors as menu items (`RunSettings`), since there they sit in a menu.
  */
 export function ModelOptionControl(props: ModelOptionControlProps) {
-    const { option, options, layout = 'compact', disabled } = props;
+    const { options, layout = 'compact', disabled } = props;
+    const option = localizedOption(props.option);
     if (option.type === 'boolean') {
         return <Switch checked={optionValue(option, options) === true} label={option.label} disabled={disabled} onCheckedChange={props.onChange} />;
     }

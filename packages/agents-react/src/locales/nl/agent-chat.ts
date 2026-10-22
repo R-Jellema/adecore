@@ -695,6 +695,22 @@ export default {
             }
         }
     },
+    modelOptions: {
+        effort: {
+            label: 'Denkniveau',
+            choices: {
+                low: 'Laag',
+                medium: 'Gemiddeld',
+                high: 'Hoog',
+                xhigh: 'Extra hoog',
+                max: 'Max'
+            }
+        },
+        contextWindow: { label: 'Contextvenster' },
+        fastMode: { label: 'Snelle modus' },
+        thinking: { label: 'Nadenken' },
+        serviceTier: { label: 'Voorrang' }
+    },
     readingWidth: {
         label: 'Leesbreedte',
         narrow: {
