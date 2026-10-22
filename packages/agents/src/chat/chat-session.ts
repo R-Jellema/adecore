@@ -1894,6 +1894,7 @@ export class ChatSession {
             resumeNote: this.options.resumeNote?.() ?? null,
             resumeInstructions: this.options.resumeInstructions?.() ?? null,
             ...(info.goal === undefined ? {} : { goal: info.goal }),
+            ...(info.usage.cacheTtlMs === undefined ? {} : { cacheTtlMs: info.usage.cacheTtlMs }),
             ...(folders.length > 0 ? { folders } : {}),
             ...(projectConfig ? {} : { projectConfig }),
             ...(this.options.spawn ? { spawn: this.options.spawn } : {})

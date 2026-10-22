@@ -182,6 +182,21 @@ describe('backend replacement with live work', () => {
         await run.session.dispose();
     });
 
+    test('a new process starts with the lifetime of the prompt cache the chat last wrote', async () => {
+        const run = replacementRig();
+        run.session.send('first');
+        await flush();
+        expect(run.instances[0]!.launch.cacheTtlMs).toBeUndefined();
+        run.event({ type: 'session', agentSessionId: 'native-session', model: null });
+        run.event({ type: 'usage', cacheTtlMs: 300_000, cacheExpiresAt: 301_000 });
+        run.event({ type: 'turn.done', state: 'error', costUsd: 0, replaceProcess: true });
+        run.session.send('again');
+        await flush();
+        expect(run.instances).toHaveLength(2);
+        expect(run.instances[1]!.launch.cacheTtlMs).toBe(300_000);
+        await run.session.dispose();
+    });
+
     test('authentication failure replaces the idle process on the next send and resumes the native session', async () => {
         const run = replacementRig();
         const protocol = new ClaudeProtocol();

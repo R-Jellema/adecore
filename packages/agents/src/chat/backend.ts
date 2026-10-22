@@ -47,6 +47,9 @@ export interface BackendLaunch {
     resumeInstructions?: string | null;
     // The goal the chat last knew of, which a CLI that takes it up again from its own transcript on a resume still works toward.
     goal?: ChatGoal;
+    // How long the prompt cache the chat last wrote lives, in milliseconds, for a CLI that reads that cache again
+    // without saying its lifetime.
+    cacheTtlMs?: number;
     // Folders outside `cwd` the agent may reach without asking. Claude Code takes them as `--add-dir`; Codex's
     // sandbox reads the whole disk already and keeps writes to the workspace, so it needs nothing.
     folders?: readonly string[];

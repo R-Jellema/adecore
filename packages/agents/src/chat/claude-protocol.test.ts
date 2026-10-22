@@ -59,6 +59,13 @@ describe('ClaudeProtocol', () => {
         expect(protocol.handle(assistant('msg-5')).some((event) => event.type === 'usage' && event.cacheTtlMs !== undefined)).toBe(false);
     });
 
+    test('a new process that only reads the cache moves the expiry by the lifetime the chat knew from before', () => {
+        const start = (protocol: ClaudeProtocol) =>
+            protocol.handle({ type: 'stream_event', event: { type: 'message_start', message: { id: 'msg-1', usage: { cache_read_input_tokens: 900 } } } });
+        expect(start(new ClaudeProtocol(null, () => 1000, 300_000))).toEqual([{ type: 'usage', cacheTtlMs: 300_000, cacheExpiresAt: 301_000 }]);
+        expect(start(new ClaudeProtocol(null, () => 1000))).toEqual([]);
+    });
+
     test.each(['task-notification', { kind: 'task-notification' }])(
         'a background result with origin %j cannot finish compact or clear its refusal',
         (origin) => {

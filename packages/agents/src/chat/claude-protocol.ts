@@ -220,7 +220,7 @@ export class ClaudeProtocol {
     private readonly workflows = new Map<string, string>();
     // The main-chain response whose cache lifetime the thread has, and the lifetime of the cache last written.
     private cacheMessageId: string | null = null;
-    private cacheTtlMs: number | null = null;
+    private cacheTtlMs: number | null;
     // The uuid of the last main-chain assistant frame of the turn, which is the line of the transcript the turn ends on.
     private lastUuid: string | null = null;
     // The model each subagent last answered with, so a frame only reports one it had not named yet.
@@ -243,9 +243,11 @@ export class ClaudeProtocol {
     // Background subagents still at work; Claude Code holds a goal's check until they report.
     private readonly backgroundAgents = new Set<string>();
 
-    constructor(goal: ChatGoal | null = null, now: () => number = () => Date.now()) {
+    // `cacheTtlMs` is the lifetime the chat knew before this process, so a resumed CLI that only reads the cache still moves its expiry.
+    constructor(goal: ChatGoal | null = null, now: () => number = () => Date.now(), cacheTtlMs: number | null = null) {
         this.goal = goal;
         this.now = now;
+        this.cacheTtlMs = cacheTtlMs;
     }
 
     /* A stop is on its way; the turn it ends leaves the goal set but nobody working on it. */
