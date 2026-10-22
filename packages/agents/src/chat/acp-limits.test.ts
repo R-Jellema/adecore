@@ -3,7 +3,7 @@ import type { RuntimeMode } from '@adecore/agent-contracts';
 import { fakeAcpCapture, type AcpCapture } from '../testing/fake-acp-capture.ts';
 import { inProcess } from '../testing/fake-cli.ts';
 import { createAcpBackend } from './acp-backend.ts';
-import { quotaResetOf } from './acp-protocol.ts';
+import { AcpProtocol, acpStopWords, quotaResetOf } from './acp-protocol.ts';
 import type { BackendEvent } from './backend.ts';
 import antigravityQuota from './fixtures/antigravity-1.4.1-quota.json';
 import grokLimits from './fixtures/grok-1.0.62-limits.json';
@@ -98,6 +98,35 @@ describe('Antigravity 1.4.1', () => {
         expect(quotaResetOf(antigravityQuota.resetOn, NOW)).toBe(Date.UTC(2026, 9, 23, 14, 6));
         expect(quotaResetOf(antigravityQuota.noReset, NOW)).toBeNull();
         expect(quotaResetOf('Your limit will reset in 5 minutes, 30 seconds.', NOW)).toBe(NOW + 5 * 60_000 + 31_000);
+    });
+
+    test('ends a turn on the limit whatever other reason the agent gives for its end', async () => {
+        const done = turnDone(await turnOf({ ...antigravityQuota, promptResponse: { stopReason: 'max_turn_requests' } }));
+        expect(done).toMatchObject({ state: 'error', error: antigravityQuota.promptUpdates[0]!.content.text, limit: { kind: 'usage' } });
+    });
+
+    test('shows the limit message of a failed request and pauses on it when the error names no limit', async () => {
+        const events = await turnOf({ ...antigravityQuota, promptError: { code: -32603, message: 'Internal error' } });
+        expect(events).toContainEqual({ type: 'text.done', ref: 'message-1', text: antigravityQuota.promptUpdates[0]!.content.text });
+        expect(turnDone(events)).toMatchObject({ state: 'error', limit: { kind: 'usage', resetsAt: NOW + (4 * 24 + 23 + 1) * HOUR } });
+    });
+
+    test('shows the limit message of a turn the person stopped, which ends stopped', () => {
+        const quota = (protocol: AcpProtocol) =>
+            protocol.update('s', {
+                sessionId: 's',
+                update: { sessionUpdate: 'agent_message_chunk', content: { type: 'text', text: antigravityQuota.noReset } }
+            });
+        const stopped = new AcpProtocol(1, {}, acpStopWords('Agent'), false, () => NOW);
+        quota(stopped);
+        const finished = stopped.finish({ stopReason: 'cancelled' }, 'prompt-1', true);
+        expect(finished).toContainEqual({ type: 'text.done', ref: 'message-1', text: antigravityQuota.noReset });
+        expect(turnDone(finished)).toMatchObject({ state: 'aborted' });
+        const cut = new AcpProtocol(1, {}, acpStopWords('Agent'), false, () => NOW);
+        quota(cut);
+        const aborted = cut.abort('prompt-1', null);
+        expect(aborted).toContainEqual({ type: 'text.done', ref: 'message-1', text: antigravityQuota.noReset });
+        expect(turnDone(aborted)).toMatchObject({ state: 'aborted' });
     });
 
     test('shows a message that only starts like the limit message, whole', async () => {

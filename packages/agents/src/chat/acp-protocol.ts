@@ -684,6 +684,10 @@ export function acpErrorLimit(code: number | null, data: unknown): ChatTurnLimit
     return overloaded ? { kind: 'overload' } : null;
 }
 
+function quotaLimit(quota: { resetsAt: number | null }): ChatTurnLimit {
+    return { kind: 'usage', ...(quota.resetsAt === null ? {} : { resetsAt: quota.resetsAt }) };
+}
+
 const UNIT_MS: Record<string, number> = { second: 1000, minute: 60_000, hour: 3_600_000, day: 86_400_000 };
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -762,8 +766,8 @@ export class AcpProtocol {
     private text: { ref: string; messageId: string | null; text: string; held: boolean; afterRefusal: boolean } | null = null;
     // Set by a refusal until the next message shows whether it is the refusal line.
     private refusalLine = false;
-    // The limit message of this turn, which ends it as a limit instead of an answer.
-    private quota: { text: string; resetsAt: number | null } | null = null;
+    // The limit message of this turn, held back from the thread: it ends the turn as a limit, or shows as text when the turn ends otherwise.
+    private quota: { ref: string; text: string; resetsAt: number | null } | null = null;
     private readonly now: () => number;
     private thought: { ref: string; text: string } | null = null;
     private counter = 0;
@@ -1077,10 +1081,12 @@ export class AcpProtocol {
         const base = { ...(promptId === undefined ? {} : { promptId }), costUsd: this.costUsd };
         const quota = this.quota;
         this.quota = null;
-        if (quota !== null && reason === 'end_turn') {
-            const limit: ChatTurnLimit = { kind: 'usage', ...(quota.resetsAt === null ? {} : { resetsAt: quota.resetsAt }) };
-            events.push({ type: 'turn.done', ...base, state: 'error', error: quota.text, limit });
+        if (quota !== null && reason !== 'cancelled') {
+            events.push({ type: 'turn.done', ...base, state: 'error', error: quota.text, limit: quotaLimit(quota) });
             return events;
+        }
+        if (quota !== null) {
+            events.push({ type: 'text.done', ref: quota.ref, text: quota.text });
         }
         switch (reason) {
             case 'cancelled':
@@ -1106,11 +1112,17 @@ export class AcpProtocol {
         this.refusalLine = false;
         const base = { ...(promptId === undefined ? {} : { promptId }), costUsd: this.costUsd };
         const events = [...this.closeText(), ...this.closeThought()];
+        const quota = this.quota;
         this.quota = null;
+        if (quota !== null) {
+            events.push({ type: 'text.done', ref: quota.ref, text: quota.text });
+        }
+        // A failed request after the limit message still ran into that limit, so it pauses as one when the error names none.
+        const named = limit ?? (quota === null ? null : quotaLimit(quota));
         events.push(
             error === null
                 ? { type: 'turn.done', ...base, state: 'aborted' }
-                : { type: 'turn.done', ...base, state: 'error', error, ...(limit === null ? {} : { limit }) }
+                : { type: 'turn.done', ...base, state: 'error', error, ...(named === null ? {} : { limit: named }) }
         );
         return events;
     }
@@ -1162,7 +1174,7 @@ export class AcpProtocol {
             return [];
         }
         if (text.held && text.text.startsWith(QUOTA_HEAD)) {
-            this.quota = { text: text.text.trim(), resetsAt: quotaResetOf(text.text, this.now()) };
+            this.quota = { ref: text.ref, text: text.text.trim(), resetsAt: quotaResetOf(text.text, this.now()) };
             return [];
         }
         return [{ type: 'text.done', ref: text.ref, text: text.text }];
