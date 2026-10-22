@@ -416,7 +416,7 @@ export class AcpBackend implements ChatBackend {
     sendTurn(input: TurnInput): void {
         const transport = this.transport;
         if (!transport) {
-            this.emit({ type: 'failed', message: `session/prompt failed: ${this.spec.name} is not running` });
+            this.emit({ type: 'failed', message: `${this.spec.name} is not running` });
             return;
         }
         const prompt = this.promptBlocks(input);
@@ -447,7 +447,7 @@ export class AcpBackend implements ChatBackend {
             this.sendTurn({ text: '/compact', preamble: null, attachments: [], mentions: [], skills: [] });
             return;
         }
-        this.emit({ type: 'note', level: 'warning', text: `${this.spec.name} cannot fold its context on request.` });
+        this.emit({ type: 'note', level: 'warning', text: `${this.spec.name} cannot compact its context.` });
         this.emit({ type: 'turn.done', state: 'done', costUsd: 0 });
     }
 

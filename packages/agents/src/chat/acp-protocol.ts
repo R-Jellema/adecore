@@ -650,10 +650,10 @@ export interface AcpStopWords {
 
 export function acpStopWords(agentName: string): AcpStopWords {
     return {
-        maxTokens: `${agentName} stopped: the response reached its token limit.`,
-        maxTurnRequests: `${agentName} stopped: the turn reached its limit of model requests.`,
+        maxTokens: `${agentName} stopped because the reply hit its length limit.`,
+        maxTurnRequests: `${agentName} stopped because this turn hit its step limit.`,
         refusal: `${agentName} refused to continue this turn.`,
-        ownAnswer: `${agentName} only takes one of the answers it offered, so the question was turned down.`
+        ownAnswer: `${agentName} accepts only the answers it offered, so it did not get yours.`
     };
 }
 

@@ -92,7 +92,7 @@ test('Claude continues reading after an event consumer throws and reports the fa
     fake.out({ type: 'assistant', message: { id: 'text', content: [{ type: 'text', text: 'hello' }] } });
     fake.out({ type: 'result', subtype: 'success' });
     await flush();
-    expect(events).toContainEqual({ type: 'failed', message: 'Claude transport failed: consumer failed', processAlive: true });
+    expect(events).toContainEqual({ type: 'failed', message: 'Lost the connection to Claude: consumer failed', processAlive: true });
     expect(events).toContainEqual({ type: 'turn.done', state: 'done', costUsd: 0 });
     expect(backend.running).toBe(true);
     await fake.exit();
@@ -113,7 +113,7 @@ test('Claude rejects a failed answer write, withdraws it, and never answers that
     fake.break();
     expect(backend.respondApproval('approval', 'allow')).toBe(false);
     expect(events).toContainEqual({ type: 'request.withdrawn', requestId: 'approval' });
-    expect(events).toContainEqual({ type: 'failed', message: 'Claude transport failed: broken pipe', processAlive: true });
+    expect(events).toContainEqual({ type: 'failed', message: 'Lost the connection to Claude: broken pipe', processAlive: true });
     const written = fake.writes.length;
     expect(backend.respondApproval('approval', 'allow')).toBe(false);
     expect(() => backend.sendTurn({ text: 'no', preamble: null, attachments: [], mentions: [], skills: [] })).toThrow('Claude stdin is closed');
@@ -289,7 +289,7 @@ test('Claude rejects an unacknowledged steer when its transport dies', async () 
     await fake.exit();
     await flush();
     expect(backend.running).toBe(false);
-    expect(reason).toContain('Claude exited before acknowledging');
+    expect(reason).toContain('Claude stopped before it got your message');
 });
 
 test('Codex sends native steering with the exact active turn id', async () => {
@@ -490,7 +490,7 @@ test('a Codex frame past the line limit is dropped and reported, and the frames 
     cli.chunk(new TextEncoder().encode(`\n${JSON.stringify({ method: 'after', params: {} })}\n`));
     await flush();
     expect(failures.map((error) => error.message)).toEqual([
-        'Codex transport failed: Codex wrote a frame of more than 64 million characters, which was dropped'
+        'Lost the connection to Codex: Codex wrote a frame of more than 64 million characters, which was dropped'
     ]);
     expect(((await pending) as Error).message).toContain('which was dropped');
     expect(frames).toEqual([{ method: 'after', params: {} }]);

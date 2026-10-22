@@ -737,7 +737,7 @@ export class ChatSession {
     compact(): void {
         const compaction = this.options.provider.capabilities.compaction;
         if (compaction === 'none') {
-            throw new ChatError('chat-unsupported', `${this.options.provider.name} cannot fold its context`);
+            throw new ChatError('chat-unsupported', `${this.options.provider.name} cannot compact its context`);
         }
         if (compaction === 'prompt') {
             this.send('/compact');

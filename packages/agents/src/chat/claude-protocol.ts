@@ -802,7 +802,7 @@ export class ClaudeProtocol {
                 events.push({ type: 'usage', costUsd: num(frame.total_cost_usd) });
             }
             if (frame.is_error === true) {
-                events.push({ type: 'note', level: 'warning', text: 'A background Claude turn failed; the submitted prompt is still pending.' });
+                events.push({ type: 'note', level: 'warning', text: 'Claude could not finish a turn in the background. Your message is still waiting.' });
             }
             return;
         }

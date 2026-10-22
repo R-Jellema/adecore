@@ -412,7 +412,7 @@ test('compact sends the agent its own command as a prompt where it lists one, an
     const silent = run();
     await silent.backend.start();
     silent.backend.compact();
-    expect(silent.events.find((event) => event.type === 'note')).toMatchObject({ text: 'Fake cannot fold its context on request.' });
+    expect(silent.events.find((event) => event.type === 'note')).toMatchObject({ text: 'Fake cannot compact its context.' });
     expect(silent.methods()).not.toContain('session/prompt');
     await silent.backend.dispose();
 });

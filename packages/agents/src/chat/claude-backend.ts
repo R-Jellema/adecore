@@ -292,10 +292,10 @@ export class ClaudeBackend implements ChatBackend {
     }
 
     private failed(error: unknown): void {
-        this.rejectSteers(`Claude transport failed: ${errorText(error)}`);
+        this.rejectSteers(`Lost the connection to Claude: ${errorText(error)}`);
         this.protocol.forgetPending();
         try {
-            this.host.onEvent({ type: 'failed', message: `Claude transport failed: ${errorText(error)}`, processAlive: this.running });
+            this.host.onEvent({ type: 'failed', message: `Lost the connection to Claude: ${errorText(error)}`, processAlive: this.running });
         } catch (reportError) {
             console.error('Reporting a Claude transport failure failed:', errorText(reportError));
         }
@@ -343,7 +343,7 @@ export class ClaudeBackend implements ChatBackend {
             return;
         }
         this.child = null;
-        this.rejectSteers('Claude exited before acknowledging your message');
+        this.rejectSteers('Claude stopped before it got your message');
         this.protocol.forgetPending();
         this.host.onEvent({ type: 'exit', exitCode, ...(stderr === null ? {} : { stderr }) });
     }

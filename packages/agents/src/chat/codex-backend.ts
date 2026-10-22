@@ -262,7 +262,7 @@ export class CodexBackend implements ChatBackend {
     private async runGoalCommand(command: GoalCommand, input: TurnInput): Promise<void> {
         const transport = this.transport;
         if (!transport) {
-            this.emit({ type: 'failed', message: 'thread/goal failed: Codex is not running' });
+            this.emit({ type: 'failed', message: 'Codex is not running' });
             return;
         }
         const threadId = this.threadId;
@@ -328,7 +328,7 @@ export class CodexBackend implements ChatBackend {
     async goal(action: ChatGoalAction): Promise<void> {
         const transport = this.transport;
         if (!transport) {
-            throw new Error('thread/goal failed: Codex is not running');
+            throw new Error('Codex is not running');
         }
         if (action === 'clear') {
             await transport.request('thread/goal/clear', { threadId: this.threadId, origin: 'user' });
@@ -443,7 +443,7 @@ export class CodexBackend implements ChatBackend {
     listThreadItems(params: { threadId: string; cursor?: string; limit: number; sortDirection: 'asc' | 'desc' }): Promise<unknown> {
         const transport = this.transport;
         if (!transport) {
-            return Promise.reject(new Error('thread/items/list failed: Codex is not running'));
+            return Promise.reject(new Error('Codex is not running'));
         }
         return transport.request('thread/items/list', params);
     }
@@ -537,7 +537,7 @@ export class CodexBackend implements ChatBackend {
     private request(method: string, params: unknown, accepted?: () => void): void {
         const transport = this.transport;
         if (!transport) {
-            this.emit({ type: 'failed', message: `${method} failed: Codex is not running` });
+            this.emit({ type: 'failed', message: 'Codex is not running' });
             return;
         }
         void transport

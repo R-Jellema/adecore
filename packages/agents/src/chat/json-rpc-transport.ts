@@ -84,7 +84,7 @@ export class JsonRpcTransport {
         const timeoutMs = options.timeoutMs === undefined ? this.options.requestTimeoutMs : options.timeoutMs;
         return new Promise((resolve, reject) => {
             if (this.closed) {
-                reject(new Error(`${method} failed: ${label} is not running`));
+                reject(new Error(`${label} is not running`));
                 return;
             }
             const id = this.nextId++;
@@ -165,7 +165,7 @@ export class JsonRpcTransport {
     }
 
     private failed(error: unknown): void {
-        const failure = new Error(`${this.options.label} transport failed: ${errorText(error)}`);
+        const failure = new Error(`Lost the connection to ${this.options.label}: ${errorText(error)}`);
         this.rejectPending(() => failure);
         try {
             this.options.onError?.(failure);
