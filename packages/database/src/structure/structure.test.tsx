@@ -52,7 +52,7 @@ const structure: TableStructure = {
 describe('StructureView', () => {
     test('shows a spinner while the structure loads', () => {
         const markup = render(<StructureView connection={connection} schema="shop" table="orders" />);
-        expect(markup).toContain('aria-label="Loading structure"');
+        expect(markup).toContain('aria-label="Loading structure…"');
     });
 
     test('takes a class name', () => {

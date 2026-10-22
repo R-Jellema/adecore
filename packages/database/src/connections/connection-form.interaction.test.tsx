@@ -138,7 +138,7 @@ describe.skipIf(typeof document === 'undefined')('ConnectionForm in a DOM', () =
         mounted = await mount(<Controlled start={initial} onValue={(value) => values.push(value)} />, { client });
         await click(byText('[role=radio]', 'Docker'));
 
-        await waitFor(() => expect(document.body.textContent).toContain('No running containers that look like a database.'));
+        await waitFor(() => expect(document.body.textContent).toContain('No running database containers.'));
     });
 
     test('asks again for the containers when the refresh button is pressed', async () => {
@@ -148,7 +148,7 @@ describe.skipIf(typeof document === 'undefined')('ConnectionForm in a DOM', () =
         await click(byText('[role=radio]', 'Docker'));
         expect(recorded.of('discover')).toHaveLength(1);
 
-        await click(find('button[aria-label="Look for containers again"]'));
+        await click(find('button[aria-label="Refresh"]'));
         expect(recorded.of('discover')).toHaveLength(2);
     });
 });

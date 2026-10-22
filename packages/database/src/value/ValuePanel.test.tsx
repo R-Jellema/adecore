@@ -31,8 +31,8 @@ describe('ValuePanel', () => {
     });
 
     test('shows a spinner while it loads, and says so when it cannot', () => {
-        expect(panel({ value: undefined, loading: true })).toContain('Loading the value');
-        expect(panel({ value: undefined })).toContain('The value could not be loaded.');
+        expect(panel({ value: undefined, loading: true })).toContain('Loading value…');
+        expect(panel({ value: undefined })).toContain('Could not load value.');
     });
 
     test('shows the column, its type, the value and its size', () => {

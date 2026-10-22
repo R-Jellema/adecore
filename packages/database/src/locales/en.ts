@@ -13,37 +13,37 @@ export default {
         new: 'New connection',
         newName: 'New connection',
         untitled: 'Untitled connection',
-        empty: 'No connections yet. Add one to browse a database.',
+        empty: 'No connections yet',
         test: {
             action: 'Test connection',
             success: 'Connected to {{server}}.',
-            failed: 'The connection failed.',
+            failed: 'Could not connect.',
             dismiss: 'Dismiss'
         },
         delete: {
             action: 'Delete',
-            title: 'Delete this connection?',
-            description: '"{{name}}" is removed from the list. The database itself is not touched.',
+            title: 'Delete connection?',
+            description: 'Removes "{{name}}" from the list, not the database.',
             confirm: 'Delete connection'
         },
         form: {
             name: 'Name',
             engine: 'Engine',
             path: 'File',
-            pathHint: 'The absolute path of the database file.',
+            pathHint: 'Absolute path to the database file.',
             browse: 'Browse',
             create: 'Create file',
-            createHint: 'Creates the file when it does not exist.',
+            createHint: 'Creates the file if missing.',
             host: 'Host',
             port: 'Port',
             socket: 'Socket',
-            socketHint: 'The Unix socket the server listens on.',
+            socketHint: 'Unix socket of the server.',
             user: 'User',
             password: 'Password',
             database: 'Database',
-            databaseHint: 'Optional. The schema a session starts in.',
+            databaseHint: 'Optional. Starting schema.',
             readOnly: 'Read only',
-            readOnlyHint: 'Refuses every change to the data.',
+            readOnlyHint: 'Blocks all data changes.',
             tls: {
                 label: 'Encryption',
                 disable: 'Off',
@@ -51,20 +51,20 @@ export default {
                 prefer: 'Preferred',
                 preferHint: 'Encrypted when the server offers it.',
                 require: 'Required',
-                requireHint: 'Fails when the server offers no encryption.',
+                requireHint: 'Refuses to connect without encryption.',
                 verify: 'Verified',
                 verifyHint: 'Also checks the certificate against the host name.'
             },
             problems: {
-                'path-required': 'Enter the path of the database file.',
-                'path-relative': 'The path must be absolute.',
+                'path-required': 'Enter the file path.',
+                'path-relative': 'Path must be absolute.',
                 'host-required': 'Enter a host.',
-                'port-range': 'The port is a number from 1 to 65535.',
-                'socket-required': 'Enter the path of the socket.',
+                'port-range': 'Port must be 1 to 65535.',
+                'socket-required': 'Enter the socket path.',
                 'ssh-host-required': 'Enter the SSH host.',
-                'ssh-port-range': 'The SSH port is a number from 1 to 65535.',
+                'ssh-port-range': 'SSH port must be 1 to 65535.',
                 'container-required': 'Pick a container.',
-                'container-port-range': 'The port is a number from 1 to 65535.'
+                'container-port-range': 'Port must be 1 to 65535.'
             },
             mode: {
                 label: 'Connect through',
@@ -79,17 +79,17 @@ export default {
                 port: 'SSH port',
                 user: 'SSH user',
                 identityFile: 'Identity file',
-                keyHint: 'A key or the SSH agent has to answer. A password is never asked.',
+                keyHint: 'Uses a key or the SSH agent, never a password.',
                 serverHost: 'Server host',
                 serverPort: 'Server port',
-                serverHint: 'The address of the database server as the SSH host sees it.'
+                serverHint: 'Database address as seen from the SSH host.'
             },
             docker: {
                 container: 'Container',
                 pick: 'Pick a container',
-                refresh: 'Look for containers again',
-                loading: 'Looking for containers',
-                empty: 'No running containers that look like a database.',
+                refresh: 'Refresh',
+                loading: 'Looking for containers…',
+                empty: 'No running database containers.',
                 unsupported: 'Docker is not available.',
                 notRunning: 'Not running',
                 published: 'Published on port {{port}}',
@@ -99,8 +99,8 @@ export default {
         },
         fromDocker: {
             label: 'From a Docker container',
-            loading: 'Looking for containers',
-            empty: 'No running containers that look like a database.',
+            loading: 'Looking for containers…',
+            empty: 'No running database containers.',
             unsupported: 'Docker is not available.',
             retry: 'Try again'
         }
@@ -108,7 +108,7 @@ export default {
     explorer: {
         label: 'Database explorer',
         filter: 'Filter tables',
-        noConnections: 'No connections to explore.',
+        noConnections: 'No connections',
         noMatches: 'No loaded table matches "{{query}}".',
         noSchemas: 'No schemas',
         noTables: 'No tables',
@@ -117,7 +117,7 @@ export default {
         views: 'Views',
         primaryKey: 'Primary key',
         foreignKey: 'Foreign key',
-        primaryAndForeignKey: 'Primary key and foreign key',
+        primaryAndForeignKey: 'Primary and foreign key',
         parts: {
             columns: 'Columns',
             keys: 'Keys',
@@ -131,9 +131,9 @@ export default {
         check: 'Check',
         readOnly: 'Read only',
         schemaCount: '{{shown}} of {{total}}',
-        schemaCountHint_one: '{{shown}} of {{total}} schema shown, system schemas are hidden',
-        schemaCountHint_other: '{{shown}} of {{total}} schemas shown, system schemas are hidden',
-        loading: 'Loading',
+        schemaCountHint_one: '{{shown}} of {{total}} schema shown, system schemas hidden',
+        schemaCountHint_other: '{{shown}} of {{total}} schemas shown, system schemas hidden',
+        loading: 'Loading…',
         retry: 'Try again',
         refresh: 'Refresh',
         disconnect: 'Disconnect',
@@ -156,12 +156,12 @@ export default {
         truncate: {
             action: 'Truncate…',
             title: 'Truncate "{{name}}"?',
-            description: 'Deletes every row in "{{name}}". This cannot be undone.',
+            description: 'Deletes every row. This cannot be undone.',
             confirm: 'Truncate'
         },
         drop: {
             field: 'Type "{{name}}" to confirm',
-            mismatch: 'The name does not match.',
+            mismatch: 'Name does not match.',
             table: {
                 action: 'Drop…',
                 title: 'Drop "{{name}}"?',
@@ -169,16 +169,16 @@ export default {
                 confirm: 'Drop table'
             },
             view: {
-                action: 'Drop view…',
+                action: 'Drop…',
                 title: 'Drop "{{name}}"?',
-                description: 'Deletes the view. The tables behind it are not touched.',
+                description: 'Deletes the view, not its tables.',
                 confirm: 'Drop view'
             }
         }
     },
     structure: {
-        loading: 'Loading structure',
-        failed: 'The structure could not be loaded.',
+        loading: 'Loading structure…',
+        failed: 'Could not load structure.',
         retry: 'Try again',
         columns: 'Columns',
         indexes: 'Indexes',
@@ -191,10 +191,10 @@ export default {
         primary: 'Primary',
         unique: 'Unique',
         engineDefault: 'Default',
-        noColumns: 'This table has no columns.',
-        noIndexes: 'This table has no indexes.',
-        noForeignKeys: 'This table has no foreign keys.',
-        noDdl: 'The server did not return a statement for this table.',
+        noColumns: 'No columns',
+        noIndexes: 'No indexes',
+        noForeignKeys: 'No foreign keys',
+        noDdl: 'No DDL for this table.',
         copy: 'Copy',
         column: {
             name: 'Name',
@@ -221,7 +221,7 @@ export default {
         copyValue: 'Copy',
         setNull: 'Set NULL',
         setDefault: 'Set DEFAULT',
-        loadingValue: 'Loading the whole value',
+        loadingValue: 'Loading full value…',
         column: {
             sortAscending: 'Sort ascending',
             sortDescending: 'Sort descending',
@@ -247,26 +247,26 @@ export default {
         copyPreviews: {
             title_one: 'Copied a value cut off',
             title_other: 'Copied {{formatted}} values cut off',
-            unavailable: 'Some values were copied cut off, since only their start was read and the whole values could not be loaded.',
-            tooLarge: 'Some values were copied cut off, since the whole values are too large to copy at once.'
+            unavailable: 'Only the start of some values was copied. Could not load the full values.',
+            tooLarge: 'Only the start of some values was copied. The full values are too large.'
         },
         followReference: 'Go to referenced row',
         emptyValue: '(empty)'
     },
     table: {
         grid: 'Rows of {{table}}',
-        loading: 'Loading rows',
-        notLoaded: 'The rows could not be loaded.',
-        empty: 'This table has no rows.',
+        loading: 'Loading rows…',
+        notLoaded: 'Could not load rows.',
+        empty: 'No rows',
         noRows: 'No rows',
         refresh: 'Refresh',
         addRow: 'Add row',
         deleteRows: 'Delete selected rows',
         unavailable: '{{action}} ({{reason}})',
         readOnly: {
-            connection: 'This connection is read only.',
-            view: 'A view cannot be edited.',
-            noKey: 'This table has no primary key or unique key, so its rows cannot be told apart.'
+            connection: 'Read-only connection.',
+            view: 'Views are read only.',
+            noKey: 'No primary or unique key to identify rows.'
         },
         submit: 'Submit ({{changes}})',
         revert: 'Revert',
@@ -274,7 +274,7 @@ export default {
         dismiss: 'Dismiss',
         changed: 'The table changed; reload to see it',
         reload: 'Reload',
-        conflict: 'Change {{number}} ({{row}}) matched no row or more than one, so nothing was saved. Refresh the page and try again.',
+        conflict: 'Change {{number}} ({{row}}) matched no single row. Nothing was saved. Refresh and try again.',
         queryTime: 'Query time',
         elapsed: '{{value}} ms',
         range: 'Rows {{from}} to {{to}}',
@@ -285,11 +285,11 @@ export default {
         previousPage: 'Previous page',
         nextPage: 'Next page',
         discard: {
-            title: 'Discard the pending changes?',
-            description: 'The changes you have not submitted are lost when the page changes.',
+            title: 'Discard changes?',
+            description: 'Unsubmitted changes are lost.',
             confirm: 'Discard changes'
         },
-        cloneRows: 'Clone selected rows',
+        cloneRows: 'Duplicate selected rows',
         revertRows: 'Revert selected rows',
         firstPage: 'First page',
         lastPage: 'Last page',
@@ -315,8 +315,8 @@ export default {
             row: 'Row {{number}}',
             position: '{{index}} of {{count}} on this page',
             close: 'Close record view',
-            expand: 'Show the whole value',
-            collapse: 'Hide the whole value'
+            expand: 'Show full value',
+            collapse: 'Hide full value'
         },
         aggregates: {
             sum: 'Sum',
@@ -335,14 +335,14 @@ export default {
             cancel: 'Cancel',
             done_one: 'Exported {{rows}} row.',
             done_other: 'Exported {{rows}} rows.',
-            failed: 'Export failed'
+            failed: 'Could not export'
         },
         import: {
             menu: 'Import from file',
             done_one: 'Imported {{rows}} row.',
             done_other: 'Imported {{rows}} rows.',
             title: 'Import from file',
-            description: 'Choose which column of the file fills which column of the table.',
+            description: 'Map file columns to table columns.',
             header: 'First line is a header',
             sampling: 'Reading the file',
             fileColumn: 'File column',
@@ -367,7 +367,7 @@ export default {
             jumpTo: 'Jump to column',
             asSql: 'Type as SQL',
             editFilter: 'Edit filter {{filter}}',
-            flipSort: 'Flip the sort on {{column}}',
+            flipSort: 'Flip sort on {{column}}',
             removeFilter: 'Remove filter',
             removeSort: 'Remove sort'
         }
@@ -378,13 +378,13 @@ export default {
         run: 'Run',
         cancel: 'Cancel',
         running: 'Running',
-        cancelled: 'The statement was cancelled.',
+        cancelled: 'Cancelled.',
         result: 'Result',
         results: 'Results',
         closeResults: 'Close results',
-        noRows: 'The statement returned no rows.',
+        noRows: 'No rows returned.',
         rows: 'Rows: {{rows}}',
-        hasMore: 'More rows exist but are not shown.',
+        hasMore: 'More rows not shown.',
         elapsed: '{{value}} ms',
         sqlState: 'SQLSTATE {{state}}',
         affected_one: '{{formatted}} row affected',
@@ -392,7 +392,7 @@ export default {
         lastInsertId: 'Last insert id: {{id}}',
         valuePanel: 'Value panel',
         runAll: 'Run all',
-        loading: 'Loading',
+        loading: 'Loading…',
         dismiss: 'Dismiss',
         rowRange: 'Rows: {{from}} to {{to}}',
         page: 'Page {{page}}',
@@ -406,12 +406,12 @@ export default {
         schemaPlaceholder: 'Schema',
         transaction: {
             autoCommit: 'Auto-commit',
-            hint: 'On, every run commits. Off, a transaction stays open until you commit or roll back.',
+            hint: 'When off, a transaction stays open until you commit or roll back.',
             open: 'Transaction open',
             commit: 'Commit',
             rollback: 'Roll back',
-            endTitle: 'End the transaction?',
-            endDescription: 'A transaction is still open. Commit it to keep its changes, or roll it back to discard them.',
+            endTitle: 'End transaction?',
+            endDescription: 'Commit to keep the changes, or roll back to discard them.',
             commitFailed: 'Could not commit',
             rollbackFailed: 'Could not roll back'
         },
@@ -430,20 +430,20 @@ export default {
             title: 'History',
             search: 'Search history',
             clear: 'Clear history',
-            empty: 'Nothing has run yet.',
-            noMatches: 'No run matches.',
+            empty: 'No history yet',
+            noMatches: 'No matches',
             hint: 'Click to edit, double click to run.',
             rows_one: '{{formatted}} row',
             rows_other: '{{formatted}} rows'
         },
-        pageFailed: 'Could not read the page',
-        exportFailed: 'Export failed'
+        pageFailed: 'Could not load page',
+        exportFailed: 'Could not export'
     },
     value: {
         title: 'Value',
         selectCell: 'Select a cell to see its value.',
-        loading: 'Loading the value',
-        notLoaded: 'The value could not be loaded.',
+        loading: 'Loading value…',
+        notLoaded: 'Could not load value.',
         close: 'Close',
         copy: 'Copy',
         wrap: 'Wrap lines',
@@ -462,10 +462,10 @@ export default {
         revert: 'Revert',
         setNull: 'Set NULL',
         setDefault: 'Set DEFAULT',
-        invalidJson: 'This is not valid JSON: {{reason}}',
-        invalidHexCharacters: 'Hex takes the digits 0 to 9 and the letters a to f, and spaces or newlines between them.',
-        invalidHexOdd: 'A byte takes two hex digits, so the number of digits must be even.',
-        dumpTruncated: 'Showing the first {{shown}} of {{total}} bytes.',
+        invalidJson: 'Invalid JSON: {{reason}}',
+        invalidHexCharacters: 'Use only 0-9, a-f, spaces and newlines.',
+        invalidHexOdd: 'Hex needs an even number of digits.',
+        dumpTruncated: 'First {{shown}} of {{total}} bytes',
         characters_one: '{{formatted}} character',
         characters_other: '{{formatted}} characters',
         more: 'More actions'
@@ -479,11 +479,11 @@ export default {
             columnType: 'Column {{subject}} needs a type.',
             indexName: 'An index needs a name.',
             indexColumns: 'Index {{subject}} needs at least one column.',
-            foreignKey: 'Foreign key {{subject}} needs a table and as many referenced columns as it has columns.'
+            foreignKey: 'Foreign key {{subject}} needs a table and matching referenced columns.'
         }
     },
     designer: {
-        loading: 'Loading table',
+        loading: 'Loading table…',
         retry: 'Try again',
         tableName: 'Table name',
         tableNamePlaceholder: 'table_name',
@@ -494,15 +494,15 @@ export default {
         dismiss: 'Dismiss',
         changed: 'The table changed elsewhere; reload to see it. Your edits are lost.',
         reload: 'Reload',
-        failed: 'The changes could not be applied.',
+        failed: 'Could not apply changes.',
         copy: 'Copy',
         sql: 'SQL',
         noChanges: 'No changes',
-        fixProblems: 'Fix the problems listed under the tabs first.',
+        fixProblems: 'Fix the problems in the tabs first.',
         noColumnsToPick: 'Add a column first.',
         readOnly: {
-            connection: 'This connection is read only.',
-            view: 'A view cannot be modified here.'
+            connection: 'Read-only connection.',
+            view: 'Views are read only.'
         },
         tabs: {
             columns: 'Columns',
@@ -511,7 +511,7 @@ export default {
             options: 'Options'
         },
         columns: {
-            empty: 'This table has no columns yet.',
+            empty: 'No columns yet',
             order: 'Order',
             name: 'Name',
             type: 'Type',
@@ -522,8 +522,8 @@ export default {
             autoIncrement: 'Auto increment',
             autoIncrementFor: '{{name}} counts up by itself',
             primaryKey: 'Key',
-            addToKey: 'Add to the primary key',
-            removeFromKey: 'Remove from the primary key',
+            addToKey: 'Add to primary key',
+            removeFromKey: 'Remove from primary key',
             comment: 'Comment',
             remove: 'Remove column',
             moveUp: 'Move up',
@@ -532,21 +532,21 @@ export default {
             add: 'Add column'
         },
         indexes: {
-            empty: 'This table has no indexes besides its primary key.',
+            empty: 'No indexes besides the primary key',
             name: 'Index name',
             unique: 'Unique',
-            columns: 'Columns of the index',
+            columns: 'Index columns',
             remove: 'Remove index',
             add: 'Add index'
         },
         foreignKeys: {
-            empty: 'This table has no foreign keys.',
+            empty: 'No foreign keys',
             name: 'Name',
             columns: 'Columns',
             referencedTable: 'References table',
             pickTable: 'Pick a table',
             referencedColumns: 'Referenced columns',
-            loadingColumns: 'Loading columns',
+            loadingColumns: 'Loading columns…',
             onUpdate: 'On update',
             onDelete: 'On delete',
             engineDefault: 'Server default',
@@ -555,21 +555,21 @@ export default {
         },
         options: {
             withoutRowid: 'Without rowid',
-            withoutRowidHint: 'Stores the table in its primary key, which saves space for tables with a text or composite key.',
+            withoutRowidHint: 'Stores rows in the primary key. Saves space with text or composite keys.',
             strict: 'Strict',
-            strictHint: 'Makes SQLite refuse a value that does not fit the type of its column.',
+            strictHint: 'Refuses values that do not match the column type.',
             engine: 'Storage engine',
             charset: 'Character set',
             collation: 'Collation',
             comment: 'Comment',
-            serverDefault: 'Leave empty for the default of the server.'
+            serverDefault: 'Empty uses the server default.'
         },
         confirm: {
             title_one: 'Run {{formatted}} statement?',
             title_other: 'Run {{formatted}} statements?',
-            create: 'This creates the table {{table}}.',
-            alter: 'This changes the table {{table}}.',
-            destructive: 'A column is removed, and the data in it is lost.'
+            create: 'Creates {{table}}.',
+            alter: 'Changes {{table}}.',
+            destructive: 'Removes a column and its data.'
         }
     },
     workbench: {
@@ -593,7 +593,7 @@ export default {
         },
         discard: {
             title: 'Close {{table}}?',
-            description: 'The changes you have not submitted are lost when the tab closes.',
+            description: 'Unsubmitted changes are lost.',
             confirm: 'Close tab'
         }
     }

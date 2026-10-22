@@ -47,7 +47,7 @@ describe('DatabaseExplorer', () => {
 
     test('says there is nothing to explore without connections', () => {
         const markup = render(<DatabaseExplorer connections={[]} />);
-        expect(markup).toContain('No connections to explore.');
+        expect(markup).toContain('No connections');
         expect(markup).not.toContain('role="tree"');
     });
 

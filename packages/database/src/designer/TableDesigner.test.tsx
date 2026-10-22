@@ -87,8 +87,8 @@ const view = (draft: TableDraft, props: Partial<DesignerViewProps> = {}, from: T
 
 describe('TableDesigner', () => {
     test('shows a spinner while the table loads, for an existing table and for a new one', () => {
-        expect(render(<TableDesigner connection={connection} schema="shop" table="orders" />)).toContain('aria-label="Loading table"');
-        expect(render(<TableDesigner connection={connection} schema="shop" />)).toContain('aria-label="Loading table"');
+        expect(render(<TableDesigner connection={connection} schema="shop" table="orders" />)).toContain('aria-label="Loading table…"');
+        expect(render(<TableDesigner connection={connection} schema="shop" />)).toContain('aria-label="Loading table…"');
     });
 
     test('takes a class name', () => {
@@ -159,7 +159,7 @@ describe('the tabs of the designer', () => {
         const markup = render(<IndexesEditor draft={draftOf(structure)} dialect={mysql} {...props} />);
         expect(markup).toContain('value="idx_total"');
         expect(markup).toContain('Add index');
-        expect(render(<IndexesEditor draft={emptyDraft()} dialect={mysql} {...props} />)).toContain('no indexes');
+        expect(render(<IndexesEditor draft={emptyDraft()} dialect={mysql} {...props} />)).toContain('No indexes');
     });
 
     test('the foreign keys tab shows the key, its table and the columns to pick from', () => {

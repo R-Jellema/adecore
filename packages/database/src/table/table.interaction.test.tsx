@@ -80,7 +80,7 @@ describe.skipIf(typeof document === 'undefined')('the views of a table in a DOM,
             expect(recorded.of('rows')).toHaveLength(rowsBefore);
 
             await click(byText('button', 'Reload'));
-            expect(find('[role=dialog]').textContent).toContain('Discard the pending changes?');
+            expect(find('[role=dialog]').textContent).toContain('Discard changes?');
             expect(recorded.of('rows')).toHaveLength(rowsBefore);
 
             await click(byText('[role=dialog] button', 'Discard changes'));
@@ -204,7 +204,7 @@ describe.skipIf(typeof document === 'undefined')('the notices of a TableView', (
         await click(byText('[role=menuitem]', /CSV/));
         await waitFor(() => expect(notices).toHaveLength(1));
 
-        expect(notices[0]).toEqual({ tone: 'error', title: 'Export failed', description: 'The fake database has no files to export to.' });
+        expect(notices[0]).toEqual({ tone: 'error', title: 'Could not export', description: 'The fake database has no files to export to.' });
         expect(document.body.textContent).not.toContain('The fake database has no files to export to.');
     });
 });

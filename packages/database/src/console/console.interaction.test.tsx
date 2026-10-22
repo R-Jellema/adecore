@@ -205,7 +205,7 @@ describe.skipIf(typeof document === 'undefined')('QueryConsole in a DOM', () => 
         await waitFor(() => expect(findAll('[role=tab]')).toHaveLength(3));
         expect(document.body.textContent).toContain('Transaction open');
         await click(findAll('[role=tab]')[2]!);
-        expect(document.body.textContent).toContain('The statement was cancelled.');
+        expect(document.body.textContent).toContain('Cancelled.');
     });
 
     test('runs on a session of its own, apart from the one the other views of the connection share', async () => {
@@ -510,7 +510,7 @@ describe.skipIf(typeof document === 'undefined')('the notices of a QueryConsole'
         await exportResult();
         await waitFor(() => expect(notices).toHaveLength(1));
 
-        expect(notices[0]).toEqual({ tone: 'error', title: 'Export failed', description: 'The fake database has no files to export to.' });
+        expect(notices[0]).toEqual({ tone: 'error', title: 'Could not export', description: 'The fake database has no files to export to.' });
         expect(findAll('button').map((button) => button.textContent)).not.toContain('Dismiss');
     });
 

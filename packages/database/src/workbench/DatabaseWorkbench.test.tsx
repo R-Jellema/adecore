@@ -40,7 +40,7 @@ describe('DatabaseWorkbench', () => {
 
     test('turns the console off without a connection and says why', () => {
         const markup = render(<DatabaseWorkbench connections={[]} />);
-        expect(markup).toContain('No connections to explore.');
+        expect(markup).toContain('No connections');
         expect(markup).toMatch(/<button[^>]*disabled[^>]*>New console<\/button>/);
     });
 

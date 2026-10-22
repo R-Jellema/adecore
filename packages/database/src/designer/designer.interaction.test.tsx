@@ -178,13 +178,13 @@ describe.skipIf(typeof document === 'undefined')('TableDesigner in a DOM', () =>
         await click(findAll('button[aria-label="Remove column"]')[1]!);
         await click(applyButton('Apply'));
 
-        expect(find('[role=dialog]').textContent).toContain('A column is removed, and the data in it is lost.');
+        expect(find('[role=dialog]').textContent).toContain('Removes a column and its data.');
     });
 
     test('cannot be edited on a read only connection', async () => {
         await open('customers', { ...connection.config, readOnly: true });
 
-        expect(document.body.textContent).toContain('This connection is read only.');
+        expect(document.body.textContent).toContain('Read-only connection.');
         expect(byText('button', 'Add column')).toHaveProperty('disabled', true);
         expect(nameFields().every((field) => field.disabled)).toBe(true);
     });

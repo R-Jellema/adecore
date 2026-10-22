@@ -50,7 +50,7 @@ describe('ConnectionForm', () => {
 
     test('says why a path that is typed is no good', () => {
         const markup = render(<ConnectionForm value={{ ...sqlite, config: { engine: 'sqlite', path: 'notes.sqlite' } }} onValueChange={() => undefined} />);
-        expect(markup).toContain('The path must be absolute.');
+        expect(markup).toContain('Path must be absolute.');
         expect(markup).toContain('aria-invalid="true"');
     });
 
@@ -62,7 +62,7 @@ describe('ConnectionForm', () => {
     test('says why a host and a port are no good', () => {
         const bad: Connection = { ...mysql, config: { engine: 'mysql', host: '', port: 70000, user: 'u' } };
         const markup = render(<ConnectionForm value={bad} onValueChange={() => undefined} />);
-        expect(markup).toContain('The port is a number from 1 to 65535.');
+        expect(markup).toContain('Port must be 1 to 65535.');
     });
 
     test('offers the four ways to connect, TCP first, and shows no socket field in TCP mode', () => {
@@ -93,7 +93,7 @@ describe('ConnectionForm', () => {
             <ConnectionForm value={{ ...mysql, config: { ...mysql.config, socket: '' } as Connection['config'] }} onValueChange={() => undefined} />
         );
         expect(markup).toContain('placeholder="/tmp/mysql.sock"');
-        expect(markup).not.toContain('Enter the path of the socket.');
+        expect(markup).not.toContain('Enter the socket path.');
     });
 
     const viaSsh: Connection = {
@@ -116,7 +116,7 @@ describe('ConnectionForm', () => {
         expect(markup).toContain('value="~/.ssh/id_ed25519"');
         expect(markup).toContain('Server host');
         expect(markup).toContain('value="127.0.0.1"');
-        expect(markup).toContain('A key or the SSH agent has to answer.');
+        expect(markup).toContain('Uses a key or the SSH agent, never a password.');
         expect(markup).not.toContain('Browse');
     });
 
@@ -127,7 +127,7 @@ describe('ConnectionForm', () => {
     test('says why an SSH host that was left empty is no good', () => {
         const bad: Connection = { ...viaSsh, config: { ...viaSsh.config, tunnel: { kind: 'ssh', host: '', port: 99999 } } as Connection['config'] };
         const markup = render(<ConnectionForm value={bad} onValueChange={() => undefined} />);
-        expect(markup).toContain('The SSH port is a number from 1 to 65535.');
+        expect(markup).toContain('SSH port must be 1 to 65535.');
         expect(markup).not.toContain('Enter the SSH host.');
     });
 
@@ -141,7 +141,7 @@ describe('ConnectionForm', () => {
         expect(markup).toContain('Container');
         expect(markup).toContain('Container port');
         expect(markup).toContain('value="3307"');
-        expect(markup).toContain('aria-label="Look for containers again"');
+        expect(markup).toContain('aria-label="Refresh"');
         expect(markup).toContain('Looking for containers');
         expect(markup).not.toContain('SSH host');
         expect(markup).not.toContain('>Host<');
@@ -213,7 +213,7 @@ describe('ConnectionManager', () => {
 
     test('says there is nothing yet, and still offers a new connection', () => {
         const markup = render(<ConnectionManager value={[]} onValueChange={() => undefined} />);
-        expect(markup).toContain('No connections yet.');
+        expect(markup).toContain('No connections yet');
         expect(markup).toContain('New connection');
         expect(markup).not.toContain('Test connection');
     });

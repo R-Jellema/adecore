@@ -223,7 +223,7 @@ describe('TableToolbar', () => {
 
     test('keeps the removed controls out of the row', () => {
         const markup = render(<TableToolbar {...toolbarProps} onToggleRecordView={noop} transfer={{ busy: false, onExport: noop }} />);
-        for (const label of ['Delete selected rows', 'Clone selected rows', 'Revert selected rows', 'Value editor', 'Export']) {
+        for (const label of ['Delete selected rows', 'Duplicate selected rows', 'Revert selected rows', 'Value editor', 'Export']) {
             expect(markup).not.toContain(`aria-label="${label}"`);
         }
     });

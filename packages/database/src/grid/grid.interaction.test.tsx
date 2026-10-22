@@ -247,7 +247,7 @@ describe.skipIf(typeof document === 'undefined')('DataGrid copying a preview', (
             {
                 tone: 'error',
                 title: 'Copied a value cut off',
-                description: 'Some values were copied cut off, since only their start was read and the whole values could not be loaded.'
+                description: 'Only the start of some values was copied. Could not load the full values.'
             }
         ]);
     });

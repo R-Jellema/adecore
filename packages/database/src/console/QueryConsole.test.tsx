@@ -106,14 +106,14 @@ describe('QueryConsole toolbar', () => {
     test('has nothing in the history of a connection that never ran', () => {
         const storage: DatabaseStorage = { get: (key) => (key === historyKey('other') ? serializeHistory(entries) : null), set: () => {} };
         const markup = render(<QueryConsole connection={connection} defaultHistoryOpen />, storage);
-        expect(markup).toContain('Nothing has run yet.');
+        expect(markup).toContain('No history yet');
         expect(markup).not.toContain('DELETE FROM orders');
     });
 });
 
 describe('HistoryPanel', () => {
     test('says when nothing was run and when the search finds nothing', () => {
-        expect(render(<HistoryPanel entries={[]} onPick={() => {}} onClear={() => {}} />)).toContain('Nothing has run yet.');
+        expect(render(<HistoryPanel entries={[]} onPick={() => {}} onClear={() => {}} />)).toContain('No history yet');
     });
 
     test('lists the runs with their outcome and does not offer to clear an empty list', () => {
@@ -169,7 +169,7 @@ describe('StatementResultView', () => {
         const markup = render(<StatementResultView result={result} />);
         expect(markup).toContain('role="grid"');
         expect(markup).toContain('Rows: 2');
-        expect(markup).toContain('More rows exist but are not shown.');
+        expect(markup).toContain('More rows not shown.');
         expect(markup).toContain('1.3 ms');
     });
 
@@ -201,7 +201,7 @@ describe('StatementResultView', () => {
         const markup = render(<StatementResultView result={result} offset={500} pager={{ page: 2, loading: false, onPrevious: () => {}, onNext: () => {} }} />);
         expect(markup).toContain('Rows: 501 to 502');
         expect(markup).toContain('Page 2');
-        expect(markup).not.toContain('More rows exist but are not shown.');
+        expect(markup).not.toContain('More rows not shown.');
         expect(markup).toMatch(/aria-label="Previous page"/);
         expect(markup).not.toMatch(/<button[^>]* disabled=""[^>]*aria-label="Next page"|aria-label="Next page"[^>]* disabled=""/);
     });

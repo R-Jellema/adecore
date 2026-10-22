@@ -137,7 +137,7 @@ describe('RecordView', () => {
                 onClose={() => {}}
             />
         );
-        expect(markup.match(/aria-label="Show the whole value"/g)).toHaveLength(3);
+        expect(markup.match(/aria-label="Show full value"/g)).toHaveLength(3);
     });
 
     test('has a close button', () => {

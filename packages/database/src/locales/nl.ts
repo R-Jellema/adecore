@@ -13,37 +13,37 @@ export default {
         new: 'Nieuwe verbinding',
         newName: 'Nieuwe verbinding',
         untitled: 'Naamloze verbinding',
-        empty: 'Nog geen verbindingen. Voeg er een toe om een database te bekijken.',
+        empty: 'Nog geen verbindingen',
         test: {
             action: 'Verbinding testen',
             success: 'Verbonden met {{server}}.',
-            failed: 'De verbinding is mislukt.',
+            failed: 'Kon geen verbinding maken.',
             dismiss: 'Sluiten'
         },
         delete: {
             action: 'Verwijderen',
-            title: 'Deze verbinding verwijderen?',
-            description: '"{{name}}" verdwijnt uit de lijst. De database zelf blijft ongemoeid.',
+            title: 'Verbinding verwijderen?',
+            description: 'Haalt "{{name}}" uit de lijst, niet de database.',
             confirm: 'Verbinding verwijderen'
         },
         form: {
             name: 'Naam',
             engine: 'Type',
             path: 'Bestand',
-            pathHint: 'Het absolute pad van het databasebestand.',
+            pathHint: 'Absoluut pad naar het databasebestand.',
             browse: 'Bladeren',
             create: 'Bestand aanmaken',
-            createHint: 'Maakt het bestand aan als het niet bestaat.',
+            createHint: 'Maakt het bestand aan als het ontbreekt.',
             host: 'Host',
             port: 'Poort',
             socket: 'Socket',
-            socketHint: 'De Unix-socket waarop de server luistert.',
+            socketHint: 'Unix-socket van de server.',
             user: 'Gebruiker',
             password: 'Wachtwoord',
             database: 'Database',
-            databaseHint: 'Optioneel. Het schema waarin een sessie begint.',
+            databaseHint: 'Optioneel. Startschema.',
             readOnly: 'Alleen lezen',
-            readOnlyHint: 'Weigert elke wijziging van de gegevens.',
+            readOnlyHint: 'Blokkeert elke wijziging van de gegevens.',
             tls: {
                 label: 'Versleuteling',
                 disable: 'Uit',
@@ -51,20 +51,20 @@ export default {
                 prefer: 'Bij voorkeur',
                 preferHint: 'Versleuteld als de server dat aanbiedt.',
                 require: 'Vereist',
-                requireHint: 'Mislukt als de server geen versleuteling aanbiedt.',
+                requireHint: 'Weigert te verbinden zonder versleuteling.',
                 verify: 'Geverifieerd',
                 verifyHint: 'Controleert ook het certificaat tegen de hostnaam.'
             },
             problems: {
-                'path-required': 'Vul het pad van het databasebestand in.',
-                'path-relative': 'Het pad moet absoluut zijn.',
+                'path-required': 'Vul het bestandspad in.',
+                'path-relative': 'Pad moet absoluut zijn.',
                 'host-required': 'Vul een host in.',
-                'port-range': 'De poort is een getal van 1 tot 65535.',
-                'socket-required': 'Vul het pad van de socket in.',
+                'port-range': 'Poort moet 1 tot 65535 zijn.',
+                'socket-required': 'Vul het socketpad in.',
                 'ssh-host-required': 'Vul de SSH-host in.',
-                'ssh-port-range': 'De SSH-poort is een getal van 1 tot 65535.',
+                'ssh-port-range': 'SSH-poort moet 1 tot 65535 zijn.',
                 'container-required': 'Kies een container.',
-                'container-port-range': 'De poort is een getal van 1 tot 65535.'
+                'container-port-range': 'Poort moet 1 tot 65535 zijn.'
             },
             mode: {
                 label: 'Verbinden via',
@@ -79,17 +79,17 @@ export default {
                 port: 'SSH-poort',
                 user: 'SSH-gebruiker',
                 identityFile: 'Sleutelbestand',
-                keyHint: 'Een sleutel of de SSH-agent moet antwoorden. Een wachtwoord wordt nooit gevraagd.',
+                keyHint: 'Gebruikt een sleutel of de SSH-agent, nooit een wachtwoord.',
                 serverHost: 'Serverhost',
                 serverPort: 'Serverpoort',
-                serverHint: 'Het adres van de databaseserver zoals de SSH-host het ziet.'
+                serverHint: 'Databaseadres gezien vanaf de SSH-host.'
             },
             docker: {
                 container: 'Container',
                 pick: 'Kies een container',
-                refresh: 'Opnieuw naar containers zoeken',
-                loading: 'Containers zoeken',
-                empty: 'Geen draaiende containers die op een database lijken.',
+                refresh: 'Vernieuwen',
+                loading: 'Containers zoeken…',
+                empty: 'Geen draaiende databasecontainers.',
                 unsupported: 'Docker is niet beschikbaar.',
                 notRunning: 'Draait niet',
                 published: 'Gepubliceerd op poort {{port}}',
@@ -99,8 +99,8 @@ export default {
         },
         fromDocker: {
             label: 'Vanuit een Docker-container',
-            loading: 'Containers zoeken',
-            empty: 'Geen draaiende containers die op een database lijken.',
+            loading: 'Containers zoeken…',
+            empty: 'Geen draaiende databasecontainers.',
             unsupported: 'Docker is niet beschikbaar.',
             retry: 'Opnieuw proberen'
         }
@@ -108,7 +108,7 @@ export default {
     explorer: {
         label: 'Database-verkenner',
         filter: 'Tabellen filteren',
-        noConnections: 'Geen verbindingen om te verkennen.',
+        noConnections: 'Geen verbindingen',
         noMatches: 'Geen geladen tabel past bij "{{query}}".',
         noSchemas: "Geen schema's",
         noTables: 'Geen tabellen',
@@ -131,9 +131,9 @@ export default {
         check: 'Check',
         readOnly: 'Alleen lezen',
         schemaCount: '{{shown}} van {{total}}',
-        schemaCountHint_one: "{{shown}} van {{total}} schema getoond, systeemschema's zijn verborgen",
-        schemaCountHint_other: "{{shown}} van {{total}} schema's getoond, systeemschema's zijn verborgen",
-        loading: 'Laden',
+        schemaCountHint_one: "{{shown}} van {{total}} schema getoond, systeemschema's verborgen",
+        schemaCountHint_other: "{{shown}} van {{total}} schema's getoond, systeemschema's verborgen",
+        loading: 'Laden…',
         retry: 'Opnieuw proberen',
         refresh: 'Vernieuwen',
         disconnect: 'Verbinding verbreken',
@@ -156,12 +156,12 @@ export default {
         truncate: {
             action: 'Leegmaken…',
             title: '"{{name}}" leegmaken?',
-            description: 'Verwijdert elke rij in "{{name}}". Dit kan niet ongedaan worden gemaakt.',
+            description: 'Verwijdert elke rij. Dit kan niet ongedaan worden gemaakt.',
             confirm: 'Leegmaken'
         },
         drop: {
             field: 'Typ "{{name}}" om te bevestigen',
-            mismatch: 'De naam komt niet overeen.',
+            mismatch: 'Naam komt niet overeen.',
             table: {
                 action: 'Verwijderen…',
                 title: '"{{name}}" verwijderen?',
@@ -169,16 +169,16 @@ export default {
                 confirm: 'Tabel verwijderen'
             },
             view: {
-                action: 'View verwijderen…',
+                action: 'Verwijderen…',
                 title: '"{{name}}" verwijderen?',
-                description: 'Verwijdert de view. De tabellen erachter blijven ongemoeid.',
+                description: 'Verwijdert de view, niet de tabellen.',
                 confirm: 'View verwijderen'
             }
         }
     },
     structure: {
-        loading: 'Structuur laden',
-        failed: 'De structuur kon niet worden geladen.',
+        loading: 'Structuur laden…',
+        failed: 'Kon de structuur niet laden.',
         retry: 'Opnieuw proberen',
         columns: 'Kolommen',
         indexes: 'Indexen',
@@ -191,10 +191,10 @@ export default {
         primary: 'Primair',
         unique: 'Uniek',
         engineDefault: 'Standaard',
-        noColumns: 'Deze tabel heeft geen kolommen.',
-        noIndexes: 'Deze tabel heeft geen indexen.',
-        noForeignKeys: 'Deze tabel heeft geen foreign keys.',
-        noDdl: 'De server gaf geen statement voor deze tabel.',
+        noColumns: 'Geen kolommen',
+        noIndexes: 'Geen indexen',
+        noForeignKeys: 'Geen foreign keys',
+        noDdl: 'Geen DDL voor deze tabel.',
         copy: 'Kopiëren',
         column: {
             name: 'Naam',
@@ -221,7 +221,7 @@ export default {
         copyValue: 'Kopiëren',
         setNull: 'Op NULL zetten',
         setDefault: 'Op DEFAULT zetten',
-        loadingValue: 'De hele waarde wordt geladen',
+        loadingValue: 'Volledige waarde laden…',
         column: {
             sortAscending: 'Oplopend sorteren',
             sortDescending: 'Aflopend sorteren',
@@ -247,26 +247,26 @@ export default {
         copyPreviews: {
             title_one: 'Een waarde is afgekapt gekopieerd',
             title_other: '{{formatted}} waarden zijn afgekapt gekopieerd',
-            unavailable: 'Sommige waarden zijn afgekapt gekopieerd, omdat alleen hun begin is gelezen en de hele waarden niet konden worden geladen.',
-            tooLarge: 'Sommige waarden zijn afgekapt gekopieerd, omdat de hele waarden te groot zijn om in één keer te kopiëren.'
+            unavailable: 'Van sommige waarden is alleen het begin gekopieerd. Kon de volledige waarden niet laden.',
+            tooLarge: 'Van sommige waarden is alleen het begin gekopieerd. De volledige waarden zijn te groot.'
         },
         followReference: 'Ga naar de verwezen rij',
         emptyValue: '(leeg)'
     },
     table: {
         grid: 'Rijen van {{table}}',
-        loading: 'Rijen laden',
-        notLoaded: 'De rijen konden niet worden geladen.',
-        empty: 'Deze tabel heeft geen rijen.',
+        loading: 'Rijen laden…',
+        notLoaded: 'Kon de rijen niet laden.',
+        empty: 'Geen rijen',
         noRows: 'Geen rijen',
         refresh: 'Vernieuwen',
         addRow: 'Rij toevoegen',
         deleteRows: 'Geselecteerde rijen verwijderen',
         unavailable: '{{action}} ({{reason}})',
         readOnly: {
-            connection: 'Deze verbinding is alleen-lezen.',
-            view: 'Een view kan niet worden bewerkt.',
-            noKey: 'Deze tabel heeft geen primaire of unieke sleutel, dus de rijen zijn niet van elkaar te onderscheiden.'
+            connection: 'Verbinding is alleen-lezen.',
+            view: 'Views zijn alleen-lezen.',
+            noKey: 'Geen primaire of unieke sleutel om rijen te herkennen.'
         },
         submit: 'Opslaan ({{changes}})',
         revert: 'Terugdraaien',
@@ -274,7 +274,7 @@ export default {
         dismiss: 'Sluiten',
         changed: 'De tabel is gewijzigd; laad opnieuw om dit te zien',
         reload: 'Opnieuw laden',
-        conflict: 'Wijziging {{number}} ({{row}}) paste op geen of op meer dan één rij, dus er is niets opgeslagen. Vernieuw de pagina en probeer het opnieuw.',
+        conflict: 'Wijziging {{number}} ({{row}}) paste niet op precies één rij. Er is niets opgeslagen. Vernieuw en probeer het opnieuw.',
         queryTime: 'Querytijd',
         elapsed: '{{value}} ms',
         range: 'Rijen {{from}} tot {{to}}',
@@ -285,11 +285,11 @@ export default {
         previousPage: 'Vorige pagina',
         nextPage: 'Volgende pagina',
         discard: {
-            title: 'De wijzigingen negeren?',
-            description: 'De wijzigingen die je niet hebt opgeslagen gaan verloren als de pagina wisselt.',
+            title: 'Wijzigingen negeren?',
+            description: 'Niet-opgeslagen wijzigingen gaan verloren.',
             confirm: 'Wijzigingen negeren'
         },
-        cloneRows: 'Geselecteerde rijen klonen',
+        cloneRows: 'Geselecteerde rijen dupliceren',
         revertRows: 'Geselecteerde rijen terugdraaien',
         firstPage: 'Eerste pagina',
         lastPage: 'Laatste pagina',
@@ -315,8 +315,8 @@ export default {
             row: 'Rij {{number}}',
             position: '{{index}} van {{count}} op deze pagina',
             close: 'Recordweergave sluiten',
-            expand: 'Hele waarde tonen',
-            collapse: 'Hele waarde verbergen'
+            expand: 'Volledige waarde tonen',
+            collapse: 'Volledige waarde verbergen'
         },
         aggregates: {
             sum: 'Som',
@@ -335,14 +335,14 @@ export default {
             cancel: 'Annuleren',
             done_one: '{{rows}} rij geëxporteerd.',
             done_other: '{{rows}} rijen geëxporteerd.',
-            failed: 'Exporteren is mislukt'
+            failed: 'Kon niet exporteren'
         },
         import: {
             menu: 'Importeren uit bestand',
             done_one: '{{rows}} rij geïmporteerd.',
             done_other: '{{rows}} rijen geïmporteerd.',
             title: 'Importeren uit bestand',
-            description: 'Kies welke kolom van het bestand welke kolom van de tabel vult.',
+            description: 'Koppel bestandskolommen aan tabelkolommen.',
             header: 'Eerste regel is een kopregel',
             sampling: 'Bestand lezen',
             fileColumn: 'Bestandskolom',
@@ -352,7 +352,7 @@ export default {
             preview: 'Eerste {{count}} rijen van het bestand',
             cancel: 'Annuleren',
             confirm: 'Importeren',
-            readFailed: 'Het bestand kon niet worden gelezen'
+            readFailed: 'Kon het bestand niet lezen'
         },
         more: 'Meer acties',
         of: 'van',
@@ -378,13 +378,13 @@ export default {
         run: 'Uitvoeren',
         cancel: 'Annuleren',
         running: 'Bezig',
-        cancelled: 'De opdracht is geannuleerd.',
+        cancelled: 'Geannuleerd.',
         result: 'Resultaat',
         results: 'Resultaten',
         closeResults: 'Resultaten sluiten',
-        noRows: 'De opdracht gaf geen rijen terug.',
+        noRows: 'Geen rijen teruggegeven.',
         rows: 'Rijen: {{rows}}',
-        hasMore: 'Er zijn meer rijen, maar die worden niet getoond.',
+        hasMore: 'Meer rijen niet getoond.',
         elapsed: '{{value}} ms',
         sqlState: 'SQLSTATE {{state}}',
         affected_one: '{{formatted}} rij gewijzigd',
@@ -392,7 +392,7 @@ export default {
         lastInsertId: 'Laatste insert-id: {{id}}',
         valuePanel: 'Waardepaneel',
         runAll: 'Alles uitvoeren',
-        loading: 'Laden',
+        loading: 'Laden…',
         dismiss: 'Sluiten',
         rowRange: 'Rijen: {{from}} tot {{to}}',
         page: 'Pagina {{page}}',
@@ -406,14 +406,14 @@ export default {
         schemaPlaceholder: 'Schema',
         transaction: {
             autoCommit: 'Automatisch vastleggen',
-            hint: 'Aan legt elke uitvoering vast. Uit houdt een transactie open tot je vastlegt of terugdraait.',
+            hint: 'Staat het uit, dan blijft een transactie open tot je vastlegt of terugdraait.',
             open: 'Transactie open',
             commit: 'Vastleggen',
             rollback: 'Terugdraaien',
-            endTitle: 'De transactie afsluiten?',
-            endDescription: 'Er staat nog een transactie open. Leg haar vast om de wijzigingen te bewaren, of draai haar terug om ze weg te gooien.',
-            commitFailed: 'Vastleggen is mislukt',
-            rollbackFailed: 'Terugdraaien is mislukt'
+            endTitle: 'Transactie afsluiten?',
+            endDescription: 'Leg vast om de wijzigingen te bewaren, of draai terug om ze weg te gooien.',
+            commitFailed: 'Kon niet vastleggen',
+            rollbackFailed: 'Kon niet terugdraaien'
         },
         destructive: {
             title: 'Destructieve opdrachten uitvoeren?',
@@ -430,20 +430,20 @@ export default {
             title: 'Geschiedenis',
             search: 'Geschiedenis doorzoeken',
             clear: 'Geschiedenis wissen',
-            empty: 'Er is nog niets uitgevoerd.',
-            noMatches: 'Geen enkele uitvoering past.',
+            empty: 'Nog geen geschiedenis',
+            noMatches: 'Geen resultaten',
             hint: 'Klik om te bewerken, dubbelklik om uit te voeren.',
             rows_one: '{{formatted}} rij',
             rows_other: '{{formatted}} rijen'
         },
-        pageFailed: 'De pagina kon niet worden gelezen',
-        exportFailed: 'Exporteren is mislukt'
+        pageFailed: 'Kon de pagina niet laden',
+        exportFailed: 'Kon niet exporteren'
     },
     value: {
         title: 'Waarde',
         selectCell: 'Selecteer een cel om de waarde te zien.',
-        loading: 'Waarde laden',
-        notLoaded: 'De waarde kon niet worden geladen.',
+        loading: 'Waarde laden…',
+        notLoaded: 'Kon de waarde niet laden.',
         close: 'Sluiten',
         copy: 'Kopiëren',
         wrap: 'Regels afbreken',
@@ -462,10 +462,10 @@ export default {
         revert: 'Terugdraaien',
         setNull: 'NULL instellen',
         setDefault: 'DEFAULT instellen',
-        invalidJson: 'Dit is geen geldige JSON: {{reason}}',
-        invalidHexCharacters: 'Hex bestaat uit de cijfers 0 tot en met 9 en de letters a tot en met f, met eventueel spaties of regeleinden ertussen.',
-        invalidHexOdd: 'Een byte bestaat uit twee hex-cijfers, dus het aantal cijfers moet even zijn.',
-        dumpTruncated: 'De eerste {{shown}} van {{total}} bytes worden getoond.',
+        invalidJson: 'Ongeldige JSON: {{reason}}',
+        invalidHexCharacters: 'Gebruik alleen 0-9, a-f, spaties en regeleinden.',
+        invalidHexOdd: 'Hex vraagt een even aantal cijfers.',
+        dumpTruncated: 'Eerste {{shown}} van {{total}} bytes',
         characters_one: '{{formatted}} teken',
         characters_other: '{{formatted}} tekens',
         more: 'Meer acties'
@@ -479,11 +479,11 @@ export default {
             columnType: 'Kolom {{subject}} heeft een type nodig.',
             indexName: 'Een index heeft een naam nodig.',
             indexColumns: 'Index {{subject}} heeft minstens één kolom nodig.',
-            foreignKey: 'Foreign key {{subject}} heeft een tabel nodig en evenveel verwezen kolommen als kolommen.'
+            foreignKey: 'Foreign key {{subject}} heeft een tabel en bijpassende kolommen nodig.'
         }
     },
     designer: {
-        loading: 'Tabel laden',
+        loading: 'Tabel laden…',
         retry: 'Opnieuw proberen',
         tableName: 'Tabelnaam',
         tableNamePlaceholder: 'tabel_naam',
@@ -494,15 +494,15 @@ export default {
         dismiss: 'Sluiten',
         changed: 'De tabel is elders gewijzigd; laad opnieuw om dit te zien. Je wijzigingen gaan verloren.',
         reload: 'Opnieuw laden',
-        failed: 'De wijzigingen konden niet worden toegepast.',
+        failed: 'Kon de wijzigingen niet toepassen.',
         copy: 'Kopiëren',
         sql: 'SQL',
         noChanges: 'Geen wijzigingen',
-        fixProblems: 'Los eerst de problemen onder de tabs op.',
+        fixProblems: 'Los eerst de problemen in de tabs op.',
         noColumnsToPick: 'Voeg eerst een kolom toe.',
         readOnly: {
-            connection: 'Deze verbinding is alleen-lezen.',
-            view: 'Een view kan hier niet worden aangepast.'
+            connection: 'Verbinding is alleen-lezen.',
+            view: 'Views zijn alleen-lezen.'
         },
         tabs: {
             columns: 'Kolommen',
@@ -511,7 +511,7 @@ export default {
             options: 'Opties'
         },
         columns: {
-            empty: 'Deze tabel heeft nog geen kolommen.',
+            empty: 'Nog geen kolommen',
             order: 'Volgorde',
             name: 'Naam',
             type: 'Type',
@@ -522,8 +522,8 @@ export default {
             autoIncrement: 'Auto-increment',
             autoIncrementFor: '{{name}} telt zelf op',
             primaryKey: 'Sleutel',
-            addToKey: 'Toevoegen aan de primaire sleutel',
-            removeFromKey: 'Verwijderen uit de primaire sleutel',
+            addToKey: 'Toevoegen aan primaire sleutel',
+            removeFromKey: 'Verwijderen uit primaire sleutel',
             comment: 'Opmerking',
             remove: 'Kolom verwijderen',
             moveUp: 'Omhoog',
@@ -532,21 +532,21 @@ export default {
             add: 'Kolom toevoegen'
         },
         indexes: {
-            empty: 'Deze tabel heeft geen indexen naast de primaire sleutel.',
+            empty: 'Geen indexen naast de primaire sleutel',
             name: 'Indexnaam',
             unique: 'Uniek',
-            columns: 'Kolommen van de index',
+            columns: 'Indexkolommen',
             remove: 'Index verwijderen',
             add: 'Index toevoegen'
         },
         foreignKeys: {
-            empty: 'Deze tabel heeft geen foreign keys.',
+            empty: 'Geen foreign keys',
             name: 'Naam',
             columns: 'Kolommen',
             referencedTable: 'Verwijst naar tabel',
             pickTable: 'Kies een tabel',
             referencedColumns: 'Verwezen kolommen',
-            loadingColumns: 'Kolommen laden',
+            loadingColumns: 'Kolommen laden…',
             onUpdate: 'Bij wijzigen',
             onDelete: 'Bij verwijderen',
             engineDefault: 'Standaard van de server',
@@ -555,21 +555,21 @@ export default {
         },
         options: {
             withoutRowid: 'Zonder rowid',
-            withoutRowidHint: 'Bewaart de tabel in zijn primaire sleutel, wat plaats scheelt bij tabellen met een tekst- of samengestelde sleutel.',
+            withoutRowidHint: 'Bewaart rijen in de primaire sleutel. Scheelt plaats bij tekst- of samengestelde sleutels.',
             strict: 'Strikt',
-            strictHint: 'Laat SQLite een waarde weigeren die niet bij het type van de kolom past.',
+            strictHint: 'Weigert waarden die niet bij het kolomtype passen.',
             engine: 'Opslagengine',
             charset: 'Tekenset',
             collation: 'Collatie',
             comment: 'Opmerking',
-            serverDefault: 'Laat leeg voor de standaard van de server.'
+            serverDefault: 'Leeg gebruikt de serverstandaard.'
         },
         confirm: {
             title_one: '{{formatted}} statement uitvoeren?',
             title_other: '{{formatted}} statements uitvoeren?',
-            create: 'Dit maakt de tabel {{table}} aan.',
-            alter: 'Dit wijzigt de tabel {{table}}.',
-            destructive: 'Er wordt een kolom verwijderd en de gegevens erin gaan verloren.'
+            create: 'Maakt {{table}} aan.',
+            alter: 'Wijzigt {{table}}.',
+            destructive: 'Verwijdert een kolom en de gegevens erin.'
         }
     },
     workbench: {
@@ -593,7 +593,7 @@ export default {
         },
         discard: {
             title: '{{table}} sluiten?',
-            description: 'De wijzigingen die je niet hebt opgeslagen gaan verloren als het tabblad sluit.',
+            description: 'Niet-opgeslagen wijzigingen gaan verloren.',
             confirm: 'Tabblad sluiten'
         }
     }
