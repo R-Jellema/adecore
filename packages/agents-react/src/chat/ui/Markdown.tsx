@@ -85,7 +85,7 @@ function languageOf(className: string | undefined): string {
     return /language-([\w-]+)/.exec(className ?? '')?.[1] ?? 'text';
 }
 
-const INLINE_CODE = 'rounded-sm bg-surface-sunken px-1 py-px font-mono text-code';
+const INLINE_CODE = 'rounded-sm bg-surface-sunken px-1 py-px font-mono text-code box-decoration-clone';
 
 /*
  * A path an agent wrote down. It keeps the shape of the code chip it would otherwise be, so a sentence
@@ -99,7 +99,7 @@ function FileLink({ target, className, children }: { target: FileRef; className?
         // A button is not selectable on its own, and a thread is copied as often as it is clicked.
         <button
             type="button"
-            className={clsx('cursor-pointer select-text', className)}
+            className={clsx('cursor-pointer select-text text-left', className)}
             data-file-path={target.path}
             data-file-line={target.line}
             data-file-column={target.column}
@@ -121,8 +121,10 @@ function InlineCode({ text }: { text: string }) {
         return <code className={INLINE_CODE}>{text}</code>;
     }
     return (
-        <FileLink target={target} className={`${INLINE_CODE} text-accent hover:underline`}>
-            {text}
+        // The chip sits on a code inside the button, since a button is always a box of its own and its
+        // background would fill the whole box once a long path wraps.
+        <FileLink target={target} className="text-accent">
+            <code className={clsx(INLINE_CODE, 'hover:underline')}>{text}</code>
         </FileLink>
     );
 }
