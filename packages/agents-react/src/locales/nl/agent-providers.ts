@@ -13,7 +13,7 @@ export default {
     },
     failed: 'Kon de providerinstellingen niet tonen',
     list: {
-        label: "Agent-CLI's en hun accounts",
+        label: 'Agents en hun accounts',
         default: 'Standaard',
         ready: 'Klaar',
         needsSetup: 'Nog instellen',
@@ -23,7 +23,7 @@ export default {
         notInstalled: 'Niet geïnstalleerd',
         missing: 'Ontbreekt',
         notInstalledNote: 'Installeer om hem hier te gebruiken.',
-        none: "Geen agent-CLI's gevonden op deze machine.",
+        none: 'Geen agents gevonden op deze machine.',
         noAccounts: 'Werk Ruimte op deze machine bij om accounts toe te voegen.'
     },
     install: {
@@ -165,7 +165,7 @@ export default {
     },
     section: {
         label: 'Providers',
-        description: "Agent-CLI's op deze machine en hun accounts."
+        description: 'Agents op deze machine en hun accounts.'
     },
     notAnswering: 'De machine geeft geen antwoord. Probeer het opnieuw zodra hij terug is.',
     common: {

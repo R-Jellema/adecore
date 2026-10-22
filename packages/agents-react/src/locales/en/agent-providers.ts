@@ -13,7 +13,7 @@ export default {
     },
     failed: 'Could not show the provider settings',
     list: {
-        label: 'Agent CLIs and their accounts',
+        label: 'Agents and their accounts',
         default: 'Default',
         ready: 'Ready',
         needsSetup: 'Needs setup',
@@ -23,7 +23,7 @@ export default {
         notInstalled: 'Not installed',
         missing: 'Missing',
         notInstalledNote: 'Install to use it here.',
-        none: 'No agent CLIs found on this machine.',
+        none: 'No agents found on this machine.',
         noAccounts: 'Update Ruimte on this machine to add accounts.'
     },
     install: {
@@ -165,7 +165,7 @@ export default {
     },
     section: {
         label: 'Providers',
-        description: 'Agent CLIs on this machine and their accounts.'
+        description: 'Agents on this machine and their accounts.'
     },
     notAnswering: 'The machine is not answering. Try again once it is back.',
     common: {
