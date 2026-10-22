@@ -92,3 +92,49 @@ export function resumeCompactionOffer(input: OfferInput & { now: number }): Resu
         reason: input.info.usage.cacheExpiresAt === undefined ? 'idle' : 'cache-expired'
     };
 }
+
+/* What `watchDueAt` keeps time with; a test hands in a fake. */
+export interface DueClock {
+    now(): number;
+    setTimer(run: () => void, ms: number): unknown;
+    clearTimer(timer: unknown): void;
+    /* Calls `wake` when the page may have slept or sat in the background, and answers how to stop. */
+    onWake(wake: () => void): () => void;
+}
+
+/*
+ * Calls `due` with the time once `dueAt` passed. A timer can fire a few milliseconds early, and one that runs on a
+ * monotonic clock fires late after the system slept, so an early timer is armed again and a wake looks at once.
+ */
+export function watchDueAt(dueAt: number, due: (now: number) => void, clock: DueClock): () => void {
+    let timer: unknown = null;
+    let done = false;
+    const check = (): void => {
+        if (timer !== null) {
+            clock.clearTimer(timer);
+            timer = null;
+        }
+        if (done) {
+            return;
+        }
+        const now = clock.now();
+        if (now >= dueAt) {
+            done = true;
+            due(now);
+            return;
+        }
+        timer = clock.setTimer(() => {
+            timer = null;
+            check();
+        }, dueAt - now);
+    };
+    const stopWake = clock.onWake(check);
+    check();
+    return () => {
+        done = true;
+        stopWake();
+        if (timer !== null) {
+            clock.clearTimer(timer);
+        }
+    };
+}

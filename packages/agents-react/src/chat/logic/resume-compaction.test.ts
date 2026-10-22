@@ -1,6 +1,13 @@
 import { expect, test } from 'bun:test';
 import type { ChatInfo, ChatItem } from '@adecore/agent-contracts';
-import { RESUME_COMPACTION_IDLE_MS, RESUME_COMPACTION_TOKENS, resumeCompactionDueAt, resumeCompactionOffer } from './resume-compaction';
+import {
+    RESUME_COMPACTION_IDLE_MS,
+    RESUME_COMPACTION_TOKENS,
+    resumeCompactionDueAt,
+    resumeCompactionOffer,
+    watchDueAt,
+    type DueClock
+} from './resume-compaction';
 
 const NOW = 1_800_000_000_000;
 const ENDED = NOW - RESUME_COMPACTION_IDLE_MS;
@@ -119,4 +126,84 @@ test('the last turn is the one that started last, wherever the thread has it', (
     const items = [turn('turn-2', null, 20), turn('turn-1', ENDED, 10)];
     expect(offer({ items })).toBeNull();
     expect(offer({ items: [turn('turn-2', ENDED, 20), turn('turn-1', ENDED, 10)] })?.turnId).toBe('turn-2');
+});
+
+/* A clock whose timers and wakes a test runs by hand. */
+function fakeClock(start: number) {
+    let now = start;
+    let timer: { run: () => void; at: number } | null = null;
+    let wake: (() => void) | null = null;
+    const clock: DueClock = {
+        now: () => now,
+        setTimer: (run, ms) => {
+            timer = { run, at: now + ms };
+            return timer;
+        },
+        clearTimer: (cleared) => {
+            if (timer === cleared) {
+                timer = null;
+            }
+        },
+        onWake: (listener) => {
+            wake = listener;
+            return () => {
+                wake = null;
+            };
+        }
+    };
+    return {
+        clock,
+        set: (time: number) => {
+            now = time;
+        },
+        fire: () => {
+            const fired = timer;
+            timer = null;
+            fired?.run();
+        },
+        wake: () => wake?.(),
+        armedAt: () => timer?.at ?? null
+    };
+}
+
+test('a timer that fires early is armed again until the offer is due', () => {
+    const fake = fakeClock(0);
+    const due: number[] = [];
+    watchDueAt(1000, (now) => due.push(now), fake.clock);
+    expect(fake.armedAt()).toBe(1000);
+    fake.set(995);
+    fake.fire();
+    expect(due).toEqual([]);
+    expect(fake.armedAt()).toBe(1000);
+    fake.set(1000);
+    fake.fire();
+    expect(due).toEqual([1000]);
+    expect(fake.armedAt()).toBeNull();
+});
+
+test('a wake after the system slept past the moment says so at once, and only once', () => {
+    const fake = fakeClock(0);
+    const due: number[] = [];
+    watchDueAt(1000, (now) => due.push(now), fake.clock);
+    // The timer has not fired yet: a monotonic clock stood still while the system slept.
+    fake.set(5000);
+    fake.wake();
+    expect(due).toEqual([5000]);
+    expect(fake.armedAt()).toBeNull();
+    fake.wake();
+    expect(due).toEqual([5000]);
+});
+
+test('a wake before the moment arms the timer for what is left, and a stopped watch says nothing', () => {
+    const fake = fakeClock(0);
+    const due: number[] = [];
+    const stop = watchDueAt(1000, (now) => due.push(now), fake.clock);
+    fake.set(400);
+    fake.wake();
+    expect(fake.armedAt()).toBe(1000);
+    stop();
+    expect(fake.armedAt()).toBeNull();
+    fake.set(2000);
+    fake.wake();
+    expect(due).toEqual([]);
 });
