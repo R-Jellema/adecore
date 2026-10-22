@@ -20,6 +20,11 @@ const ENTRIES: Record<string, string> = {
     './locales': 'locales.ts'
 };
 
+/* Loaded with the file, so compiling every module of the package through the test preload counts against no test's timeout. */
+const MODULES: Record<string, Record<string, unknown>> = Object.fromEntries(
+    await Promise.all(Object.entries(ENTRIES).map(async ([entry, file]) => [entry, (await import(`./${file}`)) as Record<string, unknown>]))
+);
+
 /* The exports that hold data rather than names, so no snapshot covers them. */
 const ASSETS = ['./locales/*', './theme.css'];
 
@@ -74,9 +79,9 @@ describe('the public API', () => {
         expect(namesIn(file).sort()).toMatchSnapshot();
     });
 
-    test('every value an entry names is there at run time', async () => {
+    test('every value an entry names is there at run time', () => {
         for (const [entry, file] of Object.entries(ENTRIES)) {
-            const module = (await import(`./${file}`)) as Record<string, unknown>;
+            const module = MODULES[entry]!;
             const values = namesIn(file).filter((name) => !name.startsWith('type '));
             expect({ entry, missing: values.filter((name) => module[name] === undefined) }).toEqual({ entry, missing: [] });
         }

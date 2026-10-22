@@ -16,6 +16,11 @@ const ENTRIES: Record<string, string> = {
     './testing/dedupe': 'testing/dedupe.ts'
 };
 
+/* Loaded with the file, so compiling every module of the package through the test preload counts against no test's timeout. */
+const MODULES: Record<string, Record<string, unknown>> = Object.fromEntries(
+    await Promise.all(Object.entries(ENTRIES).map(async ([entry, file]) => [entry, (await import(`./${file}`)) as Record<string, unknown>]))
+);
+
 type Declaration = Program['body'][number];
 
 /* What an entry file names, values and types alike, as written in its export statements. */
@@ -54,8 +59,8 @@ describe('the public API', () => {
         expect(namesIn(file).sort()).toMatchSnapshot();
     });
 
-    test('the compound components have these parts', async () => {
-        const barrel = (await import('./index.ts')) as Record<string, unknown>;
+    test('the compound components have these parts', () => {
+        const barrel = MODULES['.']!;
         const parts = Object.fromEntries(
             ['ContextMenu', 'Dialog', 'FileTree', 'Tree', 'KeyValueList', 'Menu', 'Popover', 'PreviewCard', 'Tabs'].map((name) => [
                 name,
@@ -65,9 +70,9 @@ describe('the public API', () => {
         expect(parts).toMatchSnapshot();
     });
 
-    test('every value an entry names is there at run time', async () => {
+    test('every value an entry names is there at run time', () => {
         for (const [entry, file] of Object.entries(ENTRIES)) {
-            const module = (await import(`./${file}`)) as Record<string, unknown>;
+            const module = MODULES[entry]!;
             const values = namesIn(file).filter((name) => !name.startsWith('type '));
             expect({ entry, missing: values.filter((name) => module[name] === undefined) }).toEqual({ entry, missing: [] });
         }
