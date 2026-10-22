@@ -11,6 +11,10 @@ import { ChatHostProvider, type ChatHost } from '../../../host';
 import { DiffStack, ReviewStackView } from './DiffStack';
 import { reviewEntries, type ReviewEntry } from './review-plan';
 import { useReviewStack } from './use-review-stack';
+// Loaded up front: through the compile preload a lazy module lands only after the act that drew it.
+import '../EditDiff';
+import '../UnifiedDiff';
+import './EditorEditDiff';
 
 const CODE: ChatHost['code'] = { useMode: () => 'light', useThemes: () => ({ light: 'github-light', dark: 'github-dark' }), custom: [] };
 

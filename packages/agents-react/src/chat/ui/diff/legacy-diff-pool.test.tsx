@@ -8,6 +8,8 @@ import { ChatHostProvider, type ChatHost } from '../../../host';
 import { LegacyDiffPool } from './LegacyDiffPool';
 import LegacyUnifiedDiff from './LegacyUnifiedDiff';
 import EditDiff from '../EditDiff';
+// Loaded up front: through the compile preload a lazy module lands only after the act that drew it.
+import './EditorEditDiff';
 
 const CODE: ChatHost['code'] = { useMode: () => 'light', useThemes: () => ({ light: 'github-light', dark: 'github-dark' }), custom: [] };
 

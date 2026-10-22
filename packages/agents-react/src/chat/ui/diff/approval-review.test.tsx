@@ -8,6 +8,9 @@ import { ChatHostProvider, type ChatHost } from '../../../host';
 import { PromptCard } from '../../../prompts/ui/PromptCard';
 import { ApprovalReview } from './ApprovalReview';
 import { reviewEntries } from './review-plan';
+// Loaded up front: through the compile preload a lazy module lands only after the act that drew it.
+import '../EditDiff';
+import './EditorEditDiff';
 
 const CODE: ChatHost['code'] = { useMode: () => 'light', useThemes: () => ({ light: 'github-light', dark: 'github-dark' }), custom: [] };
 
