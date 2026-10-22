@@ -22,9 +22,16 @@ export function pickOfTarget(target: string | null, providers: ProviderInfo[]): 
     if (!target?.startsWith(INSTALL_TARGET) || target.length === INSTALL_TARGET.length) {
         return null;
     }
-    const cli = target.slice(INSTALL_TARGET.length) as AgentKind;
+    return pickOfCli(target.slice(INSTALL_TARGET.length) as AgentKind, providers);
+}
+
+/*
+ * A CLI opened by name, from a target or from the host's page that just added it: its detail once it is there, its
+ * install page while it is missing. A CLI the host has not reported yet is taken as missing, so the pick holds until
+ * the next list names it; once it is installed and signed in, its install page gives way to its detail.
+ */
+export function pickOfCli(cli: AgentKind, providers: ProviderInfo[]): Picked {
     const provider = providers.find((entry) => entry.kind === cli);
-    // A CLI the host has not reported yet is taken as missing; once it is installed and signed in, its install page gives way to its detail.
     if (provider !== undefined && (provider.installed || !provider.capabilities.terminal)) {
         return { kind: 'cli', cli };
     }

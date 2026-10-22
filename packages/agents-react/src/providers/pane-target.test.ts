@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import type { ProviderInfo } from '@adecore/agent-contracts';
-import { pickOfTarget } from './pane-target';
+import { pickOfCli, pickOfTarget } from './pane-target';
 
 function providerOf(kind: string, installed: boolean, terminal = true): ProviderInfo {
     return { kind, name: kind, installed, version: null, models: [], capabilities: { terminal } } as unknown as ProviderInfo;
@@ -37,5 +37,13 @@ describe('pickOfTarget', () => {
         expect(pickOfTarget(null, providers)).toBeNull();
         expect(pickOfTarget('providers.defaults.model', providers)).toBeNull();
         expect(pickOfTarget('providers.install.', providers)).toBeNull();
+    });
+});
+
+describe('pickOfCli', () => {
+    test('a CLI a page just added opens on its install page until the host lists it installed', () => {
+        expect(pickOfCli('grok', providers)).toEqual({ kind: 'install', cli: 'grok' });
+        expect(pickOfCli('copilot', providers)).toEqual({ kind: 'install', cli: 'copilot' });
+        expect(pickOfCli('claude', providers)).toEqual({ kind: 'cli', cli: 'claude' });
     });
 });

@@ -11,7 +11,7 @@ import { AddAccountForm } from './AddAccountForm';
 import { CliDetail } from './CliDetail';
 import { InstallPage } from './InstallPage';
 import type { ProviderInstallStep } from './install-steps';
-import { pickOfTarget, type Picked } from './pane-target';
+import { pickOfCli, pickOfTarget, type Picked } from './pane-target';
 import { groupProviders, type ProviderSetupStatus } from './provider-groups';
 import { ProviderList } from './ProviderList';
 import { useProviderAccounts } from '../state/provider-accounts';
@@ -109,7 +109,7 @@ export function ProvidersPane({ target = null, detailOf, defaults = true, instal
 
     const detail = (): ReactNode => {
         if (current?.kind === 'catalog') {
-            return addPage?.((kind) => setPicked({ kind: 'cli', cli: kind })) ?? null;
+            return addPage?.((kind) => setPicked(pickOfCli(kind, providers))) ?? null;
         }
         if (current === null || provider === null) {
             return null;
