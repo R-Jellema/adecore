@@ -1,10 +1,6 @@
-import { afterEach, beforeEach, expect, setSystemTime, test } from 'bun:test';
+import { expect, test } from 'bun:test';
 import { UI_REPLY_LIMITS, UiCompiler, compileUi } from './compiler.ts';
 import { UiStream, type UiStreamClock, type UiStreamPreview } from './stream.ts';
-
-// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
-beforeEach(() => setSystemTime(Date.now()));
-afterEach(() => setSystemTime());
 
 function manualClock(): UiStreamClock & { advance(ms: number): void; pending(): number } {
     let time = 0;
@@ -40,6 +36,15 @@ function manualClock(): UiStreamClock & { advance(ms: number): void; pending(): 
 function reply(label: string): string {
     return `Before\n\`\`\`ui\n<Summary>${label}</Summary>\n\`\`\`\nAfter`;
 }
+
+test('stream finalization keeps every valid fence when the clock advances during compilation', () => {
+    let time = 0;
+    const stream = new UiStream({ id: 'item', clock: manualClock(), now: () => (time += 1_000), emit: () => undefined });
+    const blocks = stream.finish(reply('First') + '\n' + reply('Second'));
+    expect(blocks).toHaveLength(2);
+    expect(blocks.map((block) => block.diagnostics)).toEqual([[], []]);
+    expect(blocks.map((block) => block.nodes[0]!.children[0]!.props.text)).toEqual(['First', 'Second']);
+});
 
 test('reuses unchanged fences while compiling the growing block and authoritative final text', () => {
     const compiler = new UiCompiler({ id: 'item' });

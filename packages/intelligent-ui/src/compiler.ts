@@ -11,7 +11,7 @@ import { type z } from 'zod';
 // The info string a fence carries when the host names none of its own.
 export const UI_FENCE_LANGUAGE = 'ui';
 
-export const UI_REPLY_LIMITS = { blocks: 16, characters: 262144, nodes: 2048, milliseconds: 60 } as const;
+export const UI_REPLY_LIMITS = { blocks: 16, characters: 262144, nodes: 2048, milliseconds: 0 } as const;
 
 // What a host reads for one block: its queries, its link targets, the places it looks up and how often a visible block reads again.
 export const UI_HOST_LIMITS = { queries: 8, links: 64, places: 50, refreshMilliseconds: 10_000 } as const;
@@ -456,7 +456,7 @@ export class UiCompiler {
         const now = this.options.now ?? Date.now;
         const language = this.options.fenceLanguage ?? UI_FENCE_LANGUAGE;
         const diagnostics = this.options.limits?.diagnostics ?? UI_LIMITS.diagnostics;
-        const started = now();
+        const started = UI_REPLY_LIMITS.milliseconds > 0 ? now() : 0;
         const nodeCount = (items: readonly UiNode[]): number => items.reduce((count, node) => count + 1 + nodeCount(node.children), 0);
         const rejected = (start: number, codeStart: number, codeEnd: number, end: number, complete: boolean): UiBlock => ({
             id: `${this.options.id}:ui:${start}`,
@@ -488,7 +488,7 @@ export class UiCompiler {
             }
             const complete = closed || update.final === true;
             characters += codeEnd - codeStart;
-            if (characters > UI_REPLY_LIMITS.characters || now() - started > UI_REPLY_LIMITS.milliseconds) {
+            if (characters > UI_REPLY_LIMITS.characters || (UI_REPLY_LIMITS.milliseconds > 0 && now() - started > UI_REPLY_LIMITS.milliseconds)) {
                 blocks.push(rejected(start, codeStart, codeEnd, end, complete));
                 exhausted = true;
                 return;

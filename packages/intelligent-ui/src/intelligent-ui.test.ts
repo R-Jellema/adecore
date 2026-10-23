@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, setSystemTime, test } from 'bun:test';
+import { describe, expect, test } from 'bun:test';
 import { z } from 'zod';
 import { UiBudget } from './budget.ts';
 import { compileUi, compileUiBlock, uiHasFence, uiMayReferenceHost } from './compiler.ts';
@@ -8,16 +8,12 @@ import { evaluateUiBlock, UiState } from './runtime.ts';
 import { UiBlockSchema, UiNodeSchema } from './protocol.ts';
 import { uiCompactCatalog, uiFallbackText, uiGroupReference, uiReferenceText, uiSessionNote } from './text.ts';
 
-// A stopped clock, so a slow runner cannot spend the time budget of a UI block before it is built.
-beforeEach(() => setSystemTime(Date.now()));
-afterEach(() => setSystemTime());
-
 function expression(source: string, variables = {}): unknown {
-    return evaluateUiExpression(parseUiExpression(source, new UiBudget({ milliseconds: 5000 })), variables, new UiBudget({ milliseconds: 5000 }));
+    return evaluateUiExpression(parseUiExpression(source), variables);
 }
 
 function block(source: string, final = true) {
-    return compileUiBlock(source, { id: 'chat:item:block', final, limits: { milliseconds: 5000 } });
+    return compileUiBlock(source, { id: 'chat:item:block', final });
 }
 
 describe('bounded expressions', () => {
@@ -83,6 +79,8 @@ describe('bounded expressions', () => {
         let time = 0;
         const timed = new UiBudget({ milliseconds: 10 }, () => time++ * 20);
         expect(() => parseUiExpression('1', timed)).toThrow('work budget');
+        expect(() => new UiBudget({ steps: 0 })).toThrow(expect.objectContaining({ code: 'invalid_limits' }));
+        expect(() => new UiBudget({ milliseconds: -1 })).toThrow(expect.objectContaining({ code: 'invalid_limits' }));
         const circular: Record<string, unknown> = {};
         circular.self = circular;
         expect(() => copyUiValue(circular)).toThrow();
@@ -107,11 +105,28 @@ const EXAMPLES = [
 ];
 
 describe('streaming compiler', () => {
+    test('compiles and evaluates text literals at the character limit regardless of elapsed time', () => {
+        const values = ['a', 'b', 'c', 'd'].map((letter) => letter.repeat(16_300));
+        const source = `<EntityList>${values.map((value) => `<Entry label="Item">{${JSON.stringify(value)}}</Entry>`).join('')}</EntityList>`.padEnd(
+            65_536,
+            ' '
+        );
+        for (const elapsed of [0, 1_000]) {
+            let time = 0;
+            const compiled = compileUiBlock(source, { id: 'long-report', final: true, now: () => (time += elapsed) });
+            expect(compiled.diagnostics).toEqual([]);
+            const evaluated = evaluateUiBlock(compiled);
+            expect(evaluated.diagnostics).toEqual([]);
+            expect(evaluated.nodes[0]!.children.map((entry) => entry.children[0]!.props.text)).toEqual(values);
+        }
+        expect(compileUiBlock(source + ' ', { id: 'too-long', final: true }).diagnostics.map((item) => item.code)).toEqual(['budget_exceeded']);
+    });
+
     test('compiles all catalog examples and evaluates them', () => {
         for (const source of EXAMPLES) {
             const compiled = block(source);
             expect(compiled.diagnostics).toEqual([]);
-            const evaluated = evaluateUiBlock(compiled, undefined, { milliseconds: 5000 });
+            const evaluated = evaluateUiBlock(compiled);
             expect(evaluated.diagnostics).toEqual([]);
             expect(evaluated.nodes.length).toBeGreaterThan(0);
             expect(compiled.fallback).not.toBe('');

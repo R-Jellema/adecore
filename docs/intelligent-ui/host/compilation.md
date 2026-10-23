@@ -20,7 +20,7 @@ const blocks = compileUi(replyText, { id: itemId, final: true, fenceLanguage: 'u
 | `querySchemas`     | The argument schema of every source a `@Query` may name                             |
 | `latestAttachment` | The attachment id that `Image generated="latest"` stands for                        |
 | `limits`           | Overrides of `UI_LIMITS` for each block                                             |
-| `now`              | The clock of the time budget, for deterministic tests                               |
+| `now`              | The clock used when a host explicitly enables a time budget                        |
 
 Node ids are the block id and the offset where the tag starts. Text that arrives later leaves them alone, so a renderer keeps its state while a block grows.
 
@@ -83,14 +83,16 @@ The agents host scans only the new tail of a streaming reply with both.
 | `depth`       | 32      | Nesting of tags and expressions            |
 | `nodes`       | 512     | Tags, text and expression nodes            |
 | `diagnostics` | 20      | Diagnoses kept per block                   |
-| `steps`       | 20,000  | Parser and interpreter steps               |
+| `steps`       | 262,144 | Parser and interpreter steps               |
 | `iterations`  | 2,000   | Items of lists, records, `Each` and helpers |
 | `stringLength`| 16,384  | One string or expression                   |
-| `milliseconds`| 30      | Time spent on one block                    |
+| `milliseconds`| 0       | Optional elapsed-time limit; zero disables it |
 
-A host whose engine runs slower than the default assumes passes its own overrides, a `Partial<UiLimits>`, as the last argument of `new UiState`, `evaluateUiBlock`, `uiValidatedState`, `uiLinkTargets` and `resolveUiChoice`, and as the fourth of `uiQueryArguments`. Every budget behind that call uses them; `UI_LIMITS` itself never changes.
+The step allowance is four times the character limit because parsing and validating a string literal can account for each character four times. Compilation and evaluation use deterministic work limits by default, so a busy machine does not reject otherwise identical input. Complex expressions can still exceed the work, iteration or output limits even when their source fits the character limit.
 
-`UI_REPLY_LIMITS` bounds a whole reply: 16 blocks, 262,144 UTF-16 units of UI source, 2,048 compiled nodes and 60 ms of compilation. A block that crosses the character, node or time limit becomes its text with one `budget_exceeded` diagnosis. Past 16 blocks the last block gets that diagnosis instead. Either way later fences stay text, and the compiler stops scanning there. A refusal is never cached, so removing an earlier block lets a later one compile again.
+A host may pass its own overrides, a `Partial<UiLimits>`, as the last argument of `new UiState`, `evaluateUiBlock`, `uiValidatedState`, `uiLinkTargets` and `resolveUiChoice`, and as the fourth of `uiQueryArguments`. Every budget behind that call uses them; `UI_LIMITS` itself never changes. A positive `milliseconds` additionally enables an elapsed-time check, whose result depends on machine load. Every other limit must remain a positive safe integer.
+
+`UI_REPLY_LIMITS` bounds a whole reply: 16 blocks, 262,144 UTF-16 units of UI source and 2,048 compiled nodes. Its `milliseconds` field is zero, so reply admission also ignores elapsed time by default. A block that crosses the character or node limit becomes its text with one `budget_exceeded` diagnosis. Past 16 blocks the last block gets that diagnosis instead. Either way later fences stay text, and the compiler stops scanning there. A refusal is never cached, so removing an earlier block lets a later one compile again.
 
 ## Diagnostics and failures
 

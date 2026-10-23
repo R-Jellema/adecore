@@ -24,7 +24,7 @@ A block is text an agent wrote. The agent may be wrong, and the text may carry i
 
 ## Budgets
 
-Every step of work is counted, so a block cannot hang the backend or the page. `UiBudget` counts parser steps, nodes, nesting, iterations, string length and elapsed time against `UI_LIMITS`, inside helpers as well as in ordinary evaluation. `Each` reserves all its iterations before it allocates a child. A reply is also capped as a whole by `UI_REPLY_LIMITS`, and the host's reads per block by `UI_HOST_LIMITS`. The numbers are on [Compilation and streaming](/intelligent-ui/host/compilation#limits).
+`UiBudget` bounds parser and interpreter work, nodes, nesting, iterations and string length against `UI_LIMITS`, inside helpers as well as in ordinary evaluation. These limits are deterministic by default. A host can additionally request an elapsed-time limit with a positive `milliseconds`. `Each` reserves all its iterations before it allocates a child. A reply is also capped as a whole by `UI_REPLY_LIMITS`, and the host's reads per block by `UI_HOST_LIMITS`. The numbers are on [Compilation and streaming](/intelligent-ui/host/compilation#limits).
 
 A block that exceeds its budget is replaced by its text and one `budget_exceeded` diagnosis. A part that fails alone keeps its own fallback; the parts beside it still draw.
 

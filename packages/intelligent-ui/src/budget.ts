@@ -6,18 +6,22 @@ export interface UiLimits {
     steps: number;
     iterations: number;
     stringLength: number;
+    /* Zero leaves admission to deterministic work limits; a positive value also bounds elapsed time. */
     milliseconds: number;
 }
 
+const BLOCK_CHARACTERS = 65536;
+
 export const UI_LIMITS: Readonly<UiLimits> = {
-    characters: 65536,
+    characters: BLOCK_CHARACTERS,
     depth: 32,
     nodes: 512,
     diagnostics: 20,
-    steps: 20000,
+    // Parsing and validating a string literal can account for each character four times.
+    steps: 4 * BLOCK_CHARACTERS,
     iterations: 2000,
     stringLength: 16384,
-    milliseconds: 30
+    milliseconds: 0
 };
 
 export class UiFailure extends Error {
@@ -41,17 +45,17 @@ export class UiBudget {
     constructor(limits: Partial<UiLimits> = {}, now: () => number = Date.now) {
         this.now = now;
         this.limits = { ...UI_LIMITS, ...limits };
-        for (const value of Object.values(this.limits)) {
-            if (!Number.isSafeInteger(value) || value <= 0) {
-                throw new UiFailure('invalid_limits', 'Budgets must be positive safe integers.');
+        for (const [name, value] of Object.entries(this.limits)) {
+            if (!Number.isSafeInteger(value) || value < 0 || (value === 0 && name !== 'milliseconds')) {
+                throw new UiFailure('invalid_limits', 'Budgets must be positive safe integers, except milliseconds may be zero.');
             }
         }
-        this.started = now();
+        this.started = this.limits.milliseconds > 0 ? now() : 0;
     }
 
     step(count = 1): void {
         this.steps += count;
-        if (this.steps > this.limits.steps || this.now() - this.started > this.limits.milliseconds) {
+        if (this.steps > this.limits.steps || (this.limits.milliseconds > 0 && this.now() - this.started > this.limits.milliseconds)) {
             throw new UiFailure('budget_exceeded', 'The operation exceeded its work budget.');
         }
     }
