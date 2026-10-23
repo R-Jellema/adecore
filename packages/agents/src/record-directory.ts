@@ -14,6 +14,8 @@ export interface RecordDirectoryOptions<T> {
     schema: z.ZodType<T>;
     idOf(record: T): string;
     write?: (path: string, text: string) => Promise<void>;
+    // Stands in for `removeFile` whole, so it must take a missing file as removed: a write and a remove delete twice.
+    remove?: (path: string) => Promise<void>;
     /*
      * What a record read from disk is worth keeping as, for a store that drops what went stale while
      * the host was down. Null takes the file with it.
@@ -31,16 +33,21 @@ export class RecordDirectory<T> {
     private readonly schema: z.ZodType<T>;
     private readonly idOf: (record: T) => string;
     private readonly writeFile: (path: string, text: string) => Promise<void>;
+    private readonly removeFile: (path: string) => Promise<void>;
     private readonly keep: ((record: T) => T | null) | null;
     private readonly records = new Map<string, T>();
-    // One write at a time per record, so an older one never lands after a newer one.
-    private readonly writes = new KeyedSerializer();
+    /*
+     * One write or remove at a time per record, so an older write never lands after a newer one and
+     * no delete starts while another of the same file is pending, which Windows can fail with EFAULT.
+     */
+    private readonly files = new KeyedSerializer();
 
     constructor(options: RecordDirectoryOptions<T>) {
         this.dir = options.dir;
         this.schema = options.schema;
         this.idOf = options.idOf;
         this.writeFile = options.write ?? writeAtomic;
+        this.removeFile = options.remove ?? removeFile;
         this.keep = options.keep ?? null;
     }
 
@@ -74,7 +81,7 @@ export class RecordDirectory<T> {
             }
             const record = this.keep === null ? parsed.data : this.keep(parsed.data);
             if (record === null) {
-                await removeFile(join(this.dir, name));
+                await this.removeFile(join(this.dir, name));
                 continue;
             }
             this.records.set(this.idOf(record), record);
@@ -101,24 +108,24 @@ export class RecordDirectory<T> {
     write(record: T): Promise<boolean> {
         const id = this.idOf(record);
         this.records.set(id, record);
-        return this.writes.run(id, async () => {
+        return this.files.run(id, async () => {
             if (this.records.get(id) !== record) {
                 return false;
             }
             await mkdir(this.dir, { recursive: true, mode: 0o700 });
             await this.writeFile(this.pathOf(id), JSON.stringify(record));
             if (!this.records.has(id)) {
-                await removeFile(this.pathOf(id));
+                await this.removeFile(this.pathOf(id));
                 return false;
             }
             return true;
         });
     }
 
-    /* Forgets a record here and now; its file follows. */
+    /* Forgets a record here and now; its file follows, after what is queued for it. */
     remove(id: string): Promise<void> {
         this.records.delete(id);
-        return removeFile(this.pathOf(id));
+        return this.files.run(id, () => this.removeFile(this.pathOf(id)));
     }
 
     async prune(drop: (record: T) => boolean): Promise<void> {
