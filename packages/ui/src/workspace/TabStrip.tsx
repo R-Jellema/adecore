@@ -58,6 +58,7 @@ export interface TabStripProps extends Omit<useRender.ComponentProps<'div'>, 'ch
     renderTab?(item: TabStripItem): ReactNode;
     focused?: boolean;
     insertAt?: number | null;
+    pressToClose?: boolean;
     onClose?(id: string): void;
     onDoubleClick?(id: string, event: MouseEvent<HTMLButtonElement>): void;
     onContextMenu?(id: string, event: MouseEvent<HTMLSpanElement>): void;
@@ -74,6 +75,7 @@ export function TabStrip({
     renderTab,
     focused = true,
     insertAt,
+    pressToClose = false,
     onClose,
     onDoubleClick,
     onContextMenu,
@@ -169,6 +171,7 @@ export function TabStrip({
         items,
         value,
         onValueChange,
+        pressToClose,
         onClose,
         onDoubleClick,
         onContextMenu,
@@ -238,7 +241,7 @@ export function TabStrip({
 
 interface TabContextValue extends Pick<
     TabStripProps,
-    'items' | 'value' | 'onValueChange' | 'onClose' | 'onDoubleClick' | 'onContextMenu' | 'onDragStart' | 'onDragEnd'
+    'items' | 'value' | 'onValueChange' | 'pressToClose' | 'onClose' | 'onDoubleClick' | 'onContextMenu' | 'onDragStart' | 'onDragEnd'
 > {
     close(id: string, action?: () => void): void;
     focus(index: number): void;
@@ -265,6 +268,12 @@ export function DocumentTab({ item, onClose, closeShortcut, onDoubleClick, onDra
     const index = items.findIndex((candidate) => candidate.id === item.id);
     const close = (): void => context.close(item.id, onClose);
     const closable = item.closable !== false && (onClose ?? context.onClose) !== undefined;
+    // Shift with Cmd, Ctrl or Alt stays the app's to give a meaning.
+    const closesOnPress = (event: MouseEvent): boolean =>
+        !!context.pressToClose &&
+        closable &&
+        !item.pinned &&
+        (event.button === 1 || (event.button === 0 && event.shiftKey && !event.metaKey && !event.ctrlKey && !event.altKey));
     return useRender({
         render,
         ref,
@@ -279,6 +288,20 @@ export function DocumentTab({ item, onClose, closeShortcut, onDoubleClick, onDra
                 props.onContextMenu?.(event);
                 context.onContextMenu?.(item.id, event);
             },
+            onMouseDown: (event: MouseEvent<HTMLSpanElement>) => {
+                props.onMouseDown?.(event);
+                // A press that closes starts no text selection, takes no focus and no middle-button scroll.
+                if (closesOnPress(event)) {
+                    event.preventDefault();
+                }
+            },
+            onAuxClick: (event: MouseEvent<HTMLSpanElement>) => {
+                props.onAuxClick?.(event);
+                if (event.button === 1 && closesOnPress(event)) {
+                    event.preventDefault();
+                    close();
+                }
+            },
             children: (
                 <>
                     <Tooltip label={item.hint ?? item.label}>
@@ -291,7 +314,13 @@ export function DocumentTab({ item, onClose, closeShortcut, onDoubleClick, onDra
                             tabIndex={item.id === value || (value === null && index === 0) ? 0 : -1}
                             className="ade-document-tab-open"
                             draggable={!!(onDragStart ?? context.onDragStart)}
-                            onClick={() => onValueChange(item.id)}
+                            onClick={(event) => {
+                                if (closesOnPress(event)) {
+                                    close();
+                                    return;
+                                }
+                                onValueChange(item.id);
+                            }}
                             onDoubleClick={(event) => (onDoubleClick ?? context.onDoubleClick)?.(item.id, event)}
                             onDragStart={(event) => {
                                 event.stopPropagation();

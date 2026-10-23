@@ -356,6 +356,51 @@ describe.skipIf(typeof document === 'undefined')('workspace interaction', () => 
         await change(() => tabs[1]!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true })));
         expect(closed).toEqual(['b']);
     });
+    test('a shift-click or middle click closes a tab without selecting it, and leaves a pinned tab open', async () => {
+        const selected: string[] = [];
+        const closed: string[] = [];
+        const strip = (pressToClose: boolean) => (
+            <TabStrip
+                items={[
+                    { id: 'a', label: 'a' },
+                    { id: 'b', label: 'b' },
+                    { id: 'c', label: 'c', pinned: true }
+                ]}
+                value="a"
+                pressToClose={pressToClose}
+                onValueChange={(id) => selected.push(id)}
+                onClose={(id) => closed.push(id)}
+            />
+        );
+        const press = (id: string, init: MouseEventInit) => {
+            const tab = container.querySelector<HTMLButtonElement>(`[data-document-tab="${id}"] [role="tab"]`)!;
+            const down = new MouseEvent('mousedown', { ...init, bubbles: true, cancelable: true });
+            tab.dispatchEvent(down);
+            tab.dispatchEvent(new MouseEvent(init.button === 1 ? 'auxclick' : 'click', { ...init, bubbles: true, cancelable: true }));
+            return down.defaultPrevented;
+        };
+        await mount(strip(true));
+
+        let prevented = false;
+        await change(() => {
+            prevented = press('b', { button: 0, shiftKey: true });
+        });
+        expect(prevented).toBe(true);
+        await change(() => press('b', { button: 1 }));
+        await change(() => press('c', { button: 1 }));
+        await change(() => press('c', { button: 0, shiftKey: true }));
+        expect(closed).toEqual(['b', 'b']);
+        expect(selected).toEqual(['c']);
+
+        await change(() => press('b', { button: 0, shiftKey: true, metaKey: true }));
+        expect(closed).toEqual(['b', 'b']);
+        expect(selected).toEqual(['c', 'b']);
+
+        await mount(strip(false));
+        await change(() => press('b', { button: 0, shiftKey: true }));
+        await change(() => press('b', { button: 1 }));
+        expect(closed).toEqual(['b', 'b']);
+    });
     test("does not consume an editor's Alt + arrow keys", async () => {
         await mount(<Harness />);
         const input = container.querySelector('input')!;
