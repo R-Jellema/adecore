@@ -1,33 +1,6 @@
 import { describe, expect, test } from 'bun:test';
 import { ErrorBoundary } from './ErrorBoundary.tsx';
-import { errorMessageOf, errorReport, shouldReset } from './error-boundary.ts';
-
-/*
- * No DOM renderer is installed in the client, so the render itself (the message standing in for a
- * child that throws, a sibling left alone) is not tested here; the decisions it rests on are.
- */
-describe('shouldReset', () => {
-    const view = { id: 'v1' };
-
-    test('a boundary without an error never resets, whatever its keys do', () => {
-        expect(shouldReset(false, ['a', 1], ['b', 2])).toBe(false);
-    });
-
-    test('a failed boundary resets when a key changes', () => {
-        expect(shouldReset(true, ['v1', 4], ['v1', 5])).toBe(true);
-        expect(shouldReset(true, [view], [{ id: 'v1' }])).toBe(true);
-    });
-
-    test('a failed boundary stays down while its keys are the same', () => {
-        expect(shouldReset(true, ['v1', view, 4], ['v1', view, 4])).toBe(false);
-        expect(shouldReset(true, [], [])).toBe(false);
-        expect(shouldReset(true, [Number.NaN], [Number.NaN])).toBe(false);
-    });
-
-    test('a key that appears or goes away counts as a change', () => {
-        expect(shouldReset(true, ['v1'], ['v1', 1])).toBe(true);
-    });
-});
+import { errorMessageOf, errorReport } from './error-boundary.ts';
 
 describe('ErrorBoundary state', () => {
     const boundary = (resetKeys: unknown[]): { instance: ErrorBoundary; states: unknown[] } => {
@@ -52,13 +25,25 @@ describe('ErrorBoundary state', () => {
         expect(instance.state.failed).toBe(false);
     });
 
-    test('a changed reset key clears the error, an unchanged one does not', () => {
-        const { instance, states } = boundary(['v1', 5]);
-        instance.state = { error: new Error('boom'), failed: true, componentStack: null };
-        instance.componentDidUpdate({ label: 'x', resetKeys: ['v1', 5], children: null });
-        expect(states).toHaveLength(0);
-        instance.componentDidUpdate({ label: 'x', resetKeys: ['v1', 4], children: null });
-        expect(instance.state.failed).toBe(false);
+    test('resets only a failed boundary whose keys changed', () => {
+        const view = { id: 'v1' };
+        const cases: [string, boolean, unknown[], unknown[], boolean][] = [
+            ['healthy', false, ['a', 1], ['b', 2], false],
+            ['changed value', true, ['v1', 4], ['v1', 5], true],
+            ['changed reference', true, [view], [{ id: 'v1' }], true],
+            ['same keys', true, ['v1', view, 4], ['v1', view, 4], false],
+            ['empty keys', true, [], [], false],
+            ['same NaN', true, [Number.NaN], [Number.NaN], false],
+            ['added key', true, ['v1'], ['v1', 1], true],
+            ['removed key', true, ['v1', 1], ['v1'], true]
+        ];
+        for (const [name, failed, previous, next, reset] of cases) {
+            const { instance, states } = boundary(next);
+            instance.state = { error: failed ? new Error('boom') : null, failed, componentStack: null };
+            instance.componentDidUpdate({ label: 'x', resetKeys: previous, children: null });
+            expect(states, name).toHaveLength(reset ? 1 : 0);
+            expect(instance.state.failed, name).toBe(failed && !reset);
+        }
     });
 });
 

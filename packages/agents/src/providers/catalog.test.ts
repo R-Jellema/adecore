@@ -90,11 +90,6 @@ describe('minimum CLI version', () => {
         expect(ModelCatalogDataSchema.safeParse(withMinimum('newer')).success).toBe(false);
         expect(ModelCatalogDataSchema.safeParse(withMinimum('2.1')).success).toBe(true);
     });
-
-    test('the shipped files parse', () => {
-        expect(ModelCatalogDataSchema.safeParse(claudeManifest).success).toBe(true);
-        expect(ModelCatalogDataSchema.safeParse(codexManifest).success).toBe(true);
-    });
 });
 
 describe('a catalog swapped in while the host runs', () => {

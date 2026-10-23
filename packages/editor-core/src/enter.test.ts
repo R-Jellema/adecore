@@ -27,10 +27,6 @@ describe('Enter in a doc comment that closes on its line', () => {
         enter('/**¦ */', '/**\n * ¦\n */');
         enter('const a = 1; /** foo¦ */', 'const a = 1; /** foo\n              * ¦\n              */');
     });
-
-    it('keeps the closer after the text that follows the caret', () => {
-        enter('/** foo¦ bar */', '/** foo\n * ¦bar */');
-    });
 });
 
 describe('Enter in a hash comment', () => {

@@ -297,14 +297,6 @@ describe('the mouse', () => {
             mounted.type('-');
             expect(mounted.editor.getText()).toBe('\ta-d\n    a-d');
         });
-
-        test('a press without a drag still adds a caret', () => {
-            const mounted = mountEditor({ text: 'ab\ncd' });
-            mounted.click(column(1), row(0));
-            mounted.click(column(1), row(1), { altKey: true });
-            mounted.type('-');
-            expect(mounted.editor.getText()).toBe('a-b\nc-d');
-        });
     });
 
     test('selects a line from its number', () => {

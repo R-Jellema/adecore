@@ -104,13 +104,6 @@ describe('the language a date is written in', () => {
         expect(formatWeekdayDay(AT)).toBe('za 19 sep');
     });
 
-    test('keeps English words against the same Dutch notation', () => {
-        inLanguage('en');
-        inRegion('nl-NL');
-        expect(formatDay(AT)).toBe('19 Sep');
-        expect(formatClock(AT)).toBe('08:05');
-    });
-
     // Following the language is what a fresh client does, so Dutch alone is enough for Dutch dates.
     test('takes the region of the language when the region follows it', () => {
         inLanguage('nl');

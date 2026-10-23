@@ -627,8 +627,9 @@ describe('CodexProtocol', () => {
         expect(protocol.handle({ method: 'mcpServer/elicitation/request', id: 1, params: link })).toEqual([]);
     });
 
-    test('a server request it does not know says nothing, so the backend can refuse it', () => {
+    test('unknown and malformed server requests say nothing, so the backend can refuse them', () => {
         const protocol = new CodexProtocol(1);
+        expect(protocol.handle({ method: 'future/request', id: 8, params: ids })).toEqual([]);
         expect(protocol.handle({ method: 'item/permissions/requestApproval', id: 9, params: ids })).toEqual([]);
     });
 

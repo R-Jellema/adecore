@@ -32,7 +32,7 @@ export function foldSymbolsOf(result: DocumentSymbolResult): EditorFoldSymbol[] 
 }
 
 /* The ranges a server folds that span more than one line, with where a range starts and ends within its lines when it says. */
-export function foldRangesOf(ranges: readonly FoldingRange[] | null): EditorFoldRangeHint[] {
+function foldRangesOf(ranges: readonly FoldingRange[] | null): EditorFoldRangeHint[] {
     return (ranges ?? [])
         .filter((range) => range.endLine > range.startLine)
         .map((range) => ({

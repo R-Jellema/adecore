@@ -43,19 +43,6 @@ function setup(text = 'head\nbody') {
 }
 
 describe('grammar preparation', () => {
-    for (const language of ['cpp', 'rust', 'jsonc', 'tsx', 'javascript', 'csharp']) {
-        test(`prepares only the final language name while typing ${language}`, async () => {
-            const fixture = setup('');
-            for (const character of '```' + language) {
-                fixture.edit(character);
-            }
-            await fixture.flush();
-            expect(fixture.prepare).toHaveBeenCalledTimes(1);
-            expect(fixture.prepare.mock.calls[0]![0]).toBe('```' + language);
-            fixture.dispose();
-        });
-    }
-
     test('does not prepare a pasted declaration undone before the debounce', async () => {
         const fixture = setup('');
         fixture.edit('```ts');
@@ -78,17 +65,22 @@ describe('grammar preparation', () => {
     });
 
     test('debounces rapid edits and collects complete post-edit lines', async () => {
-        const fixture = setup();
-        for (const character of '\n```ts') {
-            fixture.edit(character);
+        for (const [initial, typed, expected] of [
+            ['', '```cpp', '```cpp'],
+            ['head\nbody', '\n```ts', 'body\n```ts']
+        ] as const) {
+            const fixture = setup(initial);
+            for (const character of typed) {
+                fixture.edit(character);
+            }
+            expect(fixture.prepare).not.toHaveBeenCalled();
+            expect(fixture.timers.size).toBe(1);
+            await fixture.flush();
+            expect(fixture.prepare).toHaveBeenCalledTimes(1);
+            expect(fixture.prepare.mock.calls[0]![0]).toBe(expected);
+            expect(fixture.changed).toHaveBeenCalledTimes(1);
+            fixture.dispose();
         }
-        expect(fixture.prepare).not.toHaveBeenCalled();
-        expect(fixture.timers.size).toBe(1);
-        await fixture.flush();
-        expect(fixture.prepare).toHaveBeenCalledTimes(1);
-        expect(fixture.prepare.mock.calls[0]![0]).toContain('```ts');
-        expect(fixture.changed).toHaveBeenCalledTimes(1);
-        fixture.dispose();
     });
 
     test('maps separate edits to their final line positions', async () => {

@@ -624,22 +624,16 @@ describe('continuing after a stop', () => {
         expect(composer.page.host.textContent).toContain('Continue');
     });
 
-    test('Continue sends the plain prompt like a typed message', async () => {
+    test('Continue sends the plain prompt once and hides while the reply is pending', async () => {
         const composer = await mount({ items: stopped });
         const button = [...composer.page.host.querySelectorAll('button')].find((candidate) => candidate.textContent === 'Continue')!;
         await composer.click(button);
         expect(composer.sent).toEqual([{ text: 'Continue.', extras: {} }]);
+        expect(continueButton(composer)).toBeUndefined();
     });
 
     const continueButton = (composer: Mounted): HTMLButtonElement | undefined =>
         [...composer.page.host.querySelectorAll('button')].find((candidate) => candidate.textContent === 'Continue');
-
-    test('one click is enough, even while the chat has not answered yet', async () => {
-        const composer = await mount({ items: stopped });
-        await composer.click(continueButton(composer)!);
-        expect(continueButton(composer)).toBeUndefined();
-        expect(composer.sent).toHaveLength(1);
-    });
 
     test('a typed send after a stop never shows Continue in between', async () => {
         const composer = await mount({ items: stopped });
@@ -793,24 +787,13 @@ describe('continuing on another account after a usage limit', () => {
         expect(rows[0]!.textContent).toContain('20%');
         expect(rows[1]!.textContent).toStartWith('Work');
         expect(rows[1]!.textContent).toContain('60%');
+        expect(rows[0]!.textContent).not.toContain('in a fork');
+        expect(rows[1]!.textContent).toContain('in a fork');
+        for (const name of ['Off', 'Out', 'Full', 'New']) {
+            expect(rows.some((row) => row.textContent?.includes(name))).toBe(false);
+        }
         await composer.click(rows[1]!);
         expect(continued(composer)).toEqual([[CHAT, 'claude_work']]);
-    });
-
-    test('a row says when the account would go on in a fork, and not when it takes the chat over', async () => {
-        const composer = await mount({ info: limited, accounts, limits: roomy });
-        const [home, work] = await menuRows(composer);
-        expect(home!.textContent).not.toContain('in a fork');
-        expect(work!.textContent).toContain('in a fork');
-    });
-
-    test('leaves out an account that is off, signed out, at its limit or never read', async () => {
-        const composer = await mount({ info: limited, accounts, limits: roomy });
-        const names = (await menuRows(composer)).map((row) => row.textContent ?? '');
-        expect(names).toHaveLength(2);
-        for (const name of ['Off', 'Out', 'Full', 'New']) {
-            expect(names.some((text) => text.includes(name))).toBe(false);
-        }
     });
 
     test('one account with room is offered without a menu', async () => {

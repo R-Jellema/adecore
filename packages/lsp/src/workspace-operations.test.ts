@@ -129,14 +129,9 @@ describe('planning a create', () => {
         expect(plan.steps).toEqual([{ kind: 'create', uri: a, text: 'x', overwrite: false }]);
     });
 
-    it('refuses a file that is there unless it may overwrite or is told to leave it', async () => {
+    it('refuses an existing file by default and edits it after an ignored create', async () => {
         const { source } = rig({ [a]: { text: 'old' } });
         expect((await refusal({ documentChanges: [{ kind: 'create', uri: a }] }, source)).message).toContain('already exists');
-        const over = await planWorkspaceOperations(
-            { documentChanges: [{ kind: 'create', uri: a, options: { overwrite: true, ignoreIfExists: true } }] },
-            source
-        );
-        expect(over.steps).toEqual([{ kind: 'create', uri: a, text: '', overwrite: true }]);
         const left = await planWorkspaceOperations(
             {
                 documentChanges: [
@@ -240,13 +235,9 @@ describe('planning a rename', () => {
         );
     });
 
-    it('refuses a target that is there unless it may overwrite or is told to leave it', async () => {
+    it('refuses an existing rename target by default', async () => {
         const { source } = rig({ [a]: { text: 'a' }, [b]: { text: 'b' } });
         expect((await refusal({ documentChanges: [{ kind: 'rename', oldUri: a, newUri: b }] }, source)).message).toContain('already exists');
-        const over = await planWorkspaceOperations({ documentChanges: [{ kind: 'rename', oldUri: a, newUri: b, options: { overwrite: true } }] }, source);
-        expect(over.steps).toEqual([{ kind: 'rename', oldUri: a, newUri: b, overwrite: true }]);
-        const left = await planWorkspaceOperations({ documentChanges: [{ kind: 'rename', oldUri: a, newUri: b, options: { ignoreIfExists: true } }] }, source);
-        expect(left.steps).toEqual([]);
     });
 
     it('plans each combination of overwrite and ignoreIfExists for a rename', async () => {

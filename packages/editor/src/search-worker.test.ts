@@ -315,15 +315,12 @@ test('replacement scope and multi-edit pages keep offsets in the original snapsh
 
 test('replacement output refuses the entire operation on a page or total budget overflow', () => {
     const source = 'cat cat cat';
-    const model = new DocumentModel(source);
     const page = replacements(source, 'cat', 'entry', { maxEdits: 3, maxCharacters: 4 });
     const total = replacements(source, 'cat', 'entry', { maxEdits: 1, maxCharacters: 9 });
     expect(page.error).toMatchObject({ type: 'error', kind: 'range' });
     expect(total.error).toMatchObject({ type: 'error', kind: 'range' });
     expect(page.edits).toEqual([]);
     expect(total.edits).toEqual([]);
-    expect(model.getText()).toBe(source);
-    expect(model.getSnapshot().canUndo).toBe(false);
 });
 
 test('deletion pages may use a zero character budget and a stale commit is refused atomically', () => {

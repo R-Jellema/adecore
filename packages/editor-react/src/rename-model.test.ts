@@ -1,6 +1,6 @@
 import './test-setup.ts';
 import { describe, expect, test } from 'bun:test';
-import { occurrencesOf, renameKindOf, renamePreviewOf, renameRowsOf, renameTargetOf, wordRangeAt } from './rename-model.ts';
+import { renameKindOf, renamePreviewOf, renameRowsOf, renameTargetOf, wordRangeAt } from './rename-model.ts';
 
 const at = (line: number, character: number) => ({ line, character });
 const range = (line: number, start: number, end: number) => ({ start: at(line, start), end: at(line, end) });
@@ -23,21 +23,6 @@ describe('the word to rename', () => {
         expect(renameTargetOf(range(0, 6, 13), textOf, () => null)).toEqual({ range: range(0, 6, 13), placeholder: 'weights' });
         expect(renameTargetOf({ defaultBehavior: true }, textOf, () => range(0, 6, 13))).toEqual({ range: range(0, 6, 13), placeholder: 'weights' });
         expect(renameTargetOf({ defaultBehavior: true }, textOf, () => null)).toBeNull();
-    });
-});
-
-describe('occurrences', () => {
-    test('counts every place and the files they are in, and keeps the ones in the open file', () => {
-        const here = 'file:///a.ts';
-        const result = occurrencesOf(
-            [
-                { uri: here, range: range(0, 0, 1) },
-                { uri: here, range: range(3, 0, 1) },
-                { uri: 'file:///b.ts', range: range(1, 0, 1) }
-            ],
-            here
-        );
-        expect(result).toEqual({ inFile: [range(0, 0, 1), range(3, 0, 1)], count: 3, files: 2 });
     });
 });
 

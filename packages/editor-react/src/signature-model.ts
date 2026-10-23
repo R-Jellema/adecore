@@ -15,7 +15,7 @@ export interface SignatureViewModel {
 }
 
 /* Where a parameter's label stands in the signature's: given as a pair of offsets, or as the text to find in it. */
-export function parameterSpan(signature: SignatureInformation, index: number): { start: number; end: number } | null {
+function parameterSpan(signature: SignatureInformation, index: number): { start: number; end: number } | null {
     const parameter = signature.parameters?.[index];
     if (parameter === undefined) {
         return null;

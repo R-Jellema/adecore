@@ -361,7 +361,13 @@ describe('AcpProtocol', () => {
 
     test('refuses a permission request of another session or without options', () => {
         const protocol = new AcpProtocol(1, MODES, acpStopWords('Example'));
-        expect(protocol.permission(1, 's', { sessionId: 'other', toolCall: { toolCallId: 'c' }, options: [] })).toBeNull();
+        expect(
+            protocol.permission(1, 's', {
+                sessionId: 'other',
+                toolCall: { toolCallId: 'c' },
+                options: [{ optionId: 'once', name: 'Allow', kind: 'allow_once' }]
+            })
+        ).toBeNull();
         expect(protocol.permission(1, 's', { sessionId: 's', toolCall: { toolCallId: 'c' } })).toBeNull();
     });
 

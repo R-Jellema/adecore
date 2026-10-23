@@ -15,17 +15,8 @@ function tree(nodes: CallNode[]): Map<string, CallNode> {
 }
 
 describe('call hierarchy model', () => {
-    test('keeps the order the server gave the calls in', () => {
-        const [root] = rootsOf([item('run')]);
-        const calls = [
-            { from: item('b', 'file:///work/b.ts'), fromRanges: [at(1)] },
-            { from: item('a', 'file:///work/a.ts'), fromRanges: [at(2)] }
-        ];
-        expect(childrenOf('incoming', root!, calls).map((node) => node.item.name)).toEqual(['b', 'a']);
-        expect(rootsOf([item('b'), item('a')]).map((node) => node.item.name)).toEqual(['b', 'a']);
-    });
-
     test('lists the calls of a node in the server order and finds the call sites in the right file', () => {
+        expect(rootsOf([item('b'), item('a')]).map((node) => node.item.name)).toEqual(['b', 'a']);
         const [root] = rootsOf([item('run', 'file:///work/run.ts')]);
         const calls = [
             { from: item('zeta', 'file:///work/z.ts'), fromRanges: [at(4)] },

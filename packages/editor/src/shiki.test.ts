@@ -71,13 +71,7 @@ const VUE = [
 describe('embedded grammars', () => {
     test('colors the script and the style of a Vue file next to its template', async () => {
         const colors = await colorsOf('vue', VUE);
-        expectColored(colors, ['template', 'import', 'const', "'vue'", 'color', 'red']);
-    });
-
-    test('colors a style block in a language the grammar embeds only on demand', async () => {
-        const colors = await colorsOf('vue', VUE);
-        expect(colors.get('margin')).toBeDefined();
-        expect(colors.get('margin')).not.toBe(PLAIN);
+        expectColored(colors, ['template', 'import', 'const', "'vue'", 'color', 'red', 'margin']);
     });
 
     test('colors the script and the style of an HTML file', async () => {

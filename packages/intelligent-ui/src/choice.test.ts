@@ -78,8 +78,8 @@ test('segmented and checklist submissions must use their visible options', () =>
 
 test('oversized and prototype-bearing input values are refused', () => {
     const { block, choice } = fixture();
-    expect(() => resolveUiChoice(block, choice, { $count: 'x'.repeat(65537) })).toThrow();
-    expect(() => resolveUiChoice(block, choice, JSON.parse('{"__proto__":true}'))).toThrow();
+    expect(() => resolveUiChoice(block, choice, { $count: 'x'.repeat(65537) })).toThrow(expect.objectContaining({ code: 'budget_exceeded' }));
+    expect(() => resolveUiChoice(block, choice, JSON.parse('{"__proto__":true}'))).toThrow(expect.objectContaining({ code: 'refused_access' }));
 });
 
 test('every visible control bound to a changed value must accept it', () => {

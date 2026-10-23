@@ -102,6 +102,7 @@ describe.each(implementations)('%s', (_name, mount) => {
             expect(editor.offsetAt(at(0, 9))).toBe(2);
             expect(editor.offsetAt(at(1, 9))).toBe(6);
             expect(editor.offsetAt(at(9, 0))).toBe(10);
+            expect(editor.offsetAt(at(9, 9))).toBe(12);
             expect(editor.offsetAt(at(-1, -1))).toBe(0);
         });
 
@@ -232,9 +233,15 @@ describe.each(implementations)('%s', (_name, mount) => {
     describe('selections', () => {
         test('give the primary selection start before end, with the caret where it was set to end', () => {
             const editor = mount({ text: 'one two' });
+            const events = record(editor);
+            editor.setSelection(range(0, 4, 0, 7));
+            expect(editor.getSelection()).toEqual(range(0, 4, 0, 7));
+            expect(editor.getCaret()).toEqual(at(0, 7));
+            expect(events.carets).toEqual([at(0, 7)]);
             editor.setSelection(range(0, 7, 0, 4));
             expect(editor.getSelection()).toEqual(range(0, 4, 0, 7));
             expect(editor.getCaret()).toEqual(at(0, 4));
+            expect(events.carets).toEqual([at(0, 7), at(0, 4)]);
         });
 
         test('keep the order they were given, the primary one last', () => {
@@ -243,6 +250,8 @@ describe.each(implementations)('%s', (_name, mount) => {
             expect(editor.getSelections()).toEqual([range(2, 0, 2, 5), range(0, 0, 0, 3), range(1, 1, 1, 1)]);
             expect(editor.getSelection()).toEqual(range(1, 1, 1, 1));
             expect(editor.getCaret()).toEqual(at(1, 1));
+            editor.setSelections([]);
+            expect(editor.getSelections()).toEqual([range(2, 0, 2, 5), range(0, 0, 0, 3), range(1, 1, 1, 1)]);
         });
 
         test('merge selections that overlap or touch', () => {
@@ -384,6 +393,7 @@ describe.each(implementations)('%s', (_name, mount) => {
 
     describe('settings', () => {
         test('give back the indentation and whether the text is read only', () => {
+            expect(mount().getIndentation()).toEqual({ tabSize: 4, insertSpaces: true });
             const editor = mount({ text: '', indentation: { tabSize: 2, insertSpaces: false }, readOnly: true });
             expect(editor.getIndentation()).toEqual({ tabSize: 2, insertSpaces: false });
             expect(editor.isReadOnly?.()).toBe(true);

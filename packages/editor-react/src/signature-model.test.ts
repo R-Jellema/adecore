@@ -1,6 +1,6 @@
 import './test-setup.ts';
 import { describe, expect, test } from 'bun:test';
-import { parameterSpan, signatureViewOf } from './signature-model.ts';
+import { signatureViewOf } from './signature-model.ts';
 
 const signature = {
     label: 'scoreCandidate(candidate: Candidate, vacancy: Vacancy, options?: MatchOptions): number',
@@ -10,14 +10,6 @@ const signature = {
         { label: [50, 73] as [number, number] }
     ]
 };
-
-describe('parameterSpan', () => {
-    test('finds a label given as text, and takes one given as offsets', () => {
-        expect(parameterSpan(signature, 1)).toEqual({ start: 37, end: 53 });
-        expect(parameterSpan(signature, 2)).toEqual({ start: 50, end: 73 });
-        expect(parameterSpan(signature, 9)).toBeNull();
-    });
-});
 
 describe('signatureViewOf', () => {
     test('marks the active parameter and carries what is said about it', () => {
@@ -29,6 +21,8 @@ describe('signatureViewOf', () => {
             index: 0,
             count: 1
         });
+        expect(signatureViewOf({ signatures: [signature], activeParameter: 2 })?.active).toEqual({ start: 50, end: 73 });
+        expect(signatureViewOf({ signatures: [signature], activeParameter: 9 })?.active).toBeNull();
     });
 
     test('picks the overload the server names, and says nothing for no signatures', () => {

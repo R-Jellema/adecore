@@ -58,10 +58,6 @@ describe('the docs', () => {
         expect(compoundParts()).toContain('Menu.Item');
     });
 
-    test('mention every exported name on some page', () => {
-        expect(snapshotNames().filter((name) => !mentioned(name))).toEqual([]);
-    });
-
     test('mention every name every published package exports', () => {
         const entries = publishedEntries();
         expect(new Set(entries.map((entry) => entry.pkg)).size).toBeGreaterThan(10);

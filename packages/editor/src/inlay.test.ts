@@ -88,8 +88,9 @@ describe('inlay hints', () => {
         const { editor, pills, press } = setup();
         editor.setInlayHints([{ id: 'h', position: { line: 0, character: 1 }, label: 'ab' }]);
         editor.onInlayClick!(() => false);
+        editor.setCaret({ line: 2, character: 1 });
         press(pills()[0]!);
-        expect(editor.getSelection().start.line).toBe(0);
+        expect(editor.getSelection()).toEqual({ start: { line: 0, character: 0 }, end: { line: 0, character: 0 } });
     });
 
     test('draws the link on the part it was told to and takes it away', () => {

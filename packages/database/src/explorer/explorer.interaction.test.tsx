@@ -285,6 +285,8 @@ describe.skipIf(typeof document === 'undefined')('DatabaseExplorer in a DOM', ()
 
     test('asks before it truncates, runs the SQL on confirmation and loads the tables again', async () => {
         recorded.onExecute((sql) => [done(sql, 2)]);
+        const changes: SchemaChange[] = [];
+        const stop = client.onSchemaChange((change) => changes.push(change));
         await openTables();
         await contextMenu(row('customers'));
         await click(byText('[role=menuitem]', 'Truncate…'));
@@ -297,19 +299,7 @@ describe.skipIf(typeof document === 'undefined')('DatabaseExplorer in a DOM', ()
         expect(recorded.executed()).toEqual(['DELETE FROM "customers"']);
         await waitFor(() => expect(recorded.of('tables').length).toBeGreaterThan(tablesBefore));
         expect(findAll('[role=dialog]')).toEqual([]);
-    });
-
-    test('tells the listeners once for a truncate, which the client cannot tell from a delete', async () => {
-        recorded.onExecute((sql) => [done(sql, 2)]);
-        const changes: SchemaChange[] = [];
-        const stop = client.onSchemaChange((change) => changes.push(change));
-        await openTables();
-        await contextMenu(row('customers'));
-        await click(byText('[role=menuitem]', 'Truncate…'));
-        await click(byText('[role=dialog] button', 'Truncate'));
-        await waitFor(() => expect(findAll('[role=dialog]')).toEqual([]));
         stop();
-
         expect(changes).toEqual([{ connectionId: 'one', schema: 'main' }]);
     });
 

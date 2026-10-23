@@ -8,6 +8,7 @@ import { cleanTitle, readLines } from './title-file.ts';
 describe('cleanTitle', () => {
     test('makes one line of words with one space between them', () => {
         expect(cleanTitle('  Fix the\nflaky\t\ttest\u0007 ')).toBe('Fix the flaky test');
+        expect(cleanTitle('a\u0000b')).toBe('a b');
     });
 
     test('answers null for anything that is not text, or nothing but blanks', () => {
@@ -22,6 +23,9 @@ describe('cleanTitle', () => {
         expect(title.endsWith('…')).toBe(true);
         expect(title).not.toContain('\ud83d…');
         expect(cleanTitle('b'.repeat(SUGGESTED_TITLE_LIMIT))).toBe('b'.repeat(SUGGESTED_TITLE_LIMIT));
+        const long = cleanTitle('word '.repeat(40))!;
+        expect(long.length).toBe(SUGGESTED_TITLE_LIMIT);
+        expect(long.endsWith('…')).toBe(true);
     });
 });
 

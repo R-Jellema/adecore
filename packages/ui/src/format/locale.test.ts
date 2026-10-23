@@ -23,15 +23,19 @@ afterEach(() => {
 
 describe('the order labels are read in', () => {
     test('follows the language, which is what wrote the words', () => {
-        const sorted = (labels: string[]): string[] => [...labels].sort(labelCollator().compare);
+        source.set({ region: 'nl-NL' });
         inLanguage('en');
-        expect(sorted(['Separator', 'Subheader', 'Canvas'])).toEqual(['Canvas', 'Separator', 'Subheader']);
+        expect(labelCollator().resolvedOptions().locale).toBe('en');
+        expect(['z', 'ä'].sort(labelCollator().compare)).toEqual(['ä', 'z']);
         inLanguage('nl');
-        expect(sorted(['Scheiding', 'Kopje', 'Canvas'])).toEqual(['Canvas', 'Kopje', 'Scheiding']);
+        expect(labelCollator().resolvedOptions().locale).toBe('nl');
+        inLanguage('sv');
+        expect(['z', 'ä'].sort(labelCollator().compare)).toEqual(['z', 'ä']);
     });
 
     test('ignores case, so a lowercase label never sinks to the bottom', () => {
         inLanguage('en');
-        expect(['terminal', 'Canvas'].sort(labelCollator().compare)).toEqual(['Canvas', 'terminal']);
+        expect(labelCollator().compare('canvas', 'Canvas')).toBe(0);
+        expect(labelCollator().compare('Canvas', 'terminal')).toBeLessThan(0);
     });
 });

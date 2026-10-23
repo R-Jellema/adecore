@@ -521,16 +521,38 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn a_link_in_the_way_of_a_partial_file_is_left_alone() {
+        // The counter must have no parallel users while the colliding filename is arranged.
+        if std::env::var_os("ADECORE_TEST_PARTIAL_SYMLINK_CHILD").is_none() {
+            let output = std::process::Command::new(std::env::current_exe().unwrap())
+                .args(["--exact", "export::tests::a_link_in_the_way_of_a_partial_file_is_left_alone"])
+                .env("ADECORE_TEST_PARTIAL_SYMLINK_CHILD", "1")
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}\n{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed"));
+            return;
+        }
+
         let directory = tempfile::tempdir().unwrap();
         let marker = directory.path().join("unrelated.txt");
         let target = directory.path().join("linked.csv");
+        let collision = directory
+            .path()
+            .join(format!("linked.csv.{}-{}.partial", std::process::id(), NEXT_PARTIAL.load(Ordering::Relaxed)));
         std::fs::write(&marker, "must survive").unwrap();
-        std::os::unix::fs::symlink(&marker, directory.path().join("linked.csv.partial")).unwrap();
+        std::os::unix::fs::symlink(&marker, &collision).unwrap();
 
         let (mut partial, mut file) = PartialFile::create(target.to_str().unwrap()).unwrap();
+        assert_ne!(partial.partial_path(), collision);
         std::io::Write::write_all(&mut file, b"exported").unwrap();
         partial.commit().unwrap();
 
+        assert!(std::fs::symlink_metadata(&collision).unwrap().file_type().is_symlink());
         assert_eq!(std::fs::read_to_string(&marker).unwrap(), "must survive");
         assert_eq!(std::fs::read_to_string(&target).unwrap(), "exported");
     }

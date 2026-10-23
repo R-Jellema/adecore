@@ -196,19 +196,6 @@ describe('a segment bar', () => {
         expect(markup.match(/<button type="button"/g)).toHaveLength(2);
     });
 
-    test('makes every part a button when it can select', () => {
-        const markup = render(
-            <SegmentBar
-                parts={[
-                    { value: 1, label: 'A' },
-                    { value: 1, label: 'B' }
-                ]}
-                onSelect={() => {}}
-            />
-        );
-        expect(markup.match(/<button type="button"/g)).toHaveLength(2);
-    });
-
     test('stays reachable when a person can press its parts, labels or not', () => {
         const markup = render(<SegmentBar parts={[{ value: 1 }, { value: 1 }]} onSelect={() => {}} />);
         expect(markup).not.toContain('aria-hidden');

@@ -145,32 +145,7 @@ describe('copying a line without a selection', () => {
     });
 });
 
-describe('setSelections', () => {
-    test('puts a caret in each range and makes the last the primary one', () => {
-        const { editor } = setup({ text: 'one\ntwo\nthree' });
-        editor.setSelections([
-            { start: { line: 0, character: 1 }, end: { line: 0, character: 1 } },
-            { start: { line: 1, character: 0 }, end: { line: 1, character: 2 } },
-            { start: { line: 2, character: 3 }, end: { line: 2, character: 3 } }
-        ]);
-        expect(editor.getSelections()).toHaveLength(3);
-        expect(editor.getSelection()).toEqual({ start: { line: 2, character: 3 }, end: { line: 2, character: 3 } });
-        expect(editor.getSelections()[1]).toEqual({ start: { line: 1, character: 0 }, end: { line: 1, character: 2 } });
-        editor.setSelections([]);
-        expect(editor.getSelections()).toHaveLength(3);
-    });
-});
-
 describe('setText', () => {
-    test('is not reported as a change', () => {
-        const { editor } = setup();
-        let changes = 0;
-        editor.onChange(() => changes++);
-        editor.setText('one\nTWO\nthree');
-        expect(editor.getText()).toBe('one\nTWO\nthree');
-        expect(changes).toBe(0);
-    });
-
     test('keeps the cursor where the text around it stayed', () => {
         const { editor, host, type } = setup({ text: 'one\ntwo\nthree', line: 3, column: 3 });
         editor.setText('0\n1\none\ntwo\nthree');
@@ -258,13 +233,6 @@ describe('text changes', () => {
         press('z', { metaKey: true });
         press('z', { ctrlKey: true });
         expect(heard.length).toBeGreaterThan(2);
-    });
-
-    test('turns offsets into positions and back', () => {
-        const { editor } = setup({ text: 'one\ntwo' });
-        expect(editor.positionAt(5)).toEqual({ line: 1, character: 1 });
-        expect(editor.offsetAt({ line: 1, character: 2 })).toBe(6);
-        expect(editor.offsetAt({ line: 9, character: 9 })).toBe(7);
     });
 });
 

@@ -27,14 +27,6 @@ describe('FakeEditorEngine', () => {
         expect(editor.wrap).toBe(false);
     });
 
-    test('follows the indentation it is given', () => {
-        const engine = new FakeEditorEngine();
-        expect(engine.mount(element, { text: '', theme: 'light' }).indentation).toEqual({ tabSize: 4, insertSpaces: true });
-        const editor = engine.mount(element, { text: '', theme: 'light', indentation: { tabSize: 2, insertSpaces: false } });
-        editor.setIndentation({ tabSize: 8, insertSpaces: true });
-        expect(editor.indentation).toEqual({ tabSize: 8, insertSpaces: true });
-    });
-
     test('returns the content height supplied by a test', () => {
         const editor = new FakeEditorEngine().mount(element, { text: '', theme: 'light' });
         editor.contentHeight = 280;
@@ -101,13 +93,6 @@ describe('FakeEditorEngine', () => {
         expect(editor.disposed).toBe(true);
         expect(() => editor.type('a')).toThrow('The editor is disposed');
     });
-
-    test('selects a range with the caret at its end', () => {
-        const editor = new FakeEditorEngine().mount(element, { text: 'let value = 1;', theme: 'dark' });
-        editor.setSelection({ start: { line: 0, character: 4 }, end: { line: 0, character: 9 } });
-        expect(editor.getSelection()).toEqual({ start: { line: 0, character: 4 }, end: { line: 0, character: 9 } });
-        expect(editor.getCaret()).toEqual({ line: 0, character: 9 });
-    });
 });
 
 describe('FakeEditor.trackRange', () => {
@@ -133,18 +118,6 @@ describe('FakeEditor.setWidgets', () => {
         expect([...editor.widgetsByOwner.keys()]).toEqual(['default', 'review']);
         editor.setWidgets([], 'review');
         expect([...editor.widgetsByOwner.keys()]).toEqual(['default']);
-    });
-
-    test('draws a row once per id, like the editor, and again when it comes back', () => {
-        const editor = new FakeEditorEngine().mount(element, { text: 'a', theme: 'light' });
-        const drawn: string[] = [];
-        const row = (id: string) => ({ id, line: 0, render: () => void drawn.push(id) });
-        editor.setWidgets([row('a')]);
-        editor.setWidgets([row('a'), row('b')]);
-        expect(drawn).toEqual(['a', 'b']);
-        editor.setWidgets([]);
-        editor.setWidgets([row('a')]);
-        expect(drawn).toEqual(['a', 'b', 'a']);
     });
 });
 

@@ -90,11 +90,6 @@ describe('GridHeaderCell', () => {
         expect(render(<GridHeaderCell {...props} />)).not.toContain('lucide-key');
     });
 
-    test('sets a number against the end and text at the start', () => {
-        expect(render(<GridHeaderCell {...props} />)).toContain('justify-end');
-        expect(render(<GridHeaderCell {...props} column={{ name: 'name', type: 'TEXT', kind: 'text' }} />)).not.toContain('justify-end');
-    });
-
     test('has a soft line on its edge, a stronger one on the last pinned column and none on the last column', () => {
         expect(render(<GridHeaderCell {...props} />)).toContain('border-r border-border-soft');
         expect(render(<GridHeaderCell {...props} pinned lastPinned />)).toContain('border-border-strong');

@@ -64,13 +64,44 @@ describe('the usage monitor', () => {
     });
 
     test('a read that failed leaves the last good numbers up and waits longer next time', async () => {
+        let now = 1_000;
+        let probes = 0;
         let answer: ProbeResult = reading(0.23);
-        const monitor = new UsageMonitor({ providers: registry(['claude']), probe: () => Promise.resolve(answer) });
-        await monitor.refresh(true);
+        const monitor = new UsageMonitor({
+            providers: registry(['claude']),
+            now: () => now,
+            probe: () => {
+                probes += 1;
+                return Promise.resolve(answer);
+            }
+        });
+        await monitor.refresh(false);
         answer = { unavailable: { reason: 'failed', message: 'Claude Code did not answer in time' } };
-        await monitor.refresh(true);
+        now += 5 * 60_000;
+        await monitor.refresh(false);
+        expect(probes).toBe(2);
         expect(providerOf(monitor, 'claude').windows[0]).toMatchObject({ used: 0.23 });
         expect(providerOf(monitor, 'claude').unavailable).toBeNull();
+        for (const minutes of [10, 20, 40, 60, 60]) {
+            const before = probes;
+            now += minutes * 60_000 - 1;
+            await monitor.refresh(false);
+            expect(probes).toBe(before);
+            now += 1;
+            await monitor.refresh(false);
+            expect(probes).toBe(before + 1);
+            expect(providerOf(monitor, 'claude').windows[0]).toMatchObject({ used: 0.23 });
+        }
+        answer = reading(0.42);
+        await monitor.refresh(true);
+        const afterSuccess = probes;
+        expect(providerOf(monitor, 'claude').windows[0]).toMatchObject({ used: 0.42 });
+        now += 5 * 60_000 - 1;
+        await monitor.refresh(false);
+        expect(probes).toBe(afterSuccess);
+        now += 1;
+        await monitor.refresh(false);
+        expect(probes).toBe(afterSuccess + 1);
         monitor.stop();
     });
 

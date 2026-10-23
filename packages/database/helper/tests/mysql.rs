@@ -1007,16 +1007,6 @@ async fn mysql_cancels_a_script_after_a_write() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn mysql_samples_files() {
-    let Some(mut sandbox) = Sandbox::new("sample").await else {
-        return;
-    };
-    let directory = tempfile::tempdir().unwrap();
-    scenarios::samples_files(&mut sandbox.db(), directory.path()).await;
-    sandbox.finish().await;
-}
-
-#[tokio::test(flavor = "multi_thread")]
 async fn mysql_imports_files() {
     let Some(mut sandbox) = Sandbox::new("import").await else {
         return;

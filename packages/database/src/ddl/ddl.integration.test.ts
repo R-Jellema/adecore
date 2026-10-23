@@ -55,6 +55,11 @@ const speaksProtocol = (): boolean => {
     }
 };
 
+const available = speaksProtocol();
+if (process.env.ADECORE_REQUIRE_DATABASE_HELPER === '1' && !available) {
+    throw new Error('The DDL integration suite requires a release helper with the current protocol.');
+}
+
 const folder = mkdtempSync(join(tmpdir(), 'adecore-ddl-'));
 const host = createDatabaseHost({ start: () => spawnHelper(HELPER!) });
 const client = createDatabaseClient((request) => host.handle(request, 'test'));
@@ -122,7 +127,7 @@ const column = (name: string, type: string, extra: Partial<ColumnDraft> = {}): C
 type Snapshot = ReadonlyMap<string, readonly Cell[]>;
 
 function defineSuite(label: string, open: () => Promise<Target>, close: (target: Target) => Promise<void>): void {
-    describe.skipIf(!speaksProtocol())(`DDL against ${label}`, () => {
+    describe.skipIf(!available)(`DDL against ${label}`, () => {
         const mysql = label !== 'SQLite';
         const text = mysql ? 'varchar(100)' : 'TEXT';
         const long = mysql ? 'text' : 'TEXT';

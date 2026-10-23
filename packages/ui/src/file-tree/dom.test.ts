@@ -9,7 +9,9 @@ const files = [
     'Slider.test.tsx',
     'Segmented.test.tsx',
     'settings/ConfirmDialog.test.tsx',
-    'ColorWheelPicker.test.tsx'
+    'ColorWheelPicker.test.tsx',
+    'Toasts.test.tsx',
+    'lazy.test.ts'
 ];
 
 // React and Base UI must first load with a DOM; isolate these from the server-rendered suite.

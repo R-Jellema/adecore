@@ -30,10 +30,16 @@ describe('recentChatMessages', () => {
     });
 
     test('caps one large message and the total text sent to Voice', () => {
-        const items = [item('1', 'user', 'a'.repeat(4_000)), item('2', 'assistant', 'b'.repeat(10_000))];
-        const result = recentChatMessages(Object.fromEntries(items.map((entry) => [entry.id, entry])), ['1', '2'], 20);
-        expect(result.messages.every((message) => message.text.length <= 3_000)).toBe(true);
-        expect(result.messages.reduce((total, message) => total + message.text.length, 0)).toBeLessThanOrEqual(12_000);
+        const items = ['a', 'b', 'c', 'd', 'e'].map((text, index) => item(String(index + 1), 'user', text.repeat(4_000)));
+        const result = recentChatMessages(
+            Object.fromEntries(items.map((entry) => [entry.id, entry])),
+            items.map((entry) => entry.id),
+            20
+        );
+        expect(result.messages.map((message) => message.createdAt)).toEqual([2, 3, 4, 5]);
+        expect(result.messages.every((message) => message.text.length === 3_000 && message.text.endsWith('…'))).toBe(true);
+        expect(result.messages.at(-1)!.text).toBe(`${'e'.repeat(2_999)}…`);
+        expect(result.messages.reduce((total, message) => total + message.text.length, 0)).toBe(12_000);
         expect(result.truncated).toBe(true);
     });
 });

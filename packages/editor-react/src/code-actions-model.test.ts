@@ -1,6 +1,6 @@
 import './test-setup.ts';
 import { describe, expect, test } from 'bun:test';
-import { REFACTOR_GROUPS, actionsOf, diagnosticsAt, fixableOnLine, groupOf, isHint, mergeEntries, previewOf } from './code-actions-model.ts';
+import { REFACTOR_GROUPS, actionsOf, diagnosticsAt, fixableOnLine, groupOf, mergeEntries, previewOf } from './code-actions-model.ts';
 
 const range = (line: number, start: number, end: number) => ({ start: { line, character: start }, end: { line, character: end } });
 const uri = 'file:///work/a.ts';
@@ -72,15 +72,6 @@ describe('code action groups', () => {
             2
         );
         expect(picked.map((diagnostic) => diagnostic.message)).toEqual(['spans the line', 'error', 'warning']);
-    });
-
-    test('hints at everything but source actions', () => {
-        const [fix, source] = actionsOf([
-            { title: 'Fix', kind: 'quickfix' },
-            { title: 'Organize', kind: 'source.organizeImports' }
-        ]);
-        expect(isHint(fix!)).toBe(true);
-        expect(isHint(source!)).toBe(false);
     });
 
     test('hands a server the problems that touch the range it was asked about', () => {

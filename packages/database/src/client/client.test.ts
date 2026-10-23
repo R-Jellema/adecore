@@ -131,15 +131,24 @@ describe('sessions', () => {
     });
 
     test('replaces only the channel whose config changed, and closes the old one', async () => {
-        const { transport, methods } = scripted();
+        const { transport, methods, calls } = scripted();
         const client = createDatabaseClient(transport);
         const shared = client.session(connection);
         await shared.schemas();
+        const previous = client.session(connection, 'console-1');
+        await previous.schemas();
+        expect(methods()).toEqual(['open', 'schemas', 'open', 'schemas']);
 
         const other = client.session({ ...connection, config: { engine: 'sqlite', path: '/tmp/b.db' } }, 'console-1');
+        expect(other).not.toBe(previous);
         expect(other).not.toBe(shared);
         expect(client.session(connection)).toBe(shared);
-        expect(methods()).toEqual(['open', 'schemas']);
+        await tick();
+        expect(calls.filter((call) => call.method === 'close').map((call) => call.params)).toEqual([{ session: 's2' }]);
+        await shared.schemas();
+        expect(calls.at(-1)).toMatchObject({ method: 'schemas', params: { session: 's1' } });
+        await other.schemas();
+        expect(calls.at(-2)).toMatchObject({ method: 'open', params: { connection: { path: '/tmp/b.db' } } });
     });
 
     test('compares configs deeply and counts an undefined option as absent', () => {

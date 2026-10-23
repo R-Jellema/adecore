@@ -24,11 +24,15 @@ const writable: Connection = { id: 'one', name: 'Notes', config: { engine: 'sqli
 const readOnly: Connection = { id: 'two', name: 'Notes', config: { engine: 'sqlite', path: '/var/data/notes.sqlite', readOnly: true } };
 
 describe('TableView', () => {
-    test('shows that the rows are loading, with the toolbar already in place', () => {
+    test('shows the loading state with a writable toolbar and no pending changes', () => {
         const markup = render(<TableView connection={writable} schema="main" table="users" className="h-full" />);
         expect(markup).toContain('Loading rows');
         expect(markup).toContain('aria-label="Refresh"');
         expect(markup).toContain('aria-label="Add row"');
+        expect(markup).toContain('aria-label="More actions"');
+        expect(markup).not.toMatch(/aria-label="Add row" aria-disabled/);
+        expect(markup).not.toContain('Submit');
+        expect(markup).not.toContain('>Revert<');
         expect(markup).toContain('h-full');
         expect(markup).not.toContain('role="grid"');
     });
@@ -63,21 +67,6 @@ describe('TableView', () => {
 
     test('keeps an ORDER BY it cannot read as one chip', () => {
         expect(render(<TableView connection={writable} schema="main" table="users" defaultOrderBy="lower(name)" />)).toContain('lower(name)');
-    });
-
-    test('has no submit or revert button while nothing is pending', () => {
-        const markup = render(<TableView connection={writable} schema="main" table="users" />);
-        expect(markup).not.toContain('Submit');
-        expect(markup).not.toContain('>Revert<');
-    });
-
-    test('leaves the row actions open on a connection that can write', () => {
-        const markup = render(<TableView connection={writable} schema="main" table="users" />);
-        expect(markup).not.toMatch(/aria-label="Add row" aria-disabled/);
-    });
-
-    test('puts the rest of the actions in a menu', () => {
-        expect(render(<TableView connection={writable} schema="main" table="users" />)).toContain('aria-label="More actions"');
     });
 
     test('disables adding rows on a read only connection', () => {

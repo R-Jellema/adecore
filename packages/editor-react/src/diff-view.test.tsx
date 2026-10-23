@@ -485,14 +485,6 @@ test('unified review says added and removed lines in text with their numbers, no
         expect(removed.querySelector('.se-line-bar-hatched')!.getAttribute('aria-hidden')).toBe('true');
         expect(removed.classList.contains('se-line-marked')).toBe(true);
         expect(removed.querySelectorAll('.se-sr-only').length).toBe(1);
-    });
-});
-
-test('unified review draws a tinted cell with a solid or hatched bar and no sign or triangle', async () => {
-    await pageTest(async (page, root) => {
-        const document = snapshots('keep\nold\ntail', 'keep\nfresh\ntail');
-        const engine = createSmartEditorEngine({ tokenizer: async () => null });
-        await act(async () => root.render(createElement(DiffView, { engine, document, theme: 'dark', label: 'Review' })));
         expect(page.host.querySelectorAll('.se-line-bar-hatched').length).toBe(1);
         expect(page.host.querySelectorAll('.se-line-bar-solid').length).toBe(1);
         expect(page.host.querySelectorAll('.se-line-marked').length).toBe(2);
@@ -500,20 +492,6 @@ test('unified review draws a tinted cell with a solid or hatched bar and no sign
         expect(page.host.querySelectorAll('.se-change').length).toBe(0);
         const marked = page.host.querySelector('.se-line-marked') as HTMLElement;
         expect(marked.style.getPropertyValue('--se-tint')).toContain('color-mix');
-    });
-});
-
-test('split review gives each side its own bars and no signs', async () => {
-    await pageTest(async (page, root) => {
-        const document = snapshots('keep\nold\ntail', 'keep\nfresh\ntail');
-        const engine = createSmartEditorEngine({ tokenizer: async () => null });
-        await act(async () => root.render(createElement(DiffView, { engine, document, layout: 'split', theme: 'dark', label: 'Review' })));
-        const [before, after] = [...page.host.querySelectorAll('.adecore-editor-diff-side')];
-        expect(before!.querySelectorAll('.se-line-bar-hatched').length).toBe(1);
-        expect(before!.querySelectorAll('.se-line-bar-solid').length).toBe(0);
-        expect(after!.querySelectorAll('.se-line-bar-solid').length).toBe(1);
-        expect(after!.querySelectorAll('.se-line-bar-hatched').length).toBe(0);
-        expect(page.host.querySelectorAll('.se-line-sign, .se-change').length).toBe(0);
     });
 });
 
@@ -530,6 +508,11 @@ test('split review names its sides Before and After and labels only the changed 
         expect(spoken(sides[0]!)).toEqual(['Removed, old line 2']);
         expect(spoken(sides[1]!)).toEqual(['Added, new line 2']);
         expect(sides[0]!.querySelector('textarea')!.getAttribute('aria-label')).toBe('Review');
+        expect(sides[0]!.querySelectorAll('.se-line-bar-hatched').length).toBe(1);
+        expect(sides[0]!.querySelectorAll('.se-line-bar-solid').length).toBe(0);
+        expect(sides[1]!.querySelectorAll('.se-line-bar-solid').length).toBe(1);
+        expect(sides[1]!.querySelectorAll('.se-line-bar-hatched').length).toBe(0);
+        expect(page.host.querySelectorAll('.se-line-sign, .se-change').length).toBe(0);
     });
 });
 

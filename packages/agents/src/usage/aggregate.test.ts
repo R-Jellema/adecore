@@ -22,12 +22,14 @@ const week = { from: '2026-09-04', to: '2026-09-10', resolution: 'day', timeZone
 
 describe('the aggregation', () => {
     test('buckets in the days of the viewer, not in UTC', async () => {
-        // Half past eleven in the evening in Amsterdam is still the tenth; in UTC it is not.
-        const records = [record({ at: '2026-09-10T21:30:00.000Z' }), record({ at: '2026-09-09T21:30:00.000Z' })];
+        const records = [record({ at: '2026-09-10T22:30:00.000Z' }), record({ at: '2026-09-09T22:30:00.000Z' })];
         const { buckets } = await aggregate(records, week, prices, []);
-        expect(buckets.map((bucket) => bucket.slot)).toEqual(['2026-09-09', '2026-09-10']);
+        expect(buckets.map((bucket) => [bucket.slot, bucket.totals.calls])).toEqual([['2026-09-10', 1]]);
         const utc = await aggregate(records, { ...week, timeZone: 'UTC' }, prices, []);
-        expect(utc.buckets.map((bucket) => bucket.slot)).toEqual(['2026-09-09', '2026-09-10']);
+        expect(utc.buckets.map((bucket) => [bucket.slot, bucket.totals.calls])).toEqual([
+            ['2026-09-09', 1],
+            ['2026-09-10', 1]
+        ]);
     });
 
     test('leaves out what falls outside the period', async () => {

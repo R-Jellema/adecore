@@ -153,7 +153,9 @@ jobs:
           cp packages/database/helper/target/release/adecore-database.exe packages/database-win32-x64/bin/
           bun -e "import { helperPath } from './packages/database/src/host/index.ts'; const path = helperPath(); console.log(path); if (!path?.includes('database-win32-x64')) { process.exit(1); }"
       - name: 🧪 Test the database client, host and helper
-        run: bun run test:helper
+        run: |
+          bun run test:helper
+          bun test ./packages/database/src/ddl/ddl.integration.test.ts
         env:
           ADECORE_REQUIRE_DATABASE_HELPER: '1'
 
@@ -185,6 +187,21 @@ jobs:
     name: 🔗 Database client, host and helper
     needs: changes
     if: needs.changes.outputs.helper == 'true'
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: test
+        ports:
+          - 33061:3306
+        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=5s --health-timeout=5s --health-retries=20
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: test
+        ports:
+          - 33062:3306
+        options: --health-cmd="mysqladmin ping -h 127.0.0.1 -ptest" --health-interval=5s --health-timeout=5s --health-retries=20
     steps:
       - name: 👀 Checkout
         uses: actions/checkout@v6
@@ -212,6 +229,13 @@ jobs:
         run: bun run test:helper
         env:
           ADECORE_REQUIRE_DATABASE_HELPER: '1'
+
+      - name: 🧪 Test DDL against SQLite, MariaDB and MySQL
+        run: bun test ./packages/database/src/ddl/ddl.integration.test.ts
+        env:
+          ADECORE_REQUIRE_DATABASE_HELPER: '1'
+          ADECORE_TEST_MARIADB_URL: mysql://root:test@127.0.0.1:33061
+          ADECORE_TEST_MYSQL_URL: mysql://root:test@127.0.0.1:33062
 
   helper:
     runs-on: ubuntu-latest

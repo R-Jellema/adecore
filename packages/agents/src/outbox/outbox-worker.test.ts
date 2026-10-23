@@ -176,7 +176,7 @@ test('a failure waits 1, 5 and 30 seconds on the clock and is then given up on',
     await worker.settled();
     expect(attempts).toBe(1);
 
-    for (const [index, delay] of RETRY_DELAYS_MS.entries()) {
+    for (const [index, delay] of [1_000, 5_000, 30_000].entries()) {
         clock.advance(delay - 1);
         await worker.settled();
         expect(attempts).toBe(index + 1);
@@ -184,7 +184,8 @@ test('a failure waits 1, 5 and 30 seconds on the clock and is then given up on',
         await worker.settled();
         expect(attempts).toBe(index + 2);
     }
-    expect(parked.map((entry) => [entry.target, entry.attempts])).toEqual([['chat-1', RETRY_DELAYS_MS.length]]);
+    expect(attempts).toBe(4);
+    expect(parked.map((entry) => [entry.target, entry.attempts])).toEqual([['chat-1', 3]]);
     expect(store.list()).toEqual([]);
     expect(await filesOnDisk()).toEqual([]);
 });
