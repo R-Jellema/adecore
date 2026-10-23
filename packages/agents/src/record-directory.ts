@@ -103,7 +103,8 @@ export class RecordDirectory<T> {
     /*
      * Holds the record in memory at once, so the next question in the same tick already sees it, and
      * answers whether it is still the one this directory holds by the time the file is written. A
-     * record removed while its file was being written does not come back: the rename is undone.
+     * record removed while its file was being written does not come back: the rename is undone, unless
+     * a newer record took the id meanwhile, whose own write is queued behind this one and replaces the file.
      */
     write(record: T): Promise<boolean> {
         const id = this.idOf(record);
@@ -114,11 +115,13 @@ export class RecordDirectory<T> {
             }
             await mkdir(this.dir, { recursive: true, mode: 0o700 });
             await this.writeFile(this.pathOf(id), JSON.stringify(record));
+            if (this.records.get(id) === record) {
+                return true;
+            }
             if (!this.records.has(id)) {
                 await this.removeFile(this.pathOf(id));
-                return false;
             }
-            return true;
+            return false;
         });
     }
 
