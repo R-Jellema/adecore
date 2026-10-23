@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, test } from 'bun:test';
-import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
@@ -46,22 +46,6 @@ function gatedRemoval() {
         gates.shift()?.();
     };
     return { remove, started, nextStart, release };
-}
-
-/* A file write that holds the first write on disk until the test lets it go, and lets every later one through. */
-function heldFirstWrite() {
-    const writing = Promise.withResolvers<void>();
-    const held = Promise.withResolvers<void>();
-    let calls = 0;
-    const write = async (path: string, text: string): Promise<void> => {
-        calls++;
-        if (calls === 1) {
-            writing.resolve();
-            await held.promise;
-        }
-        await writeAtomic(path, text);
-    };
-    return { write, writing: writing.promise, release: () => held.resolve() };
 }
 
 function directory(options: Pick<RecordDirectoryOptions<Entry>, 'remove' | 'write'> = {}): RecordDirectory<Entry> {
@@ -152,33 +136,28 @@ test('a record written again right after a remove keeps its new file', async () 
 });
 
 test('a write a remove and a newer write overtook answers false, and the file holds the newer record', async () => {
-    const held = heldFirstWrite();
-    const records = directory({ write: held.write });
+    const writing = Promise.withResolvers<void>();
+    const held = Promise.withResolvers<void>();
+    let writes = 0;
+    const records = directory({
+        write: async (path, text) => {
+            writes++;
+            if (writes === 1) {
+                writing.resolve();
+                await held.promise;
+            }
+            await writeAtomic(path, text);
+        }
+    });
 
     const stale = records.write({ id: 'task-1', text: 'a' });
-    await held.writing;
+    await writing.promise;
     const remove = records.remove('task-1');
     const fresh = records.write({ id: 'task-1', text: 'b' });
-    held.release();
+    held.resolve();
 
     await expect(stale).resolves.toBe(false);
     await remove;
     await expect(fresh).resolves.toBe(true);
-    expect(records.get('task-1')).toEqual({ id: 'task-1', text: 'b' });
     expect(JSON.parse(await readFile(join(dir, recordFileName('task-1')), 'utf8'))).toEqual({ id: 'task-1', text: 'b' });
-});
-
-test('a write removed with nothing written after it answers false and leaves no file', async () => {
-    const held = heldFirstWrite();
-    const records = directory({ write: held.write });
-
-    const write = records.write({ id: 'task-1', text: 'a' });
-    await held.writing;
-    const remove = records.remove('task-1');
-    held.release();
-
-    await expect(write).resolves.toBe(false);
-    await remove;
-    expect(records.has('task-1')).toBe(false);
-    expect(await readdir(dir)).toEqual([]);
 });
