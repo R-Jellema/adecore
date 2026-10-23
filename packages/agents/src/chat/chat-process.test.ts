@@ -44,6 +44,21 @@ afterEach(() => {
 });
 
 describe('ChatChild', () => {
+    test.skipIf(process.platform === 'win32').each(['SIGTERM', 'SIGKILL'] as const)(
+        'reports %s from a real process after the existing stderr argument',
+        async (signal) => {
+            const reported = new Promise<unknown[]>((resolve) => {
+                new ChatChild({
+                    command: [process.execPath, '-e', `process.kill(process.pid, '${signal}');`],
+                    cwd: process.cwd(),
+                    env: Object.fromEntries(Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined)),
+                    onExit: (...args) => resolve(args)
+                });
+            });
+            expect(await reported).toEqual([null, null, signal]);
+        }
+    );
+
     test('ending sends the group a SIGTERM at once and a SIGKILL after the grace, even when the CLI left in between', async () => {
         jest.useFakeTimers();
         const { child, signals, exit } = fakeChild();
@@ -89,24 +104,24 @@ describe('ChatChild', () => {
 
     test('an exit with an error code carries the last lines of stderr, a clean one none', async () => {
         const report = () => {
-            let heard: (exit: [number | null, string | null]) => void = () => undefined;
-            const exit = new Promise<[number | null, string | null]>((resolve) => {
+            let heard: (exit: [number | null, string | null, string | null | undefined]) => void = () => undefined;
+            const exit = new Promise<[number | null, string | null, string | null | undefined]>((resolve) => {
                 heard = resolve;
             });
-            return { exit, onExit: (code: number | null, stderr: string | null) => heard([code, stderr]) };
+            return { exit, onExit: (code: number | null, stderr: string | null, signal?: string | null) => heard([code, stderr, signal]) };
         };
         const crashReport = report();
         const crashed = fakeChild(crashReport.onExit);
         crashed.say('loading\n'.repeat(50));
         crashed.say('Error: no key\n  at main\n');
         crashed.exit(1);
-        expect(await crashReport.exit).toEqual([1, `${'loading\n'.repeat(8)}Error: no key\n  at main`]);
+        expect(await crashReport.exit).toEqual([1, `${'loading\n'.repeat(8)}Error: no key\n  at main`, null]);
 
         const cleanReport = report();
         const clean = fakeChild(cleanReport.onExit);
         clean.say('bye\n');
         clean.exit(0);
-        expect(await cleanReport.exit).toEqual([0, null]);
+        expect(await cleanReport.exit).toEqual([0, null, null]);
     });
 });
 

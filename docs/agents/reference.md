@@ -40,6 +40,8 @@ Serving the requests over a port or a wire of your own.
 
 The core, a session per chat, the thread and what is written of it, and the backends.
 
+`spawnChatProcess` calls `onExit(code, signal)`. `ChatChild` calls `onExit(code, stderr, signal)`, preserving the stderr argument for existing listeners. Real processes report `null` when no signal ended them; a custom `SpawnChatProcess` may omit the optional signal. The signal lets a host distinguish a crash from an intentional stop such as `SIGTERM`.
+
 | Module | Exports |
 | --- | --- |
 | [`chat/acp-backend`](https://github.com/basmilius/adecore/blob/main/packages/agents/src/chat/acp-backend.ts) | `AcpAgentSpec`, `AcpClientInfo`, `AcpUsageReport`, `createAcpBackend` |

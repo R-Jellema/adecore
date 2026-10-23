@@ -24,7 +24,7 @@ export interface ChatSpawnOptions {
     command: string[];
     cwd: string;
     env: Record<string, string>;
-    onExit(exitCode: number | null): void;
+    onExit(exitCode: number | null, signal?: string | null): void;
     onError?(error: Error): void;
 }
 
@@ -56,12 +56,12 @@ export function spawnChatProcess(options: ChatSpawnOptions): ChatProcess {
         throw new Error(`Could not start ${command}: no such executable`);
     }
     child.stdin.on('error', (error) => options.onError?.(error));
-    child.on('exit', (exitCode) => {
+    child.on('exit', (exitCode, signal) => {
         // The last lines may still be on their way through the pipe; they belong before the exit.
         const report = (): void => {
             clearTimeout(timer);
             child.stdout.off('end', report);
-            setImmediate(() => options.onExit(exitCode));
+            setImmediate(() => options.onExit(exitCode, signal));
         };
         const timer = setTimeout(report, STDOUT_DRAIN_MS);
         if (child.stdout.readableEnded) {
@@ -259,7 +259,7 @@ export async function readStreamLines(
 export interface ChatChildOptions extends Omit<ChatSpawnOptions, 'onExit'> {
     spawn?: SpawnChatProcess;
     // `stderr` is the tail of what the CLI wrote there, for an exit with an error code only.
-    onExit(exitCode: number | null, stderr: string | null): void;
+    onExit(exitCode: number | null, stderr: string | null, signal?: string | null): void;
     onError?(error: Error): void;
 }
 
@@ -287,11 +287,11 @@ export class ChatChild {
             cwd: options.cwd,
             env: options.env,
             ...(options.onError ? { onError: options.onError } : {}),
-            onExit: (exitCode) => {
+            onExit: (exitCode, signal = null) => {
                 this.hasExited = true;
                 this.clearGrace();
                 settle();
-                void this.report(exitCode, options.onExit);
+                void this.report(exitCode, signal, options.onExit);
             }
         });
         this.tail = this.process.stderr ? new StreamTail(this.process.stderr) : null;
@@ -341,9 +341,9 @@ export class ChatChild {
         }
     }
 
-    private async report(exitCode: number | null, onExit: ChatChildOptions['onExit']): Promise<void> {
+    private async report(exitCode: number | null, signal: string | null, onExit: ChatChildOptions['onExit']): Promise<void> {
         if (exitCode === null || exitCode === 0 || this.tail === null) {
-            onExit(exitCode, null);
+            onExit(exitCode, null, signal);
             return;
         }
         let release: () => void = () => undefined;
@@ -355,6 +355,6 @@ export class ChatChild {
             })
         ]);
         clearTimeout(timer);
-        onExit(exitCode, this.tail.lines());
+        onExit(exitCode, this.tail.lines(), signal);
     }
 }

@@ -154,20 +154,32 @@ describe('spawnHelper', () => {
         const { helper, exits } = launch();
         helper.write('exit');
         await until(() => exits.length === 1, 'the exit');
-        const late: (number | null)[] = [];
-        helper.onExit((code) => late.push(code));
+        const late: unknown[][] = [];
+        helper.onExit((...args) => late.push(args));
         await until(() => late.length === 1, 'the late exit');
-        expect(late).toEqual([3]);
+        expect(late).toEqual([[3, null]]);
+    });
+
+    test.skipIf(process.platform === 'win32').each(['SIGTERM', 'SIGKILL'] as const)('reports %s to current and late exit listeners', async (signal) => {
+        const helper = spawnHelper(process.execPath, { args: ['-e', `process.kill(process.pid, '${signal}');`] });
+        const exits: unknown[][] = [];
+        helper.onExit((...args) => exits.push(args));
+        await until(() => exits.length === 1, 'the signal exit');
+        expect(exits).toEqual([[null, signal]]);
+        const late: unknown[][] = [];
+        helper.onExit((...args) => late.push(args));
+        await until(() => late.length === 1, 'the late signal exit');
+        expect(late).toEqual([[null, signal]]);
     });
 
     test('exits once when the binary does not exist', async () => {
         const logs: string[] = [];
         const helper = spawnHelper('/nonexistent/helper-binary', { onLog: (line) => logs.push(line) });
-        const exits: (number | null)[] = [];
-        helper.onExit((code) => exits.push(code));
+        const exits: unknown[][] = [];
+        helper.onExit((...args) => exits.push(args));
         await until(() => exits.length === 1, 'the exit');
         await new Promise((resolve) => setTimeout(resolve, 50));
-        expect(exits).toEqual([null]);
+        expect(exits).toEqual([[null, null]]);
         expect(logs.join(' ')).toMatch(/ENOENT|no such file|not found/i);
         helper.write('nobody listens');
         helper.kill();

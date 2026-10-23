@@ -63,7 +63,7 @@ A running helper as the host sees it: lines in, lines out. [`spawnHelper`](#spaw
 | ------------------ | -------------------------------------------- |
 | `write(line)`      | Sends one message, without its line break.   |
 | `onLine(listener)` | Hears each line the helper writes to stdout. |
-| `onExit(listener)` | Hears the exit code, or `null`.              |
+| `onExit(listener)` | Receives `(code, signal)`, each `null` when absent. |
 | `kill()`           | Stops the process.                           |
 
 ## spawnHelper
@@ -82,7 +82,9 @@ Runs the helper binary at `path` and returns a `HelperProcess` that speaks one J
 | `env`   | `Readonly<Record<string, string>>` | Variables added over the environment of this process. |
 | `onLog` | `(line: string) => void`           | Hears each line the helper writes to stderr.          |
 
-A trailing `\r` is dropped from each line, and a line of megabytes is cut in linear time. A path that cannot run calls `onLog` with the reason and `onExit` with `null`, so the host answers `helper-unavailable`.
+A trailing `\r` is dropped from each line, and a line of megabytes is cut in linear time. A path that cannot run calls `onLog` with the reason and `onExit` with `(null, null)`, so the host answers `helper-unavailable`. An exit listener registered after the process ended receives the same code and signal.
+
+The signal lets a host distinguish an unexpected crash from an intentional stop such as `SIGTERM`. Existing one-argument listeners still work. A custom `HelperProcess` may omit the signal; consumers should treat `undefined` as unknown.
 
 ## helperPath
 

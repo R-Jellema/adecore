@@ -5,7 +5,7 @@ export interface HelperProcess {
     /* One message, without its line break. */
     write(line: string): void;
     onLine(listener: (line: string) => void): void;
-    onExit(listener: (code: number | null) => void): void;
+    onExit(listener: (code: number | null, signal?: string | null) => void): void;
     kill(): void;
 }
 

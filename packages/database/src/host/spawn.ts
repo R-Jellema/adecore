@@ -53,9 +53,10 @@ const createLineSplitter = (onLine: (line: string) => void) => {
 /* Runs the helper binary at `path`, speaking one JSON message per line over stdin and stdout. */
 export const spawnHelper = (path: string, options: SpawnHelperOptions = {}): HelperProcess => {
     const lineListeners: ((line: string) => void)[] = [];
-    const exitListeners: ((code: number | null) => void)[] = [];
+    const exitListeners: ((code: number | null, signal: string | null) => void)[] = [];
     let finished = false;
     let exitCode: number | null = null;
+    let exitSignal: string | null = null;
     let killed = false;
 
     const child = spawn(path, [...(options.args ?? [])], {
@@ -73,16 +74,17 @@ export const spawnHelper = (path: string, options: SpawnHelperOptions = {}): Hel
     child.stderr.on('data', (chunk: string) => logs.push(chunk));
     child.stdin.on('error', () => {});
 
-    const finish = (code: number | null): void => {
+    const finish = (code: number | null, signal: string | null = null): void => {
         if (finished) {
             return;
         }
 
         finished = true;
         exitCode = code;
+        exitSignal = signal;
         lines.flush();
         logs.flush();
-        exitListeners.forEach((listener) => listener(code));
+        exitListeners.forEach((listener) => listener(code, signal));
     };
 
     child.on('error', (error) => {
@@ -93,7 +95,7 @@ export const spawnHelper = (path: string, options: SpawnHelperOptions = {}): Hel
             finish(null);
         }
     });
-    child.on('close', (code) => finish(code));
+    child.on('close', (code, signal) => finish(code, signal));
 
     return {
         write(line: string): void {
@@ -106,7 +108,7 @@ export const spawnHelper = (path: string, options: SpawnHelperOptions = {}): Hel
         },
         onExit(listener): void {
             if (finished) {
-                queueMicrotask(() => listener(exitCode));
+                queueMicrotask(() => listener(exitCode, exitSignal));
                 return;
             }
 
