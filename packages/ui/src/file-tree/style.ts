@@ -28,4 +28,6 @@ export const FILE_TREE_CSS = `
     [data-tree-port="icon"] { width: 16px; justify-content: center; }
     [data-tree-port="icon"] > slot { pointer-events: none; }
     [data-own-icon="true"] [data-item-section="icon"] > * { visibility: hidden; }
+    [data-own-icon="true"][data-item-type="folder"]:hover [data-item-section="icon"] > * { visibility: visible; }
+    [data-tree-port="icon"][data-hover="true"] { visibility: hidden; }
 `;

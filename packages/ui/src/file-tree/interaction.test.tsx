@@ -383,6 +383,10 @@ describe.skipIf(typeof document === 'undefined')('file tree interaction', () => 
         expect(row('src/one.ts').dataset.ownIcon).toBeUndefined();
         const port = exposed.getFileTreeContainer()!.shadowRoot!.querySelector<HTMLElement>('[data-tree-port="icon"]')!;
         expect(port.dataset.itemPath).toBe('src/');
+        row('src/').dispatchEvent(new PointerEvent('pointerenter'));
+        expect(port.dataset.hover).toBe('true');
+        row('src/').dispatchEvent(new PointerEvent('pointerleave'));
+        expect(port.dataset.hover).toBeUndefined();
         await change(() => row('src/').dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true })));
         expect(FileTree.directoryHandle(exposed, 'src/')?.isExpanded()).toBe(false);
         await mount(<Harness />);

@@ -22,6 +22,7 @@ export interface Port {
     lightDecoration: HTMLElement;
     icon?: HTMLElement;
     lightIcon?: HTMLElement;
+    unhover?(): void;
 }
 
 export type FileTreeRowIcon = (row: FileTreeVisibleRow) => LucideIcon | undefined;
@@ -159,10 +160,12 @@ export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, lab
             dropIcon(port);
         };
         const dropIcon = (port: Port): void => {
+            port.unhover?.();
             port.icon?.remove();
             port.lightIcon?.remove();
             port.icon = undefined;
             port.lightIcon = undefined;
+            port.unhover = undefined;
         };
         // The icon lets every pointer event through to the row under it, which then opens, folds or selects as it would.
         const makeIcon = (port: Port, host: HTMLElement): void => {
@@ -177,8 +180,23 @@ export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, lab
             target.slot = slot.name;
             target.className = 'adecore-tree-icon';
             host.append(target);
+            // A folder under the pointer gives its chevron back, so the row still says it opens.
+            const show = (): void => {
+                if (port.rowElement.dataset.itemType === 'folder') {
+                    container.dataset.hover = 'true';
+                }
+            };
+            const hide = (): void => {
+                delete container.dataset.hover;
+            };
+            port.rowElement.addEventListener('pointerenter', show);
+            port.rowElement.addEventListener('pointerleave', hide);
             port.icon = container;
             port.lightIcon = target;
+            port.unhover = () => {
+                port.rowElement.removeEventListener('pointerenter', show);
+                port.rowElement.removeEventListener('pointerleave', hide);
+            };
         };
         const makePort = (element: HTMLElement, host: HTMLElement, kind: 'control' | 'decoration'): { container: HTMLElement; target: HTMLElement } => {
             const container = document.createElement('span');
