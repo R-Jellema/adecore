@@ -4,6 +4,7 @@ import {
     dependencyOrder,
     isPrerelease,
     publicationOrder,
+    publishWorkspaces,
     releaseVersion,
     versionManifest,
     type PackageManifest,
@@ -54,6 +55,91 @@ describe('workspace dependency order', () => {
         expect(() => publicationOrder([pkg('contracts', { private: true }), pkg('agents', { dependencies: { '@adecore/contracts': '*' } })])).toThrow(
             'private package'
         );
+    });
+});
+
+describe('parallel publication', () => {
+    test('overlaps independent packages and waits for runtime, peer and native optional dependencies', async () => {
+        const events: string[] = [];
+        let active = 0;
+        let peak = 0;
+        const packages = [
+            pkg('consumer', {
+                dependencies: { '@adecore/runtime': '*' },
+                peerDependencies: { '@adecore/peer': '*' },
+                optionalDependencies: { '@adecore/database-linux-x64': '*' }
+            }),
+            pkg('runtime'),
+            pkg('peer'),
+            pkg('database-linux-x64'),
+            pkg('independent')
+        ];
+
+        await publishWorkspaces(packages, 2, async ({ manifest: { name } }) => {
+            events.push(`start:${name}`);
+            active += 1;
+            peak = Math.max(peak, active);
+            await Promise.resolve();
+            active -= 1;
+            events.push(`end:${name}`);
+        });
+
+        expect(peak).toBe(2);
+        expect(events.filter((event) => event.startsWith('start:')).sort()).toEqual(packages.map(({ manifest }) => `start:${manifest.name}`).sort());
+        for (const dependency of ['runtime', 'peer', 'database-linux-x64']) {
+            expect(events.indexOf(`end:@adecore/${dependency}`)).toBeLessThan(events.indexOf('start:@adecore/consumer'));
+        }
+    });
+
+    test('stops scheduling after a failure, waits for in-flight publications and rejects with the original error', async () => {
+        const failure = new Error('npm publication failed');
+        const first = Promise.withResolvers<void>();
+        const second = Promise.withResolvers<void>();
+        const started = Promise.withResolvers<void>();
+        const calls: string[] = [];
+        let settled = false;
+        const publication = publishWorkspaces(
+            [pkg('a'), pkg('b'), pkg('c'), pkg('consumer', { dependencies: { '@adecore/a': '*' } })],
+            2,
+            async ({ manifest: { name } }) => {
+                calls.push(name);
+                if (calls.length === 2) {
+                    started.resolve();
+                }
+                await (name === '@adecore/a' ? first.promise : second.promise);
+            }
+        ).then(
+            () => {
+                settled = true;
+                return undefined;
+            },
+            (error: unknown) => {
+                settled = true;
+                return error;
+            }
+        );
+
+        await started.promise;
+        first.reject(failure);
+        await Bun.sleep(0);
+        expect(settled).toBe(false);
+        expect(calls).toEqual(['@adecore/a', '@adecore/b']);
+
+        second.resolve();
+        expect(await publication).toBe(failure);
+        expect(calls).toEqual(['@adecore/a', '@adecore/b']);
+    });
+
+    test('rejects an invalid worker count before starting any publication', async () => {
+        for (const concurrency of [0, -1, 1.5, NaN, Infinity]) {
+            let called = false;
+            await expect(
+                publishWorkspaces([pkg('ui')], concurrency, async () => {
+                    called = true;
+                })
+            ).rejects.toThrow('positive integer');
+            expect(called).toBe(false);
+        }
     });
 });
 

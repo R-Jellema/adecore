@@ -92,6 +92,49 @@ export function publicationOrder(packages: WorkspacePackage[]): WorkspacePackage
     return ordered.filter((pkg) => !pkg.manifest.private);
 }
 
+export async function publishWorkspaces(packages: WorkspacePackage[], concurrency: number, publish: (pkg: WorkspacePackage) => Promise<void>): Promise<void> {
+    if (!Number.isSafeInteger(concurrency) || concurrency < 1) {
+        throw new Error('Publication concurrency must be a positive integer.');
+    }
+    const pending = publicationOrder(packages);
+    const completed = new Set<string>();
+    const running = new Set<Promise<void>>();
+    let failed = false;
+    let failure: unknown;
+
+    while (pending.length > 0 && !failed) {
+        for (let i = 0; i < pending.length && running.size < concurrency;) {
+            const pkg = pending[i]!;
+            if (!internalDependencies(pkg.manifest).every((name) => completed.has(name))) {
+                i += 1;
+                continue;
+            }
+            pending.splice(i, 1);
+            const task = Promise.resolve()
+                .then(() => publish(pkg))
+                .then(
+                    () => {
+                        completed.add(pkg.manifest.name);
+                    },
+                    (error: unknown) => {
+                        if (!failed) {
+                            failure = error;
+                            failed = true;
+                        }
+                    }
+                )
+                .finally(() => running.delete(task));
+            running.add(task);
+        }
+        await Promise.race(running);
+    }
+    // npm publications cannot be rolled back, so let in-flight requests finish before reporting the failure.
+    await Promise.all(running);
+    if (failed) {
+        throw failure;
+    }
+}
+
 export function releaseVersion(value: string): string {
     const version = value.replace(/^v/, '');
     const numeric = '(0|[1-9][0-9]*)';

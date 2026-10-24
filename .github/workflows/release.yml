@@ -139,13 +139,12 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  publish:
+  prepare:
     runs-on: ubuntu-latest
-    needs: [helper, release-info]
-    name: 🚀 Publish to npm
+    needs: release-info
+    name: 🔨 Build, check and test the release
     env:
       RELEASE_VERSION: ${{ needs.release-info.outputs.version }}
-      IS_PRERELEASE: ${{ needs.release-info.outputs.prerelease }}
     steps:
       - name: 👀 Checkout
         uses: actions/checkout@v6
@@ -177,7 +176,63 @@ jobs:
           bun run check
           bun run test
 
-      # One artifact per platform package, each holding `bin/`. After the check and the build so those never see a binary, before the publish so `files` picks it up.
+      - name: 📚 Check and build the docs
+        run: |
+          bun run --cwd docs typecheck
+          bun run --cwd docs build
+
+      # A tarball preserves the hidden VitePress directory and keeps artifact upload overhead small.
+      - name: 📦 Archive the builds
+        run: tar -czf "$RUNNER_TEMP/release-builds.tar.gz" packages/*/dist docs/.vitepress/dist
+
+      - name: ⬆️ Upload the builds
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-builds
+          path: ${{ runner.temp }}/release-builds.tar.gz
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    runs-on: ubuntu-latest
+    # A failed helper must block every publication, even when preparation already succeeded.
+    needs: [release-info, prepare, helper]
+    name: 🚀 Publish to npm
+    env:
+      RELEASE_VERSION: ${{ needs.release-info.outputs.version }}
+      IS_PRERELEASE: ${{ needs.release-info.outputs.prerelease }}
+    steps:
+      - name: 👀 Checkout
+        uses: actions/checkout@v6
+
+      - name: 🍞 Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - name: ✨ Setup node 24.x
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24.x'
+          registry-url: https://registry.npmjs.org
+
+      - name: 📦️ Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Match the manifests used by prepare without invalidating the workspace lockfile during install.
+      - name: ✏️ Version ${{ env.RELEASE_VERSION }}
+        run: bun run release:version "$RELEASE_VERSION"
+
+      - name: ⬇️ Download the builds
+        uses: actions/download-artifact@v8
+        with:
+          name: release-builds
+          path: ${{ runner.temp }}
+
+      - name: 📦 Restore the builds
+        run: tar -xzf "$RUNNER_TEMP/release-builds.tar.gz"
+
       - name: ⬇️ Download the helper binaries
         uses: actions/download-artifact@v8
         with:
@@ -193,13 +248,10 @@ jobs:
         env:
           ADECORE_REQUIRE_NATIVE_BINARIES: '1'
 
-      - name: 📚 Check and build the docs
-        run: |
-          bun run --cwd docs typecheck
-          bun run --cwd docs build
-
       - name: 🚀 Publish ${{ env.RELEASE_VERSION }}
         run: bun run release:publish "$RELEASE_VERSION"
+        env:
+          NPM_PUBLISH_CONCURRENCY: '4'
 
       # A prerelease uploads a version of the docs without sending traffic to it; the live site stays on the last release.
       - name: 🚀 Publish the docs (prerelease)
