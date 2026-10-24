@@ -149,6 +149,6 @@ The rows stack in the order of the children. The tooltip, the live region and th
 
 ## Value labels
 
-`valueLabels` on `Chart.Bar` writes each column's value over it, as the y axis writes values, or through a function of the value, the row and its index: `valueLabels={(value, row) => row.summary}`. Where two labels would collide, the later one moves up over the other, with a thin line down to its column once it has moved a row. A label dims with its column when the column is dimmed or another is picked, and stays as it is while the cursor is elsewhere. The scores per model above write theirs.
+`valueLabels` on `Chart.Bar` writes each column's value over it, as the y axis writes values, or through a function of the value, the row and its index: `valueLabels={(value, row) => row.summary}`. The labels are in `text-2xs`, 10px over their column. Where two labels would collide by their measured width, the later one moves up over the other, with a thin line down to its column once it has moved a row. A label dims with its column when the column is dimmed or another is picked, and stays as it is while the cursor is elsewhere. The scores per model above write theirs.
 
 The root keeps 24px above the plot for one row of labels over the tallest column. Labels that move up further need more: set `marginTop`. The labels are drawn for the eye; the tooltip, the live region and the table carry the same numbers for a screen reader.

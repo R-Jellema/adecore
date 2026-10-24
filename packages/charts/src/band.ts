@@ -112,20 +112,23 @@ export function segmentOf(topPixel: number, basePixel: number, onGround: boolean
 }
 
 /* Between the top of a column and the baseline of its value. */
-export const LABEL_LIFT = 6;
+export const LABEL_LIFT = 10;
 const LABEL_ROW = 16;
-/* Text of the `text-xs` size, read before it is drawn: wide enough for tabular digits, so labels err on the side of air. */
-const LABEL_CHAR = 7;
+/* What a label of the `text-2xs` size is taken to measure per character until it has been drawn once. */
+const LABEL_CHAR = 8;
 const LABEL_AIR = 3;
+
+/* The width a value label is taken to have before it is measured. */
+export const guessLabelWidth = (text: string): number => text.length * LABEL_CHAR;
 
 /*
  * The baseline of each column's value label: just over its column, or over every label in the way, in the order of the
- * columns. The widths are estimated, so no measurement feeds back into where the labels go.
+ * columns. A label's width depends on its text only, so measuring it never feeds back into where the labels go.
  */
-export function placeValueLabels(columns: readonly { center: number; top: number; text: string }[]): number[] {
+export function placeValueLabels(columns: readonly { center: number; top: number; width: number }[]): number[] {
     const boxes: { left: number; right: number; top: number; bottom: number }[] = [];
-    return columns.map(({ center, top, text }) => {
-        const half = (text.length * LABEL_CHAR) / 2;
+    return columns.map(({ center, top, width }) => {
+        const half = width / 2;
         let baseline = top - LABEL_LIFT;
         const blocking = () =>
             boxes.find(

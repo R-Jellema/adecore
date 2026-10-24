@@ -268,6 +268,18 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(scroller.style.paddingLeft).toBe(`${axis}px`);
     });
 
+    test('value labels stack by the width they measure, not by an estimate per character', async () => {
+        // Eighteen buckets of 33px; labels of four characters measure 28px here and are estimated at 32px, which would collide.
+        const columns = Array.from({ length: 18 }, (_, index) => ({ key: `c${index}`, value: 10 }));
+        await mount(
+            <Chart.Root data={columns} x="key" label="Columns">
+                <Chart.Bar value="value" label="Value" valueLabels={() => 'abcd'} />
+            </Chart.Root>
+        );
+        const baselines = new Set([...container.querySelectorAll('text')].map((text) => text.getAttribute('y')));
+        expect(baselines.size).toBe(1);
+    });
+
     test('the tooltip keeps a row for a series without a value in the bucket', async () => {
         const hours = [
             { at: 0, errors: null, warnings: 3 },
