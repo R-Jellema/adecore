@@ -80,6 +80,8 @@ export interface ChartContextValue {
     readonly xTitle: string | null;
     /* The series a person reads in a bucket or a point: on a point chart one per label. */
     readonly readable: readonly (readonly [string, SeriesEntry])[];
+    /* The surface under the chart, which the halo around a label and the ring of a point are drawn in. */
+    readonly halo: string;
     /* The keyboard moved the cursor last, not the pointer. */
     readonly byKeyboard: boolean;
 }

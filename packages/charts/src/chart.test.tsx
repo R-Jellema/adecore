@@ -313,6 +313,18 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         await mount(<Chart.Root data={SCORES} x="key" label="Scores" />);
     });
 
+    test('on a raised surface the halo around labels takes that surface', async () => {
+        await mount(
+            <Chart.Root data={SCORES} x="key" surface="raised" label="Scores">
+                <Chart.Bar value="score" label="Score" valueLabels />
+                <Chart.Rule value={45} label="A" />
+            </Chart.Root>
+        );
+        const halos = [...container.querySelectorAll<SVGTextElement>('text[paint-order]')].map((text) => text.style.stroke);
+        expect(halos).toHaveLength(5);
+        expect(new Set(halos)).toEqual(new Set(['var(--surface-raised)']));
+    });
+
     test('a second x axis writes its row under the first', async () => {
         await mount(
             <Chart.Root data={SCORES} x="key" label="Scores">

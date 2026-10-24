@@ -245,7 +245,7 @@ export function ChartPoint<Row>({ value, label, tone, icon, className, ref }: Ch
                 const fill = rowColors?.[index] ?? color ?? (chart.points ? chart.groupColorOf(index) : fallback);
                 return (
                     <g key={chart.keys?.[index] ?? index} opacity={chart.dimmed[index] === true ? DIMMED_POINT : 1}>
-                        <circle cx={left} cy={pixel} r={active || picked ? 5 : 4} className="stroke-surface" strokeWidth={1} style={{ fill }} />
+                        <circle cx={left} cy={pixel} r={active || picked ? 5 : 4} strokeWidth={1} style={{ fill, stroke: chart.halo }} />
                         {(picked || (active && chart.byKeyboard)) && <circle cx={left} cy={pixel} r={8} fill="none" className="stroke-text" strokeWidth={2} />}
                     </g>
                 );
@@ -444,7 +444,8 @@ export function ChartBar<Row>({
                                     textAnchor="middle"
                                     strokeWidth={3}
                                     paintOrder="stroke"
-                                    className={clsx('fill-text stroke-surface tabular-nums', valueLabelSize === 'xs' ? 'text-xs' : 'text-2xs')}
+                                    style={{ stroke: chart.halo }}
+                                    className={clsx('fill-text tabular-nums', valueLabelSize === 'xs' ? 'text-xs' : 'text-2xs')}
                                 >
                                     {text}
                                 </text>

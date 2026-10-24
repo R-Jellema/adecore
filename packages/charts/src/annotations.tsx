@@ -62,7 +62,8 @@ export function ChartRule({ value, label, tone = 'muted', dashed = false, classN
                 textAnchor="end"
                 strokeWidth={4}
                 paintOrder="stroke"
-                className="fill-text stroke-surface text-xs font-medium tabular-nums"
+                className="fill-text text-xs font-medium tabular-nums"
+                style={{ stroke: chart.halo }}
             >
                 {`${label} · ${chart.formatY(value)}`}
             </text>

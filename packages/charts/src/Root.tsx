@@ -65,6 +65,8 @@ export interface ChartRootProps<Row> {
      * is 4; `left` and `right` are 6 on a continuous scale without buckets, so the dot at the end of a line keeps its edge.
      */
     readonly margin?: ChartMargin;
+    /* The surface the chart stands on, such as `raised` in a dialog, which the halo around its labels and the ring of a point take. */
+    readonly surface?: 'base' | 'raised';
     /* Puts the buckets of a band scale into runs of the same key, with a gap between them, or the points into series. */
     readonly group?: ChartAccessor<Row, string>;
     /* What the tooltip, the live region and the table call a group, read from its rows; its key by default. */
@@ -109,6 +111,7 @@ export function ChartRoot<Row>({
     label,
     height = 200,
     margin = {},
+    surface = 'base',
     activeX,
     onActiveXChange,
     group,
@@ -501,7 +504,8 @@ export function ChartRoot<Row>({
         xValueOf,
         xTitle: formats.xTitle ?? null,
         readable,
-        byKeyboard: announce
+        byKeyboard: announce,
+        halo: surface === 'raised' ? 'var(--surface-raised)' : 'var(--surface)'
     };
 
     // A reference line holds for every bucket, so a screen reader hears it once with the chart instead of in every bucket.
@@ -657,9 +661,8 @@ function Crosshair({ context }: { context: ChartContextValue }) {
                         cx={left}
                         cy={Math.round(pixel)}
                         r={4}
-                        className="stroke-surface"
                         strokeWidth={2}
-                        style={{ fill: colors.get(seriesId) }}
+                        style={{ fill: colors.get(seriesId), stroke: context.halo }}
                     />
                 );
             })}
@@ -694,12 +697,21 @@ function Guides({ context }: { context: ChartContextValue }) {
                             y={plot.bottom + X_AXIS_GAP}
                             dy="0.8em"
                             textAnchor="middle"
-                            className="fill-text stroke-surface text-xs tabular-nums"
+                            className="fill-text text-xs tabular-nums"
+                            style={{ stroke: context.halo }}
                             {...HALO}
                         >
                             {formatX(xs[index]!)}
                         </text>
-                        <text x={-X_AXIS_GAP} y={y} dy="0.32em" textAnchor="end" className="fill-text stroke-surface text-xs tabular-nums" {...HALO}>
+                        <text
+                            x={-X_AXIS_GAP}
+                            y={y}
+                            dy="0.32em"
+                            textAnchor="end"
+                            className="fill-text text-xs tabular-nums"
+                            style={{ stroke: context.halo }}
+                            {...HALO}
+                        >
                             {formatY(placing.values[index]!)}
                         </text>
                     </g>
