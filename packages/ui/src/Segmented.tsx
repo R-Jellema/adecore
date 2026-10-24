@@ -2,11 +2,15 @@ import type { KeyboardEvent, Ref } from 'react';
 import clsx from 'clsx';
 import type { LucideIcon } from 'lucide-react';
 import { Icon } from './Icon.tsx';
+import { segmentedStop, segmentedTarget } from './segmented-keys.ts';
+import { Tooltip } from './Tooltip.tsx';
 
 export interface SegmentedOption<T extends string> {
     id: T;
     label: string;
     icon?: LucideIcon;
+    /* Dims the option and takes it out of the tab order and the arrow keys; the rest of the group stays usable. */
+    disabled?: boolean;
 }
 
 export interface SegmentedProps<T extends string> {
@@ -18,30 +22,41 @@ export interface SegmentedProps<T extends string> {
     disabled?: boolean;
     /* `vertical` stacks the options in a column as wide as its container, for labels too long to stand side by side. */
     orientation?: 'horizontal' | 'vertical';
+    /* 32 pixels high at `md` and 28 at `sm`, the heights of `Input`, `Select` and `Button`. */
+    size?: 'md' | 'sm';
+    /* Draws every option with an icon as a square, the label as its accessible name and its tooltip. One without an icon keeps its label. */
+    iconOnly?: boolean;
     className?: string;
     ref?: Ref<HTMLDivElement>;
 }
 
-const STEPS: Readonly<Record<string, number>> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+const SIZE = {
+    md: { track: 'rounded-lg', row: 'min-h-8', option: 'min-h-7 rounded-md px-3 py-1', square: 'size-7 rounded-md', icon: 14 },
+    sm: { track: 'rounded-md', row: 'min-h-7', option: 'min-h-6 rounded-sm px-2.5 py-0.5', square: 'size-6 rounded-sm', icon: 12 }
+} as const;
 
 /*
  * One of a few options side by side in one sunken track, the picked one lifted out of it. A radio
  * group: one tab stop, and the arrows pick and focus the next option, around the ends.
  */
-export function Segmented<T extends string>({ value, onValueChange, options, label, disabled, orientation = 'horizontal', className, ref }: SegmentedProps<T>) {
+export function Segmented<T extends string>({
+    value,
+    onValueChange,
+    options,
+    label,
+    disabled,
+    orientation = 'horizontal',
+    size = 'md',
+    iconOnly = false,
+    className,
+    ref
+}: SegmentedProps<T>) {
     const vertical = orientation === 'vertical';
-    const picked = options.findIndex((option) => option.id === value);
-    const stop = picked === -1 ? 0 : picked;
+    const sizing = SIZE[size];
+    const stop = segmentedStop(options, value);
 
     function move(event: KeyboardEvent<HTMLButtonElement>, index: number) {
-        const next =
-            event.key in STEPS
-                ? (index + STEPS[event.key]! + options.length) % options.length
-                : event.key === 'Home'
-                  ? 0
-                  : event.key === 'End'
-                    ? options.length - 1
-                    : null;
+        const next = segmentedTarget(options, index, event.key);
         if (next === null) {
             return;
         }
@@ -54,33 +69,45 @@ export function Segmented<T extends string>({ value, onValueChange, options, lab
         <div
             ref={ref}
             className={clsx(
-                'flex rounded-lg bg-surface-sunken p-0.5 text-xs font-medium',
-                vertical ? 'w-full flex-col items-stretch gap-0.5' : 'min-h-8 w-fit items-center',
+                'flex bg-surface-sunken p-0.5 text-xs font-medium',
+                sizing.track,
+                vertical ? 'w-full flex-col items-stretch gap-0.5' : clsx(sizing.row, 'w-fit items-center'),
                 className
             )}
             role="radiogroup"
             aria-label={label}
             aria-orientation={vertical ? 'vertical' : undefined}
         >
-            {options.map((option, index) => (
-                <button
-                    key={option.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={value === option.id}
-                    tabIndex={index === stop ? 0 : -1}
-                    disabled={disabled}
-                    className={clsx(
-                        'flex min-h-7 items-center gap-1.5 rounded-md px-3 py-1 text-left transition-colors disabled:opacity-50',
-                        value === option.id ? 'bg-surface-raised text-text shadow-raised' : 'text-text-muted hover:text-text'
-                    )}
-                    onClick={() => onValueChange(option.id)}
-                    onKeyDown={(event) => move(event, index)}
-                >
-                    {option.icon && <Icon icon={option.icon} size={14} className="shrink-0" />}
-                    {option.label}
-                </button>
-            ))}
+            {options.map((option, index) => {
+                const square = iconOnly && option.icon !== undefined;
+                const button = (
+                    <button
+                        key={option.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={value === option.id}
+                        tabIndex={index === stop ? 0 : -1}
+                        disabled={disabled || option.disabled}
+                        className={clsx(
+                            'flex items-center transition-colors disabled:opacity-50',
+                            square ? clsx(sizing.square, 'justify-center') : clsx(sizing.option, 'gap-1.5 text-left'),
+                            value === option.id ? 'bg-surface-raised text-text shadow-raised' : 'text-text-muted enabled:hover:text-text'
+                        )}
+                        onClick={() => onValueChange(option.id)}
+                        onKeyDown={(event) => move(event, index)}
+                    >
+                        {option.icon && <Icon icon={option.icon} size={sizing.icon} className="shrink-0" />}
+                        {!square && option.label}
+                    </button>
+                );
+                return square ? (
+                    <Tooltip key={option.id} label={option.label} name>
+                        {button}
+                    </Tooltip>
+                ) : (
+                    button
+                );
+            })}
         </div>
     );
 }
