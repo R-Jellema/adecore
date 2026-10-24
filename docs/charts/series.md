@@ -44,7 +44,7 @@ The width follows the container; `height` (200 by default) is the height of the 
 | `yScale` | `'linear' \| 'log'` | `'linear'` | |
 | `y` | `ChartYOptions` | `{}` | `min`, `max`, `include`, `integer`, `step` and `headroom`. |
 | `height` | `number` | `200` | Pixels. |
-| `margin` | `ChartMargin` | | Pixels around the plot, beside what the axes take. `top` is 8, for something drawn over the plot; `bottom` is 4; `left` and `right` are 6 on a time or linear scale without buckets, so the dot at the end of a line keeps its edge, and 0 otherwise. A chart that draws to its edges, such as a small line in a panel, sets them to 0. |
+| `margin` | `ChartMargin` | | Pixels around the plot, beside what the axes take. `top` is 8, for something drawn over the plot; `bottom` is 4 under an x axis and 0 without one; `left` and `right` are 6 on a time or linear scale without buckets, so the dot at the end of a line keeps its edge, and 0 otherwise. A chart that draws to its edges, such as a small line in a panel, sets them to 0. |
 | `surface` | `'base' \| 'raised'` | `'base'` | The surface the chart stands on. The halo that keeps a value label, a rule label or a guide value readable over the series, and the ring around a point, are drawn in it, so a chart in a dialog or a popover passes `'raised'`. |
 | `activeX`, `onActiveXChange` | `ChartX \| null` | | The cursor, controlled. Leaving the chart calls `onActiveXChange(null)`; the app decides whether the cursor goes. |
 | `group`, `groupLabel`, `groupGap`, `minBucketWidth` | | | Groups of columns, see [Columns and groups](/charts/columns). |

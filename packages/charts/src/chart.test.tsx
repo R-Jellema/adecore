@@ -403,7 +403,7 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
             </Chart.Root>
         );
         const bottoms = columns().map((column) => Number(column.getAttribute('y')) + Number(column.getAttribute('height')));
-        expect(Math.max(...bottoms)).toBe(196);
+        expect(Math.max(...bottoms)).toBe(200);
     });
 
     test('a rule draws above the series at its value, which the axis covers, and the chart names it once', async () => {
@@ -450,6 +450,15 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(Math.max(...drawn.map((column) => Number(column.getAttribute('x')) + Number(column.getAttribute('width'))))).toBeLessThanOrEqual(584);
         expect(Math.max(...drawn.map((column) => Number(column.getAttribute('x'))))).toBeGreaterThan(438);
         expect(drawn.map((column) => Number(column.getAttribute('y')) + Number(column.getAttribute('height')))).toEqual([200, 200, 200, 200]);
+        await act(async () => root.unmount());
+        await mount(
+            <Chart.Root data={SCORES} x="key" label="Scores">
+                <Chart.XAxis />
+                <Chart.Bar value="score" label="Score" />
+            </Chart.Root>
+        );
+        // Under an x axis the plot keeps 4px below its labels; without one it reaches the bottom by default.
+        expect(Math.max(...columns().map((column) => Number(column.getAttribute('y')) + Number(column.getAttribute('height'))))).toBeLessThan(200 - 16);
     });
 
     test('a scrolling plot keeps room over the y axis for what hangs out of its first bucket', async () => {

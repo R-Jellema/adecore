@@ -177,7 +177,7 @@ export function ChartRoot<Row>({
     // scroller reaches over the y axis by its width and gives that back as padding: the plot stays where it was.
     const overhang = scrolls ? leftAxis : 0;
     const xRows = [...xAxes.values()];
-    const bottom = height - (margin.bottom ?? 4) - (xRows.length === 0 ? 0 : X_AXIS_GAP + xRows.reduce((sum, row) => sum + row.room, 0));
+    const bottom = height - (xRows.length === 0 ? (margin.bottom ?? 0) : (margin.bottom ?? 4) + X_AXIS_GAP + xRows.reduce((sum, row) => sum + row.room, 0));
     const top = Math.max(margin.top ?? 8, leftY?.top ?? 0, rightY?.top ?? 0, [...series.values()].some((entry) => entry.valueLabels) ? VALUE_LABEL_ROOM : 0);
     const right = width - marginRight - (axes.end ?? 0);
     const plot = { left: marginLeft, top, right, bottom, width: Math.max(0, right - marginLeft), height: Math.max(0, bottom - top) };
@@ -578,7 +578,7 @@ export function ChartRoot<Row>({
                                     />
                                 ))}
                             {children}
-                            <g ref={setRulesSlot} />
+                            <g ref={setRulesSlot} tabIndex={-1} />
                             {continuous !== null && !points && activeIndex >= 0 && <Crosshair context={context} />}
                             {points && <Guides context={context} />}
                             {pressable &&
