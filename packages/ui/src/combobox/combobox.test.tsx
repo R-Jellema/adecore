@@ -110,6 +110,9 @@ describe.skipIf(typeof document === 'undefined')('a combobox and a command palet
         await mount(<Palette onRun={(fruit) => runs.push(fruit)} onOpenChange={() => {}} />);
         const input = document.querySelector<HTMLInputElement>('input[aria-label="Jump to"]')!;
         expect(document.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe('Command palette');
+        // The dialog moves the focus in after it mounts, not during the render.
+        await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
+        expect(document.activeElement).toBe(input);
         await act(async () => type(input, 'ban'));
         expect(highlighted()).toEqual(['Banana']);
         await act(async () => key(input, 'Enter'));
