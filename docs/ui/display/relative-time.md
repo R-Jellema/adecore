@@ -16,7 +16,7 @@ The age is `formatAge` and the tooltip is `formatDayClockWithYear`, both from [t
 
 It keeps its age current while it is on screen, on a clock that ticks every thirty seconds, so a page left open does not keep saying `2m ago`. A region change draws it again.
 
-It is a `<time>` with the moment in `dateTime`. Text is no tab stop of its own, so it is one, with the accent outline: the tooltip opens on keyboard focus as it does on hover. A moment that is not known, `null` or `undefined`, is a dash with no tooltip and no tab stop.
+It is a `<time>` with the moment in `dateTime`. Text is no tab stop of its own, so it is one, with the accent outline: the tooltip opens on keyboard focus as it does on hover. A moment that is not known, `null`, `undefined` or an invalid date, is a dash with no tooltip and no tab stop.
 
 Give it the size and the color through `className`. An age inside a sentence ("ended 5m ago") is a string, not this component: write it with `formatAgo` or `formatAge`.
 

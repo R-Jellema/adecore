@@ -8,7 +8,7 @@ import { useNow } from './useNow.ts';
 const TICK_MS = 30_000;
 
 export interface RelativeTimeProps {
-    /* `null` or `undefined` for a moment that is not known, drawn as a dash. */
+    /* `null`, `undefined` or an invalid date for a moment that is not known, drawn as a dash. */
     at: Date | number | null | undefined;
     tooltipSide?: TooltipSide;
     className?: string;
@@ -17,10 +17,11 @@ export interface RelativeTimeProps {
 
 /* A moment as its age, `3m ago`, counting on while it is on screen, with the exact time on hover and on keyboard focus. */
 export function RelativeTime({ at, tooltipSide, className, ref }: RelativeTimeProps) {
+    // The formatters read the locale from a module, not from an input, so a compiled render would keep its first words.
+    'use no memo';
     useFormatLocale();
-    const known = at !== null && at !== undefined;
-    const now = useNow(TICK_MS, known);
-    if (!known) {
+    const now = useNow(TICK_MS);
+    if (at === null || at === undefined || Number.isNaN(new Date(at).getTime())) {
         return (
             <span ref={ref} className={className}>
                 -
