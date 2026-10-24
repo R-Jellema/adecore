@@ -86,3 +86,47 @@ On a time scale the cursor takes the bucket under the pointer, the same bucket a
 `Chart.Tooltip` is the card at the cursor: the x of the bucket, a row per series (with `-` where the series has no value), then its markers and bands. It hangs on the side of the cursor with the most room. `total` adds the sum of the series as "Total", or under the name it is given (`total="Runs"`), and `format` writes the values of the card. `children` takes the bucket (`ChartBucket`, with a `ChartBucketValue` per series) and draws the card's contents instead.
 
 `Chart.Legend` lists the series with their color, in the order of the children, above the plot. `Chart.Table` is a "Show values" toggle under it with the data as a table, which a screen reader reads also while it is closed. The props are `ChartTooltipProps`, `ChartLegendProps` and `ChartTableProps`.
+
+## Durations and runs of an endpoint
+
+Two charts of one endpoint over a day in buckets of 30 minutes, with the two deploys that slowed it down and fixed it again. The durations are lines with a format of the app's own on the axis and in the tooltip:
+
+<Demo src="charts/transaction-duration" />
+
+```tsx
+<Chart.Root data={buckets} x="at" xScale="time" step={HALF_HOUR} label="p50 and p95 duration over time">
+    <Chart.Grid />
+    <Chart.XAxis />
+    <Chart.YAxis format={formatSpan} />
+    <Chart.Line value="p50" label="p50" />
+    <Chart.Line value="p95" label="p95" />
+    {deploys.map((deploy) => (
+        <Chart.Marker key={deploy.version} at={deploy.at} label={`Deploy ${deploy.version}`} tone="accent" />
+    ))}
+    <Chart.Tooltip />
+    <Chart.Legend />
+</Chart.Root>
+```
+
+The runs are stacked columns on whole numbers, the failed ones in the error tone, with their sum named in the tooltip:
+
+<Demo src="charts/transaction-runs" />
+
+```tsx
+<Chart.Root data={buckets} x="at" xScale="time" step={HALF_HOUR} y={{ integer: true }} label="Runs and failures over time">
+    <Chart.Grid />
+    <Chart.XAxis />
+    <Chart.YAxis />
+    <Chart.Bars stack>
+        <Chart.Bar value="succeeded" label="Succeeded" />
+        <Chart.Bar value="failed" label="Failed" tone="error" />
+    </Chart.Bars>
+    {deploys.map((deploy) => (
+        <Chart.Marker key={deploy.version} at={deploy.at} label={`Deploy ${deploy.version}`} tone="accent" />
+    ))}
+    <Chart.Tooltip total="Runs" />
+    <Chart.Legend />
+</Chart.Root>
+```
+
+Put both in a [`Chart.Group`](/charts/shared-cursor) and the cursor follows the pointer through both.

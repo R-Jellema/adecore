@@ -1,4 +1,5 @@
 /* Data for the chart demos: made up, but shaped like what a service reports. Seeded, so every render draws the same. */
+import { formatNumber, formatRounded } from '@adecore/ui/format';
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -56,6 +57,44 @@ export function runsPerHour(): RunBucket[] {
         const failed = hour === 15 ? 14 : hour === 16 ? 6 : Math.round(noise(hour + 70) * 3);
         return { at, succeeded: Math.round(20 + day * 40 + noise(hour + 90) * 10), failed };
     });
+}
+
+export interface TransactionBucket {
+    readonly at: number;
+    /* Milliseconds. */
+    readonly p50: number | null;
+    readonly p95: number | null;
+    readonly succeeded: number;
+    readonly failed: number;
+}
+
+/* Two deploys of a service: the first slows one endpoint down and fails some of its runs, the second fixes it. */
+export const TRANSACTION_DEPLOYS = [
+    { at: START + 13 * HOUR + 12 * 60_000, version: 'v3.8.0' },
+    { at: START + 16 * HOUR + 41 * 60_000, version: 'v3.8.1' }
+];
+
+/* One endpoint over a day in buckets of 30 minutes: its p50 and p95 duration and its runs, quiet at night. */
+export function transactionPerHalfHour(): TransactionBucket[] {
+    return Array.from({ length: 48 }, (_, slot) => {
+        const at = START + slot * 30 * 60_000;
+        const hour = slot / 2;
+        const day = Math.sin(((hour - 7) / 24) * Math.PI * 2) * 0.5 + 0.5;
+        const runs = Math.round(6 + day * 140 + noise(slot + 300) * 25);
+        const slow = at >= TRANSACTION_DEPLOYS[0]!.at - 30 * 60_000 && at < TRANSACTION_DEPLOYS[1]!.at;
+        const failed = slow ? Math.round(runs * (0.06 + noise(slot + 400) * 0.05)) : Math.round(noise(slot + 500) * 2.4);
+        if (runs < 12 && noise(slot + 600) > 0.6) {
+            return { at, p50: null, p95: null, succeeded: 0, failed: 0 };
+        }
+        const p50 = 92 + day * 26 + noise(slot + 100) * 14 + (slow ? 64 : 0);
+        const p95 = p50 * (2.6 + noise(slot + 200) * 0.6) + (slow ? 520 : 0);
+        return { at, p50: Math.round(p50), p95: Math.round(p95), succeeded: runs - failed, failed };
+    });
+}
+
+/* A duration with the precision a request needs: `86 ms`, `1.24 s`. */
+export function formatSpan(milliseconds: number): string {
+    return milliseconds < 1000 ? `${formatNumber(Math.round(milliseconds))} ms` : `${formatRounded(milliseconds / 1000, 2)} s`;
 }
 
 export interface LatencyBucket {
