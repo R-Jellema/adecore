@@ -69,7 +69,7 @@ export function Segmented<T extends string>({
         <div
             ref={ref}
             className={clsx(
-                'flex bg-surface-sunken p-0.5 text-xs font-medium dark:bg-field dark:inset-ring dark:inset-ring-field-border',
+                'flex bg-surface-sunken p-0.5 text-xs font-medium dark:bg-field',
                 sizing.track,
                 vertical ? 'w-full flex-col items-stretch gap-0.5' : clsx(sizing.row, 'w-fit items-center'),
                 className

@@ -665,7 +665,7 @@ function OptionRow({ option, selection, onChange }: { option: ModelOptionDescrip
                 value={value}
                 onValueChange={(next: string) => onChange(next)}
                 aria-label={option.label}
-                className="flex gap-0.5 rounded-md bg-surface-sunken p-0.5 dark:bg-field dark:inset-ring dark:inset-ring-field-border"
+                className="flex gap-0.5 rounded-md bg-surface-sunken p-0.5 dark:bg-field"
             >
                 {option.choices.map((choice) => (
                     <Menu.RadioItem
