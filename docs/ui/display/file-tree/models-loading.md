@@ -103,4 +103,10 @@ To store collapsed directories instead, use `FileTree.dirPathOf`, `FileTree.coll
 
 The engine's search is off by default; turn it on with `search`. `openSearch`, `setSearch`, `closeSearch`, `getSearchMatchingPaths` and the next and previous match methods work on the paths the model knows and never query the filesystem. For results from a recursive or remote search, use a second model rather than replacing the listing.
 
+`highlight` on `FileTree.Root` marks the query in every name, ignoring case, so a person sees why each row is there. It colors the text with the theme's `--match` through the CSS Custom Highlight API and leaves the names themselves alone; in a browser without that API the names show without a mark. It marks only what you pass, so filter the paths yourself and hand it the same query.
+
+```tsx
+<FileTree.Root model={results} label="Matching files" highlight={query} />
+```
+
 `subscribe` and `onMutation` return a function that unsubscribes. Selection changes notify subscribers too, so store expansion only when it changed.

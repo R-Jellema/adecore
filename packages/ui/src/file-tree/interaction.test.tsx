@@ -16,8 +16,10 @@ function Harness({
     resetKey,
     rowIcon,
     fitContent,
+    highlight,
     paths = ['src/one.ts', 'src/two.ts', 'README.md']
 }: {
+    highlight?: string;
     fitContent?: boolean;
     rowIcon?: FileTreeRootProps['rowIcon'];
     onActivate?(path: string): void;
@@ -44,6 +46,7 @@ function Harness({
             resetKey={resetKey}
             rowIcon={rowIcon}
             fitContent={fitContent}
+            highlight={highlight}
             onActivate={onActivate}
             onLoadChildren={onLoad}
             onRowContextMenu={(path) => onContext?.(path)}
@@ -396,6 +399,27 @@ describe.skipIf(typeof document === 'undefined')('file tree interaction', () => 
         expect(frame.style.height).toBe('50px');
         await mount(<Harness />);
         expect(container.querySelector<HTMLElement>('.adecore-file-tree')!.style.height).toBe('');
+    });
+
+    test('marks the query in every mounted name, and lets go of the marks when it empties', async () => {
+        const registry = new Map<string, Set<Range>>();
+        const previousCss = Object.getOwnPropertyDescriptor(globalThis, 'CSS');
+        Object.defineProperty(globalThis, 'CSS', { configurable: true, value: { highlights: registry } });
+        Object.defineProperty(globalThis, 'Highlight', { configurable: true, value: class extends Set<Range> {} });
+        try {
+            await mount(<Harness highlight="O" />);
+            const marks = registry.get('adecore-tree-match')!;
+            expect([...marks].map((range) => range.toString())).toEqual(['o', 'o']);
+            await mount(<Harness highlight="" />);
+            expect(marks.size).toBe(0);
+        } finally {
+            if (previousCss === undefined) {
+                Reflect.deleteProperty(globalThis, 'CSS');
+            } else {
+                Object.defineProperty(globalThis, 'CSS', previousCss);
+            }
+            Reflect.deleteProperty(globalThis, 'Highlight');
+        }
     });
 
     test('refreshes port contents after props change and removes slots on unmount', async () => {

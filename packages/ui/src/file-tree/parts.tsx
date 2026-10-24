@@ -31,6 +31,8 @@ export type FileTreeRootProps = useRender.ComponentProps<'div'> & {
     rowIcon?(row: FileTreeVisibleRow): LucideIcon | undefined;
     /* As tall as its rows, up to the height its container leaves it, instead of filling that container. */
     fitContent?: boolean;
+    /* Marks where this occurs in every name, ignoring case, such as the query a list was filtered by. */
+    highlight?: string;
     treeProps?: Omit<PierreProps, 'model'>;
 };
 
@@ -54,6 +56,7 @@ export function FileTreeRoot({
     decorationOrder = 'before-status',
     rowIcon,
     fitContent = false,
+    highlight = '',
     treeProps,
     render,
     className,
@@ -75,7 +78,7 @@ export function FileTreeRoot({
     const subscribeToRows = (listener: () => void): (() => void) => (fitContent ? model.subscribe(listener) : () => {});
     const countRows = (): number => model.getVisibleCount();
     const rowCount = useSyncExternalStore(subscribeToRows, countRows, countRows);
-    const slots = useFileTreeSlots(model, frame, label ?? t('tree.label'), decorationOrder, rowIcon);
+    const slots = useFileTreeSlots(model, frame, label ?? t('tree.label'), { order: decorationOrder, rowIcon, highlight });
     const latestLoads = useRef({ onLoadChildren, onExpandedPathsChange });
     useLayoutEffect(() => {
         latestLoads.current = { onLoadChildren, onExpandedPathsChange };

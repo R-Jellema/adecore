@@ -41,6 +41,9 @@
     --accent-soft: color-mix(in srgb, var(--accent) 16%, var(--surface));
     --accent-text: #ffffff;
     --selection: rgb(var(--accent-rgb) / 0.55);
+    /* The part of a name that answers a filter or a search. A tint of its own rather than the
+       selection's, so a selected row that matches still shows both. */
+    --match: color-mix(in srgb, var(--status-needs-you) 30%, transparent);
     --float-shadow:
         0 1px 2px -1px rgb(0 0 0 / 0.08),
         0 3px 6px -2px rgb(0 0 0 / 0.07),
@@ -118,6 +121,7 @@
     --text-muted: #9a9aa6;
     --text-faint: #5f5f6b;
     --selection: rgb(var(--accent-rgb) / 0.6);
+    --match: color-mix(in srgb, var(--status-needs-you) 28%, transparent);
     --float-shadow:
         0 1px 2px -1px rgb(0 0 0 / 0.3),
         0 2px 4px rgb(0 0 0 / 0.24),

@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom';
 import type { FileTree, FileTreeVisibleRow } from '@pierre/trees';
 import type { LucideIcon } from 'lucide-react';
 import { pathOfRow, visibleRows, visibleRowsAround } from './helpers.ts';
+import { matchHighlight, rangesOfMatches } from './highlight.ts';
 import { FILE_TREE_CSS } from './style.ts';
 
 export interface RowSlot {
@@ -97,17 +98,26 @@ function setSpace(row: HTMLElement, name: string, space: number): void {
     }
 }
 
+export interface FileTreeSlotOptions {
+    order: FileTreeDecorationOrder;
+    rowIcon?: FileTreeRowIcon;
+    /* What to mark in every name; empty marks nothing. */
+    highlight: string;
+}
+
 // beta.6 owns button rows. Sibling slots keep real controls outside those buttons and in the app's stylesheet.
-export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, label: string, order: FileTreeDecorationOrder, rowIcon?: FileTreeRowIcon) {
+export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, label: string, { order, rowIcon, highlight }: FileTreeSlotOptions) {
     const prefix = useId().replaceAll(':', '');
     const [slots, setSlots] = useState<RowSlot[]>([]);
     const latestIcon = useRef(rowIcon);
+    const latestHighlight = useRef(highlight);
     const rescan = useRef<(() => void) | undefined>(undefined);
 
     useLayoutEffect(() => {
         latestIcon.current = rowIcon;
+        latestHighlight.current = highlight;
         rescan.current?.();
-    }, [rowIcon]);
+    }, [rowIcon, highlight]);
 
     useEffect(() => {
         if (frame === null) {
@@ -120,6 +130,21 @@ export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, lab
         let disposed = false;
         let pending = false;
         let snapshot: string | null = null;
+        let marked: Range[] = [];
+
+        const mark = (rows: readonly HTMLElement[], query: string): void => {
+            const matches = matchHighlight();
+            if (matches === null) {
+                return;
+            }
+            for (const range of marked) {
+                matches.delete(range);
+            }
+            marked = rangesOfMatches(rows, query);
+            for (const range of marked) {
+                matches.add(range);
+            }
+        };
 
         const position = (): void => positionPorts(ports.values(), order);
 
@@ -271,6 +296,7 @@ export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, lab
                 // Recycled rows must paint with their new portal contents in the same frame.
                 flushSync(() => setSlots(next));
             }
+            mark(elements, latestHighlight.current);
             position();
         };
         const schedule = (): void => {
@@ -294,6 +320,7 @@ export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, lab
             shifts.disconnect();
             resize.disconnect();
             style?.remove();
+            mark([], '');
             for (const port of ports.values()) {
                 port.rowElement.style.removeProperty('--adecore-tree-control-space');
                 port.rowElement.style.removeProperty('--adecore-tree-decoration-space');
