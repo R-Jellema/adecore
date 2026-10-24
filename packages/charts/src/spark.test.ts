@@ -8,11 +8,11 @@ test('the columns of a sparkline fill its width on whole pixels, 2px apart', () 
     expect(columns.at(-1)!.x + columns.at(-1)!.width).toBe(46);
 });
 
-test('a zero is a one-pixel baseline, and the smallest count is never shorter than its column is wide', () => {
+test('a zero is a one-pixel baseline, and the smallest count stays taller than its column is wide, so it is no dot', () => {
     const columns = sparkColumns([100, 0, 1], 22, 16);
     expect(columns.map((column) => [column.height, column.zero])).toEqual([
         [16, false],
         [1, true],
-        [6, false]
+        [8, false]
     ]);
 });
