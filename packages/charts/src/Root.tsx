@@ -547,8 +547,8 @@ export function ChartRoot<Row>({
                             onKeyDown={onKeyDown}
                             onBlur={() => {
                                 setAnnounce(false);
-                                // A point the keyboard left keeps no preview open where the focus went on.
-                                if (points && activeIndex >= 0) {
+                                // A bucket the keyboard left, or any point, keeps no preview open where the focus went on.
+                                if (activeIndex >= 0 && (points || announce)) {
                                     setActiveX(null);
                                 }
                             }}

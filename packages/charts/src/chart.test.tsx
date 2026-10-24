@@ -530,6 +530,23 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(plot.getAttribute('aria-activedescendant')).toBeNull();
     });
 
+    test('a bucket the keyboard moved to lets go when the focus leaves, one under the pointer stays', async () => {
+        const plot = await mount();
+        const leave = async (): Promise<void> => {
+            await act(async () => {
+                plot.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: document.body }));
+            });
+        };
+        await press(plot, 'End');
+        await leave();
+        expect(plot.getAttribute('aria-activedescendant')).toBeNull();
+        await act(async () => {
+            plot.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 10, clientY: 50 }));
+        });
+        await leave();
+        expect(plot.getAttribute('aria-activedescendant')).not.toBeNull();
+    });
+
     test('an Escape that clears the cursor stops at the chart, so a dialog around it stays open', async () => {
         const reached: string[] = [];
         const listen = (e: globalThis.KeyboardEvent): void => {
