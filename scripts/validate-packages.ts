@@ -51,6 +51,9 @@ assert.match(packedPlan.planToMarkdown(updated.plan), /\\[x\\]/);`,
 const ui = await import('@adecore/ui'); assert.match(renderToStaticMarkup(React.createElement(ui.Button, null, 'Packed button')), /Packed button/);`
 };
 
+/* The types a consumer brings itself. Whatever else a packed source or declaration needs must arrive through the package's own dependencies. */
+const CONSUMER_TYPES = ['@types/bun', '@types/node', '@types/react', '@types/react-dom'];
+
 const directory = mkdtempSync(join(tmpdir(), 'adecore-pack-'));
 const packages = dependencyOrder(discoverPackages());
 const only = process.argv.slice(2);
@@ -158,6 +161,34 @@ try {
         run(process.execPath, ['--conditions=source', 'editor-consumer.mjs']);
         console.log('Packed editor lifecycle, language synchronization, diagnostics, keymap and React consumers passed.');
     }
+
+    for (const name of CONSUMER_TYPES) {
+        mkdirSync(dirname(join(nodeModules, name)), { recursive: true });
+        symlinkSync(realpathSync(join(repositoryRoot, 'node_modules', name)), join(nodeModules, name), 'dir');
+    }
+    const typed = entrypoints.filter((name) => !/(?:\.css|\.json|\/bin\/.*|\/fixtures\/.*)$/.test(name));
+    writeFileSync(join(directory, 'consumer.ts'), typed.map((name, i) => `export * as entry${i} from '${name}';\n`).join(''));
+    writeFileSync(join(directory, 'ambient.d.ts'), "declare module '*.css';\n");
+    const { compilerOptions } = JSON.parse(readFileSync(join(repositoryRoot, 'tsconfig.base.json'), 'utf8'));
+    const typecheck = (label: string, options: Record<string, unknown>): void => {
+        writeFileSync(
+            join(directory, 'tsconfig.json'),
+            JSON.stringify({ compilerOptions: { ...compilerOptions, ...options }, files: ['consumer.ts', 'ambient.d.ts'] })
+        );
+        const result = spawnSync(join(repositoryRoot, 'node_modules/.bin/tsc'), ['-p', 'tsconfig.json', '--pretty', 'false'], {
+            cwd: directory,
+            encoding: 'utf8'
+        });
+        // Third-party declarations have errors of their own that a consumer skips; only ours count.
+        const lines = `${result.stdout}${result.stderr}`.split('\n');
+        const errors = lines.filter((line) => /^(?:consumer\.ts|node_modules\/@adecore\/)/.test(line));
+        if (errors.length > 0 || (result.status !== 0 && !lines.some((line) => /error TS\d+/.test(line)))) {
+            throw new Error(`Consumer typecheck of the ${label} failed:\n${errors.join('\n') || result.stderr || result.error?.message}`);
+        }
+        console.log(`Consumer typecheck of the ${label} of ${typed.length} entrypoints passed.`);
+    };
+    typecheck('source', { customConditions: ['source'] });
+    typecheck('declarations', { skipLibCheck: false });
 
     console.log(`Default and source resolution passed for ${entrypoints.length} packed entrypoints; Node and Bun consumer execution passed.`);
 } finally {
