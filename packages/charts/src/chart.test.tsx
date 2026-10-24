@@ -227,6 +227,19 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(container.querySelector('[id$="-hint"]')!.textContent).toStartWith('A 70.');
     });
 
+    test('value labels write each column over it, through the function when given, with room above the plot', async () => {
+        await mount(
+            <Chart.Root data={SCORES} x="key" y={{ max: 52 }} label="Scores">
+                <Chart.Bar value="score" label="Score" valueLabels={(value) => `${value} pts`} />
+            </Chart.Root>
+        );
+        const labels = [...container.querySelectorAll('text')].map((text) => text.textContent);
+        expect(labels).toEqual(['40 pts', '52 pts', '31 pts', '38 pts']);
+        // The tallest column reaches the top of the plot, and its label still stands inside the svg.
+        const tallest = Math.min(...columns().map((column) => Number(column.getAttribute('y'))));
+        expect(tallest).toBe(24);
+    });
+
     test('the tooltip keeps a row for a series without a value in the bucket', async () => {
         const hours = [
             { at: 0, errors: null, warnings: 3 },

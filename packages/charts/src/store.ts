@@ -15,6 +15,8 @@ export interface SeriesEntry {
     readonly curve: ChartCurve;
     /* Drawn in the color of the series in place of its swatch. */
     readonly icon: IconProps['icon'] | null;
+    /* Columns that write their value over them, which need a row of room above the plot. */
+    readonly valueLabels: boolean;
 }
 
 export interface RuleEntry {

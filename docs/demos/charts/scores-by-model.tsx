@@ -32,7 +32,7 @@ export default function ScoresByModelDemo() {
             groupGap={20}
             label="Scores per model and effort"
             y={{ min: 0, max: 80 }}
-            height={240}
+            height={260}
             minBucketWidth={28}
             selected={picked}
             onActivate={toggle}
@@ -49,6 +49,7 @@ export default function ScoresByModelDemo() {
                 hoverOpacity={1}
                 columnWidth={(bucket) => Math.max(6, Math.min(44, Math.floor(bucket) - 4))}
                 radius={3}
+                valueLabels
             />
             {picked.map((key, index) => (
                 <ScoreChart.Rule key={key} value={scores.find((row) => row.key === key)!.score} label={index === 0 ? 'A' : 'B'} dashed={index > 0} />

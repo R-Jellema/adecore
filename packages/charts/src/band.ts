@@ -108,3 +108,35 @@ export function segmentOf(topPixel: number, basePixel: number, onGround: boolean
     }
     return { y: top, height: Math.max(0, bottom - top) };
 }
+
+/* Between the top of a column and the baseline of its value. */
+export const LABEL_LIFT = 6;
+const LABEL_ROW = 16;
+/* Text of the `text-xs` size, read before it is drawn: wide enough for tabular digits, so labels err on the side of air. */
+const LABEL_CHAR = 7;
+const LABEL_AIR = 3;
+
+/*
+ * The baseline of each column's value label: just over its column, or over every label in the way, in the order of the
+ * columns. The widths are estimated, so no measurement feeds back into where the labels go.
+ */
+export function placeValueLabels(columns: readonly { center: number; top: number; text: string }[]): number[] {
+    const boxes: { left: number; right: number; top: number; bottom: number }[] = [];
+    return columns.map(({ center, top, text }) => {
+        const half = (text.length * LABEL_CHAR) / 2;
+        let baseline = top - LABEL_LIFT;
+        const blocking = () =>
+            boxes.find(
+                (box) =>
+                    box.left < center + half + LABEL_AIR &&
+                    box.right > center - half - LABEL_AIR &&
+                    box.top < baseline + LABEL_AIR &&
+                    box.bottom > baseline - LABEL_ROW
+            );
+        for (let box = blocking(); box !== undefined; box = blocking()) {
+            baseline = box.top - LABEL_AIR;
+        }
+        boxes.push({ left: center - half, right: center + half, top: baseline - LABEL_ROW, bottom: baseline + LABEL_AIR });
+        return baseline;
+    });
+}

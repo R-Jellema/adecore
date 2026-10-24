@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import type { IconProps } from '@adecore/ui';
 import { area, curveLinear, curveMonotoneX, curveStepAfter, line } from 'd3-shape';
 import { numberOf, readValue } from './access.ts';
-import { columnsIn, segmentOf } from './band.ts';
+import { columnsIn, LABEL_LIFT, placeValueLabels, segmentOf } from './band.ts';
 import { colorOf, seriesColor } from './color.ts';
 import { BarsContext, useChartContext, type ChartContextValue } from './context.ts';
 import { useKeyCheck, useRegistration } from './register.ts';
@@ -47,6 +47,8 @@ export interface ChartBarProps<Row> {
     readonly columnWidth?: (bucket: number) => number;
     /* The corner radius of a column that stands alone; stacked segments stay square. */
     readonly radius?: number;
+    /* Writes each column's value over it, as the y axis writes it or through the function; labels that would collide move up a row. */
+    readonly valueLabels?: boolean | ((value: number, row: Row, index: number) => string);
     readonly className?: string;
     readonly ref?: Ref<SVGGElement>;
 }
@@ -126,7 +128,8 @@ export function ChartLine<Row>({ value, label, tone, icon, curve = 'linear', das
         stack: null,
         bars: null,
         curve,
-        icon: icon ?? null
+        icon: icon ?? null,
+        valueLabels: false
     });
     return (
         <g ref={ref} className={clsx('pointer-events-none', className)} style={{ color: chart.colors.get(id) ?? colorOf(tone) ?? seriesColor(0) }}>
@@ -159,7 +162,8 @@ export function ChartArea<Row>({
         stack: stack ? 'area' : null,
         bars: null,
         curve,
-        icon: icon ?? null
+        icon: icon ?? null,
+        valueLabels: false
     });
     const stacked = chart.stacked.get(id);
     const tops = pointsOf(chart, stacked?.top ?? values);
@@ -209,6 +213,7 @@ export function ChartBar<Row>({
     dimOpacity = OUT_OF_FOCUS,
     columnWidth,
     radius = 2,
+    valueLabels,
     className,
     ref
 }: ChartBarProps<Row>) {
@@ -226,7 +231,8 @@ export function ChartBar<Row>({
         stack: bars?.stack === true ? bars.id : null,
         bars: bars?.id ?? null,
         curve: 'linear',
-        icon: icon ?? null
+        icon: icon ?? null,
+        valueLabels: valueLabels !== undefined && valueLabels !== false
     });
     const { slot, count } = chart.slots.get(id) ?? { slot: 0, count: 1 };
     const stacked = chart.stacked.get(id);
@@ -234,41 +240,69 @@ export function ChartBar<Row>({
     const anySelected = chart.selected.some(Boolean);
     const groupOf = (index: number): { first: number; last: number } =>
         chart.band?.groups.find((run) => index >= run.first && index <= run.last) ?? { first: 0, last: values.length - 1 };
+    const writeValue = typeof valueLabels === 'function' ? valueLabels : (amount: number): string => chart.formatY(amount);
+    const drawn = values.flatMap((amount, index) => {
+        const top = stacked?.top[index];
+        const base = stacked?.base[index] ?? 0;
+        const topPixel = top === null || top === undefined ? null : chart.pixelOfY(top);
+        // With `y.min` above zero the ground lies under the plot, and a column stops at its edge.
+        const basePixel = Math.min(chart.plot.bottom, Math.max(chart.plot.top, chart.pixelOfY(base) ?? chart.plot.bottom));
+        const bucket = chart.bucketAt(index);
+        if (amount === null || topPixel === null || bucket === null) {
+            return [];
+        }
+        const column = columnsIn(bucket.left, bucket.width, count, columnWidth)[slot]!;
+        const { y, height } = segmentOf(topPixel, basePixel, base === 0, amount);
+        const focused = index === chart.activeIndex || chart.selected[index] === true;
+        const outOfFocus = chart.dimmed[index] === true || (anySelected && !focused);
+        const run = groupOf(index);
+        let alpha = focused ? 1 : (opacity?.(rows[index]!, index - run.first, run.last - run.first + 1) ?? 1);
+        if (outOfFocus) {
+            alpha *= dimOpacity;
+        } else if (chart.activeIndex >= 0 && !focused) {
+            alpha *= hoverOpacity;
+        }
+        const text = valueLabels === undefined || valueLabels === false ? '' : writeValue(amount, rows[index]!, index);
+        return [{ index, column, y, height, alpha, outOfFocus, text }];
+    });
+    const labelTops = placeValueLabels(drawn.map(({ column, y, text }) => ({ center: column.x + column.width / 2, top: y, text })));
     return (
         <g ref={ref} className={clsx('pointer-events-none', className)}>
-            {values.map((amount, index) => {
-                const top = stacked?.top[index];
-                const base = stacked?.base[index] ?? 0;
-                const topPixel = top === null || top === undefined ? null : chart.pixelOfY(top);
-                // With `y.min` above zero the ground lies under the plot, and a column stops at its edge.
-                const basePixel = Math.min(chart.plot.bottom, Math.max(chart.plot.top, chart.pixelOfY(base) ?? chart.plot.bottom));
-                const bucket = chart.bucketAt(index);
-                if (amount === null || topPixel === null || bucket === null) {
-                    return null;
-                }
-                const column = columnsIn(bucket.left, bucket.width, count, columnWidth)[slot]!;
-                const { y, height } = segmentOf(topPixel, basePixel, base === 0, amount);
-                const focused = index === chart.activeIndex || chart.selected[index] === true;
-                const run = groupOf(index);
-                let alpha = focused ? 1 : (opacity?.(rows[index]!, index - run.first, run.last - run.first + 1) ?? 1);
-                if (chart.dimmed[index] === true || (anySelected && !focused)) {
-                    alpha *= dimOpacity;
-                } else if (chart.activeIndex >= 0 && !focused) {
-                    alpha *= hoverOpacity;
-                }
-                return (
-                    <rect
-                        key={index}
-                        x={column.x}
-                        y={y}
-                        width={column.width}
-                        height={height}
-                        rx={stacked !== undefined && bars?.stack === true ? 0 : Math.min(radius, Math.floor(column.width / 4))}
-                        opacity={alpha}
-                        style={{ fill: rowColors?.[index] ?? color ?? fallback }}
-                    />
-                );
-            })}
+            {drawn.map(({ index, column, y, height, alpha }) => (
+                <rect
+                    key={index}
+                    x={column.x}
+                    y={y}
+                    width={column.width}
+                    height={height}
+                    rx={stacked !== undefined && bars?.stack === true ? 0 : Math.min(radius, Math.floor(column.width / 4))}
+                    opacity={alpha}
+                    style={{ fill: rowColors?.[index] ?? color ?? fallback }}
+                />
+            ))}
+            {valueLabels !== undefined &&
+                valueLabels !== false &&
+                drawn.map(({ index, column, y, outOfFocus, text }, i) => {
+                    const center = Math.round(column.x + column.width / 2);
+                    const baseline = labelTops[i]!;
+                    return (
+                        <g key={`label-${index}`} opacity={outOfFocus ? dimOpacity : 1} aria-hidden>
+                            {baseline < y - LABEL_LIFT - 6 && (
+                                <line x1={center + 0.5} x2={center + 0.5} y1={y - 4} y2={baseline + 4} className="stroke-border-strong" />
+                            )}
+                            <text
+                                x={center}
+                                y={baseline}
+                                textAnchor="middle"
+                                strokeWidth={3}
+                                paintOrder="stroke"
+                                className="fill-text stroke-surface text-xs tabular-nums"
+                            >
+                                {text}
+                            </text>
+                        </g>
+                    );
+                })}
         </g>
     );
 }

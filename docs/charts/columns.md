@@ -37,6 +37,7 @@ Columns stand on whole pixels. A column is never narrower than 2px, and by defau
 | `dimOpacity` | `number` | `0.4` | A column the root dims, or one not picked while another is. Below 0.4 a column that is already light nearly vanishes in the dark theme. |
 | `columnWidth` | `(bucket: number) => number` | | The pixels the columns of a bucket take together, at most the bucket. |
 | `radius` | `number` | `2` | The corners of a column that stands alone, at most a quarter of its width. |
+| `valueLabels` | `boolean \| (value, row, index) => string` | | Writes each column's value over it, see [value labels](#value-labels). |
 
 ## Columns over time
 
@@ -93,6 +94,7 @@ const ScoreChart = createChart<ModelScore>();
         hoverOpacity={1}
         columnWidth={(bucket) => Math.max(6, Math.min(44, Math.floor(bucket) - 4))}
         radius={3}
+        valueLabels
     />
     <ScoreChart.GroupAxis>
         {(group) => (
@@ -145,4 +147,8 @@ Without `group`, every column stands in one row. A second `Chart.XAxis` writes a
 
 The rows stack in the order of the children. The tooltip, the live region and the table name a bucket by every row, the lowest first ("Atlas 5, high"). A row of a band scale leaves labels out where they would overlap; `thin={false}` writes one under every column.
 
-There are no value labels on top of the columns; the tooltip, the live region and the table carry the numbers. A drawing of the app's own can add them through [`Chart.Layer`](/charts/use-chart).
+## Value labels
+
+`valueLabels` on `Chart.Bar` writes each column's value over it, as the y axis writes values, or through a function of the value, the row and its index: `valueLabels={(value, row) => row.summary}`. Where two labels would collide, the later one moves up over the other, with a thin line down to its column once it has moved a row. A label dims with its column when the column is dimmed or another is picked, and stays as it is while the cursor is elsewhere. The scores per model above write theirs.
+
+The root keeps 24px above the plot for one row of labels over the tallest column. Labels that move up further need more: set `marginTop`. The labels are drawn for the eye; the tooltip, the live region and the table carry the same numbers for a screen reader.

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { bandLayout, columnsIn, GROUP_GAP, segmentOf } from './band.ts';
+import { bandLayout, columnsIn, GROUP_GAP, LABEL_LIFT, placeValueLabels, segmentOf } from './band.ts';
 
 describe('the buckets of a band scale', () => {
     test('share the room equally', () => {
@@ -66,5 +66,22 @@ describe('columns', () => {
         expect(segmentOf(40, 100, false, 6)).toEqual({ y: 40, height: 59 });
         expect(segmentOf(99.8, 100, true, 0.01)).toEqual({ y: 99, height: 1 });
         expect(segmentOf(100, 100, true, 0)).toEqual({ y: 100, height: 0 });
+    });
+});
+
+describe('value labels', () => {
+    test('stand just over their column, and over every label in the way', () => {
+        const [first, second, third, fourth] = placeValueLabels([
+            { center: 10, top: 100, text: '71.2' },
+            { center: 30, top: 102, text: '70.8' },
+            { center: 50, top: 101, text: '70.9' },
+            { center: 200, top: 102, text: '70.8' }
+        ]);
+        expect(first).toBe(100 - LABEL_LIFT);
+        expect(first! - second!).toBeGreaterThanOrEqual(16);
+        expect(first! - second!).toBeLessThan(32);
+        // The second label moved up out of its way, so the third fits over its own column.
+        expect(third).toBe(101 - LABEL_LIFT);
+        expect(fourth).toBe(102 - LABEL_LIFT);
     });
 });

@@ -44,7 +44,7 @@ export interface ChartRootProps<Row> {
     /* Controls the cursor. Leaving the chart calls `onActiveXChange(null)` and leaves the cursor to the app. */
     readonly activeX?: ChartX | null;
     readonly onActiveXChange?: (x: ChartX | null) => void;
-    /* Pixels above the plot, for something drawn over it such as a unit. */
+    /* Pixels above the plot, for something drawn over it such as a unit; at least 24 with value labels over columns. */
     readonly marginTop?: number;
     /* Puts the buckets of a band scale into runs of the same key, with a gap between them. */
     readonly group?: ChartAccessor<Row, string>;
@@ -68,6 +68,8 @@ export interface ChartRootProps<Row> {
 /* Room for the dot at the end of a line on a continuous scale, which would otherwise stand on the edge. */
 const INSET = 6;
 const Y_TICK_SPACING = 40;
+/* One row of value labels over the tallest column; labels pushed up a row further need a larger `marginTop`. */
+const VALUE_LABEL_ROOM = 24;
 
 const defaultValue = (value: number): string => (Number.isInteger(value) ? formatNumber(value) : formatRounded(value, 2));
 
@@ -133,7 +135,7 @@ export function ChartRoot<Row>({
     const width = layout === null ? room : Math.max(room, Math.ceil(layout.width));
     const xRows = [...xAxes.values()];
     const bottom = height - 4 - (xRows.length === 0 ? 0 : X_AXIS_GAP + xRows.reduce((sum, row) => sum + row.room, 0));
-    const top = marginTop;
+    const top = [...series.values()].some((entry) => entry.valueLabels) ? Math.max(marginTop, VALUE_LABEL_ROOM) : marginTop;
     const plot = { left: inset, top, right: width - inset, bottom, width: Math.max(0, width - 2 * inset), height: Math.max(0, bottom - top) };
     const continuous = band ? null : continuousXScale(xScale, xs as number[], [plot.left, plot.right], bucketStep);
 
