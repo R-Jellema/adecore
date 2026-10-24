@@ -22,6 +22,7 @@ const desktopUi: DefaultTheme.SidebarItem[] = [
         ['IconButton', '/ui/actions/icon-button'],
         ['ButtonGroup', '/ui/actions/button-group'],
         ['CloseButton', '/ui/actions/close-button'],
+        ['CopyButton', '/ui/actions/copy-button'],
         ['Pill', '/ui/actions/pill'],
         ['Tile', '/ui/actions/tile']
     ]),
