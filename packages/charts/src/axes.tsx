@@ -13,6 +13,8 @@ export interface ChartGridProps {
     readonly axis?: 'y' | 'x' | 'both';
     /* Dashes every line but the ground, in the color of the ground so the dashes still read as a line. */
     readonly dashed?: boolean;
+    /* `ground` draws the line the values stand on and nothing else, for columns that need no scale to be read. */
+    readonly lines?: 'all' | 'ground';
     readonly className?: string;
     readonly ref?: Ref<SVGGElement>;
 }
@@ -88,10 +90,18 @@ const widestIn = (group: SVGGElement | null): number => Math.max(0, ...[...(grou
 const crisp = (pixel: number): number => Math.round(pixel) + 0.5;
 
 /* Gridlines on the ticks, a heavier one on the ground. */
-export function ChartGrid({ axis = 'y', dashed = false, className, ref }: ChartGridProps) {
+export function ChartGrid({ axis = 'y', dashed = false, lines = 'all', className, ref }: ChartGridProps) {
     const chart = useChartContext('Chart.Grid');
     const { plot, y, continuous, band } = chart;
     const ground = y.domain[0] <= 0 && y.domain[1] >= 0 ? 0 : y.domain[0];
+    if (lines === 'ground') {
+        const pixel = y.at(ground);
+        return pixel === null ? null : (
+            <g ref={ref} className={clsx('pointer-events-none', className)} aria-hidden>
+                <line x1={plot.left} x2={plot.right} y1={crisp(pixel)} y2={crisp(pixel)} className={dashed ? 'stroke-border' : 'stroke-border-strong'} />
+            </g>
+        );
+    }
     const columns =
         continuous !== null
             ? continuous.ticks(tickCount(plot.width, X_TICK_SPACING)).map((tick) => continuous.at(tick))
@@ -109,7 +119,7 @@ export function ChartGrid({ axis = 'y', dashed = false, className, ref }: ChartG
                             y1={crisp(pixel)}
                             y2={crisp(pixel)}
                             strokeDasharray={dashed && tick !== ground ? DASH : undefined}
-                            className={tick === ground || dashed ? 'stroke-border' : 'stroke-border-soft'}
+                            className={dashed ? 'stroke-border' : tick === ground ? 'stroke-border-strong' : 'stroke-border-soft'}
                         />
                     );
                 })}

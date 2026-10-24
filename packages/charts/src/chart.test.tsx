@@ -294,6 +294,25 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(container.querySelector('linearGradient')).toBeNull();
     });
 
+    test('the grid draws its ground heavier than the other lines, or the ground alone', async () => {
+        const grid = async (lines?: 'all' | 'ground'): Promise<string[]> => {
+            await mount(
+                <Chart.Root data={SCORES} x="key" y={{ max: 60 }} label="Scores">
+                    <Chart.Grid lines={lines} />
+                    <Chart.Bar value="score" label="Score" />
+                </Chart.Root>
+            );
+            const classes = [...container.querySelectorAll('line')].map((line) => line.getAttribute('class') ?? '');
+            await act(async () => root.unmount());
+            return classes;
+        };
+        const all = await grid();
+        expect(all.filter((name) => name === 'stroke-border-strong')).toHaveLength(1);
+        expect(all.filter((name) => name === 'stroke-border-soft').length).toBeGreaterThan(1);
+        expect(await grid('ground')).toEqual(['stroke-border-strong']);
+        await mount(<Chart.Root data={SCORES} x="key" label="Scores" />);
+    });
+
     test('a second x axis writes its row under the first', async () => {
         await mount(
             <Chart.Root data={SCORES} x="key" label="Scores">

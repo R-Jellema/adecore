@@ -54,7 +54,7 @@ A `ChartX` is a number (a moment in milliseconds) or the key of a category; a `C
 
 ## Grid and axes
 
-`Chart.Grid` draws a line on every tick of the value axis in `--border-soft`, with the ground in `--border`. `axis` takes `'y'` (the default), `'x'` or `'both'`. `dashed` dashes every line but the ground, in `--border` so the dashes still read as a line.
+`Chart.Grid` draws a line on every tick of the value axis in `--border-soft`, with the ground in `--border-strong`, so columns and areas stand on a line that reads. `axis` takes `'y'` (the default), `'x'` or `'both'`. `dashed` dashes every line but the ground, all of them in `--border` so the dashes still read as a line. `lines="ground"` draws the ground alone, for columns that carry their value over them and need no scale.
 
 `Chart.YAxis` writes the ticks beside the plot, on the `left` or the `right` (`side`). It measures its widest label and gives the plot the rest of the width. `Chart.XAxis` writes them under it. On a time scale the labels are the clock within a day, the day once the ticks are a day apart, and both in between, from `@adecore/ui/format`. Labels that would overlap thin out, and a label that would hang past the end of the chart is left out, except on a tick at an end of the axis, such as the last decade of a `log` scale, which moves inward.
 
