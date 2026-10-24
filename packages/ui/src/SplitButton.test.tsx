@@ -32,7 +32,7 @@ describe('a split button', () => {
                 Push
             </SplitButton>
         );
-        expect(/<span class="([^"]+)"/.exec(markup)![1]!.split(' ')).toEqual(expect.arrayContaining(['border', 'border-border']));
+        expect(/<span class="([^"]+)"/.exec(markup)![1]!.split(' ')).toEqual(expect.arrayContaining(['border', 'border-field-border']));
         for (const half of classesOf(markup)) {
             expect(half).not.toContain('border');
         }
