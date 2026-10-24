@@ -94,9 +94,12 @@ describe('the axes of a point chart', () => {
         expect(scale.at(1)).toBeCloseTo(200);
     });
 
-    test('a narrow axis keeps both ends and every other decade between them', () => {
+    test('a narrow axis keeps both ends and decades evenly apart between them', () => {
         expect(thinTicks([1, 10, 100, 1000, 10000], 2)).toEqual([1, 100, 10000]);
         expect(thinTicks([1, 10, 100], 5)).toEqual([1, 10, 100]);
+        expect(thinTicks([1, 10, 100, 1e3, 1e4, 1e5, 1e6], 3)).toEqual([1, 100, 1e4, 1e6]);
+        expect(thinTicks([1, 10, 100, 1e3, 1e4, 1e5, 1e6], 2)).toEqual([1, 1e3, 1e6]);
+        expect(thinTicks([1, 10, 100, 1e3, 1e4, 1e5], 3)).toEqual([1, 1e5]);
     });
 
     test('a linear x axis rounds out to a tick from the ends the caller fixed', () => {
