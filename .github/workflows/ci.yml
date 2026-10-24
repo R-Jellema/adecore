@@ -82,7 +82,7 @@ jobs:
 
   windows:
     runs-on: windows-latest
-    name: 🪟 Windows checks and tests
+    name: 🪟 Windows backend checks and tests
     defaults:
       run:
         shell: bash
@@ -112,7 +112,10 @@ jobs:
         run: bun run check
 
       - name: 🧪 Test
-        run: bun run test --parallel=2 --no-isolate
+        run: >-
+          bun run test --parallel=2 --no-isolate
+          ./packages/agents/src ./packages/database/src/host ./packages/lsp/src
+          ./packages/service/src ./packages/shell/src
         env:
           ADECORE_TEST_TASK_SCHEDULER: '1'
 

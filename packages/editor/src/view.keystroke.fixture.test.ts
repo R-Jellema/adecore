@@ -114,6 +114,12 @@ export function release(): void {
 
 function counters(mounted: MountedEditor) {
     type RowBuilder = { buildRows(structure: unknown, from: number, to: number, index: number): unknown };
+    // Other large editors may still have timers running in the same test worker.
+    const positionAt = spyOn(DocumentModel.prototype, 'positionAt');
+    mounted.editor.positionAt(0);
+    const model = positionAt.mock.contexts.at(-1);
+    positionAt.mockRestore();
+    expect(model).toBeInstanceOf(DocumentModel);
     const getLine = spyOn(DocumentModel.prototype, 'getLine');
     const slice = spyOn(DocumentModel.prototype, 'slice');
     const getText = spyOn(DocumentModel.prototype, 'getText');
@@ -121,8 +127,7 @@ function counters(mounted: MountedEditor) {
     const createElement = spyOn(mounted.page.document, 'createElement');
     const spies = [getLine, slice, getText, buildRows, createElement];
     restores.push(() => spies.forEach((spy) => spy.mockRestore()));
-    // Editors other tests left mounted run their timers while this one waits, so only the calls on this editor's document count.
-    const ours = (context: unknown): boolean => (context as DocumentModel).getLineCount() >= LINES;
+    const ours = (context: unknown): boolean => context === model;
     const oursLayout = (context: unknown): boolean => ours((context as { document: unknown }).document);
     const results = <Value>(spy: { mock: { contexts: unknown[]; results: { value: unknown }[] } }): Value[] =>
         spy.mock.results.filter((_, index) => ours(spy.mock.contexts[index])).map((result) => result.value as Value);
