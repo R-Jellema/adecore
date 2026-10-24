@@ -135,7 +135,7 @@ function SearchField({ search, query, onQuery, onPick }: SearchFieldProps) {
             <Icon icon={Search} size={14} className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 text-text-faint" />
             <Input
                 ref={input}
-                className="bg-surface-sunken pr-12 pl-8 text-xs"
+                className="pr-12 pl-8 text-xs"
                 placeholder={t('settings.search.placeholder')}
                 aria-label={t('settings.search.placeholder')}
                 value={query}
