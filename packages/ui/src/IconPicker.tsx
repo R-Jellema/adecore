@@ -121,7 +121,7 @@ export function IconPicker({
                                     trigger.current?.focus();
                                 }}
                             >
-                                <Icon icon={Ban} size={16} />
+                                <Icon icon={X} size={18} />
                             </Button>
                         </Tooltip>
                     )}
