@@ -43,6 +43,18 @@ import { Chart } from '@adecore/charts';
 </Chart.Root>
 ```
 
+`Timeline` draws the spans of a trace as a tree of rows that folds, each with a bar on one axis of durations:
+
+```tsx
+import { Timeline } from '@adecore/charts';
+
+<Timeline.Root data={spans} kinds={kinds} label="Spans of GET /orders">
+    <Timeline.Legend />
+    <Timeline.Axis heading="Span" />
+    <Timeline.Rows />
+</Timeline.Root>
+```
+
 ## License
 
 FSL-1.1-MIT, see [LICENSE](./LICENSE).

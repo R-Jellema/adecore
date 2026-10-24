@@ -1,4 +1,5 @@
 export * as Chart from './index.parts.ts';
+export * as Timeline from './timeline.parts.ts';
 
 export type { ChartBandProps, ChartMarkerProps, ChartRuleProps } from './annotations.tsx';
 export type { ChartBucketGroup, ChartGridProps, ChartGroupAxisProps, ChartXAxisProps, ChartYAxisProps } from './axes.tsx';
@@ -9,5 +10,7 @@ export type { ChartBucket, ChartBucketValue, ChartLegendProps, ChartTableProps, 
 export type { ChartRootProps } from './Root.tsx';
 export type { ChartAreaProps, ChartBarProps, ChartBarTone, ChartBarsProps, ChartLineProps } from './series.tsx';
 export { Sparkline, type SparklineProps } from './Sparkline.tsx';
+export type { TimelineAxisProps, TimelineLegendProps, TimelineMomentProps, TimelineRootProps, TimelineRowState, TimelineRowsProps } from './timeline.tsx';
+export { durationTicks, type TimelineKind, type TimelineSpan } from './timeline-layout.ts';
 export { useChart, type ChartApi } from './use-chart.ts';
 export type { ChartAccessor, ChartColor, ChartCurve, ChartRect, ChartTone, ChartX, ChartXInput, ChartXScale, ChartYOptions, ChartYScale } from './types.ts';

@@ -147,6 +147,7 @@ const charts: DefaultTheme.SidebarItem[] = [
         ['Columns and groups', '/charts/columns'],
         ['Shared cursor', '/charts/shared-cursor'],
         ['Sparkline', '/charts/sparkline'],
+        ['Timeline', '/charts/timeline'],
         ['useChart', '/charts/use-chart']
     ])
 ];

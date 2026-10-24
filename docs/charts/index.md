@@ -49,6 +49,8 @@ A chart is a compound component, like `Menu` and `Dialog` in `@adecore/ui`. `Cha
 | [`Chart.Layer`](/charts/use-chart) | A group in the plot for a drawing of the app's own. |
 | [`Chart.Group`](/charts/shared-cursor) | Charts that share one cursor. |
 
+The spans of a trace are no series: [`Timeline`](/charts/timeline) draws them as a tree of rows that folds, with a bar per span on one axis of durations.
+
 ## Colors
 
 A series takes a `tone`: one of the status tones of the theme (`accent`, `error`, `needsYou`, `idle`, `running`, `muted`), or `{ color }` with a CSS value of the app's own, such as a variable. A series without a tone takes the next of `--chart-1` to `--chart-6`, the [chart series of the theme](/ui/guide/theme#chart-series), in the order of the children. Colors go through `style`, so they follow the theme.
