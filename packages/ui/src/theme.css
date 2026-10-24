@@ -23,8 +23,8 @@
     /* The pressed step of a toggle. It cannot be `--surface-raised`, which equals `--surface` in the
        light theme, and it has to sit a shade past `--surface-hover` so pressed outranks hover. */
     --surface-active: #dcdce2;
-    /* What a person types or picks in: a step lighter than the ground it stands on in the dark theme, white here. */
-    --field: #ffffff;
+    /* What a person types or picks in: a step lighter than the ground it stands on in the dark theme, the raised white here. */
+    --field: var(--surface-raised);
     /* An edge of its own, since an app may set `--border` to a solid separator that vanishes against a field. */
     --field-border: rgb(0 0 0 / 0.11);
     /* Borders carry an alpha rather than a gray of their own, so a line takes the color of whatever
@@ -119,7 +119,8 @@
     --surface-sunken: #0b0b0e;
     --surface-hover: #202024;
     --surface-active: #28282e;
-    --field: #1b1b1f;
+    /* Derived, so an app that tints its surfaces tints its fields along. */
+    --field: color-mix(in srgb, var(--surface) 40%, var(--surface-hover));
     --field-border: rgb(255 255 255 / 0.07);
     /* White at a low alpha, which is what gives a dark surface its lifted edge. */
     --border: rgb(255 255 255 / 0.07);
