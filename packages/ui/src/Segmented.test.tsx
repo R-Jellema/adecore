@@ -4,6 +4,7 @@ import { List } from 'lucide-react';
 import type { Root } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Segmented, type SegmentedProps } from './Segmented.tsx';
+import { segmentedTarget } from './segmented-keys.ts';
 
 const OPTIONS = [
     { id: 'list', label: 'List' },
@@ -33,6 +34,31 @@ describe('a segmented control', () => {
         const markup = renderToStaticMarkup(<Segmented label="View" value="list" onValueChange={() => {}} options={options} iconOnly />);
         expect([...markup.matchAll(/aria-label="(\w+)"/g)].map((match) => match[1])).toEqual(['View', 'List', 'Grid', 'Split']);
         expect(markup).not.toMatch(/>(List|Grid|Split)</);
+    });
+
+    test('keeps the label of an icon-only option that has no icon', () => {
+        const options = [{ ...OPTIONS[0], icon: List }, OPTIONS[1]];
+        const markup = renderToStaticMarkup(<Segmented label="View" value="list" onValueChange={() => {}} options={options} iconOnly />);
+        expect(markup).not.toMatch(/>List</);
+        expect(markup).toMatch(/>Grid<\/button>/);
+    });
+
+    test('moves past a disabled option with the arrows, Home and End, and around the ends', () => {
+        const options = [{ ...OPTIONS[0], disabled: true }, OPTIONS[1], { ...OPTIONS[2], disabled: true }, { id: 'board', label: 'Board' }];
+        expect(segmentedTarget(options, 1, 'ArrowRight')).toBe(3);
+        expect(segmentedTarget(options, 3, 'ArrowDown')).toBe(1);
+        expect(segmentedTarget(options, 1, 'ArrowLeft')).toBe(3);
+        expect(segmentedTarget(options, 3, 'ArrowUp')).toBe(1);
+        expect(segmentedTarget(options, 3, 'Home')).toBe(1);
+        expect(segmentedTarget(options, 1, 'End')).toBe(3);
+        expect(segmentedTarget(options, 1, 'a')).toBeNull();
+        expect(
+            segmentedTarget(
+                OPTIONS.map((option) => ({ ...option, disabled: true })),
+                0,
+                'ArrowRight'
+            )
+        ).toBeNull();
     });
 
     test('grows with a label that wraps instead of holding a fixed height, and can stand as a column', () => {

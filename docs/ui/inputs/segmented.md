@@ -14,7 +14,7 @@ It is a `radiogroup` and every option a `radio` with `aria-checked`. The group i
 
 ## Icons only
 
-With `iconOnly` every option is a square with its icon. The label becomes the option's accessible name and its tooltip, so a screen reader and a hover say the same. Give every option an icon; the setting holds for the whole group, so the squares stay one size.
+With `iconOnly` every option is a square with its icon. The label becomes the option's accessible name and its tooltip, so a screen reader and a hover say the same. Give every option an icon; the setting holds for the whole group, so the squares stay one size. An option without one keeps its label.
 
 <Demo src="inputs/segmented-icons" />
 
@@ -41,7 +41,7 @@ An option with `disabled: true` is dimmed and cannot be picked. The arrow keys, 
 | `disabled` | `boolean` | | |
 | `orientation` | `'horizontal' \| 'vertical'` | `'horizontal'` | `vertical` stacks the options in a column. |
 | `size` | `'md' \| 'sm'` | `'md'` | 32 or 28 pixels high. |
-| `iconOnly` | `boolean` | `false` | Draws each option as its icon, with the label as name and tooltip. |
+| `iconOnly` | `boolean` | `false` | Draws each option with an icon as that icon, with the label as name and tooltip. |
 | `className` | `string` | | |
 | `ref` | `Ref<HTMLDivElement>` | | |
 
