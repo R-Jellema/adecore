@@ -448,6 +448,36 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(container.querySelector('[aria-hidden].absolute')!.textContent).toContain('Score40');
     });
 
+    test('the cursor marks a bucket in full, with a line alone, or not at all', async () => {
+        const marks = async (cursor: 'full' | 'line' | 'none', xScale: 'band' | 'linear'): Promise<[number, number, number]> => {
+            const plot = await mount(
+                <Chart.Root
+                    data={SCORES.map((score, index) => ({ ...score, at: index }))}
+                    x={xScale === 'band' ? 'key' : 'at'}
+                    xScale={xScale}
+                    cursor={cursor}
+                    label="Scores"
+                >
+                    <Chart.Line value="score" label="Score" />
+                </Chart.Root>
+            );
+            await press(plot, 'Home');
+            const counts: [number, number, number] = [
+                container.querySelectorAll('rect.fill-surface-hover').length,
+                container.querySelectorAll('line.stroke-border-strong').length,
+                container.querySelectorAll('circle').length
+            ];
+            await act(async () => root.unmount());
+            return counts;
+        };
+        expect(await marks('full', 'band')).toEqual([1, 0, 0]);
+        expect(await marks('none', 'band')).toEqual([0, 0, 0]);
+        expect(await marks('full', 'linear')).toEqual([0, 1, 1]);
+        expect(await marks('line', 'linear')).toEqual([0, 1, 0]);
+        expect(await marks('none', 'linear')).toEqual([0, 0, 0]);
+        await mount(<Chart.Root data={SCORES} x="key" label="Scores" />);
+    });
+
     test('a second x axis writes its row under the first', async () => {
         await mount(
             <Chart.Root data={SCORES} x="key" label="Scores">

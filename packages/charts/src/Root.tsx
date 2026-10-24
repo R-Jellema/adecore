@@ -87,6 +87,11 @@ export interface ChartRootProps<Row> {
      * pointer still moves the cursor and the tooltip.
      */
     readonly interactive?: boolean;
+    /*
+     * What marks the cursor: a lit bucket on a band scale and a line with a dot on every series on a time or linear one
+     * (`full`), the line alone (`line`), or nothing past what the columns and the tooltip show (`none`).
+     */
+    readonly cursor?: 'full' | 'line' | 'none';
     /* Makes the buckets or the points pressable: Enter, Space and a click. */
     readonly onActivate?: (row: Row, index: number) => void;
     /* The buckets or points the app wants out of focus. A series whose points are all dimmed dims its line and end label. */
@@ -131,6 +136,7 @@ export function ChartRoot<Row>({
     minBucketWidth = 0,
     selected,
     interactive = true,
+    cursor = 'full',
     onActivate,
     dimmed,
     children,
@@ -533,7 +539,7 @@ export function ChartRoot<Row>({
     ]
         .filter(Boolean)
         .join(' ');
-    const highlighted = layout === null ? [] : xs.flatMap((_, index) => (index === activeIndex || selectedRows[index] ? [index] : []));
+    const highlighted = layout === null ? [] : xs.flatMap((_, index) => ((cursor === 'full' && index === activeIndex) || selectedRows[index] ? [index] : []));
 
     return (
         <ChartContext value={context}>
@@ -594,7 +600,9 @@ export function ChartRoot<Row>({
                                 ))}
                             {children}
                             <g ref={setRulesSlot} tabIndex={-1} />
-                            {continuous !== null && !points && activeIndex >= 0 && <Crosshair context={context} />}
+                            {continuous !== null && !points && activeIndex >= 0 && cursor !== 'none' && (
+                                <Crosshair context={context} dots={cursor === 'full'} />
+                            )}
                             {points && <Guides context={context} />}
                             {pressable &&
                                 points &&
@@ -666,7 +674,7 @@ export function ChartRoot<Row>({
 }
 
 /* The line at the cursor and a dot where it crosses each line and area. */
-function Crosshair({ context }: { context: ChartContextValue }) {
+function Crosshair({ context, dots }: { context: ChartContextValue; dots: boolean }) {
     const { activeIndex, centerOf, plot, series, stacked, colors, pixelOfY } = context;
     const left = Math.round(centerOf(activeIndex)) + 0.5;
     return (
@@ -674,7 +682,7 @@ function Crosshair({ context }: { context: ChartContextValue }) {
             <line x1={left} x2={left} y1={plot.top} y2={plot.bottom} className="stroke-border-strong" />
             {[...series].map(([seriesId, entry]) => {
                 const top = stacked.get(seriesId)?.top[activeIndex];
-                const pixel = top === null || top === undefined || entry.kind === 'bar' ? null : pixelOfY(top);
+                const pixel = !dots || top === null || top === undefined || entry.kind === 'bar' ? null : pixelOfY(top);
                 return pixel === null ? null : (
                     <circle
                         key={seriesId}
