@@ -1,4 +1,4 @@
-import { createContext, useContext, useRef, type ComponentProps, type ReactNode, type RefObject } from 'react';
+import { createContext, useContext, useLayoutEffect, useRef, useState, type ComponentProps, type ReactNode, type RefObject } from 'react';
 import clsx from 'clsx';
 import { Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -11,8 +11,16 @@ import { Kbd } from '../Kbd.tsx';
 import { mergeRefs } from '../merge-refs.ts';
 import { KEY_SHORTCUTS } from '../shortcut.ts';
 
-/* The field, for the popup to put the focus in when it opens: a control before it would take it otherwise. */
-const InputRefContext = createContext<RefObject<HTMLInputElement | null> | null>(null);
+interface PaletteRefs {
+    /* For the popup to put the focus in when it opens: a control before it would take it otherwise. */
+    input: RefObject<HTMLInputElement | null>;
+    /* For the root to scroll back to the top when the app sets the query. */
+    list: RefObject<HTMLDivElement | null>;
+}
+
+const PaletteRefsContext = createContext<PaletteRefs | null>(null);
+
+const NO_ITEMS: readonly never[] = [];
 
 /* A palette asks for a few words and shows rows of one line; a search whose rows are lines of source needs the wider one. */
 const SIZE = {
@@ -44,18 +52,48 @@ export function CommandPaletteRoot<ItemValue>({
     onOpenChangeComplete,
     autoHighlight = 'always',
     keepHighlight = true,
+    value,
+    onValueChange,
     items,
     children,
     ...props
 }: CommandPaletteRootProps<ItemValue>) {
     const inputRef = useRef<HTMLInputElement>(null);
+    const listRef = useRef<HTMLDivElement>(null);
+    /*
+     * Base UI moves the highlight to the first row for a typed query only. For a query the app sets,
+     * the list is empty for one commit that is never painted: Base UI drops the highlight then and
+     * puts it on the first row of what comes back.
+     */
+    const [settledValue, setSettledValue] = useState(value);
+    const resetting = value !== undefined && value !== settledValue;
+
+    useLayoutEffect(() => {
+        if (!resetting) {
+            return;
+        }
+        if (listRef.current !== null) {
+            listRef.current.scrollTop = 0;
+        }
+        // The rows may come back only after Base UI has seen the empty list in a commit of its own.
+        // oxlint-disable-next-line react/set-state-in-effect
+        setSettledValue(value);
+    }, [resetting, value]);
+
     return (
         <DialogRoot open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
-            <InputRefContext value={inputRef}>
+            <PaletteRefsContext value={{ input: inputRef, list: listRef }}>
                 {/* Its props take a flat list or groups; only its overloads split the two, which a generic caller cannot pick between. */}
                 <Autocomplete.Root<ItemValue>
                     {...props}
-                    items={items as readonly ItemValue[] | undefined}
+                    value={value}
+                    onValueChange={(next, details) => {
+                        if (details.reason === 'input-change') {
+                            setSettledValue(next);
+                        }
+                        onValueChange?.(next, details);
+                    }}
+                    items={(resetting ? NO_ITEMS : items) as readonly ItemValue[] | undefined}
                     inline
                     open
                     autoHighlight={autoHighlight}
@@ -63,7 +101,7 @@ export function CommandPaletteRoot<ItemValue>({
                 >
                     {children}
                 </Autocomplete.Root>
-            </InputRefContext>
+            </PaletteRefsContext>
         </DialogRoot>
     );
 }
@@ -78,11 +116,11 @@ export type CommandPalettePopupProps = Omit<DialogPopupProps, 'size'> & {
  */
 export function CommandPalettePopup({ size = 'md', initialFocus, className, ...props }: CommandPalettePopupProps) {
     const { t } = useTranslation('ui');
-    const inputRef = useContext(InputRefContext);
+    const refs = useContext(PaletteRefsContext);
     return (
         <DialogPopup
             aria-label={t('palette.label')}
-            initialFocus={initialFocus ?? inputRef ?? undefined}
+            initialFocus={initialFocus ?? refs?.input}
             className={withClass(clsx('top-[18vh] flex flex-col [translate:-50%_0]', SIZE[size]), className)}
             {...props}
         />
@@ -104,12 +142,12 @@ export type CommandPaletteInputProps = Omit<ComponentProps<typeof Autocomplete.I
 
 /* The field across the top. It keeps the keys while the arrows move the highlight; a control beside it should not take the focus on a click. */
 export function CommandPaletteInput({ leading, trailing, escapeHint = true, mono = false, className, ref, ...props }: CommandPaletteInputProps) {
-    const inputRef = useContext(InputRefContext);
+    const refs = useContext(PaletteRefsContext);
     return (
         <div className={clsx('relative flex shrink-0 items-center gap-2 border-b border-border px-3', className)}>
             {leading ?? <Icon icon={Search} size={14} className="shrink-0 text-text-faint" />}
             <Autocomplete.Input
-                ref={mergeRefs(ref, inputRef ?? undefined)}
+                ref={mergeRefs(ref, refs?.input)}
                 spellCheck={false}
                 className={clsx('h-11 min-w-0 flex-1 bg-transparent text-sm text-text outline-none placeholder:text-text-faint', mono && 'font-mono text-code')}
                 {...props}
@@ -121,10 +159,12 @@ export function CommandPaletteInput({ leading, trailing, escapeHint = true, mono
 }
 
 /* The rows. It scrolls on its own, so the field and the footer stay put. */
-export function CommandPaletteList({ className, ...props }: ComponentProps<typeof Autocomplete.List>) {
+export function CommandPaletteList({ className, ref, ...props }: ComponentProps<typeof Autocomplete.List>) {
     const { t } = useTranslation('ui');
+    const refs = useContext(PaletteRefsContext);
     return (
         <Autocomplete.List
+            ref={mergeRefs(ref, refs?.list)}
             aria-label={t('palette.results')}
             className={withClass('max-h-[50vh] min-h-0 overflow-y-auto overscroll-contain scroll-py-1.5 not-empty:p-1.5', className)}
             {...props}

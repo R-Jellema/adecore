@@ -51,7 +51,7 @@ A palette with modes, such as a file search beside the commands, keeps the mode 
 
 For a step where Enter should use what was typed until a row is picked, pass `autoHighlight={false}`.
 
-The highlight starts on the first row, when the palette opens and whenever the rows change. Base UI's autocomplete has no way to start it on another row, so a step that should open on a given row, such as the one in use, puts that row first.
+The highlight starts on the first row when the palette opens, when a person types and when the app sets `value` itself, such as Tab completing the field or Enter on a folder that shows its contents; the list scrolls back to the top with it. Rows that change under the same query, such as results that arrive later, keep the highlight where it was. Base UI's autocomplete has no way to start it on another row, so a step that should open on a given row, such as the one in use, puts that row first.
 
 ## Types
 

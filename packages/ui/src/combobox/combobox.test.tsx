@@ -27,7 +27,17 @@ function Suggestions({ onPick }: { onPick(fruit: string): void }) {
     );
 }
 
-function Palette({ onRun, onOpenChange, onModEnter }: { onRun(fruit: string): void; onOpenChange(open: boolean): void; onModEnter?(fruit: string): void }) {
+function Palette({
+    onRun,
+    onOpenChange,
+    onModEnter,
+    complete
+}: {
+    onRun(fruit: string): void;
+    onOpenChange(open: boolean): void;
+    onModEnter?(fruit: string): void;
+    complete?: string;
+}) {
     const [query, setQuery] = useState('');
     const [highlight, setHighlight] = useState<string | undefined>();
     return (
@@ -35,6 +45,13 @@ function Palette({ onRun, onOpenChange, onModEnter }: { onRun(fruit: string): vo
             <CommandPalette.Popup>
                 <CommandPalette.Input
                     aria-label="Jump to"
+                    trailing={
+                        complete !== undefined && (
+                            <button type="button" onClick={() => setQuery(complete)}>
+                                Complete
+                            </button>
+                        )
+                    }
                     onKeyDown={(event) => {
                         if (onModEnter && event.key === 'Enter' && event.metaKey && highlight !== undefined) {
                             event.preventBaseUIHandler();
@@ -130,6 +147,19 @@ describe.skipIf(typeof document === 'undefined')('a combobox and a command palet
         });
         expect(elsewhere).toEqual(['Apricot']);
         expect(runs).toEqual([]);
+    });
+
+    test('highlights the first row again when the app sets the query', async () => {
+        const runs: string[] = [];
+        await mount(<Palette onRun={(fruit) => runs.push(fruit)} onOpenChange={() => {}} complete="a" />);
+        const input = document.querySelector<HTMLInputElement>('input[aria-label="Jump to"]')!;
+        await act(async () => key(input, 'ArrowDown'));
+        expect(highlighted()).toEqual(['Apricot']);
+        await act(async () => document.querySelector<HTMLButtonElement>('button')!.click());
+        expect(input.value).toBe('a');
+        expect(highlighted()).toEqual(['Apple']);
+        await act(async () => key(input, 'Enter'));
+        expect(runs).toEqual(['Apple']);
     });
 
     test('says so when nothing matches, and closes on Escape', async () => {
