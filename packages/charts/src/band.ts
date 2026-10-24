@@ -94,9 +94,10 @@ export function columnsIn(left: number, bucket: number, count: number, widthOf?:
 
 /*
  * The rectangle of one value of a column, from its base to its top in pixels. A segment stacked on
- * another leaves 1px of the ground between them, and a value that is not zero never vanishes.
+ * another leaves 1px of the ground between them, and a value that is not zero never vanishes. `least` gives every
+ * value, zero too, that many pixels away from its base.
  */
-export function segmentOf(topPixel: number, basePixel: number, onGround: boolean, value: number): { y: number; height: number } {
+export function segmentOf(topPixel: number, basePixel: number, onGround: boolean, value: number, least = 0): { y: number; height: number } {
     const upward = topPixel <= basePixel;
     let top = Math.round(Math.min(topPixel, basePixel));
     let bottom = Math.round(Math.max(topPixel, basePixel));
@@ -104,6 +105,9 @@ export function segmentOf(topPixel: number, basePixel: number, onGround: boolean
         bottom -= 1;
     } else if (!onGround) {
         top += 1;
+    }
+    if (least > 0 && bottom - top < least) {
+        return upward ? { y: bottom - least, height: least } : { y: top, height: least };
     }
     if (value !== 0 && bottom - top < 1) {
         return upward ? { y: bottom - 1, height: 1 } : { y: top, height: 1 };

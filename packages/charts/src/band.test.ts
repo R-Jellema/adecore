@@ -67,6 +67,13 @@ describe('columns', () => {
         expect(segmentOf(99.8, 100, true, 0.01)).toEqual({ y: 99, height: 1 });
         expect(segmentOf(100, 100, true, 0)).toEqual({ y: 100, height: 0 });
     });
+
+    test('a least height lifts a zero and a small value off the ground, and leaves a taller one be', () => {
+        expect(segmentOf(100, 100, true, 0, 3)).toEqual({ y: 97, height: 3 });
+        expect(segmentOf(99, 100, true, 1, 3)).toEqual({ y: 97, height: 3 });
+        expect(segmentOf(101, 100, true, -1, 3)).toEqual({ y: 100, height: 3 });
+        expect(segmentOf(40, 100, true, 6, 3)).toEqual({ y: 40, height: 60 });
+    });
 });
 
 describe('value labels', () => {

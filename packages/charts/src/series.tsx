@@ -65,6 +65,8 @@ export interface ChartBarProps<Row> {
     readonly columnWidth?: (bucket: number) => number;
     /* The corner radius of a column that stands alone; stacked segments stay square. */
     readonly radius?: number;
+    /* The least height of a column that stands alone, in pixels, also for a zero; a missing value still draws nothing. */
+    readonly minHeight?: number;
     /* Writes each column's value over it, as the y axis writes it or through the function; labels that would collide move up a row. */
     readonly valueLabels?: boolean | ((value: number, row: Row, index: number) => string);
     readonly className?: string;
@@ -326,6 +328,7 @@ export function ChartBar<Row>({
     dimOpacity = OUT_OF_FOCUS,
     columnWidth,
     radius = 2,
+    minHeight = 0,
     valueLabels,
     className,
     ref
@@ -373,7 +376,7 @@ export function ChartBar<Row>({
             return [];
         }
         const column = columnsIn(bucket.left, bucket.width, count, columnWidth)[slot]!;
-        const { y, height } = segmentOf(topPixel, basePixel, base === 0, amount);
+        const { y, height } = segmentOf(topPixel, basePixel, base === 0, amount, bars?.stack === true ? 0 : minHeight);
         const focused = index === chart.activeIndex || chart.selected[index] === true;
         const outOfFocus = chart.dimmed[index] === true || (anySelected && !focused);
         const run = groupOf(index);
