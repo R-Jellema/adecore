@@ -67,6 +67,24 @@ describe('positioning the ports of a file tree', () => {
         expect(ports[0]!.decoration.style.left).toBe('226px');
     });
 
+    test('puts the decoration after the git status column when asked, and keeps the space after that column', () => {
+        const log: Access[] = [];
+        const placed = port(log);
+        const sections = new Map<string, HTMLElement>([
+            ['[data-item-section="content"]', { offsetLeft: 30, offsetWidth: 100 } as HTMLElement],
+            ['[data-item-section="git"]', { offsetLeft: 140, offsetWidth: 16 } as HTMLElement],
+            ['[data-item-section="icon"]', { offsetLeft: 4 } as HTMLElement]
+        ]);
+        placed.rowElement.querySelector = ((selector: string) => sections.get(selector) ?? null) as HTMLElement['querySelector'];
+        positionPorts([placed], 'after-status');
+        expect(placed.decoration.style.left).toBe('172px');
+        expect(placed.rowElement.style.getPropertyValue('--adecore-tree-status-space')).toBe('20px');
+        expect(placed.rowElement.style.getPropertyValue('--adecore-tree-decoration-space')).toBe('0px');
+        positionPorts([placed]);
+        expect(placed.decoration.style.left).toBe('146px');
+        expect(placed.rowElement.style.getPropertyValue('--adecore-tree-decoration-space')).toBe('20px');
+    });
+
     test('measures once when the spaces stay what they were', () => {
         const log: Access[] = [];
         const ports = Array.from({ length: 60 }, () => port(log));

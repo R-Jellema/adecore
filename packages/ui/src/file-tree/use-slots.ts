@@ -37,29 +37,35 @@ function mountedRows(model: FileTree, shadow: ShadowRoot, elements: readonly HTM
     return elements.every((element) => element.dataset.itemPath === undefined || paths.has(element.dataset.itemPath)) ? rows : visibleRows(model);
 }
 
+/* Where a row's own decoration goes: between the name and the engine's git status column, or after that column. */
+export type FileTreeDecorationOrder = 'before-status' | 'after-status';
+
 /*
  * Lines the ports up with their rows: every size first, then the spaces they reserve, then every offset,
  * then the ports, so a pass forces two layouts at most however many rows are mounted.
  */
-export function positionPorts(ports: Iterable<Port>): void {
+export function positionPorts(ports: Iterable<Port>, order: FileTreeDecorationOrder = 'before-status'): void {
     const spaced = [...ports].map((port) => ({
         port,
+        // Without a git column, after the column is right after the name.
+        status: order === 'after-status' ? port.rowElement.querySelector<HTMLElement>('[data-item-section="git"]') : null,
         control: port.lightControl.childNodes.length > 0 ? Math.ceil(port.lightControl.getBoundingClientRect().width) + 6 : 0,
         decoration: port.lightDecoration.childNodes.length > 0 ? Math.ceil(port.lightDecoration.getBoundingClientRect().width) + 6 : 0
     }));
-    for (const { port, control, decoration } of spaced) {
+    for (const { port, status, control, decoration } of spaced) {
         setSpace(port.rowElement, '--adecore-tree-control-space', control);
-        setSpace(port.rowElement, '--adecore-tree-decoration-space', decoration);
+        setSpace(port.rowElement, '--adecore-tree-decoration-space', status === null ? decoration : 0);
+        setSpace(port.rowElement, '--adecore-tree-status-space', status === null ? 0 : decoration);
     }
-    const placed = spaced.map(({ port, control, decoration }) => {
+    const placed = spaced.map(({ port, status, control, decoration }) => {
         const row = port.rowElement;
-        const content = row.querySelector<HTMLElement>('[data-item-section="content"]');
+        const before = status ?? row.querySelector<HTMLElement>('[data-item-section="content"]');
         const icon = row.querySelector<HTMLElement>('[data-item-section="icon"]');
         return {
             port,
             top: `${row.offsetTop}px`,
             controlLeft: `${row.offsetLeft + (icon?.offsetLeft ?? 4) - control}px`,
-            decorationLeft: `${row.offsetLeft + (content === null ? row.offsetWidth - decoration - 2 : content.offsetLeft + content.offsetWidth + 6)}px`
+            decorationLeft: `${row.offsetLeft + (before === null ? row.offsetWidth - decoration - 2 : before.offsetLeft + before.offsetWidth + 6)}px`
         };
     });
     for (const { port, top, controlLeft, decorationLeft } of placed) {
@@ -79,7 +85,7 @@ function setSpace(row: HTMLElement, name: string, space: number): void {
 }
 
 // beta.6 owns button rows. Sibling slots keep real controls outside those buttons and in the app's stylesheet.
-export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, label: string) {
+export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, label: string, order: FileTreeDecorationOrder) {
     const prefix = useId().replaceAll(':', '');
     const [slots, setSlots] = useState<RowSlot[]>([]);
 
@@ -95,7 +101,7 @@ export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, lab
         let pending = false;
         let snapshot: string | null = null;
 
-        const position = (): void => positionPorts(ports.values());
+        const position = (): void => positionPorts(ports.values(), order);
 
         const resize = new ResizeObserver(position);
         const dropPort = (port: Port): void => {
@@ -229,10 +235,11 @@ export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, lab
             for (const port of ports.values()) {
                 port.rowElement.style.removeProperty('--adecore-tree-control-space');
                 port.rowElement.style.removeProperty('--adecore-tree-decoration-space');
+                port.rowElement.style.removeProperty('--adecore-tree-status-space');
                 dropPort(port);
             }
         };
-    }, [frame, model, label, prefix]);
+    }, [frame, model, label, order, prefix]);
 
     return slots;
 }

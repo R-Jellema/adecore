@@ -55,6 +55,8 @@ export function ReviewFiles() {
 
 The decoration here counts every viewed file, not the ones in that directory. A checkbox for a whole directory computes `checked` and `indeterminate` from your own set of descendants, and needs a rule for directories that are not fully loaded.
 
+When the model has git status, the engine draws it in a column of its own after the name, and the decoration sits between the name and that column. `decorationOrder="after-status"` moves the decoration after the column instead, for a row whose status reads first and a label of its own, such as a branch, follows it.
+
 `FileTree.Checkbox` is [`Tree.Checkbox`](/ui/display/tree/reference#controls). Tab reaches it and Space toggles it, and checking it never selects, activates or folds the row. Wrap any other control in `FileTree.Control`, and put counts and status in `FileTree.Decoration`, written with the [formatters](/ui/formatting/).
 
 ## Slots

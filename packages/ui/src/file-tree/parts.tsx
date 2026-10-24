@@ -8,7 +8,7 @@ import clsx from 'clsx';
 import { mergeRefs } from '../merge-refs.ts';
 import { directoryHandle, extendsSelection, followFocus, movesFocus, menuTargetsOf, rowPathOf, visibleRows } from './helpers.ts';
 import { useFileTreeShift } from './use-file-tree-shift.tsx';
-import { useFileTreeSlots } from './use-slots.ts';
+import { useFileTreeSlots, type FileTreeDecorationOrder } from './use-slots.ts';
 
 export type FileTreeRootProps = useRender.ComponentProps<'div'> & {
     model: FileTree;
@@ -23,6 +23,8 @@ export type FileTreeRootProps = useRender.ComponentProps<'div'> & {
     onExpandedPathsChange?(paths: readonly string[]): void;
     renderControl?(row: FileTreeVisibleRow): ReactNode;
     renderDecoration?(row: FileTreeVisibleRow): ReactNode;
+    /* `after-status` draws the decoration after the engine's git status column instead of between the name and that column. */
+    decorationOrder?: FileTreeDecorationOrder;
     treeProps?: Omit<PierreProps, 'model'>;
 };
 
@@ -43,6 +45,7 @@ export function FileTreeRoot({
     onRowDragStart,
     renderControl,
     renderDecoration,
+    decorationOrder = 'before-status',
     treeProps,
     render,
     className,
@@ -60,7 +63,7 @@ export function FileTreeRoot({
         attach(node as HTMLElement | null);
         mergeRefs<Element>(ref)(node);
     };
-    const slots = useFileTreeSlots(model, frame, label ?? t('tree.label'));
+    const slots = useFileTreeSlots(model, frame, label ?? t('tree.label'), decorationOrder);
     const latestLoads = useRef({ onLoadChildren, onExpandedPathsChange });
     useLayoutEffect(() => {
         latestLoads.current = { onLoadChildren, onExpandedPathsChange };

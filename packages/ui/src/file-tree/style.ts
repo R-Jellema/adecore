@@ -20,6 +20,7 @@ export const FILE_TREE_CSS = `
     [data-item-section="content"] :where([data-truncate-group-container], [data-truncate-group-container] div, [data-truncate-container], [data-truncate-container] div) { display: inline; }
     [data-item-section="content"] [data-truncate-content] { direction: ltr; }
     [data-item-section="content"] :where([data-truncate-content="overflow"], [data-truncate-marker-cell], [data-truncate-fill]) { display: none; }
+    [data-item-section="git"] { margin-inline-end: var(--adecore-tree-status-space, 0px); }
     [data-tree-port] { position: absolute; z-index: 4; display: flex; align-items: center; height: 25px; pointer-events: none; }
     [data-tree-port] > slot { pointer-events: auto; }
 `;
