@@ -1,12 +1,12 @@
-import { useContext, useId, type ReactNode, type Ref } from 'react';
+import { useContext, useId, useRef, useState, type ReactNode, type Ref } from 'react';
 import clsx from 'clsx';
 import type { IconProps } from '@adecore/ui';
 import { area, curveLinear, curveMonotoneX, curveStepAfter, line } from 'd3-shape';
 import { numberOf, readValue } from './access.ts';
-import { columnsIn, LABEL_LIFT, placeValueLabels, segmentOf } from './band.ts';
+import { columnsIn, guessLabelWidth, LABEL_LIFT, placeValueLabels, segmentOf } from './band.ts';
 import { colorOf, seriesColor } from './color.ts';
 import { BarsContext, useChartContext, type ChartContextValue } from './context.ts';
-import { useKeyCheck, useRegistration } from './register.ts';
+import { useBeforePaint, useKeyCheck, useRegistration } from './register.ts';
 import type { ChartAccessor, ChartColor, ChartCurve } from './types.ts';
 
 export interface ChartLineProps<Row> {
@@ -306,6 +306,8 @@ export function ChartBar<Row>({
 }: ChartBarProps<Row>) {
     const [chart, id, values] = useSeriesValues('Chart.Bar', value);
     const bars = useContext(BarsContext);
+    const labels = useRef<SVGGElement>(null);
+    const [widths, setWidths] = useState<ReadonlyMap<string, number>>(() => new Map());
     const rows = chart.data as Row[];
     const rowColors = typeof tone === 'function' ? rows.map((row, index) => colorOf(tone(row, index))!) : null;
     const color = typeof tone === 'function' ? (rowColors?.[0] ?? null) : colorOf(tone);
@@ -352,7 +354,21 @@ export function ChartBar<Row>({
         const text = valueLabels === undefined || valueLabels === false ? '' : writeValue(amount, rows[index]!, index);
         return [{ index, column, y, height, alpha, outOfFocus, text }];
     });
-    const labelTops = placeValueLabels(drawn.map(({ column, y, text }) => ({ center: column.x + column.width / 2, top: y, text })));
+    const labelTops = placeValueLabels(
+        drawn.map(({ column, y, text }) => ({ center: column.x + column.width / 2, top: y, width: widths.get(text) ?? guessLabelWidth(text) }))
+    );
+
+    useBeforePaint(() => {
+        const texts = [...(labels.current?.querySelectorAll('text') ?? [])];
+        if (texts.length === 0 || typeof texts[0]!.getComputedTextLength !== 'function') {
+            return;
+        }
+        const next = new Map(texts.map((node) => [node.textContent ?? '', Math.ceil(node.getComputedTextLength())]));
+        if (next.size !== widths.size || [...next].some(([text, width]) => widths.get(text) !== width)) {
+            setWidths(next);
+        }
+    });
+
     return (
         <g ref={ref} className={clsx('pointer-events-none', className)}>
             {drawn.map(({ index, column, y, height, alpha }) => (
@@ -367,29 +383,31 @@ export function ChartBar<Row>({
                     style={{ fill: rowColors?.[index] ?? color ?? fallback }}
                 />
             ))}
-            {valueLabels !== undefined &&
-                valueLabels !== false &&
-                drawn.map(({ index, column, y, outOfFocus, text }, i) => {
-                    const center = Math.round(column.x + column.width / 2);
-                    const baseline = labelTops[i]!;
-                    return (
-                        <g key={`label-${index}`} opacity={outOfFocus ? dimOpacity : 1} aria-hidden>
-                            {baseline < y - LABEL_LIFT - 6 && (
-                                <line x1={center + 0.5} x2={center + 0.5} y1={y - 4} y2={baseline + 4} className="stroke-border-strong" />
-                            )}
-                            <text
-                                x={center}
-                                y={baseline}
-                                textAnchor="middle"
-                                strokeWidth={3}
-                                paintOrder="stroke"
-                                className="fill-text stroke-surface text-xs tabular-nums"
-                            >
-                                {text}
-                            </text>
-                        </g>
-                    );
-                })}
+            <g ref={labels}>
+                {valueLabels !== undefined &&
+                    valueLabels !== false &&
+                    drawn.map(({ index, column, y, outOfFocus, text }, i) => {
+                        const center = Math.round(column.x + column.width / 2);
+                        const baseline = labelTops[i]!;
+                        return (
+                            <g key={`label-${index}`} opacity={outOfFocus ? dimOpacity : 1} aria-hidden>
+                                {baseline < y - LABEL_LIFT - 2 && (
+                                    <line x1={center + 0.5} x2={center + 0.5} y1={y - 4} y2={baseline + 4} className="stroke-border-strong" />
+                                )}
+                                <text
+                                    x={center}
+                                    y={baseline}
+                                    textAnchor="middle"
+                                    strokeWidth={3}
+                                    paintOrder="stroke"
+                                    className="fill-text stroke-surface text-2xs tabular-nums"
+                                >
+                                    {text}
+                                </text>
+                            </g>
+                        );
+                    })}
+            </g>
         </g>
     );
 }

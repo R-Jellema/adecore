@@ -26,6 +26,8 @@ export const formatDateTime = (at: Date | number, options: Intl.DateTimeFormatOp
 const CLOCK: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' };
 const WEEKDAY_CLOCK: Intl.DateTimeFormatOptions = { weekday: 'short', hour: '2-digit', minute: '2-digit' };
 const HOUR: Intl.DateTimeFormatOptions = { hour: 'numeric' };
+const WEEKDAY: Intl.DateTimeFormatOptions = { weekday: 'short' };
+const WEEKDAY_LONG: Intl.DateTimeFormatOptions = { weekday: 'long' };
 const DAY: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
 const DAY_WITH_YEAR: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
 const WEEKDAY_DAY: Intl.DateTimeFormatOptions = { weekday: 'short', month: 'short', day: 'numeric' };
@@ -44,6 +46,9 @@ export const formatWeekdayClock = (at: Date | number): string => formatDateTime(
 
 /* An hour of the day on its own, for the foot of a chart: `08`, or `8 AM` where that is the clock. */
 export const formatHour = (at: Date | number): string => formatDateTime(at, HOUR);
+
+/* The day of the week on its own, for the side of a grid by weekday: `Sat`, or `Saturday` when `long`. */
+export const formatWeekday = (at: Date | number, width: 'short' | 'long' = 'short'): string => formatDateTime(at, width === 'long' ? WEEKDAY_LONG : WEEKDAY);
 
 /* `19 Sep`, the short date a row falls back to once "days ago" stops meaning anything. */
 export const formatDay = (at: Date | number, timeZone?: string): string => formatDateTime(at, timeZone === undefined ? DAY : { ...DAY, timeZone });

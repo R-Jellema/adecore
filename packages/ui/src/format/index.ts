@@ -11,6 +11,7 @@ export {
     formatHour,
     formatMoment,
     formatNumericDate,
+    formatWeekday,
     formatWeekdayClock,
     formatWeekdayDay,
     isSameDay

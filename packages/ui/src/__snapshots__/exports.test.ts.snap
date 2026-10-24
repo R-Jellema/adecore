@@ -328,6 +328,7 @@ exports[`the public API ./format exports these names 1`] = `
   "formatRounded",
   "formatTokens",
   "formatUsdSignificant",
+  "formatWeekday",
   "formatWeekdayClock",
   "formatWeekdayDay",
   "isSameDay",

@@ -9,6 +9,7 @@ import {
     formatHour,
     formatMoment,
     formatNumericDate,
+    formatWeekday,
     formatWeekdayClock,
     formatWeekdayDay,
     isSameDay,
@@ -32,6 +33,8 @@ export default function DatesDemo() {
                 rows={[
                     ['formatClock(at)', formatClock(AT)],
                     ['formatHour(at)', formatHour(AT)],
+                    ['formatWeekday(at)', formatWeekday(AT)],
+                    ['formatWeekday(at, long)', formatWeekday(AT, 'long')],
                     ['formatWeekdayClock(at)', formatWeekdayClock(AT)],
                     ['formatDay(at)', formatDay(AT)],
                     ['formatDayWithYear(at)', formatDayWithYear(AT)],

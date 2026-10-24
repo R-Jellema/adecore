@@ -72,10 +72,10 @@ describe('columns', () => {
 describe('value labels', () => {
     test('stand just over their column, and over every label in the way', () => {
         const [first, second, third, fourth] = placeValueLabels([
-            { center: 10, top: 100, text: '71.2' },
-            { center: 30, top: 102, text: '70.8' },
-            { center: 50, top: 101, text: '70.9' },
-            { center: 200, top: 102, text: '70.8' }
+            { center: 10, top: 100, width: 28 },
+            { center: 30, top: 102, width: 28 },
+            { center: 50, top: 101, width: 28 },
+            { center: 200, top: 102, width: 28 }
         ]);
         expect(first).toBe(100 - LABEL_LIFT);
         expect(first! - second!).toBeGreaterThanOrEqual(16);

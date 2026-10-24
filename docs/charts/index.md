@@ -1,9 +1,9 @@
 # @adecore/charts
 
-Charts in the theme of `@adecore/ui`: a series over time or per category as lines, areas and columns, a scatter of points with a legend of many series beside it, and a sparkline for a row or a tile. A chart takes its width from its container, draws on whole pixels, and is one stop for the keyboard that a screen reader reads bucket by bucket. `d3-scale` and `d3-shape` do the math; the package draws everything itself.
+Charts in the theme of `@adecore/ui`: a series over time or per category as lines, areas and columns, a [scatter](/charts/scatter) of points with a legend of many series beside it, a sparkline for a row or a tile, and a [heatmap](/charts/heatmap) of rows by columns. A chart takes its width from its container, draws on whole pixels, and is one stop for the keyboard that a screen reader reads bucket by bucket. `d3-scale` and `d3-shape` do the math; the package draws everything itself.
 
 ```tsx
-import { Chart, SeriesLegend, Sparkline, createChart, useChart } from '@adecore/charts';
+import { Chart, Heatmap, SeriesLegend, Sparkline, createChart, useChart } from '@adecore/charts';
 ```
 
 <Demo src="charts/errors-per-hour" />
@@ -51,6 +51,8 @@ A chart is a compound component, like `Menu` and `Dialog` in `@adecore/ui`. `Cha
 | [`Chart.Table`](/charts/series#tooltip-legend-and-table) | A toggle that shows every value as a table. |
 | [`Chart.Layer`](/charts/use-chart) | A group in the plot for a drawing of the app's own. |
 | [`Chart.Group`](/charts/shared-cursor) | Charts that share one cursor. |
+
+The spans of a trace are no series: [`Timeline`](/charts/timeline) draws them as a tree of rows that folds, with a bar per span on one axis of durations.
 
 ## Colors
 

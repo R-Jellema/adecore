@@ -108,13 +108,13 @@ const ScoreChart = createChart<ModelScore>();
 </ScoreChart.Root>
 ```
 
-`Chart.GroupAxis` is a second row of labels under the x axis, one per group and centered under it. It is HTML, so a mark or a logo fits. Its `children` is a function of the group (`ChartBucketGroup`: its `key`, its `label`, its `rows` and the index of its `first` and `last` bucket); the props are `ChartGroupAxisProps`.
+`Chart.GroupAxis` is a second row of labels under the x axis, one per group and centered under it. It is HTML, so a mark or a logo fits. A label takes the width of its columns plus half the gap on each side before it wraps. Its `children` is a function of the group (`ChartBucketGroup`: its `key`, its `label`, its `rows` and the index of its `first` and `last` bucket); the props are `ChartGroupAxisProps`.
 
 The arrow keys keep moving column by column, across the edges of the groups, and Page Up and Page Down jump to the first column of the previous or the next group. The live region names the group first ("Atlas 5, high, Intelligence 71").
 
 The key of a group is its identity, which need not be what a person reads, such as the id of a model. `groupLabel` on the root reads the name from the rows, as a key or a function: `groupLabel="modelName"`. The tooltip, the live region and the table read it, and `Chart.GroupAxis` hands it to its children as `label`.
 
-`minBucketWidth` is the narrowest a bucket may be. Below it the plot grows wider than its box and scrolls sideways, while the y axis stays in place.
+`minBucketWidth` is the narrowest a bucket may be. Below it the plot grows wider than its box and scrolls sideways, while the y axis stays in place. What hangs out of the first buckets, such as a value label or a slanted name, may run over the y axis until the plot scrolls.
 
 ## Picking columns
 
@@ -149,6 +149,6 @@ The rows stack in the order of the children. The tooltip, the live region and th
 
 ## Value labels
 
-`valueLabels` on `Chart.Bar` writes each column's value over it, as the y axis writes values, or through a function of the value, the row and its index: `valueLabels={(value, row) => row.summary}`. Where two labels would collide, the later one moves up over the other, with a thin line down to its column once it has moved a row. A label dims with its column when the column is dimmed or another is picked, and stays as it is while the cursor is elsewhere. The scores per model above write theirs.
+`valueLabels` on `Chart.Bar` writes each column's value over it, as the y axis writes values, or through a function of the value, the row and its index: `valueLabels={(value, row) => row.summary}`. The labels are in `text-2xs`, 10px over their column. Where two labels would collide by their measured width, the later one moves up over the other, with a thin line down to its column once it has moved a row. A label dims with its column when the column is dimmed or another is picked, and stays as it is while the cursor is elsewhere. The scores per model above write theirs.
 
 The root keeps 24px above the plot for one row of labels over the tallest column. Labels that move up further need more: set `marginTop`. The labels are drawn for the eye; the tooltip, the live region and the table carry the same numbers for a screen reader.

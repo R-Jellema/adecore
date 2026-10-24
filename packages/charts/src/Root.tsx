@@ -158,6 +158,10 @@ export function ChartRoot<Row>({
     const inset = band || bucketStep > 0 ? 0 : INSET;
     const layout = band ? bandLayout(xs.length, groupKeys, room, minBucketWidth, groupGap) : null;
     const width = layout === null ? room : Math.max(room, Math.ceil(layout.width));
+    const scrolls = layout !== null && width > room;
+    // A scrolling plot clips what hangs out of its first buckets, such as a value label or a slanted name, so the
+    // scroller reaches over the y axis by its width and gives that back as padding: the plot stays where it was.
+    const overhang = scrolls ? leftAxis : 0;
     const xRows = [...xAxes.values()];
     const bottom = height - 4 - (xRows.length === 0 ? 0 : X_AXIS_GAP + xRows.reduce((sum, row) => sum + row.room, 0));
     const top = Math.max(marginTop, axes.top ?? 0, [...series.values()].some((entry) => entry.valueLabels) ? VALUE_LABEL_ROOM : 0);
@@ -419,8 +423,9 @@ export function ChartRoot<Row>({
         const box = scroller.current;
         if (box !== null && box.scrollWidth > box.clientWidth) {
             const center = centerOf(target);
-            if (center < box.scrollLeft || center > box.scrollLeft + box.clientWidth) {
-                box.scrollLeft = Math.max(0, center - box.clientWidth / 2);
+            const visible = box.clientWidth - overhang;
+            if (center < box.scrollLeft || center > box.scrollLeft + visible) {
+                box.scrollLeft = Math.max(0, center - visible / 2);
             }
         }
     };
@@ -477,7 +482,6 @@ export function ChartRoot<Row>({
     };
 
     const pressable = onActivate !== undefined && (layout !== null || points);
-    const scrolls = layout !== null && width > room;
     // A reference line holds for every bucket, so a screen reader hears it once with the chart instead of in every bucket.
     const ruleText = rules.size === 0 ? null : `${[...rules.values()].map((rule) => `${rule.label} ${formatY(rule.value)}`).join(', ')}.`;
     const hint = [
@@ -501,6 +505,16 @@ export function ChartRoot<Row>({
                     <div
                         ref={scroller}
                         className={clsx('min-w-0 flex-1', scrolls ? 'overflow-x-auto overflow-y-hidden overscroll-x-contain' : 'overflow-visible')}
+                        style={
+                            overhang > 0
+                                ? {
+                                      marginLeft: -overhang,
+                                      paddingLeft: overhang,
+                                      // Scrolled, the columns would pass over the y axis labels; only the start may hang there.
+                                      clipPath: scroll > 0 ? `inset(0 0 0 ${overhang}px)` : undefined
+                                  }
+                                : undefined
+                        }
                         onScroll={(e) => setScroll(e.currentTarget.scrollLeft)}
                     >
                         <svg

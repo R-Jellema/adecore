@@ -148,6 +148,8 @@ const charts: DefaultTheme.SidebarItem[] = [
         ['Scatter and series legend', '/charts/scatter'],
         ['Shared cursor', '/charts/shared-cursor'],
         ['Sparkline', '/charts/sparkline'],
+        ['Heatmap', '/charts/heatmap'],
+        ['Timeline', '/charts/timeline'],
         ['useChart', '/charts/use-chart']
     ])
 ];

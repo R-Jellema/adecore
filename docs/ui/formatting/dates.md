@@ -14,6 +14,7 @@ Every function takes a `Date` or epoch milliseconds, so a time in epoch seconds,
 | --- | --- |
 | `formatClock(at)` | The time: `08:05`, or `08:05 AM` in a region that counts to twelve. |
 | `formatHour(at)` | An hour on its own, for the axis of a chart: `08`, or `8 AM`. |
+| `formatWeekday(at, width?)` | The day of the week on its own, for the side of a grid by weekday: `Sat`, or `Saturday` with `'long'`. |
 | `formatWeekdayClock(at)` | A time far enough off that its day is part of the answer: `Sat 08:05`. |
 | `formatDay(at)` | The short date a row falls back to once "days ago" stops meaning anything: `19 Sep`. |
 | `formatDayWithYear(at)` | The same with the year, for anything older than this year. |
