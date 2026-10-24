@@ -58,6 +58,8 @@ The grid is one tab stop, a `group` with the role description "heatmap" and `lab
 
 A polite live region reads each cell the keyboard moves to: "Monday, 09:00, Events 41". The values are also in a table for a screen reader; `table` adds a "Show values" toggle that shows it to everyone.
 
+`onActiveChange` hears the cell under the pointer or the keyboard as a `HeatmapCell`, its `row` and `column` as indexes into `rows` and `columns`, and `null` once it leaves the grid. The first demo uses it to let the line under the grid follow the cell.
+
 ## Props
 
 | Prop | Type | Default | |
@@ -73,6 +75,7 @@ A polite live region reads each cell the keyboard moves to: "Monday, 09:00, Even
 | `cellHeight` | `number` | `16` | Pixels. The width of a cell follows the container. |
 | `legend` | `boolean` | `true` | |
 | `table` | `boolean` | `false` | Shows the "Show values" toggle. |
+| `onActiveChange` | `(cell: HeatmapCell \| null) => void` | | Hears the cell under the pointer or the keyboard. |
 | `className`, `ref` | | | On the outer `<div>`. |
 
 The props are `HeatmapProps`.

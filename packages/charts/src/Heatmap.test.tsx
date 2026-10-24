@@ -91,6 +91,23 @@ describe.skipIf(typeof document === 'undefined')('a mounted heatmap', () => {
         expect(live()).toBe('');
     });
 
+    test('tells the app which cell the pointer or the keyboard is on, once per change', async () => {
+        const heard: ({ row: number; column: number } | null)[] = [];
+        const group = await mount(
+            <Heatmap rows={ROWS} columns={COLUMNS} values={VALUES} label="Events" valueLabel="Events" onActiveChange={(cell) => heard.push(cell)} />
+        );
+        const hover = async (): Promise<void> => {
+            await act(async () => {
+                cells()[4]!.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+            });
+        };
+        await hover();
+        await hover();
+        await press(group, 'ArrowRight');
+        await press(group, 'Escape');
+        expect(heard).toEqual([{ row: 1, column: 1 }, { row: 1, column: 2 }, null]);
+    });
+
     test('drops the card of the keyboard when the focus leaves', async () => {
         const group = await mount();
         await press(group, 'ArrowRight');

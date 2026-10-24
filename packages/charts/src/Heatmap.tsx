@@ -7,6 +7,8 @@ import { colorOf } from './color.ts';
 import { heatShare, heatStep, moveCell, type HeatCell } from './heat.ts';
 import type { ChartColor } from './types.ts';
 
+export type HeatmapCell = HeatCell;
+
 /* A row or a column of a heatmap. */
 export interface HeatmapAxisItem {
     readonly key: string | number;
@@ -36,6 +38,8 @@ export interface HeatmapProps {
     readonly legend?: boolean;
     /* Adds a "Show values" toggle; without it the table is there for a screen reader only. */
     readonly table?: boolean;
+    /* The cell under the pointer or the keyboard, by index into `rows` and `columns`; null when it leaves the grid. */
+    readonly onActiveChange?: (cell: HeatmapCell | null) => void;
     readonly className?: string;
     readonly ref?: Ref<HTMLDivElement>;
 }
@@ -67,6 +71,7 @@ export function Heatmap({
     cellHeight = 16,
     legend = true,
     table = false,
+    onActiveChange,
     className,
     ref
 }: HeatmapProps) {
@@ -87,6 +92,13 @@ export function Heatmap({
     };
     const current = active !== null && active.row < rows.length && active.column < columns.length ? active : null;
 
+    const activate = (cell: HeatCell | null): void => {
+        setActive(cell);
+        if (cell?.row !== current?.row || cell?.column !== current?.column) {
+            onActiveChange?.(cell);
+        }
+    };
+
     const onKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
         const target = moveCell(e.key, current, rows.length, columns.length, e.ctrlKey || e.metaKey);
         if (target === undefined) {
@@ -94,7 +106,7 @@ export function Heatmap({
         }
         e.preventDefault();
         setAnnounce(target !== null);
-        setActive(target);
+        activate(target);
     };
 
     return (
@@ -107,9 +119,9 @@ export function Heatmap({
                 aria-describedby={`${id}-hint`}
                 className="focus-ring rounded-xs"
                 onKeyDown={onKeyDown}
-                onPointerLeave={() => setActive(null)}
+                onPointerLeave={() => activate(null)}
                 onBlur={() => {
-                    setActive(null);
+                    activate(null);
                     setAnnounce(false);
                 }}
             >
@@ -146,7 +158,7 @@ export function Heatmap({
                                             style={{ height: cellHeight, backgroundColor: shade(color, heatShare(step, steps)) }}
                                             onPointerEnter={() => {
                                                 setAnnounce(false);
-                                                setActive({ row: rowIndex, column: columnIndex });
+                                                activate({ row: rowIndex, column: columnIndex });
                                             }}
                                         >
                                             {isActive && (
