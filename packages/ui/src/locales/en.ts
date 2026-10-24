@@ -39,6 +39,13 @@ export default {
         search: 'Search',
         noMatch: 'No match for “{{query}}”'
     },
+    combobox: {
+        suggestions: 'Suggestions'
+    },
+    palette: {
+        label: 'Command palette',
+        results: 'Results'
+    },
     iconPicker: {
         label: 'Icon',
         none: 'No icon',

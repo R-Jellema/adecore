@@ -3,6 +3,8 @@
  * `exports.test.ts` turns any change to this list into a diff someone has to accept.
  */
 
+export * as Combobox from './combobox/index.parts.ts';
+export * as CommandPalette from './command-palette/index.parts.ts';
 export * as ContextMenu from './context-menu/index.parts.ts';
 export * as FileTree from './file-tree/index.parts.ts';
 export * as Tree from './tree/index.parts.ts';
@@ -13,6 +15,8 @@ export * as Popover from './popover/index.parts.ts';
 export * as PreviewCard from './preview-card/index.parts.ts';
 export * as Tabs from './tabs/index.parts.ts';
 
+export type { ComboboxInputProps, ComboboxItemProps, ComboboxPopupProps } from './combobox/parts.tsx';
+export type { CommandPaletteFooterProps, CommandPaletteInputProps, CommandPalettePopupProps, CommandPaletteRootProps } from './command-palette/parts.tsx';
 export type { DialogDescriptionProps, DialogFooterProps, DialogPopupProps, DialogTextProps, DialogTitleProps } from './dialog/parts.tsx';
 export type {
     MenuCheckProps,
@@ -90,6 +94,7 @@ export type { LazyComponent } from './lazy.tsx';
 export { LazyBoundary } from './LazyBoundary.tsx';
 export type { LazyBoundaryProps } from './LazyBoundary.tsx';
 export { UI_NAMESPACE, UI_RESOURCES } from './locales.ts';
+export { matchScore } from './match.ts';
 export { isApplePlatform } from './platform.ts';
 export { prefetcher, type Loader, type WhenIdle } from './prefetch.ts';
 export { selectAllWithin, selectionWithin } from './selection.ts';

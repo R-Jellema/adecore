@@ -39,6 +39,13 @@ export default {
         search: 'Zoeken',
         noMatch: 'Geen resultaat voor “{{query}}”'
     },
+    combobox: {
+        suggestions: 'Suggesties'
+    },
+    palette: {
+        label: 'Opdrachtenpalet',
+        results: 'Resultaten'
+    },
     iconPicker: {
         label: 'Icoon',
         none: 'Geen icoon',
