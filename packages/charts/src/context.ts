@@ -55,6 +55,7 @@ export interface ChartContextValue {
     /* The visible width of the chart, both y axes included. */
     readonly box: number;
     readonly leftAxis: number;
+    readonly rightAxis: number;
     readonly centerOf: (index: number) => number;
     /* The span of a bucket a column stands in: on a band scale, or on a time scale with a step. */
     readonly bucketAt: (index: number) => { readonly left: number; readonly width: number } | null;

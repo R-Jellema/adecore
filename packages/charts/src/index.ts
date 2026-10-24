@@ -7,7 +7,7 @@ export { createChart, type TypedChart } from './create-chart.ts';
 export { Heatmap, type HeatmapAxisItem, type HeatmapProps } from './Heatmap.tsx';
 export type { ChartGroupProps, ChartLayerProps } from './layer.tsx';
 export { CHARTS_NAMESPACE, CHARTS_RESOURCES } from './locales.ts';
-export type { ChartBucket, ChartBucketValue, ChartLegendProps, ChartTableProps, ChartTooltipProps } from './overlays.tsx';
+export type { ChartBucket, ChartBucketValue, ChartLegendProps, ChartTableProps, ChartTooltipProps, ChartTooltipPlacement } from './overlays.tsx';
 export type { ChartRootProps } from './Root.tsx';
 export type { ChartEndLabelsProps, ChartFrontierProps, ChartPointSeries } from './scatter.tsx';
 export { SeriesLegend, type SeriesLegendGroup, type SeriesLegendItem, type SeriesLegendProps } from './SeriesLegend.tsx';

@@ -529,6 +529,7 @@ export function ChartRoot<Row>({
         scroll,
         box: size.width,
         leftAxis,
+        rightAxis,
         centerOf,
         bucketAt,
         pixelOfX,

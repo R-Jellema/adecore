@@ -1,8 +1,8 @@
-import { useId, useState, type ReactNode, type Ref } from 'react';
+import { useId, useState, type CSSProperties, type ReactNode, type Ref } from 'react';
 import { createPortal } from 'react-dom';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
-import { Button, Icon, Surface } from '@adecore/ui';
+import { Button, Icon, Surface, useContentSize } from '@adecore/ui';
 import { useChartContext, type ChartContextValue } from './context.ts';
 import type { SeriesEntry } from './store.ts';
 import type { ChartNote, ChartX } from './types.ts';
@@ -34,9 +34,16 @@ export interface ChartTooltipProps<Row> {
     readonly format?: (value: number) => string;
     /* What the card holds in place of its rows. */
     readonly children?: (bucket: ChartBucket<Row>) => ReactNode;
+    /*
+     * Beside the cursor (`cursor`), or fixed in a corner of the plot. A card in a corner moves to the other side where it
+     * would cover the bucket under the cursor.
+     */
+    readonly placement?: ChartTooltipPlacement;
     readonly className?: string;
     readonly ref?: Ref<HTMLDivElement>;
 }
+
+export type ChartTooltipPlacement = 'cursor' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
 export interface ChartLegendProps {
     readonly className?: string;
@@ -51,6 +58,8 @@ export interface ChartTableProps {
 /* Between the cursor and the card, and the least room the card keeps to the edge of the chart. */
 const OFFSET = 12;
 const EDGE = 4;
+/* Half the room a point takes, which a card in a corner keeps clear of. */
+const POINT_ROOM = 8;
 
 /* The color a series has in a row: its own per row, else on a point chart the color of the row's series. */
 const colorAt = (chart: ChartContextValue, id: string, entry: SeriesEntry, index: number): string =>
@@ -93,9 +102,10 @@ function NoteSwatch({ note }: { note: ChartNote }) {
 }
 
 /* The card at the cursor: the x of the bucket, a row per series, then its markers and bands. */
-export function ChartTooltip<Row>({ total = false, format, children, className, ref }: ChartTooltipProps<Row>) {
+export function ChartTooltip<Row>({ total = false, format, children, placement = 'cursor', className, ref }: ChartTooltipProps<Row>) {
     const chart = useChartContext('Chart.Tooltip');
     const { t } = useTranslation('charts');
+    const [measure, card] = useContentSize();
     const { activeIndex, elements } = chart;
     if (activeIndex < 0 || elements.tooltip === null || !chart.ownsCursor) {
         return null;
@@ -106,9 +116,23 @@ export function ChartTooltip<Row>({ total = false, format, children, className, 
     const pixel = chart.leftAxis + (position?.[0] ?? chart.centerOf(activeIndex)) - chart.scroll;
     // The card hangs on the side with the most room, so it never covers the cursor and never runs off.
     const right = pixel > chart.box / 2;
-    const place = right
+    let place: CSSProperties = right
         ? { right: Math.round(chart.box - pixel + OFFSET), maxWidth: Math.max(0, Math.round(pixel - OFFSET - EDGE)) }
         : { left: Math.round(pixel + OFFSET), maxWidth: Math.max(0, Math.round(chart.box - pixel - OFFSET - EDGE)) };
+    place = { ...place, top: position === null || position === undefined ? chart.plot.top : Math.max(0, Math.round(position[1]) - OFFSET) };
+    if (placement !== 'cursor') {
+        const plotLeft = chart.leftAxis + Math.max(0, chart.plot.left - chart.scroll);
+        const plotRight = Math.min(chart.box - chart.rightAxis, chart.leftAxis + chart.plot.right - chart.scroll);
+        const reach = (chart.bucketAt(activeIndex)?.width ?? 2 * POINT_ROOM) / 2;
+        const [vertical, horizontal] = placement.split('-') as ['top' | 'bottom', 'left' | 'right'];
+        const covers = (side: 'left' | 'right'): boolean => (side === 'left' ? pixel - reach < plotLeft + card.width : pixel + reach > plotRight - card.width);
+        const side = covers(horizontal) && !covers(horizontal === 'left' ? 'right' : 'left') ? (horizontal === 'left' ? 'right' : 'left') : horizontal;
+        place = {
+            ...(side === 'left' ? { left: Math.round(plotLeft) } : { right: Math.round(chart.box - plotRight) }),
+            top: vertical === 'top' ? Math.round(chart.plot.top) : Math.round(chart.plot.bottom - card.height),
+            maxWidth: Math.max(0, Math.round(plotRight - plotLeft))
+        };
+    }
     const sum = bucket.values.reduce((all, entry) => all + entry.value, 0);
     // A point names its series and itself; its x is a value like the others, under the title of its axis.
     const heading = chart.points
@@ -116,10 +140,17 @@ export function ChartTooltip<Row>({ total = false, format, children, className, 
         : [bucket.groupLabel, chart.rowLabels?.[activeIndex] ?? chart.formatX(bucket.x)].filter(Boolean).join(' · ');
     return createPortal(
         <Surface
-            ref={ref}
+            ref={(node: HTMLDivElement | null) => {
+                measure(node);
+                if (typeof ref === 'function') {
+                    ref(node);
+                } else if (ref) {
+                    ref.current = node;
+                }
+            }}
             aria-hidden
             className={clsx('absolute flex w-max min-w-36 flex-col gap-1 rounded-lg px-2.5 py-2 text-xs', className)}
-            style={{ top: position === null || position === undefined ? chart.plot.top : Math.max(0, Math.round(position[1]) - OFFSET), ...place }}
+            style={place}
         >
             {children !== undefined ? (
                 children(bucket)

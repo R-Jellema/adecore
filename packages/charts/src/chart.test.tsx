@@ -550,6 +550,33 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         }
     });
 
+    test('a tooltip in a corner stays there, and moves to the other side where it would cover the bucket', async () => {
+        const width = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth')!;
+        Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
+            configurable: true,
+            get(this: HTMLElement) {
+                return this.classList.contains('min-w-36') ? 120 : 600;
+            }
+        });
+        try {
+            const plot = await mount(
+                <Chart.Root data={SCORES} x="key" label="Scores">
+                    <Chart.Bar value="score" label="Score" />
+                    <Chart.Tooltip placement="top-right" />
+                </Chart.Root>
+            );
+            const card = (): HTMLElement => container.querySelector<HTMLElement>('.min-w-36')!;
+            await press(plot, 'Home');
+            await press(plot, 'End');
+            await press(plot, 'Home');
+            expect([card().style.right, card().style.left, card().style.top]).toEqual(['0px', '', '8px']);
+            await press(plot, 'End');
+            expect([card().style.right, card().style.left]).toEqual(['', '0px']);
+        } finally {
+            Object.defineProperty(HTMLElement.prototype, 'clientWidth', width);
+        }
+    });
+
     test('a second x axis writes its row under the first', async () => {
         await mount(
             <Chart.Root data={SCORES} x="key" label="Scores">
