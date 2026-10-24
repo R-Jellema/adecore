@@ -419,6 +419,8 @@ export function ChartRoot<Row>({
         }
         e.preventDefault();
         if (target === null) {
+            // A dialog around the chart closes on an Escape that reaches the document, whether or not it was prevented.
+            e.stopPropagation();
             setActiveX(null);
             return;
         }

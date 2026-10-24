@@ -487,4 +487,22 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         await press(plot, 'Escape');
         expect(plot.getAttribute('aria-activedescendant')).toBeNull();
     });
+
+    test('an Escape that clears the cursor stops at the chart, so a dialog around it stays open', async () => {
+        const reached: string[] = [];
+        const listen = (e: globalThis.KeyboardEvent): void => {
+            reached.push(e.key);
+        };
+        document.addEventListener('keydown', listen);
+        try {
+            const plot = await mount();
+            await press(plot, 'End');
+            await press(plot, 'Escape');
+            expect(reached).toEqual(['End']);
+            await press(plot, 'Escape');
+            expect(reached).toEqual(['End', 'Escape']);
+        } finally {
+            document.removeEventListener('keydown', listen);
+        }
+    });
 });
