@@ -101,14 +101,14 @@ export function IconPicker({
                         ref={trigger}
                         disabled={disabled}
                         aria-labelledby={`${id}-label ${id}-value`}
-                        className="field flex min-w-0 grow items-center gap-2 text-left hover:bg-surface-hover data-disabled:cursor-default data-disabled:opacity-50 data-disabled:hover:bg-field data-[popup-open]:bg-surface-hover"
+                        className="field flex w-auto min-w-0 items-center gap-2 text-left hover:bg-surface-hover data-disabled:cursor-default data-disabled:opacity-50 data-disabled:hover:bg-field data-[popup-open]:bg-surface-hover"
                     >
                         {glyph && <Icon icon={glyph} size={16} className="shrink-0 text-text" />}
                         {/* The icon says which it is; its name is there for a screen reader. */}
                         <span id={`${id}-value`} className={clsx('min-w-0 truncate', glyph ? 'sr-only' : 'text-text-faint')}>
                             {value ?? t('iconPicker.placeholder')}
                         </span>
-                        <Icon icon={ChevronDown} size={14} className="ms-auto shrink-0 text-text-faint" />
+                        <Icon icon={ChevronDown} size={14} className="shrink-0 text-text-faint" />
                     </PopoverTrigger>
                     {clearable && (
                         <Tooltip label={t('iconPicker.none')}>
@@ -121,7 +121,7 @@ export function IconPicker({
                                     trigger.current?.focus();
                                 }}
                             >
-                                <Icon icon={X} size={14} />
+                                <Icon icon={Ban} size={16} />
                             </Button>
                         </Tooltip>
                     )}
