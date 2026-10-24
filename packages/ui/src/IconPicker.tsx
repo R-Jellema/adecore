@@ -36,6 +36,8 @@ export interface IconPickerProps {
     onClear?: () => void;
     /* The label above the trigger. A surface that also takes an image calls this something else, or the two read as one list. */
     label?: string;
+    /* Leaves the label out of sight, for a row that names the control beside it; it still names the trigger. */
+    hideLabel?: boolean;
     className?: string;
     ref?: Ref<HTMLDivElement>;
 }
@@ -65,6 +67,7 @@ export function IconPicker({
     disabled = false,
     onClear,
     label,
+    hideLabel = false,
     className,
     ref
 }: IconPickerProps) {
@@ -75,6 +78,7 @@ export function IconPicker({
     const sections = sectionsOf(icons);
     const glyph = value === null ? undefined : sections.flatMap((section) => section.icons).find(([icon]) => icon === value)?.[1];
     const name = label ?? t('iconPicker.label');
+    const clearable = onClear !== undefined && value !== null && !disabled;
 
     const choose = (icon: string): void => {
         onValueChange(icon);
@@ -88,22 +92,40 @@ export function IconPicker({
 
     return (
         <div ref={ref} className={clsx('flex flex-col gap-1.5', className)}>
-            <SectionLabel id={`${id}-label`} render={<div />}>
+            <SectionLabel id={`${id}-label`} render={<div />} className={clsx(hideLabel && 'sr-only')}>
                 {name}
             </SectionLabel>
             <PopoverRoot open={open} onOpenChange={setOpen}>
-                <PopoverTrigger
-                    ref={trigger}
-                    disabled={disabled}
-                    aria-labelledby={`${id}-label ${id}-value`}
-                    className="field flex items-center gap-2 text-left hover:bg-surface-hover data-disabled:cursor-default data-disabled:opacity-50 data-disabled:hover:bg-field data-[popup-open]:bg-surface-hover"
-                >
-                    {glyph && <Icon icon={glyph} size={16} className="shrink-0 text-text-muted" />}
-                    <span id={`${id}-value`} className={clsx('min-w-0 truncate', value === null && 'text-text-faint')}>
-                        {value ?? t('iconPicker.placeholder')}
-                    </span>
-                    <Icon icon={ChevronDown} size={14} className="ms-auto shrink-0 text-text-faint" />
-                </PopoverTrigger>
+                {/* The clear button is a sibling over the trigger's end, since a button cannot hold another. */}
+                <div className="relative flex">
+                    <PopoverTrigger
+                        ref={trigger}
+                        disabled={disabled}
+                        aria-labelledby={`${id}-label ${id}-value`}
+                        className={clsx(
+                            'field flex items-center gap-2 text-left hover:bg-surface-hover data-disabled:cursor-default data-disabled:opacity-50 data-disabled:hover:bg-field data-[popup-open]:bg-surface-hover',
+                            clearable && 'pe-12'
+                        )}
+                    >
+                        {glyph && <Icon icon={glyph} size={16} className="shrink-0 text-text-muted" />}
+                        <span id={`${id}-value`} className={clsx('min-w-0 truncate', value === null && 'text-text-faint')}>
+                            {value ?? t('iconPicker.placeholder')}
+                        </span>
+                        <Icon icon={ChevronDown} size={14} className="ms-auto shrink-0 text-text-faint" />
+                    </PopoverTrigger>
+                    {clearable && (
+                        <IconButton
+                            icon={X}
+                            size="xs"
+                            label={t('iconPicker.none')}
+                            className="absolute end-7 top-1/2 -translate-y-1/2"
+                            onClick={() => {
+                                onClear();
+                                trigger.current?.focus();
+                            }}
+                        />
+                    )}
+                </div>
                 <PopoverPopup
                     variant="picker"
                     aria-label={name}

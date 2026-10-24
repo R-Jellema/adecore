@@ -30,6 +30,18 @@ afterEach(() => {
 const render = (node: ReactNode): string => renderToStaticMarkup(<UIProvider i18n={i18n}>{node}</UIProvider>);
 
 describe('an icon picker', () => {
+    test('offers to clear a chosen icon beside the trigger, and nothing to clear while there is none', () => {
+        const chosen = render(<IconPicker icons={GROUPS} value="cloud" onValueChange={() => {}} onClear={() => {}} />);
+        expect(chosen).toContain('aria-label="No icon"');
+        const none = render(<IconPicker icons={GROUPS} value={null} onValueChange={() => {}} onClear={() => {}} />);
+        expect(none).not.toContain('aria-label="No icon"');
+    });
+
+    test('keeps a hidden label as the name of its trigger', () => {
+        const markup = render(<IconPicker icons={GROUPS} value={null} label="Symbol" hideLabel onValueChange={() => {}} />);
+        expect(markup).toMatch(/<div id="[^"]+" class="[^"]*sr-only[^"]*"[^>]*>Symbol<\/div>/);
+    });
+
     test('is a trigger drawn like a field under its label, naming the chosen icon', () => {
         const markup = render(<IconPicker icons={GROUPS} value="cloud" label="Symbol" onValueChange={() => {}} />);
         const labelId = /<div id="([^"]+)"[^>]*>Symbol<\/div>/.exec(markup)?.[1];
