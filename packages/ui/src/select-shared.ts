@@ -23,7 +23,8 @@ export const TRIGGER_SIZE = {
 } as const;
 
 export const TRIGGER_VARIANT = {
-    outlined: 'max-w-56 rounded-lg border border-field-border bg-field text-text hover:bg-surface-hover data-[popup-open]:bg-surface-hover data-disabled:hover:bg-field',
+    outlined:
+        'max-w-56 rounded-lg border border-field-border bg-field text-text hover:bg-surface-hover data-[popup-open]:bg-surface-hover data-disabled:hover:bg-field',
     ghost: 'rounded-md text-text-muted hover:bg-surface-hover hover:text-text data-[popup-open]:bg-surface-active data-[popup-open]:text-text data-disabled:hover:bg-transparent data-disabled:hover:text-text-muted'
 } as const;
 
