@@ -401,14 +401,15 @@ export function ChartRoot<Row>({
         }
     };
 
+    const pressable = onActivate !== undefined && (layout !== null || points);
     const activate = (index: number): void => {
-        if (onActivate !== undefined && index >= 0) {
+        if (pressable && index >= 0) {
             onActivate(data[index]!, index);
         }
     };
 
     const onKeyDown = (e: KeyboardEvent<SVGSVGElement>): void => {
-        if (onActivate !== undefined && activeIndex >= 0 && (e.key === 'Enter' || e.key === ' ')) {
+        if (pressable && activeIndex >= 0 && (e.key === 'Enter' || e.key === ' ')) {
             e.preventDefault();
             activate(activeIndex);
             return;
@@ -495,7 +496,6 @@ export function ChartRoot<Row>({
         byKeyboard: announce
     };
 
-    const pressable = onActivate !== undefined && (layout !== null || points);
     // A reference line holds for every bucket, so a screen reader hears it once with the chart instead of in every bucket.
     const ruleText = rules.size === 0 ? null : `${[...rules.values()].map((rule) => `${rule.label} ${formatY(rule.value)}`).join(', ')}.`;
     const hint = [

@@ -198,6 +198,19 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(columns().map((column) => Math.floor(Number(column.getAttribute('x')) / 150))).toEqual([0, 1, 3]);
     });
 
+    test('Enter on a time scale presses nothing, as its buckets are no buttons', async () => {
+        const hours = [0, 1, 3].map((hour) => ({ at: hour * 3_600_000, count: hour + 1 }));
+        const plot = await mount(
+            <Chart.Root data={hours} x="at" xScale="time" step={3_600_000} label="Per hour" onActivate={(row) => activated.push(String(row.at))}>
+                <Chart.Bar value="count" label="Count" />
+            </Chart.Root>
+        );
+        await press(plot, 'End');
+        await press(plot, 'Enter');
+        await press(plot, ' ');
+        expect(activated).toEqual([]);
+    });
+
     test('a value above `y.max` stops at the top of the plot', async () => {
         await mount(
             <Chart.Root data={SCORES} x="key" y={{ max: 40 }} label="Scores">
