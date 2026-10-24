@@ -21,6 +21,7 @@ export type {
     ChartColor,
     ChartCurve,
     ChartMargin,
+    ChartNote,
     ChartRect,
     ChartRows,
     ChartTone,

@@ -379,6 +379,29 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(visibleLabels().map((text) => Number(text.getAttribute('x')))).toEqual(centers.map(Math.round));
     });
 
+    test('markers and bands name themselves in the tooltip with a swatch, and stay off the plot outside the axis', async () => {
+        const hours = [0, 1, 2, 3].map((hour) => ({ at: hour * 3_600_000, count: hour + 1 }));
+        const plot = await mount(
+            <Chart.Root data={hours} x="at" xScale="time" step={3_600_000} label="Per hour">
+                <Chart.Bar value="count" label="Count" />
+                <Chart.Marker at={-86_400_000} label="Deploy 1.0" />
+                <Chart.Marker at={1_800_000} label="Deploy 1.1" tone="accent" />
+                <Chart.Band from={2_000_000} to={2_020_000} label="Collector down" detail="Data may be missing." />
+                <Chart.Tooltip />
+            </Chart.Root>
+        );
+        expect(container.querySelectorAll('circle')).toHaveLength(1);
+        const hatch = [...container.querySelectorAll('rect')].find((rect) => rect.getAttribute('fill')?.startsWith('url('));
+        expect(Number(hatch!.getAttribute('width'))).toBe(4);
+        await press(plot, 'Home');
+        const card = container.querySelector('[aria-hidden].absolute')!;
+        expect(card.textContent).toContain('Deploy 1.1');
+        expect(card.textContent).toContain('Collector downData may be missing.');
+        expect(card.textContent).not.toContain('Deploy 1.0');
+        expect(card.querySelectorAll('.border-dashed')).toHaveLength(1);
+        expect(live()).toBe('12:00 AM, Count 1, Deploy 1.1, Collector down, Data may be missing.');
+    });
+
     test('a second x axis writes its row under the first', async () => {
         await mount(
             <Chart.Root data={SCORES} x="key" label="Scores">

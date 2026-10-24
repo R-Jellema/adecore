@@ -27,6 +27,7 @@ export interface RuleEntry {
 export interface MarkerEntry {
     readonly at: ChartX;
     readonly label: string;
+    readonly detail: string | null;
     readonly color: string;
 }
 
@@ -34,6 +35,7 @@ export interface BandEntry {
     readonly from: ChartX;
     readonly to: ChartX;
     readonly label: string;
+    readonly detail: string | null;
     readonly color: string;
 }
 

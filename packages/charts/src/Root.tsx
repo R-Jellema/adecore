@@ -26,7 +26,7 @@ import { movePoint, nearestPoint, type PlacedPoint } from './points.ts';
 import { bucketStepOf, continuousXScale, extentOf, pointXScale, stackSeries, tickCount, yScaleOf } from './scale.ts';
 import { createChartStore } from './store.ts';
 import { formatTime, timeLabelOf } from './time-format.ts';
-import type { ChartAccessor, ChartMargin, ChartRows, ChartX, ChartXInput, ChartXOptions, ChartXScale, ChartYOptions, ChartYScale } from './types.ts';
+import type { ChartAccessor, ChartMargin, ChartNote, ChartRows, ChartX, ChartXInput, ChartXOptions, ChartXScale, ChartYOptions, ChartYScale } from './types.ts';
 
 export interface ChartRootProps<Row> {
     /* One row per bucket. On a time or linear scale the rows run from the lowest x to the highest; points come in any order. */
@@ -303,19 +303,19 @@ export function ChartRoot<Row>({
         return points && formats.xTitle !== undefined ? `${formats.xTitle} ${text}` : text;
     };
 
-    const notesAt = (index: number): string[] => {
+    const notesAt = (index: number): ChartNote[] => {
         const at = xs[index];
         if (at === undefined) {
             return [];
         }
-        const notes: string[] = [];
+        const notes: ChartNote[] = [];
         for (const marker of markers.values()) {
             // The points of a chart stand in no order, so a moment belongs to none of them.
             const inside = band
                 ? String(marker.at) === String(at)
                 : !points && typeof marker.at === 'number' && containingIndex(xs as number[], marker.at, bucketStep || undefined) === index;
             if (inside) {
-                notes.push(marker.label);
+                notes.push({ kind: 'marker', label: marker.label, detail: marker.detail, color: marker.color });
             }
         }
         for (const range of bands.values()) {
@@ -330,7 +330,7 @@ export function ChartRoot<Row>({
                 inside = (at as number) >= (range.from as number) && (at as number) < (range.to as number);
             }
             if (inside) {
-                notes.push(range.label);
+                notes.push({ kind: 'band', label: range.label, detail: range.detail, color: range.color });
             }
         }
         return notes;
@@ -365,7 +365,7 @@ export function ChartRoot<Row>({
                 parts.push(`${entry.label} ${formatY(value)}`);
             }
         }
-        return [...parts, ...notesAt(index)].join(', ');
+        return [...parts, ...notesAt(index).map((note) => (note.detail === null ? note.label : `${note.label}, ${note.detail}`))].join(', ');
     };
 
     useEffect(() => {

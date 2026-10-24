@@ -71,7 +71,7 @@ A `ChartX` is a number (a moment in milliseconds) or the key of a category; a `C
 
 ## Markers and bands
 
-`Chart.Marker` draws a dashed vertical line at a moment, `at`, with a dot on top. Its `label` is named in the tooltip of the bucket the moment falls in, so a deploy at 14:37 shows under the bucket of 14:00. `Chart.Band` shades a range from `from` to `to` with a hatch, named in the tooltip of every bucket it touches. Both are muted unless they get a `tone`. On a band scale `at`, `from` and `to` are keys of buckets; a moment between two buckets needs a time scale, which takes [columns](/charts/columns#columns-over-time) too. The props are `ChartMarkerProps` and `ChartBandProps`.
+`Chart.Marker` draws a dashed vertical line at a moment, `at`, with a dot on top. A moment outside the x axis draws nothing. Its `label` is named in the tooltip of the bucket the moment falls in, so a deploy at 14:37 shows under the bucket of 14:00. `Chart.Band` shades a range from `from` to `to` with a hatch, named in the tooltip of every bucket it touches. A short range is still 4px wide, so it reads as a band and not as a marker. In the tooltip a marker has a dashed swatch and a band a square, both in their color, and `detail` adds a second line under the label, such as "Data may be missing."; the live region reads it too. The tooltip hands them to its `children` as `ChartNote`s. Both are muted unless they get a `tone`. On a band scale `at`, `from` and `to` are keys of buckets; a moment between two buckets needs a time scale, which takes [columns](/charts/columns#columns-over-time) too. The props are `ChartMarkerProps` and `ChartBandProps`.
 
 ## Rules
 

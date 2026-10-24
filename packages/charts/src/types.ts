@@ -61,3 +61,13 @@ export interface ChartRect {
     readonly width: number;
     readonly height: number;
 }
+
+/* A marker or a band in a bucket, as the tooltip writes it under the values. */
+export interface ChartNote {
+    readonly kind: 'marker' | 'band';
+    readonly label: string;
+    /* A second line under the label, such as what a gap means; null without one. */
+    readonly detail: string | null;
+    /* The CSS color of its swatch. */
+    readonly color: string;
+}

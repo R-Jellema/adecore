@@ -3,7 +3,7 @@ import type { BandLayout } from './band.ts';
 import type { AxisWidths } from './group-axes.ts';
 import type { ContinuousXScale, Stacked, YAxisScale } from './scale.ts';
 import type { BandEntry, ChartStore, MarkerEntry, SeriesEntry } from './store.ts';
-import type { ChartRect, ChartX, ChartXScale } from './types.ts';
+import type { ChartNote, ChartRect, ChartX, ChartXScale } from './types.ts';
 
 export interface ChartSlots {
     readonly legend: HTMLElement | null;
@@ -59,7 +59,7 @@ export interface ChartContextValue {
     readonly setActiveX: (x: ChartX | null) => void;
     readonly formatX: (x: ChartX) => string;
     readonly formatY: (value: number) => string;
-    readonly notesAt: (index: number) => string[];
+    readonly notesAt: (index: number) => ChartNote[];
     /* A chart whose rows are points, not buckets. */
     readonly points: boolean;
     /* The key of every row of a point chart; null for buckets. */
