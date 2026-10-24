@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Button, Surface } from '@adecore/ui';
 import { formatNumber } from '@adecore/ui/format';
 import { colorOf } from './color.ts';
-import { heatShare, heatStep, moveCell, type HeatCell } from './heat.ts';
+import { FLOOR, heatMix, heatShare, moveCell, type HeatCell } from './heat.ts';
 import type { ChartColor } from './types.ts';
 
 export type HeatmapCell = HeatCell;
@@ -28,9 +28,9 @@ export interface HeatmapProps {
     /* What a value counts, such as "Events", in the tooltip, the live region and the table. */
     readonly valueLabel: string;
     readonly tone?: ChartColor;
-    /* How many shades the values fall into, besides the empty cell. */
+    /* How many shades the values fall into, besides the empty cell; without it the shade follows the value. */
     readonly steps?: number;
-    /* The value of the darkest step; the highest value by default. A shared `max` lets two heatmaps compare. */
+    /* The value of the darkest shade; the highest value by default. A shared `max` lets two heatmaps compare. */
     readonly max?: number;
     readonly format?: (value: number) => string;
     /* In pixels; the width of a cell follows the container. */
@@ -65,7 +65,7 @@ export function Heatmap({
     label,
     valueLabel,
     tone = 'accent',
-    steps = 5,
+    steps,
     max,
     format = formatNumber,
     cellHeight = 16,
@@ -144,18 +144,18 @@ export function Heatmap({
                                 <span className="flex items-center pr-2 leading-4 whitespace-nowrap">{row.short === undefined ? row.label : row.short}</span>
                                 {columns.map((column, columnIndex) => {
                                     const value = valueAt(rowIndex, columnIndex);
-                                    const step = heatStep(value, top, steps);
+                                    const mix = heatMix(value, top, steps);
                                     const isActive = current !== null && current.row === rowIndex && current.column === columnIndex;
                                     return (
                                         <span
                                             key={column.key}
-                                            data-step={step}
+                                            data-mix={mix}
                                             className={clsx(
                                                 'rounded-xs',
-                                                step === 0 && 'bg-surface-sunken',
+                                                mix === 0 && 'bg-surface-sunken',
                                                 isActive && 'relative z-10 outline-1 outline-offset-1 outline-text'
                                             )}
-                                            style={{ height: cellHeight, backgroundColor: shade(color, heatShare(step, steps)) }}
+                                            style={{ height: cellHeight, backgroundColor: shade(color, mix) }}
                                             onPointerEnter={() => {
                                                 setAnnounce(false);
                                                 activate({ row: rowIndex, column: columnIndex });
@@ -171,8 +171,8 @@ export function Heatmap({
                                                     </p>
                                                     <p className="flex items-center gap-2 text-text-muted">
                                                         <span
-                                                            className={clsx('size-2 shrink-0 rounded-xs', step === 0 && 'bg-surface-sunken')}
-                                                            style={{ backgroundColor: shade(color, heatShare(step, steps)) }}
+                                                            className={clsx('size-2 shrink-0 rounded-xs', mix === 0 && 'bg-surface-sunken')}
+                                                            style={{ backgroundColor: shade(color, mix) }}
                                                         />
                                                         <span className="min-w-0 truncate">{valueLabel}</span>
                                                         <span className="ml-auto pl-3 text-text tabular-nums">{write(value)}</span>
@@ -190,13 +190,24 @@ export function Heatmap({
             {legend && !empty && (
                 <div aria-hidden className="flex items-center justify-end gap-1 text-xs text-text-muted">
                     <span className="mr-1">{t('heatmap.less')}</span>
-                    {Array.from({ length: steps + 1 }, (_, step) => (
-                        <span
-                            key={step}
-                            className={clsx('size-3 rounded-xs', step === 0 && 'bg-surface-sunken')}
-                            style={{ backgroundColor: shade(color, heatShare(step, steps)) }}
-                        />
-                    ))}
+                    {steps === undefined ? (
+                        <>
+                            <span className="size-3 rounded-xs bg-surface-sunken" />
+                            <span
+                                data-legend="gradient"
+                                className="h-3 w-16 rounded-xs"
+                                style={{ backgroundImage: `linear-gradient(to right, ${shade(color, FLOOR)}, ${shade(color, 100)})` }}
+                            />
+                        </>
+                    ) : (
+                        Array.from({ length: steps + 1 }, (_, step) => (
+                            <span
+                                key={step}
+                                className={clsx('size-3 rounded-xs', step === 0 && 'bg-surface-sunken')}
+                                style={{ backgroundColor: shade(color, heatShare(step, steps)) }}
+                            />
+                        ))
+                    )}
                     <span className="ml-1">{t('heatmap.more')}</span>
                 </div>
             )}

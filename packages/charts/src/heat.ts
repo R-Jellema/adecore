@@ -1,5 +1,5 @@
 /* The share of the color in the lowest step, so the smallest count still reads apart from an empty cell. */
-const FLOOR = 15;
+export const FLOOR = 15;
 
 export interface HeatCell {
     readonly row: number;
@@ -20,6 +20,17 @@ export function heatShare(step: number, steps: number): number {
         return 0;
     }
     return steps <= 1 ? 100 : Math.round(FLOOR + ((step - 1) / (steps - 1)) * (100 - FLOOR));
+}
+
+/* The percentage of the color in a cell: in `steps` shades when given, else from 15% up with the value, 0 for an empty cell. */
+export function heatMix(value: number | null, max: number, steps?: number): number {
+    if (steps !== undefined) {
+        return heatShare(heatStep(value, max, steps), steps);
+    }
+    if (heatStep(value, max, 1) === 0) {
+        return 0;
+    }
+    return Math.round(FLOOR + Math.min(1, value! / max) * (100 - FLOOR));
 }
 
 /*

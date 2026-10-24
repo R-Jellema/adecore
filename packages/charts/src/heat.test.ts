@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { heatShare, heatStep, moveCell } from './heat.ts';
+import { heatMix, heatShare, heatStep, moveCell } from './heat.ts';
 
 describe('the steps of a heatmap', () => {
     test('keep the smallest count apart from an empty cell, and the highest in the last step', () => {
@@ -19,6 +19,16 @@ describe('the steps of a heatmap', () => {
     test('mix the color in from 15% up to 100%, and not at all for an empty cell', () => {
         expect([0, 1, 2, 3, 4, 5].map((step) => heatShare(step, 5))).toEqual([0, 15, 36, 58, 79, 100]);
         expect(heatShare(1, 1)).toBe(100);
+    });
+});
+
+describe('the shade of a heatmap cell', () => {
+    test('follows the value from 15% up without steps, held at 100% over a fixed max', () => {
+        expect([0, 1, 50, 100, 250, null].map((value) => heatMix(value, 100))).toEqual([0, 16, 58, 100, 100, 0]);
+    });
+
+    test('falls into the steps when they are given', () => {
+        expect([0, 1, 41, 100].map((value) => heatMix(value, 100, 5))).toEqual([0, 15, 58, 100]);
     });
 });
 

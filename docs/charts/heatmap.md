@@ -41,9 +41,9 @@ Failed checks per suite and platform, in the error tone, four steps, taller cell
 
 ## Shades
 
-A value falls into one of `steps` shades by its share of `max`, the highest value unless the app gives one. The shade is the color of `tone` mixed over the surface from 15% for the first step to 100% for the last, so the smallest count still stands apart from an empty cell. An empty cell, for a zero, a value below zero or a missing value (`null`), is `--surface-sunken`. The card and the live region write a missing value as "No data". Give two heatmaps the same `max` to compare them.
+A cell is the color of `tone` mixed over the surface by the share of its value in `max`, the highest value unless the app gives one: 15% plus that share of the other 85%, so the smallest count still stands apart from an empty cell and the highest is the full color. With `steps` the values fall into that many shades instead, from 15% for the first to 100% for the last, which reads better when a few levels matter more than the exact value. An empty cell, for a zero, a value below zero or a missing value (`null`), is `--surface-sunken`. The card and the live region write a missing value as "No data". Give two heatmaps the same `max` to compare them.
 
-The legend under the grid shows the empty cell and every step between "Less" and "More". `legend={false}` leaves it out.
+The legend under the grid shows the empty cell and a strip that runs from the lightest to the full color between "Less" and "More", or every shade when `steps` is set. `legend={false}` leaves it out.
 
 ## Keyboard and screen reader
 
@@ -69,8 +69,8 @@ A polite live region reads each cell the keyboard moves to: "Monday, 09:00, Even
 | `label` | `string` | | Required. The name of the heatmap. |
 | `valueLabel` | `string` | | Required. What a value counts, such as "Events". |
 | `tone` | `ChartColor` | `'accent'` | |
-| `steps` | `number` | `5` | Shades besides the empty cell. |
-| `max` | `number` | the highest value | The value of the last step. |
+| `steps` | `number` | | Shades besides the empty cell; without it the shade follows the value. |
+| `max` | `number` | the highest value | The value of the full color. |
 | `format` | `(value: number) => string` | `formatNumber` | Writes a value in the card, the live region and the table. |
 | `cellHeight` | `number` | `16` | Pixels. The width of a cell follows the container. |
 | `legend` | `boolean` | `true` | |
