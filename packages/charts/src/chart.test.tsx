@@ -419,6 +419,19 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         </Chart.Root>
     );
 
+    test('the table of a point chart leaves out a row the chart draws no point for', async () => {
+        const rows = [...MEASURED, { key: 'c-low', model: 'Gamma', effort: 'low', cost: null, score: 45 }];
+        await mount(
+            <Chart.Root data={rows} rows="points" x="cost" xScale="log" rowKey="key" rowLabel="effort" group="model" label="Cost">
+                <Chart.Point value="score" label="Intelligence" />
+                <Chart.Table />
+            </Chart.Root>
+        );
+        const labels = [...container.querySelectorAll('tbody tr')].map((row) => row.textContent);
+        expect(labels).toHaveLength(MEASURED.length);
+        expect(labels.some((label) => label?.startsWith('Gamma'))).toBe(false);
+    });
+
     test('a log axis names both of its ends, the labels moved inward where they would hang past the chart', async () => {
         await mount(
             <Chart.Root data={MEASURED} rows="points" x="cost" xScale="log" label="Cost">

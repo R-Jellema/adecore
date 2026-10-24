@@ -219,23 +219,26 @@ export function ChartTable({ className, ref }: ChartTableProps) {
                         </tr>
                     </thead>
                     <tbody>
-                        {chart.xs.map((key, index) => (
-                            <tr key={chart.keys?.[index] ?? String(key)} className={shown ? 'border-t border-border-soft' : undefined}>
-                                {grouped && <td className={shown ? 'h-8 px-2 text-text-muted' : undefined}>{chart.groupLabels![index]}</td>}
-                                <th scope="row" className={shown ? 'h-8 px-2 text-left font-normal whitespace-nowrap text-text-muted' : undefined}>
-                                    {xColumn ? chart.rowLabels![index] : chart.formatX(key)}
-                                </th>
-                                {xColumn && <td className={cell}>{Number.isFinite(key) ? chart.formatX(key) : ''}</td>}
-                                {series.map(([seriesId, entry]) => {
-                                    const value = entry.values[index];
-                                    return (
-                                        <td key={seriesId} className={cell}>
-                                            {value === null || value === undefined ? '' : chart.formatY(value)}
-                                        </td>
-                                    );
-                                })}
-                            </tr>
-                        ))}
+                        {chart.xs.map((key, index) =>
+                            // A point without a position is a gap, which the chart does not draw either.
+                            chart.points && chart.positions[index] === null ? null : (
+                                <tr key={chart.keys?.[index] ?? String(key)} className={shown ? 'border-t border-border-soft' : undefined}>
+                                    {grouped && <td className={shown ? 'h-8 px-2 text-text-muted' : undefined}>{chart.groupLabels![index]}</td>}
+                                    <th scope="row" className={shown ? 'h-8 px-2 text-left font-normal whitespace-nowrap text-text-muted' : undefined}>
+                                        {xColumn ? chart.rowLabels![index] : chart.formatX(key)}
+                                    </th>
+                                    {xColumn && <td className={cell}>{Number.isFinite(key) ? chart.formatX(key) : ''}</td>}
+                                    {series.map(([seriesId, entry]) => {
+                                        const value = entry.values[index];
+                                        return (
+                                            <td key={seriesId} className={cell}>
+                                                {value === null || value === undefined ? '' : chart.formatY(value)}
+                                            </td>
+                                        );
+                                    })}
+                                </tr>
+                            )
+                        )}
                     </tbody>
                 </table>
             </div>

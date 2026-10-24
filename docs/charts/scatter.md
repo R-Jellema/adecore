@@ -62,7 +62,7 @@ The plot stays one stop for the keyboard. Left and Right move along a series, Up
 
 With `onActivate` every point is a `role="button"` with `aria-pressed`, reached through `aria-activedescendant`: Enter, Space and a click call it. What a pick means, such as the reference of a comparison, stays with the app; `selected` takes the keys it picked.
 
-`Chart.Tooltip` works per point as well, with the series and the label of the point on top and its x under the title of the axis. `Chart.Legend` lists the series of the groups with their color. `Chart.Table` gives the label of a point its own column next to its x.
+`Chart.Tooltip` works per point as well, with the series and the label of the point on top and its x under the title of the axis. `Chart.Legend` lists the series of the groups with their color. `Chart.Table` gives the label of a point its own column next to its x, and leaves out a row without an x or a value, as the chart draws no point for it.
 
 ## Frontier
 
