@@ -4,7 +4,7 @@ import type { Root } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import i18next from 'i18next';
 import { UIProvider } from '@adecore/ui';
-import { Chart } from './index.ts';
+import { Chart, SeriesLegend } from './index.ts';
 import { CHARTS_NAMESPACE, CHARTS_RESOURCES } from './locales.ts';
 
 const i18n = i18next.createInstance();
@@ -287,6 +287,138 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
             plot.dispatchEvent(new PointerEvent('pointerout', { bubbles: true, relatedTarget: document.body }));
         });
         expect(changes).toEqual([null]);
+    });
+
+    const MEASURED = [
+        { key: 'a-low', model: 'Alpha', effort: 'low', cost: 0.02, score: 40 },
+        { key: 'a-high', model: 'Alpha', effort: 'high', cost: 0.3, score: 52 },
+        { key: 'b-low', model: 'Beta', effort: 'low', cost: 0.05, score: 39 },
+        { key: 'b-mid', model: 'Beta', effort: 'mid', cost: 2, score: 58 }
+    ];
+    type Measured = (typeof MEASURED)[number];
+
+    const scatter = (props: { onActiveXChange?: (x: unknown) => void } = {}): ReactNode => (
+        <Chart.Root
+            data={MEASURED}
+            rows="points"
+            x="cost"
+            xScale="log"
+            rowKey="key"
+            rowLabel="effort"
+            group="model"
+            y={{ step: 10 }}
+            label="Intelligence against cost"
+            height={300}
+            selected={['b-mid']}
+            onActivate={(row: Measured) => activated.push(row.key)}
+            onActiveXChange={props.onActiveXChange}
+        >
+            <Chart.YAxis title="Intelligence" />
+            <Chart.XAxis title="Cost per task" format={(value) => `$${value}`} />
+            <Chart.Frontier />
+            <Chart.Line value="score" label="Intelligence" />
+            <Chart.Point value="score" label="Intelligence" />
+            <Chart.EndLabels width={100}>{(series) => <span data-end={series.key}>{series.label}</span>}</Chart.EndLabels>
+        </Chart.Root>
+    );
+
+    test('a point chart takes the point under the pointer within reach and draws guides to both axes', async () => {
+        const changes: unknown[] = [];
+        const plot = await mount(scatter({ onActiveXChange: (x) => changes.push(x) }));
+        const target = container.querySelector<SVGCircleElement>('circle[role="button"][aria-label^="Alpha, high"]')!;
+        const x = Number(target.getAttribute('cx'));
+        const y = Number(target.getAttribute('cy'));
+        await act(async () => {
+            plot.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: x + 6, clientY: y - 6 }));
+        });
+        expect(changes).toEqual(['a-high']);
+        const texts = [...container.querySelectorAll('text')].map((text) => text.textContent);
+        // The guides write the x and the value of the point on the axes, beside the picked point's.
+        expect(texts.filter((text) => text === '$0.3')).toHaveLength(1);
+        expect(texts).toContain('Cost per task · logarithmic');
+        expect(texts).toContain('Intelligence');
+        // Points need no ground: the value axis runs from the step under the lowest point.
+        expect(texts).toContain('30');
+        expect(texts).not.toContain('0');
+        expect(container.querySelectorAll('path[stroke-dasharray="4 4"]')).toHaveLength(2);
+        await act(async () => {
+            plot.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: x + 40, clientY: y + 40 }));
+        });
+        expect(changes).toEqual(['a-high', null]);
+    });
+
+    test('the keyboard moves along a series and to the next one, reads each point and picks it', async () => {
+        const plot = await mount(scatter());
+        expect(container.querySelector('[id$="-hint"]')!.textContent).toContain('Up and Down to the next series');
+        await press(plot, 'ArrowRight');
+        await press(plot, 'ArrowRight');
+        expect(active(plot)).toBe('Alpha, high, Cost per task $0.3, Intelligence 52');
+        await press(plot, 'ArrowDown');
+        expect(active(plot)).toBe('Beta, mid, Cost per task $2, Intelligence 58');
+        await press(plot, 'Enter');
+        expect(activated).toEqual(['b-mid']);
+        expect(container.querySelectorAll('[aria-pressed="true"]')).toHaveLength(1);
+    });
+
+    test('end labels stand right of the plot at the last point of each series, and the frontier runs through the best points', async () => {
+        await mount(scatter());
+        const labels = [...container.querySelectorAll<HTMLElement>('[data-end]')].map((label) => label.dataset.end);
+        expect(labels).toEqual(['Alpha', 'Beta']);
+        const frontier = container.querySelector('polyline')!.getAttribute('points')!.split(' ');
+        // Beta low costs more than Alpha low and scores less, so it is left off.
+        expect(frontier).toHaveLength(3);
+    });
+
+    test('a y axis title stands over the axis of a column chart, with room above the plot', async () => {
+        await mount(
+            <Chart.Root data={SCORES} x="key" label="Scores">
+                <Chart.YAxis title="Index points, higher is better" />
+                <Chart.Bar value="score" label="Score" />
+            </Chart.Root>
+        );
+        const title = [...container.querySelectorAll('text')].find((text) => text.textContent === 'Index points, higher is better')!;
+        expect(title.getAttribute('y')).toBe('15');
+        const tops = columns().map((column) => Number(column.getAttribute('y')));
+        expect(Math.min(...tops)).toBeGreaterThanOrEqual(28);
+    });
+
+    test('the series legend toggles a series, highlights the one under the pointer and finds by name', async () => {
+        const hidden: string[][] = [];
+        const highlighted: (string | null)[] = [];
+        await mount(
+            <SeriesLegend
+                label="Models"
+                items={[
+                    { key: 'a', label: 'Alpha', group: 'north' },
+                    { key: 'b', label: 'Beta', group: 'north' },
+                    { key: 'c', label: 'Gamma', group: 'south', status: 'No data', disabled: true }
+                ]}
+                groups={[
+                    { key: 'north', label: 'North' },
+                    { key: 'south', label: 'South' }
+                ]}
+                hidden={['b']}
+                onHiddenChange={(next) => hidden.push(next)}
+                onHighlightedChange={(key) => highlighted.push(key)}
+            />
+        );
+        const button = (name: string): HTMLButtonElement => container.querySelector<HTMLButtonElement>(`button[aria-label="${name}"]`)!;
+        expect(button('Alpha').getAttribute('aria-pressed')).toBe('true');
+        expect(button('Beta').getAttribute('aria-pressed')).toBe('false');
+        expect(button('Gamma').disabled).toBe(true);
+        await act(async () => {
+            button('Beta').click();
+            button('Alpha').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+        });
+        expect(hidden).toEqual([[]]);
+        expect(highlighted).toEqual(['a']);
+        const search = container.querySelector('input')!;
+        await act(async () => {
+            const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!;
+            setter.call(search, 'gam');
+            search.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        expect([...container.querySelectorAll('button[aria-pressed]')].map((entry) => entry.getAttribute('aria-label'))).toEqual(['Gamma']);
     });
 
     test('a selected bucket is pressed, and Escape clears the cursor', async () => {

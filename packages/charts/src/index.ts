@@ -7,7 +7,22 @@ export type { ChartGroupProps, ChartLayerProps } from './layer.tsx';
 export { CHARTS_NAMESPACE, CHARTS_RESOURCES } from './locales.ts';
 export type { ChartBucket, ChartBucketValue, ChartLegendProps, ChartTableProps, ChartTooltipProps } from './overlays.tsx';
 export type { ChartRootProps } from './Root.tsx';
-export type { ChartAreaProps, ChartBarProps, ChartBarTone, ChartBarsProps, ChartLineProps } from './series.tsx';
+export type { ChartEndLabelsProps, ChartFrontierProps, ChartPointSeries } from './scatter.tsx';
+export { SeriesLegend, type SeriesLegendGroup, type SeriesLegendItem, type SeriesLegendProps } from './SeriesLegend.tsx';
+export type { ChartAreaProps, ChartBarProps, ChartBarTone, ChartBarsProps, ChartLineProps, ChartPointProps } from './series.tsx';
 export { Sparkline, type SparklineProps } from './Sparkline.tsx';
 export { useChart, type ChartApi } from './use-chart.ts';
-export type { ChartAccessor, ChartColor, ChartCurve, ChartRect, ChartTone, ChartX, ChartXInput, ChartXScale, ChartYOptions, ChartYScale } from './types.ts';
+export type {
+    ChartAccessor,
+    ChartColor,
+    ChartCurve,
+    ChartRect,
+    ChartRows,
+    ChartTone,
+    ChartX,
+    ChartXInput,
+    ChartXOptions,
+    ChartXScale,
+    ChartYOptions,
+    ChartYScale
+} from './types.ts';

@@ -1,9 +1,9 @@
 # @adecore/charts
 
-Charts in the theme of `@adecore/ui`: a series over time or per category as lines, areas and columns, and a sparkline for a row or a tile. A chart takes its width from its container, draws on whole pixels, and is one stop for the keyboard that a screen reader reads bucket by bucket. `d3-scale` and `d3-shape` do the math; the package draws everything itself.
+Charts in the theme of `@adecore/ui`: a series over time or per category as lines, areas and columns, a scatter of points with a legend of many series beside it, and a sparkline for a row or a tile. A chart takes its width from its container, draws on whole pixels, and is one stop for the keyboard that a screen reader reads bucket by bucket. `d3-scale` and `d3-shape` do the math; the package draws everything itself.
 
 ```tsx
-import { Chart, Sparkline, createChart, useChart } from '@adecore/charts';
+import { Chart, SeriesLegend, Sparkline, createChart, useChart } from '@adecore/charts';
 ```
 
 <Demo src="charts/errors-per-hour" />
@@ -41,6 +41,9 @@ A chart is a compound component, like `Menu` and `Dialog` in `@adecore/ui`. `Cha
 | [`Chart.GroupAxis`](/charts/columns#groups) | A second row of labels, one per group of columns. |
 | [`Chart.Line`, `Chart.Area`](/charts/series#lines-and-areas) | A line, and a line with its area filled. |
 | [`Chart.Bars`, `Chart.Bar`](/charts/columns) | Columns, side by side or stacked. |
+| [`Chart.Point`](/charts/scatter#points) | A dot per value; on a scatter the points the cursor moves between. |
+| [`Chart.Frontier`](/charts/scatter#frontier) | A band through the points nothing beats on both axes. |
+| [`Chart.EndLabels`](/charts/scatter#end-labels) | A label at the end of each series of a scatter. |
 | [`Chart.Marker`, `Chart.Band`](/charts/series#markers-and-bands) | A moment and a range, named in the tooltip. |
 | [`Chart.Rule`](/charts/series#rules) | A line at a value, such as a reference, above the series. |
 | [`Chart.Tooltip`](/charts/series#tooltip-legend-and-table) | The card at the cursor. |
@@ -78,6 +81,8 @@ The plot is one tab stop, a `group` with the role description "chart" and `label
 | Page Up, Page Down | To the first bucket of the previous or the next group |
 | Escape | Clears it |
 | Enter, Space | Picks the bucket, with `onActivate` |
+
+A scatter moves between points instead; see [cursor, keyboard and picks](/charts/scatter#cursor-keyboard-and-picks).
 
 A polite live region reads each bucket the keyboard moves to: the group, the x, then every series ("14:00, Errors 12, Warnings 3"). With `onActivate` every bucket is a button with the same words as its name, reached as the active descendant, and the live region stays quiet so nothing is read twice. `Chart.Table` makes every value readable without moving the cursor at all.
 

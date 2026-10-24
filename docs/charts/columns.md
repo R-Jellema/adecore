@@ -84,7 +84,7 @@ const ScoreChart = createChart<ModelScore>();
     onActivate={toggle}
 >
     <ScoreChart.Grid dashed />
-    <ScoreChart.YAxis ticks={4} />
+    <ScoreChart.YAxis ticks={4} title="Index points, higher is better" />
     <ScoreChart.XAxis format={(key) => effortOf(key)} thin={false} />
     <ScoreChart.Bar
         value="score"

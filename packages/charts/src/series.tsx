@@ -13,7 +13,8 @@ export interface ChartLineProps<Row> {
     readonly value: ChartAccessor<Row, number | null | undefined>;
     /* The name of the series in the tooltip, the legend and the table. */
     readonly label: string;
-    readonly tone?: ChartColor;
+    /* On a point chart also a function of the row, which colors each series by its first row. */
+    readonly tone?: ChartBarTone<Row>;
     /* Stands in the color of the series in place of its swatch, in the legend and the tooltip. */
     readonly icon?: IconProps['icon'];
     readonly curve?: ChartCurve;
@@ -24,9 +25,20 @@ export interface ChartLineProps<Row> {
     readonly ref?: Ref<SVGGElement>;
 }
 
-export interface ChartAreaProps<Row> extends ChartLineProps<Row> {
+export interface ChartAreaProps<Row> extends Omit<ChartLineProps<Row>, 'tone'> {
+    readonly tone?: ChartColor;
     /* Piles the area on the stacked areas before it instead of on zero. */
     readonly stack?: boolean;
+}
+
+export interface ChartPointProps<Row> {
+    readonly value: ChartAccessor<Row, number | null | undefined>;
+    readonly label: string;
+    /* A tone, a color of the app's own, or either per row; on a point chart each series takes the next chart color without one. */
+    readonly tone?: ChartBarTone<Row>;
+    readonly icon?: IconProps['icon'];
+    readonly className?: string;
+    readonly ref?: Ref<SVGGElement>;
 }
 
 /* A tone, a color of the app's own, or either per row: `(row) => runTone(row.status)`. */
@@ -67,6 +79,8 @@ const CURVES = { linear: curveLinear, monotone: curveMonotoneX, step: curveStepA
 const HOVER_DIM = 0.55;
 /* At 0.3, times the opacity a column has in its group, a dimmed column nearly vanishes in the dark theme. */
 const OUT_OF_FOCUS = 0.4;
+/* A dimmed point or series of a point chart; its full color keeps it readable lower than a light column. */
+export const DIMMED_POINT = 0.25;
 
 type Point = readonly [number, number] | null;
 
@@ -116,14 +130,22 @@ function LinePath({ points, curve, dashed, dots }: { points: readonly Point[]; c
     );
 }
 
-/* A line through the values. A missing value breaks it. */
+/* The colors of a series per row when its tone is a function of the row, and its one color otherwise. */
+function tonesOf<Row>(chart: ChartContextValue, tone: ChartBarTone<Row> | undefined): [string | null, string[] | null] {
+    const rows = chart.data as Row[];
+    const rowColors = typeof tone === 'function' ? rows.map((row, index) => colorOf(tone(row, index))!) : null;
+    return [typeof tone === 'function' ? (rowColors?.[0] ?? null) : colorOf(tone), rowColors];
+}
+
+/* A line through the values. A missing value breaks it. On a point chart a line per series, through its points in the order of the data. */
 export function ChartLine<Row>({ value, label, tone, icon, curve = 'linear', dashed = false, dots = false, className, ref }: ChartLineProps<Row>) {
     const [chart, id, values] = useSeriesValues('Chart.Line', value);
+    const [color, rowColors] = tonesOf(chart, tone);
     useRegistration(chart.store, 'series', id, {
         kind: 'line',
         label,
-        color: colorOf(tone),
-        rowColors: null,
+        color,
+        rowColors,
         values,
         stack: null,
         bars: null,
@@ -131,9 +153,74 @@ export function ChartLine<Row>({ value, label, tone, icon, curve = 'linear', das
         icon: icon ?? null,
         valueLabels: false
     });
+    if (chart.points) {
+        return (
+            <g ref={ref} className={clsx('pointer-events-none', className)}>
+                {chart.pointGroups.map((run) => {
+                    const first = run.indexes[0]!;
+                    const placed = run.indexes.map((index) => {
+                        const pixel = values[index] === null ? null : chart.pixelOfY(values[index]!);
+                        const left = chart.positions[index]?.[0] ?? null;
+                        return pixel === null || left === null ? null : ([left, pixel] as const);
+                    });
+                    return (
+                        <g
+                            key={run.key}
+                            opacity={chart.dimmedGroups.has(run.key) ? DIMMED_POINT : 1}
+                            style={{ color: rowColors?.[first] ?? color ?? chart.groupColorOf(first) }}
+                        >
+                            <LinePath points={placed} curve={curve} dashed={dashed} dots={false} />
+                        </g>
+                    );
+                })}
+            </g>
+        );
+    }
     return (
-        <g ref={ref} className={clsx('pointer-events-none', className)} style={{ color: chart.colors.get(id) ?? colorOf(tone) ?? seriesColor(0) }}>
+        <g ref={ref} className={clsx('pointer-events-none', className)} style={{ color: chart.colors.get(id) ?? color ?? seriesColor(0) }}>
             <LinePath points={pointsOf(chart, values)} curve={curve} dashed={dashed} dots={dots} />
+        </g>
+    );
+}
+
+/*
+ * A dot per value. On a point chart the dots are what the cursor and the keyboard move between: the one under the
+ * cursor and every picked one grow, and a ring marks a picked one and the one the keyboard is on.
+ */
+export function ChartPoint<Row>({ value, label, tone, icon, className, ref }: ChartPointProps<Row>) {
+    const [chart, id, values] = useSeriesValues('Chart.Point', value);
+    const [color, rowColors] = tonesOf(chart, tone);
+    useRegistration(chart.store, 'series', id, {
+        kind: 'point',
+        label,
+        color,
+        rowColors,
+        values,
+        stack: null,
+        bars: null,
+        curve: 'linear',
+        icon: icon ?? null,
+        valueLabels: false
+    });
+    const fallback = chart.colors.get(id) ?? seriesColor(0);
+    return (
+        <g ref={ref} className={clsx('pointer-events-none', className)}>
+            {values.map((amount, index) => {
+                const pixel = amount === null ? null : chart.pixelOfY(amount);
+                const left = chart.points ? (chart.positions[index]?.[0] ?? null) : chart.centerOf(index);
+                if (pixel === null || left === null || !Number.isFinite(left)) {
+                    return null;
+                }
+                const active = index === chart.activeIndex;
+                const picked = chart.selected[index] === true;
+                const fill = rowColors?.[index] ?? color ?? (chart.points ? chart.groupColorOf(index) : fallback);
+                return (
+                    <g key={chart.keys?.[index] ?? index} opacity={chart.dimmed[index] === true ? DIMMED_POINT : 1}>
+                        <circle cx={left} cy={pixel} r={active || picked ? 5 : 4} className="stroke-surface" strokeWidth={1} style={{ fill }} />
+                        {(picked || (active && chart.byKeyboard)) && <circle cx={left} cy={pixel} r={8} fill="none" className="stroke-text" strokeWidth={2} />}
+                    </g>
+                );
+            })}
         </g>
     );
 }

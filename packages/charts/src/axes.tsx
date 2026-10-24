@@ -1,6 +1,7 @@
 import { useId, useRef, useSyncExternalStore, type ReactNode, type Ref } from 'react';
 import { createPortal } from 'react-dom';
 import clsx from 'clsx';
+import { useTranslation } from 'react-i18next';
 import { formatRounded } from '@adecore/ui/format';
 import { useChartContext } from './context.ts';
 import { decimalsOf, tickCount } from './scale.ts';
@@ -25,6 +26,8 @@ export interface ChartXAxisProps {
     readonly angle?: 0 | -40;
     /* Leaves labels of a band scale out where they would overlap; false writes one under every bucket. */
     readonly thin?: boolean;
+    /* What the axis measures, centered under its labels; a log scale adds that it is one. A point chart reads it out with each x. */
+    readonly title?: string;
     readonly className?: string;
     readonly ref?: Ref<SVGGElement>;
 }
@@ -35,6 +38,8 @@ export interface ChartYAxisProps {
     /* A target count of ticks. */
     readonly ticks?: number;
     readonly side?: 'left' | 'right';
+    /* What the axis measures, or its unit, written above the plot where the axis starts. */
+    readonly title?: string;
     readonly className?: string;
     readonly ref?: Ref<SVGGElement>;
 }
@@ -65,6 +70,11 @@ const X_TICK_SPACING = 96;
 const GUESS = 48;
 const SLANT = (40 * Math.PI) / 180;
 const DASH = '2 5';
+/* The row an x axis title takes under its labels. */
+const X_TITLE_ROOM = 21;
+/* The baseline of a y axis title from the top of the chart, and the room above the plot it needs. */
+const Y_TITLE_BASELINE = 15;
+const Y_TITLE_ROOM = 28;
 
 /* The height a row of labels takes under the plot, more for a slanted one. */
 const roomOf = (widest: number, angle: number): number => Math.ceil(angle === 0 ? X_LABEL_LINE : widest * Math.sin(SLANT) + X_LABEL_LINE * Math.cos(SLANT));
@@ -121,10 +131,12 @@ export function ChartGrid({ axis = 'y', dashed = false, className, ref }: ChartG
 }
 
 /* The labels under the plot: one per bucket on a band scale as far as they fit, round ticks on a continuous one. */
-export function ChartXAxis({ format, ticks, angle = 0, thin = true, className, ref }: ChartXAxisProps) {
+export function ChartXAxis({ format, ticks, angle = 0, thin = true, title, className, ref }: ChartXAxisProps) {
     const chart = useChartContext('Chart.XAxis');
+    const { t } = useTranslation('charts');
     const { store, plot, continuous, band, xs } = chart;
     const id = useId();
+    useAxisTitle('xTitle', title);
     const labels = useRef<SVGGElement>(null);
     const candidates = useRef<SVGGElement>(null);
     const grown = useRef({ key: '', width: 0 });
@@ -149,7 +161,7 @@ export function ChartXAxis({ format, ticks, angle = 0, thin = true, className, r
             width = grown.current.key === domainKey ? Math.max(width, grown.current.width) : width;
             grown.current = { key: domainKey, width };
         }
-        store.setXAxis(id, { widest: width, room: roomOf(width, angle), format });
+        store.setXAxis(id, { widest: width, room: roomOf(width, angle) + (title === undefined ? 0 : X_TITLE_ROOM), format });
     });
     useBeforePaint(() => () => store.setXAxis(id, null), [store, id]);
 
@@ -218,28 +230,59 @@ export function ChartXAxis({ format, ticks, angle = 0, thin = true, className, r
                     )
                 )}
             </g>
+            {title !== undefined && (
+                <text
+                    x={Math.round((plot.left + plot.right) / 2)}
+                    y={baseline + roomOf(widest, angle) + X_TITLE_ROOM - 4}
+                    textAnchor="middle"
+                    className="fill-text-muted text-xs"
+                >
+                    {chart.xScale === 'log' ? `${title} · ${t('axis.logarithmic')}` : title}
+                </text>
+            )}
         </g>
     );
 }
 
+/* Tells the root the title of an axis, which a point chart reads out with each value; an axis without one says nothing. */
+function useAxisTitle(axis: 'xTitle' | 'yTitle', title: string | undefined): void {
+    const { store } = useChartContext('Chart.XAxis');
+    useBeforePaint(() => {
+        if (title !== undefined) {
+            store.setFormat(axis, title);
+        }
+    });
+    useBeforePaint(
+        () => () => {
+            if (title !== undefined) {
+                store.setFormat(axis, undefined);
+            }
+        },
+        [store, axis, title]
+    );
+}
+
 /* The value labels beside the plot. It measures its widest label and gives the plot the rest. */
-export function ChartYAxis({ format, ticks, side = 'left', className, ref }: ChartYAxisProps) {
+export function ChartYAxis({ format, ticks, side = 'left', title, className, ref }: ChartYAxisProps) {
     const chart = useChartContext('Chart.YAxis');
     const { store, y, yStep } = chart;
     const labels = useRef<SVGGElement>(null);
     const target = side === 'left' ? chart.elements.left : chart.elements.right;
+    useAxisTitle('yTitle', title);
 
     useBeforePaint(() => {
         if (labels.current !== null) {
             store.setAxis(side, Math.ceil(widestIn(labels.current)) + LABEL_GAP);
         }
         store.setAxis('yTicks', ticks ?? null);
+        store.setAxis('top', title === undefined ? null : Y_TITLE_ROOM);
         store.setFormat('y', format);
     });
     useBeforePaint(
         () => () => {
             store.setAxis(side, null);
             store.setAxis('yTicks', null);
+            store.setAxis('top', null);
             store.setFormat('y', undefined);
         },
         [store, side]
@@ -268,6 +311,17 @@ export function ChartYAxis({ format, ticks, side = 'left', className, ref }: Cha
                     );
                 })}
             </g>
+            {title !== undefined && (
+                // Over the plot where the axis starts, so a unit reads before the values and needs no turned text.
+                <text
+                    x={side === 'left' ? chart.leftAxis + Math.round(chart.plot.left) : -Math.round(chart.width - chart.plot.right)}
+                    y={Y_TITLE_BASELINE}
+                    textAnchor={side === 'left' ? 'start' : 'end'}
+                    className="fill-text-muted text-xs"
+                >
+                    {title}
+                </text>
+            )}
         </g>,
         target
     );

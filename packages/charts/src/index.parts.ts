@@ -4,7 +4,18 @@ import { ChartGrid, ChartGroupAxis, ChartXAxis, ChartYAxis, type ChartGroupAxisP
 import { ChartGroup, ChartLayer } from './layer.tsx';
 import { ChartLegend, ChartTable, ChartTooltip, type ChartTooltipProps } from './overlays.tsx';
 import { ChartRoot } from './Root.tsx';
-import { ChartArea, ChartBar, ChartBars, ChartLine, type ChartAreaProps, type ChartBarProps, type ChartLineProps } from './series.tsx';
+import { ChartEndLabels, ChartFrontier, type ChartEndLabelsProps } from './scatter.tsx';
+import {
+    ChartArea,
+    ChartBar,
+    ChartBars,
+    ChartLine,
+    ChartPoint,
+    type ChartAreaProps,
+    type ChartBarProps,
+    type ChartLineProps,
+    type ChartPointProps
+} from './series.tsx';
 
 /* JSX cannot carry the row type of the root down to its parts, so the plain parts take any key; `createChart` types them. */
 // oxlint-disable-next-line typescript/no-explicit-any
@@ -16,6 +27,9 @@ export const XAxis = ChartXAxis;
 export const YAxis = ChartYAxis;
 export const GroupAxis: (props: ChartGroupAxisProps<AnyRow>) => ReactNode = ChartGroupAxis;
 export const Line: (props: ChartLineProps<AnyRow>) => ReactNode = ChartLine;
+export const Point: (props: ChartPointProps<AnyRow>) => ReactNode = ChartPoint;
+export const Frontier = ChartFrontier;
+export const EndLabels: (props: ChartEndLabelsProps<AnyRow>) => ReactNode = ChartEndLabels;
 export const Area: (props: ChartAreaProps<AnyRow>) => ReactNode = ChartArea;
 export const Bars = ChartBars;
 export const Bar: (props: ChartBarProps<AnyRow>) => ReactNode = ChartBar;

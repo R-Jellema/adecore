@@ -52,15 +52,19 @@ export interface ChartTableProps {
 const OFFSET = 12;
 const EDGE = 4;
 
+/* The color a series has in a row: its own per row, else on a point chart the color of the row's series. */
+const colorAt = (chart: ChartContextValue, id: string, entry: SeriesEntry, index: number): string =>
+    entry.rowColors?.[index] ?? (chart.points ? (entry.color ?? chart.groupColorOf(index)) : chart.colors.get(id)!);
+
 const bucketOf = <Row,>(chart: ChartContextValue, index: number): ChartBucket<Row> => ({
     index,
     x: chart.xs[index]!,
     row: chart.data[index] as Row,
     group: chart.groupKeys?.[index] ?? null,
     groupLabel: chart.groupLabels?.[index] ?? null,
-    values: [...chart.series].flatMap(([id, entry]) => {
+    values: chart.readable.flatMap(([id, entry]) => {
         const value = entry.values[index];
-        return value === null || value === undefined ? [] : [{ label: entry.label, color: entry.rowColors?.[index] ?? chart.colors.get(id)!, value }];
+        return value === null || value === undefined ? [] : [{ label: entry.label, color: colorAt(chart, id, entry, index), value }];
     }),
     notes: chart.notesAt(index)
 });
@@ -87,31 +91,42 @@ export function ChartTooltip<Row>({ total = false, format, children, className, 
     }
     const bucket = bucketOf<Row>(chart, activeIndex);
     const write = format ?? chart.formatY;
-    const pixel = chart.leftAxis + chart.centerOf(activeIndex) - chart.scroll;
+    const position = chart.points ? chart.positions[activeIndex] : null;
+    const pixel = chart.leftAxis + (position?.[0] ?? chart.centerOf(activeIndex)) - chart.scroll;
     // The card hangs on the side with the most room, so it never covers the cursor and never runs off.
     const right = pixel > chart.box / 2;
     const place = right
         ? { right: Math.round(chart.box - pixel + OFFSET), maxWidth: Math.max(0, Math.round(pixel - OFFSET - EDGE)) }
         : { left: Math.round(pixel + OFFSET), maxWidth: Math.max(0, Math.round(chart.box - pixel - OFFSET - EDGE)) };
     const sum = bucket.values.reduce((all, entry) => all + entry.value, 0);
+    // A point names its series and itself; its x is a value like the others, under the title of its axis.
+    const heading = chart.points
+        ? [bucket.groupLabel, chart.rowLabels?.[activeIndex]].filter(Boolean).join(' · ') || chart.formatX(bucket.x)
+        : [bucket.groupLabel, chart.formatX(bucket.x)].filter(Boolean).join(' · ');
     return createPortal(
         <Surface
             ref={ref}
             aria-hidden
             className={clsx('absolute flex w-max min-w-36 flex-col gap-1 rounded-lg px-2.5 py-2 text-xs', className)}
-            style={{ top: chart.plot.top, ...place }}
+            style={{ top: position === null || position === undefined ? chart.plot.top : Math.max(0, Math.round(position[1]) - OFFSET), ...place }}
         >
             {children !== undefined ? (
                 children(bucket)
             ) : (
                 <>
-                    <p className="font-medium text-text">{[bucket.groupLabel, chart.formatX(bucket.x)].filter(Boolean).join(' · ')}</p>
-                    {[...chart.series].map(([id, entry]) => {
+                    <p className="font-medium text-text">{heading}</p>
+                    {chart.points && (
+                        <p className="flex items-center gap-2 text-text-muted">
+                            <span className="min-w-0 truncate">{chart.xTitle}</span>
+                            <span className="ml-auto pl-3 text-text tabular-nums">{chart.formatX(bucket.x)}</span>
+                        </p>
+                    )}
+                    {chart.readable.map(([id, entry]) => {
                         const value = entry.values[activeIndex];
                         // A series without a value here still gets its row, so a gap reads as nothing measured.
                         return (
                             <p key={id} className="flex items-center gap-2 text-text-muted">
-                                <Swatch color={entry.rowColors?.[activeIndex] ?? chart.colors.get(id)!} entry={entry} size={12} />
+                                <Swatch color={colorAt(chart, id, entry, activeIndex)} entry={entry} size={12} />
                                 <span className="min-w-0 truncate">{entry.label}</span>
                                 <span className="ml-auto pl-3 text-text tabular-nums">{value === null || value === undefined ? '-' : write(value)}</span>
                             </p>
@@ -135,7 +150,7 @@ export function ChartTooltip<Row>({ total = false, format, children, className, 
     );
 }
 
-/* The series with their color, in the order of the children. */
+/* The series with their color, in the order of the children; on a point chart the series of its groups. */
 export function ChartLegend({ className, ref }: ChartLegendProps) {
     const chart = useChartContext('Chart.Legend');
     if (chart.elements.legend === null) {
@@ -143,12 +158,19 @@ export function ChartLegend({ className, ref }: ChartLegendProps) {
     }
     return createPortal(
         <ul ref={ref} className={clsx('flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-muted', className)}>
-            {[...chart.series].map(([id, entry]) => (
-                <li key={id} className="flex items-center gap-1.5">
-                    <Swatch color={chart.colors.get(id)!} entry={entry} size={14} />
-                    {entry.label}
-                </li>
-            ))}
+            {chart.points && chart.groupKeys !== null
+                ? chart.pointGroups.map((run) => (
+                      <li key={run.key} className="flex items-center gap-1.5">
+                          <span className="size-2 shrink-0 rounded-full" style={{ background: chart.pointColor(run.indexes[0]!) }} />
+                          {chart.groupLabels?.[run.indexes[0]!] ?? run.key}
+                      </li>
+                  ))
+                : [...chart.series].map(([id, entry]) => (
+                      <li key={id} className="flex items-center gap-1.5">
+                          <Swatch color={chart.colors.get(id)!} entry={entry} size={14} />
+                          {entry.label}
+                      </li>
+                  ))}
         </ul>,
         chart.elements.legend
     );
@@ -163,8 +185,11 @@ export function ChartTable({ className, ref }: ChartTableProps) {
     if (chart.elements.table === null) {
         return null;
     }
-    const series = [...chart.series];
+    const series = chart.readable;
     const grouped = chart.groupKeys !== null;
+    // A point names itself by its label where it has one, and its x stands in a column of its own.
+    const xColumn = chart.points && chart.rowLabels !== null;
+    const cell = shown ? 'h-8 px-2 text-right whitespace-nowrap text-text' : undefined;
     return createPortal(
         <div ref={ref} className={clsx('flex flex-col items-start gap-2', className)}>
             <Button size="sm" aria-expanded={shown} aria-controls={id} onClick={() => setShown((current) => !current)}>
@@ -177,6 +202,11 @@ export function ChartTable({ className, ref }: ChartTableProps) {
                         <tr>
                             {grouped && <td />}
                             <td />
+                            {xColumn && (
+                                <th scope="col" className={shown ? 'h-8 px-2 text-right font-medium whitespace-nowrap text-text-muted' : undefined}>
+                                    {chart.xTitle}
+                                </th>
+                            )}
                             {series.map(([seriesId, entry]) => (
                                 <th
                                     key={seriesId}
@@ -190,15 +220,16 @@ export function ChartTable({ className, ref }: ChartTableProps) {
                     </thead>
                     <tbody>
                         {chart.xs.map((key, index) => (
-                            <tr key={String(key)} className={shown ? 'border-t border-border-soft' : undefined}>
+                            <tr key={chart.keys?.[index] ?? String(key)} className={shown ? 'border-t border-border-soft' : undefined}>
                                 {grouped && <td className={shown ? 'h-8 px-2 text-text-muted' : undefined}>{chart.groupLabels![index]}</td>}
                                 <th scope="row" className={shown ? 'h-8 px-2 text-left font-normal whitespace-nowrap text-text-muted' : undefined}>
-                                    {chart.formatX(key)}
+                                    {xColumn ? chart.rowLabels![index] : chart.formatX(key)}
                                 </th>
+                                {xColumn && <td className={cell}>{Number.isFinite(key) ? chart.formatX(key) : ''}</td>}
                                 {series.map(([seriesId, entry]) => {
                                     const value = entry.values[index];
                                     return (
-                                        <td key={seriesId} className={shown ? 'h-8 px-2 text-right whitespace-nowrap text-text' : undefined}>
+                                        <td key={seriesId} className={cell}>
                                             {value === null || value === undefined ? '' : chart.formatY(value)}
                                         </td>
                                     );

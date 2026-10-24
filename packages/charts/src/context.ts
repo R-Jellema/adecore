@@ -60,6 +60,28 @@ export interface ChartContextValue {
     readonly formatX: (x: ChartX) => string;
     readonly formatY: (value: number) => string;
     readonly notesAt: (index: number) => string[];
+    /* A chart whose rows are points, not buckets. */
+    readonly points: boolean;
+    /* The key of every row of a point chart; null for buckets. */
+    readonly keys: readonly string[] | null;
+    readonly rowLabels: readonly string[] | null;
+    /* Where each point stands, null for a gap. */
+    readonly positions: readonly (readonly [number, number] | null)[];
+    /* The series of a point chart, in the order they first appear, each with its rows in the order of the data. */
+    readonly pointGroups: readonly { readonly key: string; readonly indexes: readonly number[] }[];
+    /* The series whose points are all dimmed. */
+    readonly dimmedGroups: ReadonlySet<string>;
+    /* The categorical color of the series of a row, for a part without a tone of its own. */
+    readonly groupColorOf: (index: number) => string;
+    /* The color of a point as the part that places it draws it. */
+    readonly pointColor: (index: number) => string;
+    /* The x of a row as a person reads it, on a point chart with the title of the axis. */
+    readonly xValueOf: (index: number) => string;
+    readonly xTitle: string | null;
+    /* The series a person reads in a bucket or a point: on a point chart one per label. */
+    readonly readable: readonly (readonly [string, SeriesEntry])[];
+    /* The keyboard moved the cursor last, not the pointer. */
+    readonly byKeyboard: boolean;
 }
 
 export const ChartContext = createContext<ChartContextValue | null>(null);

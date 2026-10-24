@@ -145,6 +145,7 @@ const charts: DefaultTheme.SidebarItem[] = [
         ['Overview', '/charts/'],
         ['Series chart', '/charts/series'],
         ['Columns and groups', '/charts/columns'],
+        ['Scatter and series legend', '/charts/scatter'],
         ['Shared cursor', '/charts/shared-cursor'],
         ['Sparkline', '/charts/sparkline'],
         ['useChart', '/charts/use-chart']

@@ -2,7 +2,7 @@ import type { IconProps } from '@adecore/ui';
 import type { ChartCurve, ChartX } from './types.ts';
 
 export interface SeriesEntry {
-    readonly kind: 'line' | 'area' | 'bar';
+    readonly kind: 'line' | 'area' | 'bar' | 'point';
     readonly label: string;
     /* A CSS color, or null for the next color of the categorical series. */
     readonly color: string | null;
@@ -42,6 +42,10 @@ export interface AxisSizes {
     readonly right: number | null;
     /* The number of ticks the y axis asks for. */
     readonly yTicks: number | null;
+    /* The room a title over the y axis needs above the plot. */
+    readonly top: number | null;
+    /* The room end labels take right of the plot, inside its svg. */
+    readonly end: number | null;
 }
 
 /* One row of labels under the plot; the rows stack in the order of the children. */
@@ -55,6 +59,9 @@ export interface XAxisEntry {
 
 export interface ChartFormats {
     readonly y?: (value: number) => string;
+    /* The titles of the axes, which name a value where a point is read out. */
+    readonly xTitle?: string;
+    readonly yTitle?: string;
 }
 
 export interface ChartStore {
@@ -93,7 +100,7 @@ const sameEntry = (one: object | undefined, other: object): boolean =>
 export function createChartStore(): ChartStore {
     const listeners = new Set<() => void>();
     let series: ReadonlyMap<string, SeriesEntry> = new Map();
-    let axes: AxisSizes = { left: null, right: null, yTicks: null };
+    let axes: AxisSizes = { left: null, right: null, yTicks: null, top: null, end: null };
     let xAxes: ReadonlyMap<string, XAxisEntry> = new Map();
     let markers: ReadonlyMap<string, MarkerEntry> = new Map();
     let rules: ReadonlyMap<string, RuleEntry> = new Map();

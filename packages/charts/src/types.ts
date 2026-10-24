@@ -13,9 +13,13 @@ export type ChartX = number | string;
 /* What `at`, `from` and `to` take: a moment may be a `Date`. */
 export type ChartXInput = ChartX | Date;
 
-export type ChartXScale = 'time' | 'linear' | 'band';
+/* `log` runs in decades, for values that lie orders of magnitude apart. */
+export type ChartXScale = 'time' | 'linear' | 'log' | 'band';
 
 export type ChartYScale = 'linear' | 'log';
+
+/* What a row is: a bucket the series share, or a point of its own at its x and value. */
+export type ChartRows = 'buckets' | 'points';
 
 export interface ChartYOptions {
     readonly min?: number;
@@ -24,6 +28,14 @@ export interface ChartYOptions {
     readonly include?: readonly number[];
     /* A count: the ticks stay on whole numbers. */
     readonly integer?: boolean;
+    /* A tick every this much, with the ends rounded out to it; a linear axis only. */
+    readonly step?: number;
+}
+
+/* The ends of the x axis of a point chart; without them it covers the points and rounds out to a tick. */
+export interface ChartXOptions {
+    readonly min?: number;
+    readonly max?: number;
 }
 
 export type ChartCurve = 'linear' | 'monotone' | 'step';

@@ -8,8 +8,18 @@ export default {
         hide: 'Waarden verbergen',
         caption: 'Waarden van {{label}}'
     },
+    axis: {
+        logarithmic: 'logaritmisch'
+    },
+    legend: {
+        search: 'Zoeken',
+        all: 'Alle',
+        none: 'Geen',
+        empty: 'Niets gevonden.'
+    },
     keyboard: {
         move: 'Pijltjestoetsen gaan langs de waarden, Home en End naar het begin en het eind, Escape wist.',
+        points: 'Links en rechts gaan langs een reeks, omhoog en omlaag naar de volgende reeks, Home en End naar de uiteinden, Escape wist.',
         groups: 'Page Up en Page Down gaan naar de vorige of volgende groep.',
         activate: 'Enter of spatie kiest een waarde.'
     }

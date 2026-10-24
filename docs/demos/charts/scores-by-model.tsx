@@ -39,7 +39,7 @@ export default function ScoresByModelDemo() {
             className="w-full"
         >
             <ScoreChart.Grid dashed />
-            <ScoreChart.YAxis ticks={4} />
+            <ScoreChart.YAxis ticks={4} title="Index points, higher is better" />
             <ScoreChart.XAxis format={(key) => SHORT_EFFORTS[String(key).split(':')[1]!]!} thin={false} />
             <ScoreChart.Bar
                 value="score"

@@ -211,3 +211,37 @@ const MODELS: { model: string; lab: string; scores: [string, number][] }[] = [
 export function scoresByModel(): ModelScore[] {
     return MODELS.flatMap(({ model, lab, scores }) => scores.map(([effort, score]) => ({ key: `${model}:${effort}`, model, lab, effort, score })));
 }
+
+/* Dollars per task of each model and effort, three orders of magnitude apart from the cheapest to the dearest. */
+const COSTS: Record<string, number[]> = {
+    'Atlas 5': [0.12, 0.31, 0.74, 1.9],
+    'Lumen Pro': [0.08, 0.2, 0.55],
+    'Orbit 3': [0.4, 1.1],
+    'Atlas 5 mini': [0.015, 0.04, 0.09],
+    'Fathom 2': [0.006, 0.02]
+};
+
+/* A color per model, so two models of one lab still read apart on a scatter. */
+export const MODEL_COLORS: Record<string, string> = {
+    'Atlas 5': 'var(--chart-1)',
+    'Lumen Pro': 'var(--chart-2)',
+    'Orbit 3': 'var(--chart-3)',
+    'Atlas 5 mini': 'var(--chart-4)',
+    'Fathom 2': 'var(--chart-5)'
+};
+
+export interface ModelCost extends ModelScore {
+    readonly cost: number;
+}
+
+/* The scores per model and effort with what a task costs at each. */
+export function costsByModel(): ModelCost[] {
+    return MODELS.flatMap(({ model, lab, scores }) =>
+        scores.map(([effort, score], index) => ({ key: `${model}:${effort}`, model, lab, effort, score, cost: COSTS[model]![index]! }))
+    );
+}
+
+/* Dollars with the precision a price per task needs: `$0.006`, `$0.74`, `$1.90`. */
+export function formatCost(dollars: number): string {
+    return dollars < 0.1 ? `$${formatRounded(dollars, 3)}` : `$${formatRounded(dollars, 2)}`;
+}
