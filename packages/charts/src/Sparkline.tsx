@@ -60,7 +60,7 @@ export function Sparkline({ values, kind = 'line', label, tone = 'accent', forma
                               y={column.y}
                               width={column.width}
                               height={column.height}
-                              rx={column.zero ? 0 : column.width / 2}
+                              rx={column.radius}
                               fill={column.zero ? undefined : 'currentColor'}
                               className={column.zero ? 'fill-border-strong' : undefined}
                           />
