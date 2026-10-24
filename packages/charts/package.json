@@ -2,7 +2,7 @@
   "name": "@adecore/charts",
   "version": "0.0.0",
   "private": true,
-  "description": "Series charts and sparklines in the theme of @adecore/ui, readable by keyboard and screen reader.",
+  "description": "Series charts, scatters, heatmaps, trace timelines and sparklines in the theme of @adecore/ui, readable by keyboard and screen reader.",
   "license": "FSL-1.1-MIT",
   "author": "Bas Milius",
   "repository": {
