@@ -12,7 +12,7 @@ export default function SparklineRowDemo() {
                 {services.map((service) => (
                     <li key={service.name} className="flex h-10 items-center gap-3 text-sm">
                         <span className="w-24 font-mono text-text">{service.name}</span>
-                        <Sparkline values={service.perDay} kind="bars" label={`Events of ${service.name} in 14 days`} width={112} height={20} />
+                        <Sparkline values={service.perDay} kind="bars" label={`Events of ${service.name} in 14 days`} width={82} height={16} />
                         <span className="ml-auto text-text-muted tabular-nums">{formatNumber(service.perDay.reduce((sum, count) => sum + count, 0))}</span>
                     </li>
                 ))}

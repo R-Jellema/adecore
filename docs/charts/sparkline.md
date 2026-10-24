@@ -9,11 +9,11 @@ import { Sparkline } from '@adecore/charts';
 <Demo src="charts/sparkline-row" />
 
 ```tsx
-<Sparkline values={perDay} kind="bars" label="Events of api in 14 days" width={112} height={20} />
+<Sparkline values={perDay} kind="bars" label="Events of api in 14 days" width={82} height={16} />
 <Sparkline values={tokens} label="Tokens in 14 days" tone="running" format={formatTokens} width={160} />
 ```
 
-`kind="bars"` draws a column per value, with a floor of one pixel for a zero so a quiet day still shows; `kind="line"` (the default) draws a line, broken by a missing value. It is one tab stop, so the tooltip opens on the keyboard too.
+`kind="bars"` draws a rounded column per value, 2px apart, as wide as the width allows: 14 values in 82px make columns of 4px. The smallest count is never shorter than its column is wide, so it reads as a bar rather than a dot, and a zero is a one-pixel baseline in `--border-strong` so a quiet day still shows; `kind="line"` (the default) draws a line, broken by a missing value. It is one tab stop, so the tooltip opens on the keyboard too.
 
 | Prop | Type | Default | |
 | --- | --- | --- | --- |

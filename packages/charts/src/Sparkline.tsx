@@ -54,7 +54,16 @@ export function Sparkline({ values, kind = 'line', label, tone = 'accent', forma
             >
                 {kind === 'bars'
                     ? sparkColumns(values, width, height).map((column) => (
-                          <rect key={column.x} x={column.x} y={column.y} width={column.width} height={column.height} rx={1} fill="currentColor" />
+                          <rect
+                              key={column.x}
+                              x={column.x}
+                              y={column.y}
+                              width={column.width}
+                              height={column.height}
+                              rx={column.zero ? 0 : column.width / 2}
+                              fill={column.zero ? undefined : 'currentColor'}
+                              className={column.zero ? 'fill-border-strong' : undefined}
+                          />
                       ))
                     : path !== null && <path d={path} fill="none" stroke="currentColor" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />}
             </svg>
