@@ -201,6 +201,16 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(live()).toBe('Alpha, low, Score 40');
     });
 
+    test('a column stops at the bottom of the plot when the axis starts above zero', async () => {
+        await mount(
+            <Chart.Root data={SCORES} x="key" y={{ min: 20 }} label="Scores" height={200}>
+                <Chart.Bar value="score" label="Score" />
+            </Chart.Root>
+        );
+        const bottoms = columns().map((column) => Number(column.getAttribute('y')) + Number(column.getAttribute('height')));
+        expect(Math.max(...bottoms)).toBe(196);
+    });
+
     test('the tooltip keeps a row for a series without a value in the bucket', async () => {
         const hours = [
             { at: 0, errors: null, warnings: 3 },
