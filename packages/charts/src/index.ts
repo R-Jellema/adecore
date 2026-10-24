@@ -20,6 +20,7 @@ export type {
     ChartAccessor,
     ChartColor,
     ChartCurve,
+    ChartMargin,
     ChartRect,
     ChartRows,
     ChartTone,

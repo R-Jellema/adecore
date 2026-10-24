@@ -311,6 +311,19 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(tallest).toBe(24);
     });
 
+    test('the margin keeps room beside the plot and lets a chart reach its bottom edge', async () => {
+        await mount(
+            <Chart.Root data={SCORES} x="key" margin={{ right: 16, bottom: 0 }} label="Scores">
+                <Chart.Bar value="score" label="Score" />
+            </Chart.Root>
+        );
+        const drawn = columns();
+        // Four buckets share the 584px left of the margin, and every column stands on the bottom of the svg.
+        expect(Math.max(...drawn.map((column) => Number(column.getAttribute('x')) + Number(column.getAttribute('width'))))).toBeLessThanOrEqual(584);
+        expect(Math.max(...drawn.map((column) => Number(column.getAttribute('x'))))).toBeGreaterThan(438);
+        expect(drawn.map((column) => Number(column.getAttribute('y')) + Number(column.getAttribute('height')))).toEqual([200, 200, 200, 200]);
+    });
+
     test('a scrolling plot keeps room over the y axis for what hangs out of its first bucket', async () => {
         const plot = await mount(
             <Chart.Root data={SCORES} x="key" minBucketWidth={400} label="Scores">

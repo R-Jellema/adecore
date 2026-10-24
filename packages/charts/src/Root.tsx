@@ -26,7 +26,7 @@ import { movePoint, nearestPoint, type PlacedPoint } from './points.ts';
 import { bucketStepOf, continuousXScale, extentOf, pointXScale, stackSeries, tickCount, yScaleOf } from './scale.ts';
 import { createChartStore } from './store.ts';
 import { formatTime, timeLabelOf } from './time-format.ts';
-import type { ChartAccessor, ChartRows, ChartX, ChartXInput, ChartXOptions, ChartXScale, ChartYOptions, ChartYScale } from './types.ts';
+import type { ChartAccessor, ChartMargin, ChartRows, ChartX, ChartXInput, ChartXOptions, ChartXScale, ChartYOptions, ChartYScale } from './types.ts';
 
 export interface ChartRootProps<Row> {
     /* One row per bucket. On a time or linear scale the rows run from the lowest x to the highest; points come in any order. */
@@ -57,8 +57,11 @@ export interface ChartRootProps<Row> {
     /* Controls the cursor. Leaving the chart calls `onActiveXChange(null)` and leaves the cursor to the app. */
     readonly activeX?: ChartX | null;
     readonly onActiveXChange?: (x: ChartX | null) => void;
-    /* Pixels above the plot, for something drawn over it such as a unit; at least 24 with value labels over columns. */
-    readonly marginTop?: number;
+    /*
+     * Room around the plot. `top` (8) is for something drawn over it, at least 24 with value labels over columns; `bottom`
+     * is 4; `left` and `right` are 6 on a continuous scale without buckets, so the dot at the end of a line keeps its edge.
+     */
+    readonly margin?: ChartMargin;
     /* Puts the buckets of a band scale into runs of the same key, with a gap between them, or the points into series. */
     readonly group?: ChartAccessor<Row, string>;
     /* What the tooltip, the live region and the table call a group, read from its rows; its key by default. */
@@ -83,7 +86,7 @@ const INSET = 6;
 const Y_TICK_SPACING = 40;
 /* How far from a point the pointer may be and still take it. */
 const POINT_REACH = 16;
-/* One row of value labels over the tallest column; labels pushed up a row further need a larger `marginTop`. */
+/* One row of value labels over the tallest column; labels pushed up a row further need a larger `margin.top`. */
 const VALUE_LABEL_ROOM = 24;
 
 const defaultValue = (value: number): string => (Number.isInteger(value) ? formatNumber(value) : formatRounded(value, 2));
@@ -102,7 +105,7 @@ export function ChartRoot<Row>({
     y = {},
     label,
     height = 200,
-    marginTop = 8,
+    margin = {},
     activeX,
     onActiveXChange,
     group,
@@ -159,17 +162,19 @@ export function ChartRoot<Row>({
     // A bucket of a time scale runs from its x for one step and its point stands in the middle, as a column would.
     const bucketStep = xScale === 'time' && !points ? (stepProp ?? bucketStepOf(xs as number[])) : 0;
     const inset = band || bucketStep > 0 ? 0 : INSET;
-    const layout = band ? bandLayout(xs.length, groupKeys, room, minBucketWidth, groupGap) : null;
-    const width = layout === null ? room : Math.max(room, Math.ceil(layout.width));
+    const marginLeft = margin.left ?? inset;
+    const marginRight = margin.right ?? inset;
+    const layout = band ? bandLayout(xs.length, groupKeys, Math.max(0, room - marginLeft - marginRight), minBucketWidth, groupGap) : null;
+    const width = layout === null ? room : Math.max(room, Math.ceil(layout.width + marginLeft + marginRight));
     const scrolls = layout !== null && width > room;
     // A scrolling plot clips what hangs out of its first buckets, such as a value label or a slanted name, so the
     // scroller reaches over the y axis by its width and gives that back as padding: the plot stays where it was.
     const overhang = scrolls ? leftAxis : 0;
     const xRows = [...xAxes.values()];
-    const bottom = height - 4 - (xRows.length === 0 ? 0 : X_AXIS_GAP + xRows.reduce((sum, row) => sum + row.room, 0));
-    const top = Math.max(marginTop, leftY?.top ?? 0, rightY?.top ?? 0, [...series.values()].some((entry) => entry.valueLabels) ? VALUE_LABEL_ROOM : 0);
-    const right = width - inset - (axes.end ?? 0);
-    const plot = { left: inset, top, right, bottom, width: Math.max(0, right - inset), height: Math.max(0, bottom - top) };
+    const bottom = height - (margin.bottom ?? 4) - (xRows.length === 0 ? 0 : X_AXIS_GAP + xRows.reduce((sum, row) => sum + row.room, 0));
+    const top = Math.max(margin.top ?? 8, leftY?.top ?? 0, rightY?.top ?? 0, [...series.values()].some((entry) => entry.valueLabels) ? VALUE_LABEL_ROOM : 0);
+    const right = width - marginRight - (axes.end ?? 0);
+    const plot = { left: marginLeft, top, right, bottom, width: Math.max(0, right - marginLeft), height: Math.max(0, bottom - top) };
     const continuousKind = xScale === 'band' ? 'linear' : xScale;
     const continuous = band
         ? null

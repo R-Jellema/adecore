@@ -38,6 +38,14 @@ export interface ChartXOptions {
     readonly max?: number;
 }
 
+/* Pixels between the edge of the chart and its plot, beside what the axes take. */
+export interface ChartMargin {
+    readonly top?: number;
+    readonly right?: number;
+    readonly bottom?: number;
+    readonly left?: number;
+}
+
 export type ChartCurve = 'linear' | 'monotone' | 'step';
 
 export interface ChartRect {

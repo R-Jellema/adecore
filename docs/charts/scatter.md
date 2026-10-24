@@ -18,7 +18,7 @@ const CostChart = createChart<ModelCost>();
     y={{ step: 10 }}
     label="Intelligence against cost per task"
     height={320}
-    marginTop={34}
+    margin={{ top: 34 }}
     selected={picked}
     onActivate={pick}
     dimmed={(row) => highlighted !== null && row.model !== highlighted}
