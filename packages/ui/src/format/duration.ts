@@ -1,5 +1,5 @@
 import { relativeFormatter } from './locale.ts';
-import { formatDecimal, formatNumber } from './number.ts';
+import { formatDecimal, formatNumber, formatRounded } from './number.ts';
 
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
@@ -21,6 +21,30 @@ export const formatDuration = (ms: number): string => {
         return `${formatNumber(minutes)} min`;
     }
     return `${formatDecimal(minutes / 60)} h`;
+};
+
+/*
+ * How long a short measurement took, below a second too: `0.4 ms`, `123 ms`, `1.42 s`, and as `formatDuration` from a
+ * minute. Each unit rounds before it is chosen, so 999.6 ms reads as `1 s` and not as `1,000 ms`.
+ */
+export const formatPreciseDuration = (ms: number): string => {
+    const value = Math.max(0, ms);
+    const tenths = Math.round(value * 10) / 10;
+    if (tenths < 10) {
+        return `${formatRounded(tenths, 1)} ms`;
+    }
+    if (Math.round(value) < SECOND) {
+        return `${formatNumber(Math.round(value))} ms`;
+    }
+    const hundredths = Math.round(value / 10) / 100;
+    if (hundredths < 10) {
+        return `${formatRounded(hundredths, 2)} s`;
+    }
+    const seconds = Math.round(value / 100) / 10;
+    if (seconds < 60) {
+        return `${formatRounded(seconds, 1)} s`;
+    }
+    return formatDuration(value);
 };
 
 /* How long a window still has, tight enough for the end of a bar: `4d 3h`, `12h 8m`, `9m`. */

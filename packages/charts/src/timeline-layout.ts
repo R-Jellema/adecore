@@ -1,4 +1,3 @@
-import { formatDuration, formatNumber, formatRounded } from '@adecore/ui/format';
 import type { ChartColor } from './types.ts';
 
 /* A span of a trace: a stretch of time, under the span it was part of. */
@@ -140,25 +139,6 @@ export function kindTimes(rows: readonly TimelineTreeRow<TimelineSpan>[]): Map<s
         }
     }
     return times;
-}
-
-/*
- * A duration with the precision a span needs: `0.4 ms`, `123 ms`, `1.42 s`. `formatDuration` rounds to whole seconds,
- * which suits a run but writes `0 s` for nearly every span, so it only takes over from a minute.
- */
-export function formatSpanDuration(ms: number): string {
-    const value = Math.max(0, ms);
-    if (value < 10) {
-        return `${formatRounded(value, 1)} ms`;
-    }
-    if (value < 1000) {
-        return `${formatNumber(value)} ms`;
-    }
-    if (value < 60_000) {
-        const seconds = value / 1000;
-        return `${formatRounded(seconds, seconds < 10 ? 2 : 1)} s`;
-    }
-    return formatDuration(value);
 }
 
 export type TimelineMove = { readonly focus: number } | { readonly expand: string } | { readonly collapse: string } | { readonly select: string };

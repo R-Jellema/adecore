@@ -29,7 +29,7 @@ const KINDS: TimelineKind[] = [
         )}
         detail={(span: TraceSpan) => <SpanDetail span={span} />}
     />
-</Timeline.Root>
+</Timeline.Root>;
 ```
 
 A timeline is no `Chart.Root`: its rows are HTML, its height follows the rows, and the keyboard moves through spans rather than buckets. It sits flush in a panel, with its own 16px at either side, so a row's background runs from edge to edge. Below 576px of width, the bar of a row goes under its label.
@@ -38,14 +38,14 @@ A timeline is no `Chart.Root`: its rows are HTML, its height follows the rows, a
 
 Each row of `data` is a `TimelineSpan`. The app keeps its own fields on it, and the render props of `Timeline.Rows` hand the app's type back when their parameter names it.
 
-| Field | Type | |
-| --- | --- | --- |
-| `id` | `string` | Required. |
-| `parent` | `string \| null` | The span it is part of. Null, or an id that is not in `data`, makes it a root. |
-| `label` | `string` | Required. The name a screen reader reads, and what the row shows without a `label` render prop. |
-| `start`, `duration` | `number` | Required. Milliseconds, on the same clock as every other span and moment. |
-| `kind` | `string` | The id of one of `kinds`. |
-| `tone` | `ChartColor` | Stands in for the color of its kind, such as `'error'` for a span that failed. |
+| Field               | Type             |                                                                                                 |
+| ------------------- | ---------------- | ----------------------------------------------------------------------------------------------- |
+| `id`                | `string`         | Required.                                                                                       |
+| `parent`            | `string \| null` | The span it is part of. Null, or an id that is not in `data`, makes it a root.                  |
+| `label`             | `string`         | Required. The name a screen reader reads, and what the row shows without a `label` render prop. |
+| `start`, `duration` | `number`         | Required. Milliseconds, on the same clock as every other span and moment.                       |
+| `kind`              | `string`         | The id of one of `kinds`.                                                                       |
+| `tone`              | `ChartColor`     | Stands in for the color of its kind, such as `'error'` for a span that failed.                  |
 
 The rows follow the tree: every span after its parent, and siblings by start. A span in a parent cycle starts a tree of its own.
 
@@ -53,16 +53,16 @@ The rows follow the tree: every span after its parent, and siblings by start. A 
 
 The axis runs from the earliest start to the latest end. `kinds` lists what a span can wait on, as `TimelineKind`s (`id`, `label`, `tone`); a kind without a tone takes the next chart color, and a span without a kind the accent.
 
-| Prop | Type | Default | |
-| --- | --- | --- | --- |
-| `data` | `readonly Span[]` | | Required. |
-| `label` | `string` | | Required. The name of the tree for a screen reader. |
-| `kinds` | `readonly TimelineKind[]` | `[]` | |
-| `value`, `defaultValue`, `onValueChange` | `string \| null` | `null` | The selected span, which shows its detail. Selecting it again clears it. |
-| `expanded`, `defaultExpanded`, `onExpandedChange` | `readonly string[]` | every span with children | The spans that show their children. |
-| `format` | `(ms: number) => string` | | Writes every duration: `0.4 ms`, `123 ms` and `1.42 s`, and from a minute on as `formatDuration` of `@adecore/ui/format` does. |
-| `ticks` | `number` | `5` | The most steps on the axis. |
-| `className`, `ref` | | | On the outer box. |
+| Prop                                              | Type                      | Default                  |                                                                                                                                                   |
+| ------------------------------------------------- | ------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data`                                            | `readonly Span[]`         |                          | Required.                                                                                                                                         |
+| `label`                                           | `string`                  |                          | Required. The name of the tree for a screen reader.                                                                                               |
+| `kinds`                                           | `readonly TimelineKind[]` | `[]`                     |                                                                                                                                                   |
+| `value`, `defaultValue`, `onValueChange`          | `string \| null`          | `null`                   | The selected span, which shows its detail. Selecting it again clears it.                                                                          |
+| `expanded`, `defaultExpanded`, `onExpandedChange` | `readonly string[]`       | every span with children | The spans that show their children.                                                                                                               |
+| `format`                                          | `(ms: number) => string`  | `formatPreciseDuration`  | Writes every duration. The default of `@adecore/ui/format` writes `0.4 ms`, `123 ms` and `1.42 s`, and from a minute on as `formatDuration` does. |
+| `ticks`                                           | `number`                  | `5`                      | The most steps on the axis.                                                                                                                       |
+| `className`, `ref`                                |                           |                          | On the outer box.                                                                                                                                 |
 
 `TimelineRootProps` are the props.
 
@@ -80,11 +80,11 @@ The axis runs from the earliest start to the latest end. `kinds` lists what a sp
 
 A row per span that is not folded away: the guides of its depth, a button that folds it, a swatch in its color, its label, and its bar with the duration inside, or beside it on the side with room when the bar is narrow. A folded row says how many spans hang directly under it.
 
-| Prop | Type | |
-| --- | --- | --- |
-| `label` | `(span, row) => ReactNode` | What the row shows after its swatch; the span's `label` by default. `row` is a `TimelineRowState`: `depth`, `children`, `expanded` and the `color` of its bar. |
-| `detail` | `(span) => ReactNode` | What the selected row shows under it, in a sunken box across both columns. A press inside it does not clear the selection. |
-| `className`, `ref` | | On the tree. |
+| Prop               | Type                       |                                                                                                                                                                |
+| ------------------ | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `label`            | `(span, row) => ReactNode` | What the row shows after its swatch; the span's `label` by default. `row` is a `TimelineRowState`: `depth`, `children`, `expanded` and the `color` of its bar. |
+| `detail`           | `(span) => ReactNode`      | What the selected row shows under it, in a sunken box across both columns. A press inside it does not clear the selection.                                     |
+| `className`, `ref` |                            | On the tree.                                                                                                                                                   |
 
 `TimelineRowsProps` are the props.
 
@@ -92,12 +92,12 @@ A row per span that is not folded away: the guides of its depth, a button that f
 
 The rows are a `tree` with one tab stop, like `Tree` in `@adecore/ui`. Every row is a `treeitem` with its level, its place among its siblings, whether it is open and whether it is selected. Its name says its label, kind, start and duration ("SELECT orders, Database, starts at +12 ms, takes 40 ms"), and the detail of the selected row is its description.
 
-| Key | |
-| --- | --- |
-| Up, Down | The previous or the next row. |
-| Home, End | The first or the last row. |
-| Right | Opens a folded row, or moves into an open one. |
-| Left | Folds an open row, or moves to the parent. |
+| Key          |                                                               |
+| ------------ | ------------------------------------------------------------- |
+| Up, Down     | The previous or the next row.                                 |
+| Home, End    | The first or the last row.                                    |
+| Right        | Opens a folded row, or moves into an open one.                |
+| Left         | Folds an open row, or moves to the parent.                    |
 | Enter, Space | Selects the row, or clears the selection on the selected one. |
 
 Folding a row with the focus somewhere under it hands the tab stop to that row. The moments are each a stop of their own, so their tooltip opens on focus.

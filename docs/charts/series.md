@@ -31,21 +31,21 @@ The value axis is `linear` or `log` (`yScale`). It covers every series, stacked 
 
 The width follows the container; `height` (200 by default) is the height of the plot and the x axis together.
 
-| Prop | Type | Default | |
-| --- | --- | --- | --- |
-| `data` | `readonly Row[]` | | Required. One row per bucket. |
-| `x` | `keyof Row \| (row, index) => ChartXInput` | | Required. |
-| `label` | `string` | | Required. The name a screen reader reads, and the caption of the table. |
-| `xScale` | `'band' \| 'time' \| 'linear'` | `'band'` | |
-| `step` | `number` | | The length of a bucket on a time scale, in milliseconds. Set it when rows may be missing at the start, and for columns, which one row cannot draw without it. |
-| `yScale` | `'linear' \| 'log'` | `'linear'` | |
-| `y` | `ChartYOptions` | `{}` | `min`, `max` and `integer`. |
-| `height` | `number` | `200` | Pixels. |
-| `marginTop` | `number` | `8` | Pixels above the plot, for something drawn over it. |
-| `activeX`, `onActiveXChange` | `ChartX \| null` | | The cursor, controlled. Leaving the chart calls `onActiveXChange(null)`; the app decides whether the cursor goes. |
-| `group`, `groupLabel`, `groupGap`, `minBucketWidth` | | | Groups of columns, see [Columns and groups](/charts/columns). |
-| `selected`, `onActivate`, `dimmed` | | | Columns a person picks, see [Columns and groups](/charts/columns#picking-columns). |
-| `className`, `ref` | | | On the outer box. |
+| Prop                                                | Type                                       | Default    |                                                                                                                                                               |
+| --------------------------------------------------- | ------------------------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data`                                              | `readonly Row[]`                           |            | Required. One row per bucket.                                                                                                                                 |
+| `x`                                                 | `keyof Row \| (row, index) => ChartXInput` |            | Required.                                                                                                                                                     |
+| `label`                                             | `string`                                   |            | Required. The name a screen reader reads, and the caption of the table.                                                                                       |
+| `xScale`                                            | `'band' \| 'time' \| 'linear'`             | `'band'`   |                                                                                                                                                               |
+| `step`                                              | `number`                                   |            | The length of a bucket on a time scale, in milliseconds. Set it when rows may be missing at the start, and for columns, which one row cannot draw without it. |
+| `yScale`                                            | `'linear' \| 'log'`                        | `'linear'` |                                                                                                                                                               |
+| `y`                                                 | `ChartYOptions`                            | `{}`       | `min`, `max` and `integer`.                                                                                                                                   |
+| `height`                                            | `number`                                   | `200`      | Pixels.                                                                                                                                                       |
+| `marginTop`                                         | `number`                                   | `8`        | Pixels above the plot, for something drawn over it.                                                                                                           |
+| `activeX`, `onActiveXChange`                        | `ChartX \| null`                           |            | The cursor, controlled. Leaving the chart calls `onActiveXChange(null)`; the app decides whether the cursor goes.                                             |
+| `group`, `groupLabel`, `groupGap`, `minBucketWidth` |                                            |            | Groups of columns, see [Columns and groups](/charts/columns).                                                                                                 |
+| `selected`, `onActivate`, `dimmed`                  |                                            |            | Columns a person picks, see [Columns and groups](/charts/columns#picking-columns).                                                                            |
+| `className`, `ref`                                  |                                            |            | On the outer box.                                                                                                                                             |
 
 A `ChartX` is a number (a moment in milliseconds) or the key of a category; a `ChartXInput` may also be a `Date`. `ChartXScale`, `ChartYScale`, `ChartYOptions`, `ChartAccessor` and `ChartRootProps` are exported as types.
 
@@ -89,7 +89,7 @@ On a time scale the cursor takes the bucket under the pointer, the same bucket a
 
 ## Durations and runs of an endpoint
 
-Two charts of one endpoint over a day in buckets of 30 minutes, with the two deploys that slowed it down and fixed it again. The durations are lines with a format of the app's own on the axis and in the tooltip:
+Two charts of one endpoint over a day in buckets of 30 minutes, with the two deploys that slowed it down and fixed it again. The durations are lines with `formatPreciseDuration` of `@adecore/ui/format` on the axis and in the tooltip:
 
 <Demo src="charts/transaction-duration" />
 
@@ -97,7 +97,7 @@ Two charts of one endpoint over a day in buckets of 30 minutes, with the two dep
 <Chart.Root data={buckets} x="at" xScale="time" step={HALF_HOUR} label="p50 and p95 duration over time">
     <Chart.Grid />
     <Chart.XAxis />
-    <Chart.YAxis format={formatSpan} />
+    <Chart.YAxis format={formatPreciseDuration} />
     <Chart.Line value="p50" label="p50" />
     <Chart.Line value="p95" label="p95" />
     {deploys.map((deploy) => (

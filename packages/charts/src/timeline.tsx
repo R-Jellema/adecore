@@ -2,12 +2,11 @@ import { createContext, useContext, useId, useState, type KeyboardEvent, type Re
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { Tooltip, Tree } from '@adecore/ui';
-import { formatNumber } from '@adecore/ui/format';
+import { formatNumber, formatPreciseDuration } from '@adecore/ui/format';
 import { colorOf, seriesColor } from './color.ts';
 import {
     barOf,
     durationTicks,
-    formatSpanDuration,
     kindTimes,
     parentIds,
     percentOf,
@@ -124,7 +123,7 @@ export function TimelineRoot<Span extends TimelineSpan>({
     expanded: expandedProp,
     defaultExpanded,
     onExpandedChange,
-    format = formatSpanDuration,
+    format = formatPreciseDuration,
     ticks: tickTarget = 5,
     children,
     className,

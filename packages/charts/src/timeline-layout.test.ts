@@ -1,15 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import {
-    barOf,
-    durationTicks,
-    formatSpanDuration,
-    kindTimes,
-    timelineExtent,
-    timelineMove,
-    timelineTree,
-    visibleRows,
-    type TimelineSpan
-} from './timeline-layout.ts';
+import { barOf, durationTicks, kindTimes, timelineExtent, timelineMove, timelineTree, visibleRows, type TimelineSpan } from './timeline-layout.ts';
 
 const SPANS: TimelineSpan[] = [
     { id: 'query', parent: 'request', label: 'SELECT orders', start: 1012, duration: 40, kind: 'db' },
@@ -78,13 +68,6 @@ describe('barOf', () => {
 
 test('kindTimes adds up the spans of each kind and leaves the roots out', () => {
     expect(Object.fromEntries(kindTimes(timelineTree(SPANS)))).toEqual({ db: 40, code: 230 });
-});
-
-test('formatSpanDuration keeps the precision a span needs', () => {
-    expect(formatSpanDuration(0.42)).toBe('0.4 ms');
-    expect(formatSpanDuration(123.4)).toBe('123 ms');
-    expect(formatSpanDuration(1420)).toBe('1.42 s');
-    expect(formatSpanDuration(5 * 60_000)).toBe('5 min');
 });
 
 describe('timelineMove', () => {
