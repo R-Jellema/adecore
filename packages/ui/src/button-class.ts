@@ -9,7 +9,7 @@ const BASE = 'inline-flex shrink-0 items-center justify-center gap-1.5 font-medi
 const VARIANT: Record<ButtonVariant, string> = {
     // A filled button darkens under the pointer. Its color is the meaning, so no token of its own for hover.
     primary: 'bg-accent text-accent-text hover:brightness-90 disabled:hover:brightness-100',
-    secondary: 'border border-border bg-surface-raised text-text hover:bg-surface-hover disabled:hover:bg-surface-raised',
+    secondary: 'border border-border bg-surface-raised text-text hover:bg-surface-hover-edged disabled:hover:bg-surface-raised',
     ghost: 'text-text-muted hover:bg-surface-hover hover:text-text',
     danger: 'bg-status-error text-accent-text hover:brightness-90 disabled:hover:brightness-100',
     // A step that forgets something rather than destroys it: softer than the filled button of a deletion that cannot come back.
@@ -52,7 +52,7 @@ const SPLIT_FRAME: Record<ButtonVariant, string> = {
 
 const SPLIT_HALF: Record<ButtonVariant, string> = {
     primary: VARIANT.primary,
-    secondary: 'bg-surface-raised text-text hover:bg-surface-hover disabled:hover:bg-surface-raised',
+    secondary: 'bg-surface-raised text-text hover:bg-surface-hover-edged disabled:hover:bg-surface-raised',
     ghost: VARIANT.ghost,
     danger: VARIANT.danger,
     'danger-outline': 'text-status-error hover:bg-status-error/10 disabled:hover:bg-transparent',

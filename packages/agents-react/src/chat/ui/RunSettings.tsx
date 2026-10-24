@@ -312,7 +312,7 @@ export function RunSettings({
                     disabled={disabled}
                     className={clsx(
                         'flex h-8 min-w-0 items-center gap-2 rounded-full border pr-3 pl-2.5 text-xs whitespace-nowrap text-text-muted @max-xl/composer:gap-1.5 @max-sm/composer:pr-2.5',
-                        open ? 'border-accent bg-accent-soft' : 'border-border hover:bg-surface-hover'
+                        open ? 'border-accent bg-accent-soft' : 'border-border hover:bg-surface-hover-edged'
                     )}
                 >
                     <AgentIcon kind={provider} size={14} className="shrink-0" />

@@ -47,7 +47,7 @@ function ChoiceCard<Value extends string | number>({ choice, radio }: { choice: 
             disabled={choice.disabled}
             aria-labelledby={`${id}-title`}
             aria-describedby={`${id}-description`}
-            className="group focus-ring flex min-w-0 items-start gap-3 rounded-xl border border-border bg-surface p-3 text-left hover:bg-surface-hover data-checked:border-accent data-disabled:opacity-50 data-disabled:hover:bg-surface"
+            className="group focus-ring flex min-w-0 items-start gap-3 rounded-xl border border-border bg-surface p-3 text-left hover:bg-surface-hover-edged data-checked:border-accent data-disabled:opacity-50 data-disabled:hover:bg-surface"
         >
             {radio === 'start' && dot}
             {choice.icon && (

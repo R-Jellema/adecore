@@ -76,7 +76,7 @@ export function ComposerControls({
                 <Tooltip label={t('composer.attach')} name>
                     <button
                         type="button"
-                        className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border text-text-muted hover:bg-surface-hover hover:text-text disabled:opacity-50"
+                        className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border text-text-muted hover:bg-surface-hover-edged hover:text-text disabled:opacity-50"
                         disabled={!writable}
                         onClick={() => fileInputRef.current?.click()}
                     >

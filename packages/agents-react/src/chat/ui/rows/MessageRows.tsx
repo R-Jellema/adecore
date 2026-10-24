@@ -65,7 +65,7 @@ function AttachmentLink({ chatId, attachment }: { chatId: string; attachment: Ch
                 target="_blank"
                 rel="noreferrer"
                 aria-disabled={url === null}
-                className="flex h-28 w-36 flex-col rounded-xl border border-border bg-surface-raised bg-clip-padding p-2.5 text-left hover:bg-surface-hover"
+                className="flex h-28 w-36 flex-col rounded-xl border border-border bg-surface-raised bg-clip-padding p-2.5 text-left hover:bg-surface-hover-edged"
             >
                 <span className="flex h-6 min-w-6 items-center justify-center self-start rounded-md border border-border px-1.5 text-xs font-medium text-text-muted">
                     {badge ?? <Icon icon={File} size={12} />}
