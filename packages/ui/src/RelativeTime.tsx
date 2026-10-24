@@ -30,7 +30,12 @@ export function RelativeTime({ at, tooltipSide, className, ref }: RelativeTimePr
     return (
         <Tooltip label={formatDayClockWithYear(at)} side={tooltipSide}>
             {/* Text is no tab stop of its own, and a hint that only the pointer can open is lost to the keyboard. */}
-            <time ref={ref as Ref<HTMLTimeElement>} dateTime={new Date(at).toISOString()} tabIndex={0} className={clsx('focus-ring rounded-sm whitespace-nowrap', className)}>
+            <time
+                ref={ref as Ref<HTMLTimeElement>}
+                dateTime={new Date(at).toISOString()}
+                tabIndex={0}
+                className={clsx('focus-ring rounded-sm whitespace-nowrap', className)}
+            >
                 {formatAge(at, now)}
             </time>
         </Tooltip>
