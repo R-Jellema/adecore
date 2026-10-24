@@ -47,6 +47,10 @@ export interface HeatmapProps {
 /* Between a cell and the card beside it. */
 const OFFSET = 8;
 
+// The React Compiler cannot compile optional chaining inside a condition, so the comparison lives out here.
+const sameCell = (one: HeatCell | null, other: HeatCell | null): boolean =>
+    one === null || other === null ? one === other : one.row === other.row && one.column === other.column;
+
 const shade = (color: string, share: number): string | undefined => (share === 0 ? undefined : `color-mix(in srgb, ${color} ${share}%, transparent)`);
 
 /* The card hangs toward the side of the grid with the most room, so it covers neither the cell nor the edge. */
@@ -94,7 +98,7 @@ export function Heatmap({
 
     const activate = (cell: HeatCell | null): void => {
         setActive(cell);
-        if (cell?.row !== current?.row || cell?.column !== current?.column) {
+        if (!sameCell(cell, current)) {
             onActiveChange?.(cell);
         }
     };
