@@ -34,7 +34,7 @@ export function Tile({ icon, title, description, shortcut, primary = false, size
             <span
                 className={clsx(
                     'grid size-8 shrink-0 place-items-center rounded-lg',
-                    primary ? 'bg-accent text-accent-text' : 'bg-surface-sunken text-text-muted'
+                    primary ? 'bg-accent text-accent-text' : 'bg-surface-sunken text-text-muted dark:bg-field dark:inset-ring dark:inset-ring-field-border'
                 )}
             >
                 {icon}

@@ -51,7 +51,7 @@ function ChoiceCard<Value extends string | number>({ choice, radio }: { choice: 
         >
             {radio === 'start' && dot}
             {choice.icon && (
-                <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-surface-sunken text-text-muted group-data-checked:text-accent">
+                <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-surface-sunken text-text-muted group-data-checked:text-accent dark:bg-field dark:inset-ring dark:inset-ring-field-border">
                     <Icon icon={choice.icon} size={16} />
                 </span>
             )}

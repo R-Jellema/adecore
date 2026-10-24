@@ -23,7 +23,7 @@ export function Switch({ checked, onCheckedChange, label, disabled, className, r
             disabled={disabled}
             // Base UI renders the root as a `span`, which ignores its size outside a flex row unless it lays out as a box.
             className={clsx(
-                'relative inline-flex h-5 w-9 shrink-0 rounded-full bg-border-strong p-0.5 transition-colors data-checked:bg-accent data-disabled:opacity-50',
+                'relative inline-flex h-5 w-9 shrink-0 rounded-full bg-border-strong p-0.5 transition-colors data-checked:bg-accent dark:not-data-checked:bg-field dark:not-data-checked:inset-ring dark:not-data-checked:inset-ring-field-border data-disabled:opacity-50',
                 className
             )}
         >
