@@ -100,6 +100,17 @@ describe('createToastStore', () => {
         expect(ids()).toEqual([]);
     });
 
+    test('a lifetime longer than a timer holds keeps the toast up, and one of zero or less is the time of the kind', () => {
+        useToasts.getState().show({ id: 'forever', title: 'New issue', kind: 'success', lifetime: Infinity });
+        useToasts.getState().show({ id: 'zero', title: 'Updated', kind: 'success', lifetime: 0 });
+        useToasts.getState().show({ id: 'invalid', title: 'Checked', kind: 'success', lifetime: Number.NaN });
+        expect(useToasts.getState().toasts[0]?.deadline).toBeUndefined();
+        jest.advanceTimersByTime(1);
+        expect(ids()).toEqual(['forever', 'zero', 'invalid']);
+        jest.advanceTimersByTime(SUCCESS_MS);
+        expect(ids()).toEqual(['forever']);
+    });
+
     test('an update keeps the lifetime the toast was shown with, until it takes it off', () => {
         useToasts.getState().show({ id: 'ping', title: 'Checking', kind: 'progress', lifetime: 1000 });
         useToasts.getState().update('ping', { kind: 'error' });

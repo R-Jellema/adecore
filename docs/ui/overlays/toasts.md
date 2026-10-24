@@ -26,7 +26,7 @@ A toast with an action that goes by itself, such as the undo of a deletion, show
 
 ### A lifetime of its own
 
-`lifetime` takes a toast away after that many milliseconds, whatever its kind, for news that should not wait for the person, such as the report of a new failure somewhere else. It goes before the time of the kind and before `persist`. An `update` keeps it; patch `lifetime: undefined` to give the toast the time of its kind again.
+`lifetime` takes a toast away after that many milliseconds, whatever its kind, for news that should not wait for the person, such as the report of a new failure somewhere else. It goes before the time of the kind and before `persist`. Zero or less is ignored, and a lifetime longer than a timer can hold (about 24 days), `Infinity` too, keeps the toast up. An `update` keeps it; patch `lifetime: undefined` to give the toast the time of its kind again.
 
 <Demo src="overlays/toasts-lifetime" />
 
