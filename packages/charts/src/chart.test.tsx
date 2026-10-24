@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
+import { afterEach, beforeEach, describe, expect, spyOn, test } from 'bun:test';
 import { act, type ReactNode } from 'react';
 import type { Root } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -196,6 +196,21 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         );
         // Four hours across 600px: the columns stand in the slots of hour 0, 1 and 3.
         expect(columns().map((column) => Math.floor(Number(column.getAttribute('x')) / 150))).toEqual([0, 1, 3]);
+    });
+
+    test('columns on a time scale with one row and no step say why they are missing', async () => {
+        const warn = spyOn(console, 'warn').mockImplementation(() => {});
+        try {
+            await mount(
+                <Chart.Root data={[{ at: 0, count: 3 }]} x="at" xScale="time" label="Per hour">
+                    <Chart.Bar value="count" label="Count" />
+                </Chart.Root>
+            );
+            expect(columns()).toHaveLength(0);
+            expect(warn).toHaveBeenCalledWith('Chart.Bar: a time scale with one row draws no columns without a `step` on the root.');
+        } finally {
+            warn.mockRestore();
+        }
     });
 
     test('Enter on a time scale presses nothing, as its buckets are no buttons', async () => {

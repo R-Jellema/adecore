@@ -37,7 +37,7 @@ The width follows the container; `height` (200 by default) is the height of the 
 | `x` | `keyof Row \| (row, index) => ChartXInput` | | Required. |
 | `label` | `string` | | Required. The name a screen reader reads, and the caption of the table. |
 | `xScale` | `'band' \| 'time' \| 'linear'` | `'band'` | |
-| `step` | `number` | | The length of a bucket on a time scale, in milliseconds. Set it when rows may be missing at the start. |
+| `step` | `number` | | The length of a bucket on a time scale, in milliseconds. Set it when rows may be missing at the start, and for columns, which one row cannot draw without it. |
 | `yScale` | `'linear' \| 'log'` | `'linear'` | |
 | `y` | `ChartYOptions` | `{}` | `min`, `max` and `integer`. |
 | `height` | `number` | `200` | Pixels. |

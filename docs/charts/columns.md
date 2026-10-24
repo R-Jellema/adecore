@@ -61,7 +61,7 @@ On a `time` scale each bucket lasts one `step` from its x, and its columns stand
 </Chart.Root>
 ```
 
-`step` defaults to the smallest distance between two rows; give it when the first rows may be missing. A `band` scale of days or hours draws the same columns, but there a marker needs the key of a bucket.
+`step` defaults to the smallest distance between two rows; give it when the first rows may be missing. Columns on a time scale take a `step`: with one row there is no distance to learn it from, and the columns stay away, with a warning outside production. A `band` scale of days or hours draws the same columns, but there a marker needs the key of a bucket.
 
 ## Groups
 
