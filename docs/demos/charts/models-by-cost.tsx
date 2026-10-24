@@ -29,7 +29,7 @@ export default function ModelsByCostDemo() {
     return (
         <div className="flex w-full flex-wrap gap-6">
             <div className="flex min-w-0 grow basis-96 flex-col gap-2">
-                <Segmented
+                <Segmented<'log' | 'linear'>
                     value={scale}
                     onValueChange={setScale}
                     label="Scale"
