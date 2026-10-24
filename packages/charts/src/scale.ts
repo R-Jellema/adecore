@@ -128,9 +128,17 @@ export function yScaleOf(
     if (options.integer === true && options.max === undefined) {
         high = Math.max(high, low + 1);
     }
+    const top = high;
     const scale = scaleLinear().domain([low, high]).range(range);
     scale.nice(count);
     [low, high] = scale.domain() as [number, number];
+    if (options.max === undefined && options.headroom === 'none') {
+        high = top;
+    } else if (options.max === undefined && options.headroom === 'step' && top > 0 && high === top) {
+        // The highest value lands on a tick, so the axis goes one tick further to keep air over it.
+        const ticked = scale.ticks(count);
+        high += ticked.length > 1 ? ticked[1]! - ticked[0]! : top;
+    }
     const domain: [number, number] = [options.min ?? low, options.max ?? high];
     scale.domain(domain);
     let ticks = scale.ticks(count);

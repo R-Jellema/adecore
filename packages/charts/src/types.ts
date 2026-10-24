@@ -30,6 +30,11 @@ export interface ChartYOptions {
     readonly integer?: boolean;
     /* A tick every this much, with the ends rounded out to it; a linear axis only. */
     readonly step?: number;
+    /*
+     * What a linear axis leaves above the highest value: up to the next tick (`tick`, the default), a whole step more
+     * when the value lands on a tick (`step`), or nothing (`none`), so the highest column fills the plot.
+     */
+    readonly headroom?: 'tick' | 'step' | 'none';
 }
 
 /* The ends of a continuous x axis; without them it covers the rows, and on a point chart rounds out to a tick. */

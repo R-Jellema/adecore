@@ -48,6 +48,15 @@ describe('the value axis', () => {
         expect(scale.at(50)).toBe(50);
     });
 
+    test('leaves a step over a value on a tick, or ends at the highest value', () => {
+        expect(yScaleOf('linear', [0, 80], {}, [100, 0], 5).domain).toEqual([0, 80]);
+        expect(yScaleOf('linear', [0, 80], { headroom: 'step' }, [100, 0], 5).domain).toEqual([0, 100]);
+        expect(yScaleOf('linear', [0, 87], { headroom: 'step' }, [100, 0], 5).domain).toEqual([0, 100]);
+        const flush = yScaleOf('linear', [0, 87], { headroom: 'none' }, [100, 0], 5);
+        expect(flush.domain).toEqual([0, 87]);
+        expect(flush.at(87)).toBe(0);
+    });
+
     test('keeps the ends the caller fixed', () => {
         const scale = yScaleOf('linear', [12, 87], { min: 10, max: 90 }, [100, 0], 5);
         expect(scale.domain).toEqual([10, 90]);
