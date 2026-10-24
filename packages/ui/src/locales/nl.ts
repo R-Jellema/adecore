@@ -2,6 +2,7 @@ export default {
     action: {
         cancel: 'Annuleren',
         copy: 'Kopiëren',
+        copied: 'Gekopieerd',
         copyError: 'Fout kopiëren',
         dismiss: 'Sluiten',
         reload: 'Herladen',

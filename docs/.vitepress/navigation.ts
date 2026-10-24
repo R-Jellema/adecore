@@ -22,6 +22,7 @@ const desktopUi: DefaultTheme.SidebarItem[] = [
         ['IconButton', '/ui/actions/icon-button'],
         ['ButtonGroup', '/ui/actions/button-group'],
         ['CloseButton', '/ui/actions/close-button'],
+        ['CopyButton', '/ui/actions/copy-button'],
         ['Pill', '/ui/actions/pill'],
         ['Tile', '/ui/actions/tile']
     ]),
@@ -65,6 +66,7 @@ const desktopUi: DefaultTheme.SidebarItem[] = [
         ['ListRow', '/ui/display/list-row'],
         ['KeyValueList', '/ui/display/key-value-list'],
         ['MiddleTruncate', '/ui/display/middle-truncate'],
+        ['RelativeTime', '/ui/display/relative-time'],
         ['PanelHeader', '/ui/display/panel-header'],
         ['Separator', '/ui/display/separator'],
         ['Skeleton', '/ui/display/skeleton'],

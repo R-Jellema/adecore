@@ -83,6 +83,43 @@ describe('createToastStore', () => {
         expect(ids()).toEqual(['failed']);
     });
 
+    test('a failure with a lifetime goes after it, with the deadline of that timer', () => {
+        jest.setSystemTime(10_000);
+        useToasts.getState().show({ id: 'ping', title: 'New issue', kind: 'error', lifetime: 10_000 });
+        expect(useToasts.getState().toasts[0]?.deadline).toEqual({ start: 10_000, end: 20_000 });
+        jest.advanceTimersByTime(9_999);
+        expect(ids()).toEqual(['ping']);
+        jest.advanceTimersByTime(1);
+        expect(ids()).toEqual([]);
+    });
+
+    test('a lifetime goes before the time of the kind and before persist', () => {
+        useToasts.getState().show({ id: 'short', title: 'Deleted view', kind: 'deleted', lifetime: 1000 });
+        useToasts.getState().show({ id: 'kept', title: 'Updated', kind: 'success', persist: true, lifetime: 1000 });
+        jest.advanceTimersByTime(1001);
+        expect(ids()).toEqual([]);
+    });
+
+    test('a lifetime longer than a timer holds keeps the toast up, and one of zero or less is the time of the kind', () => {
+        useToasts.getState().show({ id: 'forever', title: 'New issue', kind: 'success', lifetime: Infinity });
+        useToasts.getState().show({ id: 'zero', title: 'Updated', kind: 'success', lifetime: 0 });
+        useToasts.getState().show({ id: 'invalid', title: 'Checked', kind: 'success', lifetime: Number.NaN });
+        expect(useToasts.getState().toasts[0]?.deadline).toBeUndefined();
+        jest.advanceTimersByTime(1);
+        expect(ids()).toEqual(['forever', 'zero', 'invalid']);
+        jest.advanceTimersByTime(SUCCESS_MS);
+        expect(ids()).toEqual(['forever']);
+    });
+
+    test('an update keeps the lifetime the toast was shown with, until it takes it off', () => {
+        useToasts.getState().show({ id: 'ping', title: 'Checking', kind: 'progress', lifetime: 1000 });
+        useToasts.getState().update('ping', { kind: 'error' });
+        expect(useToasts.getState().toasts[0]?.deadline).toBeDefined();
+        useToasts.getState().update('ping', { lifetime: undefined });
+        jest.advanceTimersByTime(1001);
+        expect(ids()).toEqual(['ping']);
+    });
+
     test('a field of the app rides along through an update', () => {
         const withOutput = createToastStore<Toast & { output?: string }>();
         withOutput.getState().show({ id: 'push', title: 'Pushing', kind: 'progress' });
