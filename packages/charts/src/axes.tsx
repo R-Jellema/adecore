@@ -1,4 +1,4 @@
-import { useId, useRef, useSyncExternalStore, type ReactNode, type Ref } from 'react';
+import { useEffect, useId, useRef, useSyncExternalStore, type ReactNode, type Ref } from 'react';
 import { createPortal } from 'react-dom';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
@@ -36,6 +36,8 @@ export interface ChartXAxisProps {
     readonly label?: string;
     /* What a log scale adds to the title, "logarithmic" by default; an empty string adds nothing. */
     readonly logLabel?: string;
+    /* Hears whether labels of buckets were left out for lack of room, such as to tell a person the table has them all. */
+    readonly onThinnedChange?: (thinned: boolean) => void;
     readonly className?: string;
     readonly ref?: Ref<SVGGElement>;
 }
@@ -164,7 +166,19 @@ export function ChartGrid({ axis = 'y', dashed = false, lines = 'all', className
 }
 
 /* The labels under the plot: one per bucket on a band scale as far as they fit, round ticks on a continuous one. */
-export function ChartXAxis({ format, ticks, angle = 0, thin = true, align = 'tick', title, label: spoken, logLabel, className, ref }: ChartXAxisProps) {
+export function ChartXAxis({
+    format,
+    ticks,
+    angle = 0,
+    thin = true,
+    align = 'tick',
+    title,
+    label: spoken,
+    logLabel,
+    onThinnedChange,
+    className,
+    ref
+}: ChartXAxisProps) {
     const chart = useChartContext('Chart.XAxis');
     const { t } = useTranslation('charts');
     const { store, plot, continuous, band, xs } = chart;
@@ -244,6 +258,16 @@ export function ChartXAxis({ format, ticks, angle = 0, thin = true, align = 'tic
     } else {
         placed = [];
     }
+    // Only an axis with a label per bucket leaves a bucket unnamed; round ticks of a continuous one name no bucket.
+    const named = (band !== null && band.bucket > 0) || buckets !== null;
+    const thinned = named ? placed.length < xs.length : null;
+    const reported = useRef<boolean | null>(null);
+    useEffect(() => {
+        if (thinned !== null && reported.current !== thinned) {
+            reported.current = thinned;
+            onThinnedChange?.(thinned);
+        }
+    });
 
     return (
         <g ref={ref} className={clsx('pointer-events-none', className)} aria-hidden>

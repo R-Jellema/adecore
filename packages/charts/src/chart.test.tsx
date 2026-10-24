@@ -609,6 +609,27 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(button.getAttribute('aria-expanded')).toBe('true');
     });
 
+    test('an x axis says when it left labels of buckets out', async () => {
+        const reports: boolean[] = [];
+        const many = Array.from({ length: 30 }, (_, index) => ({ key: `bucket ${index}`, value: index }));
+        await mount(
+            <Chart.Root data={many} x="key" label="Buckets">
+                <Chart.XAxis onThinnedChange={(thinned) => reports.push(thinned)} />
+                <Chart.Bar value="value" label="Value" />
+            </Chart.Root>
+        );
+        expect(reports.at(-1)).toBe(true);
+        await act(async () => root.unmount());
+        reports.length = 0;
+        await mount(
+            <Chart.Root data={many.slice(0, 3)} x="key" label="Buckets">
+                <Chart.XAxis onThinnedChange={(thinned) => reports.push(thinned)} />
+                <Chart.Bar value="value" label="Value" />
+            </Chart.Root>
+        );
+        expect(reports).toEqual([false]);
+    });
+
     test('a second x axis writes its row under the first', async () => {
         await mount(
             <Chart.Root data={SCORES} x="key" label="Scores">
