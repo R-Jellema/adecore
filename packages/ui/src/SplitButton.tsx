@@ -1,7 +1,7 @@
 import { useState, type ComponentProps, type ReactNode } from 'react';
 import clsx from 'clsx';
 import { ChevronDown } from 'lucide-react';
-import { splitHalfClass, type ButtonSize, type ButtonVariant } from './button-class.ts';
+import { splitFrameClass, splitHalfClass, type ButtonSize, type ButtonVariant } from './button-class.ts';
 import { Icon } from './Icon.tsx';
 import { MenuPopup, MenuRoot, MenuTrigger, type MenuPopupProps } from './menu/parts.tsx';
 import { mergeRefs } from './merge-refs.ts';
@@ -28,9 +28,9 @@ export interface SplitButtonProps extends Omit<ComponentProps<'button'>, 'ref'> 
 }
 
 /*
- * A primary action and a chevron that opens a menu of related ones, drawn as one control. Each half is
- * a button of its own, so each takes the focus, can be disabled and carries its own hint; the menu hangs
- * under the whole control.
+ * A primary action and a chevron that opens a menu of related ones, drawn as one button with a short
+ * line between the halves. Each half is a button of its own, so each takes the focus, can be disabled
+ * and carries its own hint; the menu hangs under the whole control.
  */
 export function SplitButton({
     variant = 'secondary',
@@ -51,7 +51,7 @@ export function SplitButton({
     const action = <button type={type} className={splitHalfClass(variant, size, 'action')} {...props} />;
 
     return (
-        <span ref={mergeRefs<HTMLSpanElement>(ref, setBox)} className={clsx('inline-flex items-center gap-px', className)}>
+        <span ref={mergeRefs<HTMLSpanElement>(ref, setBox)} className={clsx(splitFrameClass(variant, size), className)}>
             {tooltip === undefined ? action : <Tooltip label={tooltip}>{action}</Tooltip>}
             <MenuRoot>
                 <Tooltip label={menuTooltip ?? menuLabel}>
