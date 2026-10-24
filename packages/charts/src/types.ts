@@ -20,6 +20,8 @@ export type ChartYScale = 'linear' | 'log';
 export interface ChartYOptions {
     readonly min?: number;
     readonly max?: number;
+    /* Values the axis covers besides the data, rounded out with it: `[1]` keeps a flat share from filling the plot. */
+    readonly include?: readonly number[];
     /* A count: the ticks stay on whole numbers. */
     readonly integer?: boolean;
 }

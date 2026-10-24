@@ -1,5 +1,6 @@
 import { useContext, useId, type ReactNode, type Ref } from 'react';
 import clsx from 'clsx';
+import type { IconProps } from '@adecore/ui';
 import { area, curveLinear, curveMonotoneX, curveStepAfter, line } from 'd3-shape';
 import { numberOf, readValue } from './access.ts';
 import { columnsIn, segmentOf } from './band.ts';
@@ -13,6 +14,8 @@ export interface ChartLineProps<Row> {
     /* The name of the series in the tooltip, the legend and the table. */
     readonly label: string;
     readonly tone?: ChartColor;
+    /* Stands in the color of the series in place of its swatch, in the legend and the tooltip. */
+    readonly icon?: IconProps['icon'];
     readonly curve?: ChartCurve;
     readonly dashed?: boolean;
     /* A dot on every value. Without it only a value with no neighbor gets one, so it does not vanish. */
@@ -33,6 +36,7 @@ export interface ChartBarProps<Row> {
     readonly value: ChartAccessor<Row, number | null | undefined>;
     readonly label: string;
     readonly tone?: ChartBarTone<Row>;
+    readonly icon?: IconProps['icon'];
     /* The opacity of a column by its place in its group, for columns that grow stronger inside one. */
     readonly opacity?: (row: Row, indexInGroup: number, groupSize: number) => number;
     /* The opacity of the other columns while the cursor is on a bucket; 1 leaves them as they are. */
@@ -111,9 +115,19 @@ function LinePath({ points, curve, dashed, dots }: { points: readonly Point[]; c
 }
 
 /* A line through the values. A missing value breaks it. */
-export function ChartLine<Row>({ value, label, tone, curve = 'linear', dashed = false, dots = false, className, ref }: ChartLineProps<Row>) {
+export function ChartLine<Row>({ value, label, tone, icon, curve = 'linear', dashed = false, dots = false, className, ref }: ChartLineProps<Row>) {
     const [chart, id, values] = useSeriesValues('Chart.Line', value);
-    useRegistration(chart.store, 'series', id, { kind: 'line', label, color: colorOf(tone), rowColors: null, values, stack: null, bars: null, curve });
+    useRegistration(chart.store, 'series', id, {
+        kind: 'line',
+        label,
+        color: colorOf(tone),
+        rowColors: null,
+        values,
+        stack: null,
+        bars: null,
+        curve,
+        icon: icon ?? null
+    });
     return (
         <g ref={ref} className={clsx('pointer-events-none', className)} style={{ color: chart.colors.get(id) ?? colorOf(tone) ?? seriesColor(0) }}>
             <LinePath points={pointsOf(chart, values)} curve={curve} dashed={dashed} dots={dots} />
@@ -122,7 +136,18 @@ export function ChartLine<Row>({ value, label, tone, curve = 'linear', dashed = 
 }
 
 /* A line with its area filled down to zero, or down to the stacked areas before it. */
-export function ChartArea<Row>({ value, label, tone, curve = 'linear', dashed = false, dots = false, stack = false, className, ref }: ChartAreaProps<Row>) {
+export function ChartArea<Row>({
+    value,
+    label,
+    tone,
+    icon,
+    curve = 'linear',
+    dashed = false,
+    dots = false,
+    stack = false,
+    className,
+    ref
+}: ChartAreaProps<Row>) {
     const [chart, id, values] = useSeriesValues('Chart.Area', value);
     const gradient = `chart-area-${id.replace(/[^\w-]/g, '')}`;
     useRegistration(chart.store, 'series', id, {
@@ -133,7 +158,8 @@ export function ChartArea<Row>({ value, label, tone, curve = 'linear', dashed = 
         values,
         stack: stack ? 'area' : null,
         bars: null,
-        curve
+        curve,
+        icon: icon ?? null
     });
     const stacked = chart.stacked.get(id);
     const tops = pointsOf(chart, stacked?.top ?? values);
@@ -177,6 +203,7 @@ export function ChartBar<Row>({
     value,
     label,
     tone,
+    icon,
     opacity,
     hoverOpacity = HOVER_DIM,
     dimOpacity = OUT_OF_FOCUS,
@@ -198,7 +225,8 @@ export function ChartBar<Row>({
         values,
         stack: bars?.stack === true ? bars.id : null,
         bars: bars?.id ?? null,
-        curve: 'linear'
+        curve: 'linear',
+        icon: icon ?? null
     });
     const { slot, count } = chart.slots.get(id) ?? { slot: 0, count: 1 };
     const stacked = chart.stacked.get(id);

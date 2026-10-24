@@ -74,7 +74,10 @@ export interface YAxisScale {
  * The value axis over the extent of the data: a linear axis includes zero, so a column stands on the
  * ground, and rounds its ends out to a tick unless the caller fixed them. A count keeps whole ticks.
  */
-export function yScaleOf(kind: ChartYScale, extent: [number, number] | null, options: ChartYOptions, range: [number, number], count: number): YAxisScale {
+export function yScaleOf(kind: ChartYScale, data: [number, number] | null, options: ChartYOptions, range: [number, number], count: number): YAxisScale {
+    const include = (options.include ?? []).filter((value) => kind !== 'log' || value > 0);
+    const extent: [number, number] | null =
+        include.length === 0 ? data : [Math.min(data?.[0] ?? Infinity, ...include), Math.max(data?.[1] ?? -Infinity, ...include)];
     if (kind === 'log') {
         const low = options.min ?? Math.max(extent?.[0] ?? 1, Number.MIN_VALUE);
         const high = options.max ?? Math.max(extent?.[1] ?? 10, low * 10);

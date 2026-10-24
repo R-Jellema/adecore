@@ -2,8 +2,9 @@ import { useId, useState, type ReactNode, type Ref } from 'react';
 import { createPortal } from 'react-dom';
 import clsx from 'clsx';
 import { useTranslation } from 'react-i18next';
-import { Button, Surface } from '@adecore/ui';
+import { Button, Icon, Surface } from '@adecore/ui';
 import { useChartContext, type ChartContextValue } from './context.ts';
+import type { SeriesEntry } from './store.ts';
 import type { ChartX } from './types.ts';
 
 export interface ChartBucketValue {
@@ -60,9 +61,16 @@ const bucketOf = <Row,>(chart: ChartContextValue, index: number): ChartBucket<Ro
     notes: chart.notesAt(index)
 });
 
-/* The swatch of a series: a dash for a line, a square for a column. */
-function Swatch({ color, kind }: { color: string; kind: 'line' | 'area' | 'bar' }) {
-    return <span className={clsx('shrink-0', kind === 'bar' ? 'size-2 rounded-xs' : 'h-0.5 w-3 rounded-full')} style={{ background: color }} />;
+/* The swatch of a series: its icon in its color, else a dash for a line and a square for a column. */
+function Swatch({ color, entry, size }: { color: string; entry: SeriesEntry; size: 12 | 14 }) {
+    if (entry.icon !== null) {
+        return (
+            <span className="inline-flex shrink-0" style={{ color }}>
+                <Icon icon={entry.icon} size={size} />
+            </span>
+        );
+    }
+    return <span className={clsx('shrink-0', entry.kind === 'bar' ? 'size-2 rounded-xs' : 'h-0.5 w-3 rounded-full')} style={{ background: color }} />;
 }
 
 /* The card at the cursor: the x of the bucket, a row per series, then its markers and bands. */
@@ -96,11 +104,12 @@ export function ChartTooltip<Row>({ total = false, format, children, className, 
                     <p className="font-medium text-text">{[bucket.group, chart.formatX(bucket.x)].filter(Boolean).join(' · ')}</p>
                     {[...chart.series].map(([id, entry]) => {
                         const value = entry.values[activeIndex];
-                        return value === null || value === undefined ? null : (
+                        // A series without a value here still gets its row, so a gap reads as nothing measured.
+                        return (
                             <p key={id} className="flex items-center gap-2 text-text-muted">
-                                <Swatch color={entry.rowColors?.[activeIndex] ?? chart.colors.get(id)!} kind={entry.kind} />
+                                <Swatch color={entry.rowColors?.[activeIndex] ?? chart.colors.get(id)!} entry={entry} size={12} />
                                 <span className="min-w-0 truncate">{entry.label}</span>
-                                <span className="ml-auto pl-3 text-text tabular-nums">{write(value)}</span>
+                                <span className="ml-auto pl-3 text-text tabular-nums">{value === null || value === undefined ? '-' : write(value)}</span>
                             </p>
                         );
                     })}
@@ -132,7 +141,7 @@ export function ChartLegend({ className, ref }: ChartLegendProps) {
         <ul ref={ref} className={clsx('flex flex-wrap gap-x-4 gap-y-1 text-xs text-text-muted', className)}>
             {[...chart.series].map(([id, entry]) => (
                 <li key={id} className="flex items-center gap-1.5">
-                    <Swatch color={chart.colors.get(id)!} kind={entry.kind} />
+                    <Swatch color={chart.colors.get(id)!} entry={entry} size={14} />
                     {entry.label}
                 </li>
             ))}

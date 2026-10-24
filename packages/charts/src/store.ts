@@ -1,3 +1,4 @@
+import type { IconProps } from '@adecore/ui';
 import type { ChartCurve, ChartX } from './types.ts';
 
 export interface SeriesEntry {
@@ -12,6 +13,8 @@ export interface SeriesEntry {
     /* The `Chart.Bars` a column belongs to, which shares its bucket with the others in it. */
     readonly bars: string | null;
     readonly curve: ChartCurve;
+    /* Drawn in the color of the series in place of its swatch. */
+    readonly icon: IconProps['icon'] | null;
 }
 
 export interface MarkerEntry {

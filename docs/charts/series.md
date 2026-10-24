@@ -27,7 +27,7 @@ Each row of `data` is one bucket. `x` names its position, as a key of the row or
 - `time`: a moment, as a `Date` or in milliseconds. The rows run from the earliest to the latest. Each row is a bucket that starts at its x and lasts one `step`, the smallest distance between two rows unless the root gets one; its point stands in the middle of it, where a column would. Columns stand on this scale and on `band`, not on `linear`.
 - `linear`: a number, the rows from low to high.
 
-The value axis is `linear` or `log` (`yScale`). It covers every series, stacked ones at their top, starts at zero on a linear scale and rounds its ends out to a tick. `y` fixes the ends (`{ min, max }`), and `{ integer: true }` keeps the ticks of a count on whole numbers.
+The value axis is `linear` or `log` (`yScale`). It covers every series, stacked ones at their top, starts at zero on a linear scale and rounds its ends out to a tick. `y` fixes the ends (`{ min, max }`), and `{ integer: true }` keeps the ticks of a count on whole numbers. `{ include: [1] }` makes the axis cover a value the data may not reach and still round out above it, so a share that stays near zero does not fill the plot; larger data still raises the top.
 
 The width follows the container; `height` (200 by default) is the height of the plot and the x axis together.
 
@@ -63,7 +63,7 @@ A `ChartX` is a number (a moment in milliseconds) or the key of a category; a `C
 
 `Chart.Area` is a line with its area filled down to zero. With `stack` it stands on the stacked areas before it instead, and the value axis covers the top of the pile.
 
-The props are `ChartLineProps` and `ChartAreaProps`; `tone` is a `ChartColor`, a `ChartTone` or `{ color }`.
+`icon` takes a Lucide icon, as `Icon` of `@adecore/ui` does, and draws it in the color of the series in place of its swatch, in the legend and the tooltip; `Chart.Bar` takes one too. The props are `ChartLineProps` and `ChartAreaProps`; `tone` is a `ChartColor`, a `ChartTone` or `{ color }`.
 
 ## Markers and bands
 
@@ -73,6 +73,6 @@ The props are `ChartLineProps` and `ChartAreaProps`; `tone` is a `ChartColor`, a
 
 On a time scale the cursor takes the bucket under the pointer, the same bucket a marker there is named in; where a row is missing it shows nothing. On a linear scale it snaps to the nearest point. On a time or linear scale it draws a line with a dot on every series; on a band scale it lights the bucket. Leaving the chart clears it; with `activeX` controlled it calls `onActiveXChange(null)` instead.
 
-`Chart.Tooltip` is the card at the cursor: the x of the bucket, a row per series, then its markers and bands. It hangs on the side of the cursor with the most room. `total` adds the sum of the series, and `format` writes the values of the card. `children` takes the bucket (`ChartBucket`, with a `ChartBucketValue` per series) and draws the card's contents instead.
+`Chart.Tooltip` is the card at the cursor: the x of the bucket, a row per series (with `-` where the series has no value), then its markers and bands. It hangs on the side of the cursor with the most room. `total` adds the sum of the series, and `format` writes the values of the card. `children` takes the bucket (`ChartBucket`, with a `ChartBucketValue` per series) and draws the card's contents instead.
 
 `Chart.Legend` lists the series with their color, in the order of the children, above the plot. `Chart.Table` is a "Show values" toggle under it with the data as a table, which a screen reader reads also while it is closed. The props are `ChartTooltipProps`, `ChartLegendProps` and `ChartTableProps`.

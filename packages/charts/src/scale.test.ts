@@ -70,6 +70,12 @@ describe('the value axis', () => {
         expect(scale.at(0)).toBeNull();
     });
 
+    test('covers the values it must include and rounds out above them, while larger data still wins', () => {
+        expect(yScaleOf('linear', [0, 0.2], { include: [1] }, [100, 0], 4).domain).toEqual([0, 1]);
+        expect(yScaleOf('linear', [0, 0.2], { include: [0.9] }, [100, 0], 4).domain).toEqual([0, 1]);
+        expect(yScaleOf('linear', [0, 7.4], { include: [1] }, [100, 0], 4).domain).toEqual([0, 8]);
+    });
+
     test('a tick step decides the decimals of its labels', () => {
         expect(decimalsOf(20)).toBe(0);
         expect(decimalsOf(0.5)).toBe(1);

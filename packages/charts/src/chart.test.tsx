@@ -174,6 +174,23 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(live()).toBe('Alpha, low, Score 40');
     });
 
+    test('the tooltip keeps a row for a series without a value in the bucket', async () => {
+        const hours = [
+            { at: 0, errors: null, warnings: 3 },
+            { at: 3_600_000, errors: 2, warnings: 4 }
+        ];
+        const plot = await mount(
+            <Chart.Root data={hours} x="at" xScale="time" label="Events">
+                <Chart.Line value="errors" label="Errors" />
+                <Chart.Line value="warnings" label="Warnings" />
+                <Chart.Tooltip />
+            </Chart.Root>
+        );
+        await press(plot, 'ArrowRight');
+        const rows = [...container.querySelectorAll('.inset-0 p')].slice(1).map((row) => row.textContent);
+        expect(rows).toEqual(['Errors-', 'Warnings3']);
+    });
+
     test('in a group every chart draws the cursor and only the chart that moved it shows its tooltip', async () => {
         const plot = await mount(
             <Chart.Group>
