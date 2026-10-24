@@ -59,6 +59,8 @@ export interface ChartContextValue {
     readonly setActiveX: (x: ChartX | null) => void;
     readonly formatX: (x: ChartX) => string;
     readonly formatY: (value: number) => string;
+    /* The format of the root, which a y axis without one writes its ticks in; null without one. */
+    readonly valueFormat: ((value: number) => string) | null;
     readonly notesAt: (index: number) => ChartNote[];
     /* A chart whose rows are points, not buckets. */
     readonly points: boolean;

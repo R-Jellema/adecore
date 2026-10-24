@@ -402,6 +402,35 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(live()).toBe('12:00 AM, Count 1, Deploy 1.1, Collector down, Data may be missing.');
     });
 
+    test('a column reads by its row label and the format of the root, apart from what its axes write', async () => {
+        const plot = await mount(
+            <Chart.Root data={SCORES} x="key" rowLabel={(row) => `${row.model} ${row.effort}`} format={(value) => `${value} pts`} label="Scores">
+                <Chart.XAxis format={(key) => String(key).slice(-1)} />
+                <Chart.YAxis />
+                <Chart.Bar value="score" label="Score" />
+                <Chart.Table />
+            </Chart.Root>
+        );
+        await press(plot, 'ArrowRight');
+        expect(live()).toBe('Alpha low, Score 40 pts');
+        const texts = [...container.querySelectorAll('text')].map((text) => text.textContent);
+        expect(texts).toContain('w');
+        expect(texts).toContain('20 pts');
+        expect([...container.querySelectorAll('th[scope="row"]')].map((cell) => cell.textContent)).toEqual(['Alpha low', 'Alpha high', 'Beta low', 'Beta mid']);
+    });
+
+    test('an x axis names its x apart from its title, and writes its own word for a log scale', async () => {
+        const plot = await mount(
+            <Chart.Root data={[{ key: 'a', cost: 0.5, score: 40 }]} x="cost" xScale="log" rows="points" rowKey="key" label="Cost">
+                <Chart.XAxis title="Cost per task (USD, lower is better)" label="Cost" logLabel="log scale" />
+                <Chart.Point value="score" label="Score" />
+            </Chart.Root>
+        );
+        expect([...container.querySelectorAll('text')].some((text) => text.textContent === 'Cost per task (USD, lower is better) · log scale')).toBe(true);
+        await press(plot, 'ArrowRight');
+        expect(live()).toStartWith('Cost 0.5');
+    });
+
     test('a second x axis writes its row under the first', async () => {
         await mount(
             <Chart.Root data={SCORES} x="key" label="Scores">

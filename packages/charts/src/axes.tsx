@@ -32,6 +32,10 @@ export interface ChartXAxisProps {
     readonly align?: 'tick' | 'bucket';
     /* What the axis measures, centered under its labels; a log scale adds that it is one. A point chart reads it out with each x. */
     readonly title?: string;
+    /* What the tooltip, the live region and the table call the x of a point, when the title is too long to read out each time. */
+    readonly label?: string;
+    /* What a log scale adds to the title, "logarithmic" by default; an empty string adds nothing. */
+    readonly logLabel?: string;
     readonly className?: string;
     readonly ref?: Ref<SVGGElement>;
 }
@@ -160,12 +164,12 @@ export function ChartGrid({ axis = 'y', dashed = false, lines = 'all', className
 }
 
 /* The labels under the plot: one per bucket on a band scale as far as they fit, round ticks on a continuous one. */
-export function ChartXAxis({ format, ticks, angle = 0, thin = true, align = 'tick', title, className, ref }: ChartXAxisProps) {
+export function ChartXAxis({ format, ticks, angle = 0, thin = true, align = 'tick', title, label: spoken, logLabel, className, ref }: ChartXAxisProps) {
     const chart = useChartContext('Chart.XAxis');
     const { t } = useTranslation('charts');
     const { store, plot, continuous, band, xs } = chart;
     const id = useId();
-    useAxisTitle(title);
+    useAxisTitle(spoken ?? title);
     const labels = useRef<SVGGElement>(null);
     const candidates = useRef<SVGGElement>(null);
     const grown = useRef({ key: '', width: 0 });
@@ -285,7 +289,7 @@ export function ChartXAxis({ format, ticks, angle = 0, thin = true, align = 'tic
                     textAnchor="middle"
                     className="fill-text-muted text-xs"
                 >
-                    {chart.xScale === 'log' ? `${title} · ${t('axis.logarithmic')}` : title}
+                    {chart.xScale === 'log' && logLabel !== '' ? `${title} · ${logLabel ?? t('axis.logarithmic')}` : title}
                 </text>
             )}
         </g>
@@ -345,7 +349,7 @@ export function ChartYAxis({ format, ticks, side = 'left', title, className, ref
                             textAnchor={side === 'left' ? 'end' : 'start'}
                             className="fill-text-faint text-xs tabular-nums"
                         >
-                            {format !== undefined ? format(tick) : formatRounded(tick, decimals)}
+                            {(format ?? chart.valueFormat)?.(tick) ?? formatRounded(tick, decimals)}
                         </text>
                     );
                 })}

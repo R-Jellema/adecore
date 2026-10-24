@@ -41,8 +41,13 @@ export interface ChartRootProps<Row> {
     readonly rows?: ChartRows;
     /* The key of a row of a point chart, for `selected`, `activeX` and `onActiveXChange`; its index by default. */
     readonly rowKey?: ChartAccessor<Row, string>;
-    /* What a person reads for a point beside its group, such as the effort of a model. */
+    /*
+     * What a person reads for a row: beside its group on a point chart, such as the effort of a model, and in place of
+     * the x of a bucket in the tooltip, the live region and the table, such as "Low" under an axis that writes "L".
+     */
     readonly rowLabel?: ChartAccessor<Row, string>;
+    /* Writes a value in the tooltip, the live region and the table, and on a y axis without a format of its own. */
+    readonly format?: (value: number) => string;
     /* Fixed ends of a time, linear or log x axis, such as a window that ends now. */
     readonly xOptions?: ChartXOptions;
     /*
@@ -104,6 +109,7 @@ export function ChartRoot<Row>({
     rows = 'buckets',
     rowKey,
     rowLabel,
+    format,
     xOptions,
     step: stepProp,
     yScale = 'linear',
@@ -158,7 +164,7 @@ export function ChartRoot<Row>({
         return value === null || value === undefined ? Number.NaN : xOf(value);
     });
     const keys = points ? data.map((row, index) => (rowKey === undefined ? String(index) : String(readValue(rowKey, row, index)))) : null;
-    const rowLabels = points && rowLabel !== undefined ? data.map((row, index) => String(readValue(rowLabel, row, index))) : null;
+    const rowLabels = rowLabel !== undefined ? data.map((row, index) => String(readValue(rowLabel, row, index))) : null;
     const groupKeys = (band || points) && group !== undefined ? data.map((row, index) => String(readValue(group, row, index))) : null;
     const groupLabels = groupKeys === null ? null : groupLabel === undefined ? groupKeys : data.map((row, index) => String(readValue(groupLabel, row, index)));
     const leftY = yAxes.get('left');
@@ -296,7 +302,7 @@ export function ChartRoot<Row>({
         return typeof value === 'number' ? defaultValue(value) : value;
     };
     // Both axes share one scale, so the tooltip, the live region and the table write a value as the left one does.
-    const formatY = leftY?.format ?? rightY?.format ?? defaultValue;
+    const formatY = format ?? leftY?.format ?? rightY?.format ?? defaultValue;
     /* The x of a point with the title of its axis, as a person reads it out: "Cost per task $0.12". */
     const xValueOf = (index: number): string => {
         const text = formatX(xs[index]!);
@@ -358,7 +364,9 @@ export function ChartRoot<Row>({
     const dimmedGroups = new Set(pointGroups.filter((run) => run.indexes.every((index) => dimmedRows[index])).map((run) => run.key));
 
     const describe = (index: number): string => {
-        const parts = [groupLabels?.[index], rowLabels?.[index], xValueOf(index)].filter((part): part is string => part !== undefined);
+        const parts = (
+            points ? [groupLabels?.[index], rowLabels?.[index], xValueOf(index)] : [groupLabels?.[index], rowLabels?.[index] ?? xValueOf(index)]
+        ).filter((part): part is string => part !== undefined);
         for (const [, entry] of readable) {
             const value = entry.values[index];
             if (value !== null && value !== undefined) {
@@ -492,6 +500,7 @@ export function ChartRoot<Row>({
         setActiveX,
         formatX,
         formatY,
+        valueFormat: format ?? null,
         notesAt,
         points,
         keys,

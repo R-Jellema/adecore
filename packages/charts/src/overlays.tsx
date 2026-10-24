@@ -113,7 +113,7 @@ export function ChartTooltip<Row>({ total = false, format, children, className, 
     // A point names its series and itself; its x is a value like the others, under the title of its axis.
     const heading = chart.points
         ? [bucket.groupLabel, chart.rowLabels?.[activeIndex]].filter(Boolean).join(' · ') || chart.formatX(bucket.x)
-        : [bucket.groupLabel, chart.formatX(bucket.x)].filter(Boolean).join(' · ');
+        : [bucket.groupLabel, chart.rowLabels?.[activeIndex] ?? chart.formatX(bucket.x)].filter(Boolean).join(' · ');
     return createPortal(
         <Surface
             ref={ref}
@@ -240,7 +240,7 @@ export function ChartTable({ className, ref }: ChartTableProps) {
                                 <tr key={chart.keys?.[index] ?? String(key)} className={shown ? 'border-t border-border-soft' : undefined}>
                                     {grouped && <td className={shown ? 'h-8 px-2 text-text-muted' : undefined}>{chart.groupLabels![index]}</td>}
                                     <th scope="row" className={shown ? 'h-8 px-2 text-left font-normal whitespace-nowrap text-text-muted' : undefined}>
-                                        {xColumn ? chart.rowLabels![index] : chart.formatX(key)}
+                                        {chart.rowLabels?.[index] ?? chart.formatX(key)}
                                     </th>
                                     {xColumn && <td className={cell}>{Number.isFinite(key) ? chart.formatX(key) : ''}</td>}
                                     {series.map(([seriesId, entry]) => {
