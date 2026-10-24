@@ -88,6 +88,10 @@ A scatter moves between points instead; see [cursor, keyboard and picks](/charts
 
 A polite live region reads each bucket the keyboard moves to: the group, the x, then every series ("14:00, Errors 12, Warnings 3"). With `onActivate` every bucket is a button with the same words as its name, reached as the active descendant, and the live region stays quiet so nothing is read twice. `Chart.Table` makes every value readable without moving the cursor at all.
 
+An Escape that clears the cursor stops at the chart, so a dialog around it stays open; a second Escape reaches the dialog. An app that wants one Escape to clear its own state too, such as a pinned comparison, listens for it on an element around the chart.
+
+A chart that only decorates, such as a small line beside a number that already says it, takes `interactive={false}`: it is an image named by `label`, with no tab stop, no keys and no live region. The pointer still moves the cursor and the tooltip.
+
 ## Empty and loading
 
 A chart without data says "No data" in the plot. A chart fetches nothing, so loading stays with the app.

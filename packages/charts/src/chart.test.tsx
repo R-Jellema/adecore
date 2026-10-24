@@ -431,6 +431,23 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(live()).toStartWith('Cost 0.5');
     });
 
+    test('a chart that is not interactive is an image with its label, which the pointer still reads', async () => {
+        await mount(
+            <Chart.Root data={SCORES} x="key" interactive={false} label="Scores">
+                <Chart.Bar value="score" label="Score" />
+                <Chart.Tooltip />
+            </Chart.Root>
+        );
+        const image = container.querySelector('svg[role="img"]')!;
+        expect(image.getAttribute('aria-label')).toBe('Scores');
+        expect(image.hasAttribute('tabindex')).toBe(false);
+        expect(container.querySelector('[aria-live]')).toBeNull();
+        await act(async () => {
+            image.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 10, clientY: 50 }));
+        });
+        expect(container.querySelector('[aria-hidden].absolute')!.textContent).toContain('Score40');
+    });
+
     test('a second x axis writes its row under the first', async () => {
         await mount(
             <Chart.Root data={SCORES} x="key" label="Scores">

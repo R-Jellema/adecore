@@ -82,6 +82,11 @@ export interface ChartRootProps<Row> {
     readonly minBucketWidth?: number;
     /* The x of every bucket that is picked, or the key of every point, which stays highlighted and is pressed for a screen reader. */
     readonly selected?: readonly ChartX[];
+    /*
+     * False makes a chart that only decorates an image with its `label`: no tab stop, no keys and no live region. The
+     * pointer still moves the cursor and the tooltip.
+     */
+    readonly interactive?: boolean;
     /* Makes the buckets or the points pressable: Enter, Space and a click. */
     readonly onActivate?: (row: Row, index: number) => void;
     /* The buckets or points the app wants out of focus. A series whose points are all dimmed dims its line and end label. */
@@ -125,6 +130,7 @@ export function ChartRoot<Row>({
     groupGap = GROUP_GAP,
     minBucketWidth = 0,
     selected,
+    interactive = true,
     onActivate,
     dimmed,
     children,
@@ -420,7 +426,7 @@ export function ChartRoot<Row>({
         }
     };
 
-    const pressable = onActivate !== undefined && (layout !== null || points);
+    const pressable = interactive && onActivate !== undefined && (layout !== null || points);
     const activate = (index: number): void => {
         if (pressable && index >= 0) {
             onActivate(data[index]!, index);
@@ -556,17 +562,17 @@ export function ChartRoot<Row>({
                         <svg
                             width={width}
                             height={height}
-                            role="group"
-                            tabIndex={0}
-                            aria-roledescription={t('chart')}
+                            role={interactive ? 'group' : 'img'}
+                            tabIndex={interactive ? 0 : undefined}
+                            aria-roledescription={interactive ? t('chart') : undefined}
                             aria-label={label}
-                            aria-describedby={`${id}-hint`}
+                            aria-describedby={interactive ? `${id}-hint` : undefined}
                             aria-activedescendant={pressable && activeIndex >= 0 ? `${id}-${activeIndex}` : undefined}
                             className={clsx('block overflow-visible outline-none', pressable && 'cursor-pointer')}
                             onPointerMove={onPointerMove}
                             onPointerLeave={() => setActiveX(null)}
                             onClick={pressable ? (e) => activate(indexAtPointer(e)) : undefined}
-                            onKeyDown={onKeyDown}
+                            onKeyDown={interactive ? onKeyDown : undefined}
                             onBlur={() => {
                                 setAnnounce(false);
                                 // A bucket the keyboard left, or any point, keeps no preview open where the focus went on.
@@ -643,13 +649,17 @@ export function ChartRoot<Row>({
                     <div ref={setTooltipSlot} className="pointer-events-none absolute inset-0" />
                 </div>
                 <div ref={setTableSlot} className="empty:hidden" />
-                <p id={`${id}-hint`} className="sr-only">
-                    {hint}
-                </p>
-                <p aria-live="polite" className="sr-only">
-                    {/* A pressable bucket is read through its button as the active descendant; the live region would say it twice. */}
-                    {announce && activeIndex >= 0 && !pressable ? describe(activeIndex) : ''}
-                </p>
+                {interactive && (
+                    <>
+                        <p id={`${id}-hint`} className="sr-only">
+                            {hint}
+                        </p>
+                        <p aria-live="polite" className="sr-only">
+                            {/* A pressable bucket is read through its button as the active descendant; the live region would say it twice. */}
+                            {announce && activeIndex >= 0 && !pressable ? describe(activeIndex) : ''}
+                        </p>
+                    </>
+                )}
             </div>
         </ChartContext>
     );
