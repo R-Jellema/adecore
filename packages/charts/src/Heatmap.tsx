@@ -80,7 +80,7 @@ export function Heatmap({
     const valueAt = (row: number, column: number): number | null => values[row]?.[column] ?? null;
     const top = max ?? Math.max(0, ...values.flatMap((line) => line.filter((value): value is number => value !== null && Number.isFinite(value))));
     const empty = rows.length === 0 || columns.length === 0;
-    const write = (value: number | null): string => (value === null ? '-' : format(value));
+    const write = (value: number | null): string => (value === null ? t('noData') : format(value));
     const describe = (cell: HeatCell): string => {
         const value = valueAt(cell.row, cell.column);
         return `${rows[cell.row]!.label}, ${columns[cell.column]!.label}, ${value === null ? t('noData') : `${valueLabel} ${format(value)}`}`;

@@ -108,6 +108,10 @@ describe.skipIf(typeof document === 'undefined')('a mounted heatmap', () => {
         });
         const card = cells()[4]!.firstElementChild!;
         expect(card.textContent).toBe('Tuesday · 01:00Events50');
+        await act(async () => {
+            cells()[3]!.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+        });
+        expect(cells()[3]!.firstElementChild!.textContent).toBe('Tuesday · 00:00EventsNo data');
         // The pointer is not the keyboard: the live region stays quiet.
         expect(live()).toBe('');
     });
