@@ -3,6 +3,7 @@ import { useFileTree as usePierreFileTree } from '@pierre/trees/react';
 import { useLayoutEffect, useRef } from 'react';
 import { FILE_TREE_ICONS } from '../file-icon.ts';
 import { TREE_ROW_HEIGHT } from '../tree/style.ts';
+import { isEmptyLine } from './empty-lines.ts';
 import { compareRows } from './helpers.ts';
 import { FILE_TREE_CSS } from './style.ts';
 
@@ -25,7 +26,7 @@ export function useFileTree(options: FileTreeOptions) {
         ...options,
         density: 'compact',
         itemHeight: TREE_ROW_HEIGHT,
-        onSelectionChange: (paths) => latest.current?.(paths),
+        onSelectionChange: (paths) => latest.current?.(paths.some(isEmptyLine) ? paths.filter((path) => !isEmptyLine(path)) : paths),
         unsafeCSS: `${FILE_TREE_CSS}\n${options.unsafeCSS ?? ''}`
     });
 }

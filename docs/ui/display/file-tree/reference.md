@@ -27,6 +27,7 @@ The options create the model once; they are not controlled props. The hook keeps
 | `rowIcon` | `(row: FileTreeVisibleRow) => LucideIcon \| undefined` | | A 14 pixel icon in place of the row's file icon or chevron; `undefined` keeps it. |
 | `fitContent` | `boolean` | `false` | As tall as its rows, up to the height its container leaves it. |
 | `highlight` | `string` | `''` | Marks where this occurs in every name, ignoring case, in `--match`. |
+| `emptyLabel` | `(row: FileTreeVisibleRow) => string \| undefined` | | A muted line under an open directory with nothing in it; `undefined` draws none. See [empty directories](/ui/display/file-tree/models-loading#empty-directories). |
 | `decorationOrder` | `'before-status' \| 'after-status'` | `'before-status'` | Whether the decoration comes before or after the git status column. |
 | `treeProps` | engine React props without `model` | | For the engine's own tree element, such as its header or context menu rendering. |
 | `render` | `RenderProp` | | Another element to be the frame. |

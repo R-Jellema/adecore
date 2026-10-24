@@ -77,6 +77,18 @@ export function createListingLoader(model: FileTreeModel, listChildren: Listing,
 
 Pass `loader.load` as `onLoadChildren` and call `loader.dispose()` on unmount or when the root changes. `invalidate` starts no request; call `load(path)` to refresh a row that is open. This loader only adds entries: a full refresh also removes the ones that are gone, and adds placeholders for new directories. Errors and a way to retry are yours to draw.
 
+## Empty directories
+
+An open directory with nothing in it shows no rows under it, which reads the same as one that has not loaded. Pass `emptyLabel` to `FileTree.Root` to put a line under it instead, one level in and in muted text:
+
+```tsx
+<FileTree.Root model={model} label="Project files" emptyLabel={(row) => (listed.has(row.path) ? 'Empty folder' : undefined)} />
+```
+
+It is called with the row of every open directory that holds no child, and draws nothing where it returns `undefined`. Return `undefined` until a listing has come back empty, so a directory that is still loading never reads as empty; a directory with a placeholder child, as above, is not empty and is never asked. Without the prop the tree draws what it always did.
+
+The line is no item: the arrow keys pass it, it never stays selected, and a click, a context menu or a drag on it does nothing. It goes away when the directory closes or gains a child. The wrapper draws it as a child of the directory that it adds to the model and takes away again, so the model's own row methods (`getVisibleRows`, `getVisibleCount`, `FileTree.visibleRows`) count it while it is drawn; `onSelectionChange` and the render functions never see it.
+
 ## Remembering folds
 
 Expansion lives in the model; there is no controlled `expandedPaths` prop. `onExpandedPathsChange` reports every change, including remembered paths that are hidden under a closed directory. The helpers reconcile what you stored with what is loaded:

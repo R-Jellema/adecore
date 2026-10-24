@@ -2,6 +2,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { FileTree, FileTreeVisibleRow } from '@pierre/trees';
 import type { LucideIcon } from 'lucide-react';
+import { directoryOfEmptyLine, isEmptyLine, type FileTreeEmptyLabel } from './empty-lines.ts';
 import { pathOfRow, visibleRows, visibleRowsAround } from './helpers.ts';
 import { matchHighlight, rangesOfMatches } from './highlight.ts';
 import { FILE_TREE_CSS } from './style.ts';
@@ -104,21 +105,48 @@ export interface FileTreeSlotOptions {
     rowIcon?: FileTreeRowIcon;
     /* What to mark in every name; empty marks nothing. */
     highlight: string;
+    emptyLabel?: FileTreeEmptyLabel;
+}
+
+/* An empty line draws its directory's label in place of its name and is no item to point at or read out. */
+function markEmptyLine(element: HTMLElement, label: string): void {
+    element.dataset.emptyLine = 'true';
+    element.dataset.interactive = 'false';
+    element.setAttribute('aria-hidden', 'true');
+    const content = element.querySelector<HTMLElement>('[data-item-section="content"]');
+    if (content !== null && content.dataset.emptyLabel !== label) {
+        content.dataset.emptyLabel = label;
+    }
+}
+
+// The engine recycles row elements, so one that drew a line can come back as an ordinary row.
+function unmarkEmptyLine(element: HTMLElement): void {
+    if (element.dataset.emptyLine === undefined) {
+        return;
+    }
+    delete element.dataset.emptyLine;
+    element.removeAttribute('aria-hidden');
+    const content = element.querySelector<HTMLElement>('[data-item-section="content"]');
+    if (content !== null) {
+        delete content.dataset.emptyLabel;
+    }
 }
 
 // beta.6 owns button rows. Sibling slots keep real controls outside those buttons and in the app's stylesheet.
-export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, label: string, { order, rowIcon, highlight }: FileTreeSlotOptions) {
+export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, label: string, { order, rowIcon, highlight, emptyLabel }: FileTreeSlotOptions) {
     const prefix = useId().replaceAll(':', '');
     const [slots, setSlots] = useState<RowSlot[]>([]);
     const latestIcon = useRef(rowIcon);
     const latestHighlight = useRef(highlight);
+    const latestEmpty = useRef(emptyLabel);
     const rescan = useRef<(() => void) | undefined>(undefined);
 
     useLayoutEffect(() => {
         latestIcon.current = rowIcon;
         latestHighlight.current = highlight;
+        latestEmpty.current = emptyLabel;
         rescan.current?.();
-    }, [rowIcon, highlight]);
+    }, [rowIcon, highlight, emptyLabel]);
 
     useEffect(() => {
         if (frame === null) {
@@ -158,6 +186,13 @@ export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, lab
             port.lightControl.remove();
             port.lightDecoration.remove();
             dropIcon(port);
+        };
+        const clearPort = (port: Port): void => {
+            port.rowElement.style.removeProperty('--adecore-tree-control-space');
+            port.rowElement.style.removeProperty('--adecore-tree-decoration-space');
+            port.rowElement.style.removeProperty('--adecore-tree-status-space');
+            delete port.rowElement.dataset.ownIcon;
+            dropPort(port);
         };
         const dropIcon = (port: Port): void => {
             port.unhover?.();
@@ -256,12 +291,25 @@ export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, lab
                 }
             }
             const next: RowSlot[] = [];
+            const named: HTMLElement[] = [];
             for (const element of elements) {
                 const path = element.dataset.itemPath;
                 const row = path === undefined ? undefined : byPath.get(path);
                 if (row === undefined) {
                     continue;
                 }
+                if (isEmptyLine(row.path)) {
+                    const recycled = ports.get(element);
+                    if (recycled !== undefined) {
+                        clearPort(recycled);
+                        ports.delete(element);
+                    }
+                    const directory = byPath.get(directoryOfEmptyLine(row.path));
+                    markEmptyLine(element, (directory === undefined ? undefined : latestEmpty.current?.(directory)) ?? '');
+                    continue;
+                }
+                unmarkEmptyLine(element);
+                named.push(element);
                 element.dataset.interactive = 'true';
                 element.dataset.joinedStart = String(row.isSelected && byIndex.get(row.index - 1)?.isSelected === true);
                 element.dataset.joinedEnd = String(row.isSelected && byIndex.get(row.index + 1)?.isSelected === true);
@@ -314,7 +362,7 @@ export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, lab
                 // Recycled rows must paint with their new portal contents in the same frame.
                 flushSync(() => setSlots(next));
             }
-            mark(elements, latestHighlight.current);
+            mark(named, latestHighlight.current);
             position();
         };
         const schedule = (): void => {
@@ -340,11 +388,7 @@ export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, lab
             style?.remove();
             mark([], '');
             for (const port of ports.values()) {
-                port.rowElement.style.removeProperty('--adecore-tree-control-space');
-                port.rowElement.style.removeProperty('--adecore-tree-decoration-space');
-                port.rowElement.style.removeProperty('--adecore-tree-status-space');
-                delete port.rowElement.dataset.ownIcon;
-                dropPort(port);
+                clearPort(port);
             }
         };
     }, [frame, model, label, order, prefix]);

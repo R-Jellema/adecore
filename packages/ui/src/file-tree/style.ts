@@ -30,4 +30,9 @@ export const FILE_TREE_CSS = `
     [data-own-icon="true"] [data-item-section="icon"] > * { visibility: hidden; }
     [data-own-icon="true"][data-item-type="folder"]:hover [data-item-section="icon"] > * { visibility: visible; }
     [data-tree-port="icon"][data-hover="true"] { visibility: hidden; }
+    [data-empty-line="true"] { cursor: default; }
+    [data-empty-line="true"] :is([data-item-section="icon"], [data-item-section="git"]) { display: none; }
+    [data-empty-line="true"] [data-item-section="content"] { overflow: hidden; text-overflow: ellipsis; color: var(--text-muted); }
+    [data-empty-line="true"] [data-item-section="content"] > * { display: none; }
+    [data-empty-line="true"] [data-item-section="content"]::before { content: attr(data-empty-label); }
 `;

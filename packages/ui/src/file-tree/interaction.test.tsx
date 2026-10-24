@@ -17,9 +17,11 @@ function Harness({
     rowIcon,
     fitContent,
     highlight,
+    emptyLabel,
     paths = ['src/one.ts', 'src/two.ts', 'README.md']
 }: {
     highlight?: string;
+    emptyLabel?: FileTreeRootProps['emptyLabel'];
     fitContent?: boolean;
     rowIcon?: FileTreeRootProps['rowIcon'];
     onActivate?(path: string): void;
@@ -47,6 +49,7 @@ function Harness({
             rowIcon={rowIcon}
             fitContent={fitContent}
             highlight={highlight}
+            emptyLabel={emptyLabel}
             onActivate={onActivate}
             onLoadChildren={onLoad}
             onRowContextMenu={(path) => onContext?.(path)}
@@ -424,6 +427,117 @@ describe.skipIf(typeof document === 'undefined')('file tree interaction', () => 
             }
             Reflect.deleteProperty(globalThis, 'Highlight');
         }
+    });
+
+    describe('empty directories', () => {
+        const emptyPaths = ['empty/', 'src/one.ts', 'README.md'];
+        const emptyFolder: FileTreeRootProps['emptyLabel'] = (directory) => (directory.path === 'empty/' ? 'Empty folder' : undefined);
+        const line = (): HTMLElement | null => exposed.getFileTreeContainer()?.shadowRoot?.querySelector<HTMLElement>('[data-empty-line="true"]') ?? null;
+        // Selection follows focus on a timer, which runs here once the key is handled.
+        const press = async (from: string, key: string): Promise<void> => {
+            const original = window.setTimeout;
+            const deferred: (() => void)[] = [];
+            window.setTimeout = ((callback: TimerHandler) => {
+                if (typeof callback === 'function') {
+                    deferred.push(callback as () => void);
+                }
+                return 1;
+            }) as typeof window.setTimeout;
+            try {
+                await change(() => row(from).dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, composed: true, cancelable: true })));
+            } finally {
+                window.setTimeout = original;
+            }
+            await change(() => deferred.forEach((callback) => callback()));
+        };
+
+        test('draws nothing under an empty directory unless asked', async () => {
+            await mount(<Harness paths={emptyPaths} />);
+            expect(FileTree.directoryHandle(exposed, 'empty/')?.isExpanded()).toBe(true);
+            expect(line()).toBeNull();
+            expect(exposed.getVisibleCount()).toBe(4);
+        });
+
+        test('draws the label one level under an open empty directory, and only while it is open', async () => {
+            await mount(<Harness paths={emptyPaths} emptyLabel={emptyFolder} />);
+            const drawn = line()!;
+            expect(drawn).not.toBeNull();
+            expect(drawn.getAttribute('aria-level')).toBe('2');
+            expect(drawn.getAttribute('aria-hidden')).toBe('true');
+            expect(drawn.querySelector<HTMLElement>('[data-item-section="content"]')!.dataset.emptyLabel).toBe('Empty folder');
+            expect(container.querySelectorAll('[data-tree-slot="control"]')).toHaveLength(4);
+            await change(() => FileTree.directoryHandle(exposed, 'empty/')?.collapse());
+            expect(line()).toBeNull();
+            await change(() => FileTree.directoryHandle(exposed, 'empty/')?.expand());
+            expect(line()).not.toBeNull();
+            await mount(<Harness paths={emptyPaths} />);
+            expect(line()).toBeNull();
+            expect(exposed.getVisibleCount()).toBe(4);
+        });
+
+        test('waits for the label, and gives the line up once the directory holds something', async () => {
+            await mount(<Harness paths={emptyPaths} emptyLabel={() => undefined} />);
+            expect(line()).toBeNull();
+            await mount(<Harness paths={emptyPaths} emptyLabel={emptyFolder} />);
+            expect(line()).not.toBeNull();
+            await change(() => exposed.add('empty/new.ts'));
+            expect(line()).toBeNull();
+            expect(FileTree.visibleRows(exposed).map((visible) => visible.path)).toContain('empty/new.ts');
+        });
+
+        test('ignores a pointer on the line and never keeps it selected', async () => {
+            const activated: string[] = [];
+            const context: (string | null)[] = [];
+            let wrapperMenus = 0;
+            await mount(
+                <div onContextMenu={() => wrapperMenus++}>
+                    <Harness paths={emptyPaths} emptyLabel={emptyFolder} onActivate={(path) => activated.push(path)} onContext={(path) => context.push(path)} />
+                </div>
+            );
+            const drawn = line()!;
+            await change(() => {
+                drawn.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, composed: true, cancelable: true }));
+                drawn.dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true, cancelable: true }));
+                drawn.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, composed: true, cancelable: true }));
+            });
+            expect(activated).toEqual([]);
+            expect(context).toEqual([]);
+            expect(wrapperMenus).toBe(0);
+            expect(exposed.getSelectedPaths()).toEqual([]);
+            await change(() => exposed.getItem(drawn.dataset.itemPath!)?.select());
+            expect(exposed.getSelectedPaths()).toEqual([]);
+        });
+
+        test('steps over the line with the arrow keys', async () => {
+            await mount(<Harness paths={emptyPaths} emptyLabel={emptyFolder} />);
+            await change(() => FileTree.focusRow(exposed, 'empty/'));
+            await press('empty/', 'ArrowDown');
+            expect(exposed.getFocusedPath()).toBe('src/');
+            expect(exposed.getSelectedPaths()).toEqual(['src/']);
+            await press('src/', 'ArrowUp');
+            expect(exposed.getFocusedPath()).toBe('empty/');
+            await press('empty/', 'ArrowRight');
+            expect(exposed.getFocusedPath()).toBe('empty/');
+        });
+
+        test('extends a selection past the line, without it', async () => {
+            await mount(<Harness paths={emptyPaths} emptyLabel={emptyFolder} />);
+            await change(() => {
+                FileTree.focusRow(exposed, 'empty/');
+                FileTree.selectOnly(exposed, 'empty/');
+            });
+            await change(() =>
+                row('empty/').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', shiftKey: true, bubbles: true, composed: true, cancelable: true }))
+            );
+            expect(exposed.getFocusedPath()).toBe('src/');
+            expect([...exposed.getSelectedPaths()].sort()).toEqual(['empty/', 'src/']);
+        });
+
+        test('counts the line in the height of a tree that fits its content', async () => {
+            await mount(<Harness paths={emptyPaths} emptyLabel={emptyFolder} fitContent />);
+            const frame = container.querySelector<HTMLElement>('.adecore-file-tree')!;
+            expect(frame.style.height).toBe('125px');
+        });
     });
 
     test('refreshes port contents after props change and removes slots on unmount', async () => {

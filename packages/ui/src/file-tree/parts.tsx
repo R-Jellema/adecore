@@ -9,6 +9,8 @@ import clsx from 'clsx';
 import { Icon } from '../Icon.tsx';
 import { mergeRefs } from '../merge-refs.ts';
 import { directoryHandle, extendsSelection, followFocus, movesFocus, menuTargetsOf, rowPathOf, visibleRows } from './helpers.ts';
+import type { FileTreeEmptyLabel } from './empty-lines.ts';
+import { useEmptyLines } from './use-empty-lines.ts';
 import { useFileTreeShift } from './use-file-tree-shift.tsx';
 import { useFileTreeSlots, type FileTreeDecorationOrder } from './use-slots.ts';
 
@@ -33,6 +35,8 @@ export type FileTreeRootProps = useRender.ComponentProps<'div'> & {
     fitContent?: boolean;
     /* Marks where this occurs in every name, ignoring case, such as the query a list was filtered by. */
     highlight?: string;
+    /* The line under an open directory with nothing in it; undefined draws none, such as while its children still load. */
+    emptyLabel?: FileTreeEmptyLabel;
     treeProps?: Omit<PierreProps, 'model'>;
 };
 
@@ -57,6 +61,7 @@ export function FileTreeRoot({
     rowIcon,
     fitContent = false,
     highlight = '',
+    emptyLabel,
     treeProps,
     render,
     className,
@@ -78,7 +83,8 @@ export function FileTreeRoot({
     const subscribeToRows = (listener: () => void): (() => void) => (fitContent ? model.subscribe(listener) : () => {});
     const countRows = (): number => model.getVisibleCount();
     const rowCount = useSyncExternalStore(subscribeToRows, countRows, countRows);
-    const slots = useFileTreeSlots(model, frame, label ?? t('tree.label'), { order: decorationOrder, rowIcon, highlight });
+    const slots = useFileTreeSlots(model, frame, label ?? t('tree.label'), { order: decorationOrder, rowIcon, highlight, emptyLabel });
+    const passEmptyLine = useEmptyLines(model, frame, emptyLabel);
     const latestLoads = useRef({ onLoadChildren, onExpandedPathsChange });
     useLayoutEffect(() => {
         latestLoads.current = { onLoadChildren, onExpandedPathsChange };
@@ -149,7 +155,9 @@ export function FileTreeRoot({
                 cancelFocus.current?.();
                 // beta.6 stops the key in its own handler; selection must follow after that handler moves focus.
                 cancelFocus.current = followFocus(model, onFocusMove);
-            } else if (event.key === 'Enter' && !event.altKey && !event.metaKey && !event.ctrlKey) {
+            }
+            passEmptyLine(event);
+            if (event.key === 'Enter' && !event.altKey && !event.metaKey && !event.ctrlKey) {
                 const path = model.getFocusedPath();
                 if (path === null) {
                     return;
@@ -187,7 +195,7 @@ export function FileTreeRoot({
             frame.removeEventListener('contextmenu', onContext);
             frame.removeEventListener('dragstart', onDrag);
         };
-    }, [frame, model, selectionFollowsFocus, onActivate, onFocusMove, onRowContextMenu, onRowDragStart]);
+    }, [frame, model, selectionFollowsFocus, passEmptyLine, onActivate, onFocusMove, onRowContextMenu, onRowDragStart]);
 
     return useRender({
         render,

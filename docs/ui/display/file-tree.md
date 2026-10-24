@@ -61,7 +61,7 @@ Your code owns filesystem changes, listings, search requests, caches and permiss
 
 ## Guides
 
-- [Models, loading and expansion](/ui/display/file-tree/models-loading): sorting, flattened directories, changes, lazy listings, remembered folds and search.
+- [Models, loading and expansion](/ui/display/file-tree/models-loading): sorting, flattened directories, changes, lazy listings, empty directories, remembered folds and search.
 - [Interaction and row controls](/ui/display/file-tree/interaction-controls): activation, selection, checkboxes, context menus, dragging and long names.
 - [Reference](/ui/display/file-tree/reference): every option, prop and helper, and what to check before an engine update.
 
