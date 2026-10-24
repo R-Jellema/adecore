@@ -50,7 +50,21 @@ export interface ChartLegendProps {
     readonly ref?: Ref<HTMLUListElement>;
 }
 
+/* The rows and columns a table shows in place of the chart's own, such as every series, also those the chart leaves out. */
+export interface ChartTableData {
+    /* The heading of every column after the one that names a row. */
+    readonly columns: readonly string[];
+    /* Each row with its name and a written value per column. */
+    readonly rows: readonly { readonly key: string; readonly label: string; readonly cells: readonly string[] }[];
+}
+
 export interface ChartTableProps {
+    /* False leaves out the button: the table is there for a screen reader only. */
+    readonly toggle?: boolean;
+    readonly open?: boolean;
+    readonly defaultOpen?: boolean;
+    readonly onOpenChange?: (open: boolean) => void;
+    readonly data?: ChartTableData;
     readonly className?: string;
     readonly ref?: Ref<HTMLDivElement>;
 }
@@ -223,24 +237,55 @@ export function ChartLegend({ className, ref }: ChartLegendProps) {
 }
 
 /* A toggle that shows every value as a table. Hidden, the table is still there for a screen reader. */
-export function ChartTable({ className, ref }: ChartTableProps) {
+export function ChartTable({ toggle = true, open, defaultOpen = false, onOpenChange, data, className, ref }: ChartTableProps) {
     const chart = useChartContext('Chart.Table');
     const { t } = useTranslation('charts');
-    const [shown, setShown] = useState(false);
+    const [ownOpen, setOwnOpen] = useState(defaultOpen);
     const id = useId();
     if (chart.elements.table === null) {
         return null;
     }
-    const series = chart.readable;
-    const grouped = chart.groupKeys !== null;
+    const shown = toggle && (open ?? ownOpen);
+    const setShown = (next: boolean): void => {
+        if (open === undefined) {
+            setOwnOpen(next);
+        }
+        onOpenChange?.(next);
+    };
+    const grouped = data === undefined && chart.groupKeys !== null;
     // A point names itself by its label where it has one, and its x stands in a column of its own.
-    const xColumn = chart.points && chart.rowLabels !== null;
+    const xColumn = data === undefined && chart.points && chart.rowLabels !== null;
+    const columns = data?.columns ?? [...(xColumn ? [chart.xTitle ?? ''] : []), ...chart.readable.map(([, entry]) => entry.label)];
+    const rows: { key: string; group: string | null; label: string; cells: readonly string[] }[] =
+        data?.rows.map((row) => ({ ...row, group: null })) ??
+        chart.xs.flatMap((key, index) =>
+            // A point without a position is a gap, which the chart does not draw either.
+            chart.points && chart.positions[index] === null
+                ? []
+                : [
+                      {
+                          key: chart.keys?.[index] ?? String(key),
+                          group: chart.groupLabels?.[index] ?? null,
+                          label: chart.rowLabels?.[index] ?? chart.formatX(key),
+                          cells: [
+                              ...(xColumn ? [Number.isFinite(key) ? chart.formatX(key) : ''] : []),
+                              ...chart.readable.map(([, entry]) => {
+                                  const value = entry.values[index];
+                                  return value === null || value === undefined ? '' : chart.formatY(value);
+                              })
+                          ]
+                      }
+                  ]
+        );
+    const head = shown ? 'h-8 px-2 text-right font-medium whitespace-nowrap text-text-muted' : undefined;
     const cell = shown ? 'h-8 px-2 text-right whitespace-nowrap text-text' : undefined;
     return createPortal(
         <div ref={ref} className={clsx('flex flex-col items-start gap-2', className)}>
-            <Button size="sm" aria-expanded={shown} aria-controls={id} onClick={() => setShown((current) => !current)}>
-                {shown ? t('values.hide') : t('values.show')}
-            </Button>
+            {toggle && (
+                <Button size="sm" aria-expanded={shown} aria-controls={id} onClick={() => setShown(!shown)}>
+                    {shown ? t('values.hide') : t('values.show')}
+                </Button>
+            )}
             <div id={id} className={shown ? 'max-h-80 w-full overflow-auto rounded-md border border-border-soft' : 'sr-only'}>
                 <table className={shown ? 'w-full border-collapse text-xs tabular-nums' : undefined}>
                     <caption className="sr-only">{t('values.caption', { label: chart.label })}</caption>
@@ -248,43 +293,27 @@ export function ChartTable({ className, ref }: ChartTableProps) {
                         <tr>
                             {grouped && <td />}
                             <td />
-                            {xColumn && (
-                                <th scope="col" className={shown ? 'h-8 px-2 text-right font-medium whitespace-nowrap text-text-muted' : undefined}>
-                                    {chart.xTitle}
-                                </th>
-                            )}
-                            {series.map(([seriesId, entry]) => (
-                                <th
-                                    key={seriesId}
-                                    scope="col"
-                                    className={shown ? 'h-8 px-2 text-right font-medium whitespace-nowrap text-text-muted' : undefined}
-                                >
-                                    {entry.label}
+                            {columns.map((column, index) => (
+                                <th key={index} scope="col" className={head}>
+                                    {column}
                                 </th>
                             ))}
                         </tr>
                     </thead>
                     <tbody>
-                        {chart.xs.map((key, index) =>
-                            // A point without a position is a gap, which the chart does not draw either.
-                            chart.points && chart.positions[index] === null ? null : (
-                                <tr key={chart.keys?.[index] ?? String(key)} className={shown ? 'border-t border-border-soft' : undefined}>
-                                    {grouped && <td className={shown ? 'h-8 px-2 text-text-muted' : undefined}>{chart.groupLabels![index]}</td>}
-                                    <th scope="row" className={shown ? 'h-8 px-2 text-left font-normal whitespace-nowrap text-text-muted' : undefined}>
-                                        {chart.rowLabels?.[index] ?? chart.formatX(key)}
-                                    </th>
-                                    {xColumn && <td className={cell}>{Number.isFinite(key) ? chart.formatX(key) : ''}</td>}
-                                    {series.map(([seriesId, entry]) => {
-                                        const value = entry.values[index];
-                                        return (
-                                            <td key={seriesId} className={cell}>
-                                                {value === null || value === undefined ? '' : chart.formatY(value)}
-                                            </td>
-                                        );
-                                    })}
-                                </tr>
-                            )
-                        )}
+                        {rows.map((row) => (
+                            <tr key={row.key} className={shown ? 'border-t border-border-soft' : undefined}>
+                                {grouped && <td className={shown ? 'h-8 px-2 text-text-muted' : undefined}>{row.group}</td>}
+                                <th scope="row" className={shown ? 'h-8 px-2 text-left font-normal whitespace-nowrap text-text-muted' : undefined}>
+                                    {row.label}
+                                </th>
+                                {row.cells.map((value, index) => (
+                                    <td key={index} className={cell}>
+                                        {value}
+                                    </td>
+                                ))}
+                            </tr>
+                        ))}
                     </tbody>
                 </table>
             </div>

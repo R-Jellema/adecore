@@ -577,6 +577,38 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         }
     });
 
+    test('the table of values hides its button, follows an app that holds it open, and shows rows of its own', async () => {
+        const opened: boolean[] = [];
+        await mount(
+            <Chart.Root data={SCORES} x="key" label="Scores">
+                <Chart.Bar value="score" label="Score" />
+                <Chart.Table toggle={false} />
+            </Chart.Root>
+        );
+        expect(container.querySelector('button')).toBeNull();
+        expect(container.querySelectorAll('tbody tr')).toHaveLength(4);
+        await act(async () => root.unmount());
+
+        await mount(
+            <Chart.Root data={SCORES} x="key" label="Scores">
+                <Chart.Bar value="score" label="Score" />
+                <Chart.Table
+                    open
+                    onOpenChange={(next) => opened.push(next)}
+                    data={{ columns: ['Score', 'Note'], rows: [{ key: 'x', label: 'Hidden model', cells: ['12', 'left out'] }] }}
+                />
+            </Chart.Root>
+        );
+        const button = container.querySelector('button')!;
+        expect(button.getAttribute('aria-expanded')).toBe('true');
+        expect([...container.querySelectorAll('tbody tr')].map((row) => row.textContent)).toEqual(['Hidden model12left out']);
+        await act(async () => {
+            button.click();
+        });
+        expect(opened).toEqual([false]);
+        expect(button.getAttribute('aria-expanded')).toBe('true');
+    });
+
     test('a second x axis writes its row under the first', async () => {
         await mount(
             <Chart.Root data={SCORES} x="key" label="Scores">
