@@ -108,7 +108,10 @@ export function Heatmap({
                 className="focus-ring rounded-xs"
                 onKeyDown={onKeyDown}
                 onPointerLeave={() => setActive(null)}
-                onBlur={() => setAnnounce(false)}
+                onBlur={() => {
+                    setActive(null);
+                    setAnnounce(false);
+                }}
             >
                 {empty ? (
                     <p className="py-6 text-center text-xs text-text-faint">{t('noData')}</p>

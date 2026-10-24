@@ -91,6 +91,16 @@ describe.skipIf(typeof document === 'undefined')('a mounted heatmap', () => {
         expect(live()).toBe('');
     });
 
+    test('drops the card of the keyboard when the focus leaves', async () => {
+        const group = await mount();
+        await press(group, 'ArrowRight');
+        expect(cells()[0]!.firstElementChild).not.toBeNull();
+        await act(async () => {
+            group.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+        });
+        expect(cells().some((cell) => cell.firstElementChild !== null)).toBe(false);
+    });
+
     test('shows the exact value of the cell under the pointer in a card', async () => {
         await mount();
         await act(async () => {
