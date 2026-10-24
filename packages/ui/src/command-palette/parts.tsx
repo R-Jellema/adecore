@@ -1,4 +1,5 @@
 import { createContext, useContext, useLayoutEffect, useRef, useState, type ComponentProps, type ReactNode, type RefObject } from 'react';
+import { flushSync } from 'react-dom';
 import clsx from 'clsx';
 import { Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -16,6 +17,7 @@ interface PaletteRefs {
     input: RefObject<HTMLInputElement | null>;
     /* For the root to scroll back to the top when the app sets the query. */
     list: RefObject<HTMLDivElement | null>;
+    highlight(row: Element): void;
 }
 
 const PaletteRefsContext = createContext<PaletteRefs | null>(null);
@@ -52,6 +54,7 @@ export function CommandPaletteRoot<ItemValue>({
     onOpenChangeComplete,
     autoHighlight = 'always',
     keepHighlight = true,
+    highlightItemOnHover = true,
     value,
     onValueChange,
     items,
@@ -60,6 +63,7 @@ export function CommandPaletteRoot<ItemValue>({
 }: CommandPaletteRootProps<ItemValue>) {
     const inputRef = useRef<HTMLInputElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
+    const [focusHighlight, setFocusHighlight] = useState(false);
     /*
      * Base UI moves the highlight to the first row for a typed query only. For a query the app sets,
      * the list is empty for one commit that is never painted: Base UI drops the highlight then and
@@ -80,9 +84,27 @@ export function CommandPaletteRoot<ItemValue>({
         setSettledValue(value);
     }, [resetting, value]);
 
+    const highlight = (row: Element): void => {
+        if (row.hasAttribute('data-highlighted')) {
+            return;
+        }
+        // Base UI has no imperative highlight action and disables highlighting on item focus.
+        // Enable pointer navigation just for this event when the app has disabled hover highlighting.
+        if (!highlightItemOnHover) {
+            flushSync(() => setFocusHighlight(true));
+        }
+        try {
+            row.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, movementX: 1 }));
+        } finally {
+            if (!highlightItemOnHover) {
+                flushSync(() => setFocusHighlight(false));
+            }
+        }
+    };
+
     return (
         <DialogRoot open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange} onOpenChangeComplete={onOpenChangeComplete}>
-            <PaletteRefsContext value={{ input: inputRef, list: listRef }}>
+            <PaletteRefsContext value={{ input: inputRef, list: listRef, highlight }}>
                 {/* Its props take a flat list or groups; only its overloads split the two, which a generic caller cannot pick between. */}
                 <Autocomplete.Root<ItemValue>
                     {...props}
@@ -98,6 +120,7 @@ export function CommandPaletteRoot<ItemValue>({
                     open
                     autoHighlight={autoHighlight}
                     keepHighlight={keepHighlight}
+                    highlightItemOnHover={highlightItemOnHover || focusHighlight}
                 >
                     {children}
                 </Autocomplete.Root>
@@ -159,7 +182,7 @@ export function CommandPaletteInput({ leading, trailing, escapeHint = true, mono
 }
 
 /* The rows. It scrolls on its own, so the field and the footer stay put. */
-export function CommandPaletteList({ className, ref, ...props }: ComponentProps<typeof Autocomplete.List>) {
+export function CommandPaletteList({ className, ref, onFocus, ...props }: ComponentProps<typeof Autocomplete.List>) {
     const { t } = useTranslation('ui');
     const refs = useContext(PaletteRefsContext);
     return (
@@ -168,6 +191,15 @@ export function CommandPaletteList({ className, ref, ...props }: ComponentProps<
             aria-label={t('palette.results')}
             className={withClass('max-h-[50vh] min-h-0 overflow-y-auto overscroll-contain scroll-py-1.5 not-empty:p-1.5', className)}
             {...props}
+            onFocus={(event) => {
+                onFocus?.(event);
+                const row = event.target.closest('[role="option"]');
+                if (row === null || !event.currentTarget.contains(row) || refs?.input.current == null) {
+                    return;
+                }
+                refs.highlight(row);
+                refs.input.current.focus({ preventScroll: true });
+            }}
         />
     );
 }

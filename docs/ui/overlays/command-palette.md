@@ -43,6 +43,8 @@ An empty query matches everything with `0`. Sort by it within a group to keep th
 
 ## Modes and keys of its own
 
+When a row in `CommandPalette.List` receives focus, it becomes highlighted and focus immediately returns to `CommandPalette.Input`, after the app's list focus handlers run.
+
 A palette with modes, such as a file search beside the commands, keeps the mode in its own state and draws the field and the list for it: another `leading` mark, other `items`, another footer. Keys the palette does not know go in `onKeyDown` on `CommandPalette.Input`, which runs before Base UI's own:
 
 - Tab can complete the field to the highlighted row.
