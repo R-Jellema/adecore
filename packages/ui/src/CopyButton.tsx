@@ -76,9 +76,10 @@ export function CopyButton(props: CopyButtonProps) {
     return (
         <>
             {button}
-            {/* The check is only drawn, and a focused button's new name is not always read out. */}
+            {/* The check is only drawn, and a focused button's new name is not always read out. A new node
+                per copy, as a region whose text stays the same says nothing for the second one. */}
             <span role="status" className="sr-only">
-                {copied ? t('action.copied') : ''}
+                <span key={copiedAt}>{copied ? t('action.copied') : ''}</span>
             </span>
         </>
     );
