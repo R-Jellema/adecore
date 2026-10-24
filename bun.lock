@@ -104,33 +104,6 @@
         "vite": "^8.3.1",
       },
     },
-    "examples/showcase": {
-      "name": "@adecore/example-showcase",
-      "version": "0.0.0",
-      "dependencies": {
-        "@adecore/agent-contracts": "workspace:*",
-        "@adecore/agents": "workspace:*",
-        "@adecore/agents-react": "workspace:*",
-        "@adecore/charts": "workspace:*",
-        "@adecore/ui": "workspace:*",
-        "clsx": "^2.1.1",
-        "i18next": "^26.4.2",
-        "lucide-react": "^1.47.0",
-        "react": "^19.3.0",
-        "react-dom": "^19.3.0",
-        "react-i18next": "^17.0.15",
-      },
-      "devDependencies": {
-        "@tailwindcss/vite": "^4.3.3",
-        "@types/node": "^24.13.6",
-        "@types/react": "^19.3.0",
-        "@types/react-dom": "^19.3.0",
-        "@vitejs/plugin-react": "^6.1.1",
-        "tailwindcss": "^4.3.3",
-        "typescript": "^7.0.2",
-        "vite": "^8.3.1",
-      },
-    },
     "packages/agent-contracts": {
       "name": "@adecore/agent-contracts",
       "version": "0.0.0",
@@ -524,8 +497,6 @@
     "@adecore/editor-react": ["@adecore/editor-react@workspace:packages/editor-react"],
 
     "@adecore/example-database": ["@adecore/example-database@workspace:examples/database"],
-
-    "@adecore/example-showcase": ["@adecore/example-showcase@workspace:examples/showcase"],
 
     "@adecore/intelligent-ui": ["@adecore/intelligent-ui@workspace:packages/intelligent-ui"],
 
