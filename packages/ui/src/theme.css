@@ -17,6 +17,9 @@
        than the pressed step, so hover reads as a lift and pressed as the heavier state. A white
        popup cannot go lighter, so in this theme the step is the softest gray there is. */
     --surface-hover: #f3f3f5;
+    /* The hover of something that draws its own border: a smaller step, so the ground never passes
+       its edge and the outline stays visible under the pointer. */
+    --surface-hover-edged: color-mix(in srgb, var(--surface-raised) 60%, var(--surface-hover));
     /* The pressed step of a toggle. It cannot be `--surface-raised`, which equals `--surface` in the
        light theme, and it has to sit a shade past `--surface-hover` so pressed outranks hover. */
     --surface-active: #dcdce2;
@@ -243,6 +246,7 @@
     --color-surface-sunken: var(--surface-sunken);
     --color-surface-idle: var(--surface-idle);
     --color-surface-hover: var(--surface-hover);
+    --color-surface-hover-edged: var(--surface-hover-edged);
     --color-surface-active: var(--surface-active);
     --color-field: var(--field);
     --color-field-border: var(--field-border);
@@ -273,6 +277,10 @@
 }
 
 @layer base {
+    /* Whatever a click acts on shows the hand; a disabled one shows that nothing will. Menu rows keep the arrow (`.menu-item`). */
+    :where(button, a[href], summary, label[for], [role="button"], [role="checkbox"], [role="switch"], [role="radio"], [role="tab"], [role="option"]):not(:disabled, [aria-disabled="true"], [data-disabled]) {
+        cursor: pointer;
+    }
     /*
      * A border with an alpha has to mix with what is behind the element, not with the element's own
      * background: by default a background runs on under the border and a node's white surface would
