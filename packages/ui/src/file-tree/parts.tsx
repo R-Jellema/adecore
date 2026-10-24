@@ -4,7 +4,9 @@ import { useRender } from '@base-ui/react/use-render';
 import { FileTree as PierreFileTree, type FileTreeProps as PierreProps } from '@pierre/trees/react';
 import type { FileTree, FileTreeVisibleRow } from '@pierre/trees';
 import { useTranslation } from 'react-i18next';
+import type { LucideIcon } from 'lucide-react';
 import clsx from 'clsx';
+import { Icon } from '../Icon.tsx';
 import { mergeRefs } from '../merge-refs.ts';
 import { directoryHandle, extendsSelection, followFocus, movesFocus, menuTargetsOf, rowPathOf, visibleRows } from './helpers.ts';
 import { useFileTreeShift } from './use-file-tree-shift.tsx';
@@ -25,6 +27,8 @@ export type FileTreeRootProps = useRender.ComponentProps<'div'> & {
     renderDecoration?(row: FileTreeVisibleRow): ReactNode;
     /* `after-status` draws the decoration after the engine's git status column instead of between the name and that column. */
     decorationOrder?: FileTreeDecorationOrder;
+    /* A Lucide icon in place of the row's own glyph (the file icon, or a directory's chevron); undefined keeps that glyph. */
+    rowIcon?(row: FileTreeVisibleRow): LucideIcon | undefined;
     treeProps?: Omit<PierreProps, 'model'>;
 };
 
@@ -46,6 +50,7 @@ export function FileTreeRoot({
     renderControl,
     renderDecoration,
     decorationOrder = 'before-status',
+    rowIcon,
     treeProps,
     render,
     className,
@@ -63,7 +68,7 @@ export function FileTreeRoot({
         attach(node as HTMLElement | null);
         mergeRefs<Element>(ref)(node);
     };
-    const slots = useFileTreeSlots(model, frame, label ?? t('tree.label'), decorationOrder);
+    const slots = useFileTreeSlots(model, frame, label ?? t('tree.label'), decorationOrder, rowIcon);
     const latestLoads = useRef({ onLoadChildren, onExpandedPathsChange });
     useLayoutEffect(() => {
         latestLoads.current = { onLoadChildren, onExpandedPathsChange };
@@ -186,12 +191,16 @@ export function FileTreeRoot({
             children: (
                 <>
                     <PierreFileTree {...treeProps} model={model} className={clsx('adecore-file-tree-host', treeProps?.className)} />
-                    {slots.map(({ row, control, decoration }) => (
-                        <span key={control.slot} style={{ display: 'contents' }}>
-                            {createPortal(renderControl?.(row), control)}
-                            {createPortal(renderDecoration?.(row), decoration)}
-                        </span>
-                    ))}
+                    {slots.map(({ row, control, decoration, icon }) => {
+                        const ownIcon = icon === null ? undefined : rowIcon?.(row);
+                        return (
+                            <span key={control.slot} style={{ display: 'contents' }}>
+                                {createPortal(renderControl?.(row), control)}
+                                {createPortal(renderDecoration?.(row), decoration)}
+                                {icon !== null && ownIcon !== undefined && createPortal(<Icon icon={ownIcon} size={14} />, icon)}
+                            </span>
+                        );
+                    })}
                     {children}
                     {bar}
                 </>

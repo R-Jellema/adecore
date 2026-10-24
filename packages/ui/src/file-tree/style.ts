@@ -23,4 +23,7 @@ export const FILE_TREE_CSS = `
     [data-item-section="git"] { margin-inline-end: var(--adecore-tree-status-space, 0px); }
     [data-tree-port] { position: absolute; z-index: 4; display: flex; align-items: center; height: 25px; pointer-events: none; }
     [data-tree-port] > slot { pointer-events: auto; }
+    [data-tree-port="icon"] { width: 16px; justify-content: center; }
+    [data-tree-port="icon"] > slot { pointer-events: none; }
+    [data-own-icon="true"] [data-item-section="icon"] > * { visibility: hidden; }
 `;

@@ -1,6 +1,7 @@
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { FileTree, FileTreeVisibleRow } from '@pierre/trees';
+import type { LucideIcon } from 'lucide-react';
 import { pathOfRow, visibleRows, visibleRowsAround } from './helpers.ts';
 import { FILE_TREE_CSS } from './style.ts';
 
@@ -8,6 +9,8 @@ export interface RowSlot {
     row: FileTreeVisibleRow;
     control: HTMLElement;
     decoration: HTMLElement;
+    /* Where a row's own icon goes in place of the engine's glyph; null when the row keeps that glyph. */
+    icon: HTMLElement | null;
 }
 
 export interface Port {
@@ -16,7 +19,11 @@ export interface Port {
     decoration: HTMLElement;
     lightControl: HTMLElement;
     lightDecoration: HTMLElement;
+    icon?: HTMLElement;
+    lightIcon?: HTMLElement;
 }
+
+export type FileTreeRowIcon = (row: FileTreeVisibleRow) => LucideIcon | undefined;
 
 /*
  * The rows of the mounted window, read from the spacer beta.6 puts above it (its first index times the
@@ -61,18 +68,24 @@ export function positionPorts(ports: Iterable<Port>, order: FileTreeDecorationOr
         const row = port.rowElement;
         const before = status ?? row.querySelector<HTMLElement>('[data-item-section="content"]');
         const icon = row.querySelector<HTMLElement>('[data-item-section="icon"]');
+        const iconLeft = row.offsetLeft + (icon?.offsetLeft ?? 4);
         return {
             port,
             top: `${row.offsetTop}px`,
-            controlLeft: `${row.offsetLeft + (icon?.offsetLeft ?? 4) - control}px`,
+            iconLeft: `${iconLeft}px`,
+            controlLeft: `${iconLeft - control}px`,
             decorationLeft: `${row.offsetLeft + (before === null ? row.offsetWidth - decoration - 2 : before.offsetLeft + before.offsetWidth + 6)}px`
         };
     });
-    for (const { port, top, controlLeft, decorationLeft } of placed) {
+    for (const { port, top, iconLeft, controlLeft, decorationLeft } of placed) {
         port.control.style.top = top;
         port.control.style.left = controlLeft;
         port.decoration.style.top = top;
         port.decoration.style.left = decorationLeft;
+        if (port.icon !== undefined) {
+            port.icon.style.top = top;
+            port.icon.style.left = iconLeft;
+        }
     }
 }
 
@@ -85,9 +98,16 @@ function setSpace(row: HTMLElement, name: string, space: number): void {
 }
 
 // beta.6 owns button rows. Sibling slots keep real controls outside those buttons and in the app's stylesheet.
-export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, label: string, order: FileTreeDecorationOrder) {
+export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, label: string, order: FileTreeDecorationOrder, rowIcon?: FileTreeRowIcon) {
     const prefix = useId().replaceAll(':', '');
     const [slots, setSlots] = useState<RowSlot[]>([]);
+    const latestIcon = useRef(rowIcon);
+    const rescan = useRef<(() => void) | undefined>(undefined);
+
+    useLayoutEffect(() => {
+        latestIcon.current = rowIcon;
+        rescan.current?.();
+    }, [rowIcon]);
 
     useEffect(() => {
         if (frame === null) {
@@ -111,6 +131,29 @@ export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, lab
             resize.unobserve(port.lightDecoration);
             port.lightControl.remove();
             port.lightDecoration.remove();
+            dropIcon(port);
+        };
+        const dropIcon = (port: Port): void => {
+            port.icon?.remove();
+            port.lightIcon?.remove();
+            port.icon = undefined;
+            port.lightIcon = undefined;
+        };
+        // The icon lets every pointer event through to the row under it, which then opens, folds or selects as it would.
+        const makeIcon = (port: Port, host: HTMLElement): void => {
+            const container = document.createElement('span');
+            container.dataset.treePort = 'icon';
+            container.dataset.itemPath = port.rowElement.dataset.itemPath;
+            const slot = document.createElement('slot');
+            slot.name = `${prefix}-icon-${serial++}`;
+            container.append(slot);
+            port.rowElement.parentElement?.append(container);
+            const target = document.createElement('span');
+            target.slot = slot.name;
+            target.className = 'adecore-tree-icon';
+            host.append(target);
+            port.icon = container;
+            port.lightIcon = target;
         };
         const makePort = (element: HTMLElement, host: HTMLElement, kind: 'control' | 'decoration'): { container: HTMLElement; target: HTMLElement } => {
             const container = document.createElement('span');
@@ -201,10 +244,27 @@ export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, lab
                 }
                 port.lightControl.dataset.itemPath = row.path;
                 port.lightDecoration.dataset.itemPath = row.path;
-                next.push({ row, control: port.lightControl, decoration: port.lightDecoration });
+                const ownIcon = latestIcon.current?.(row) !== undefined;
+                if (ownIcon && port.icon === undefined) {
+                    makeIcon(port, current);
+                } else if (!ownIcon && port.icon !== undefined) {
+                    dropIcon(port);
+                }
+                if (port.icon !== undefined && port.icon.dataset.itemPath !== row.path) {
+                    port.icon.dataset.itemPath = row.path;
+                }
+                if (ownIcon) {
+                    element.dataset.ownIcon = 'true';
+                } else if (element.dataset.ownIcon !== undefined) {
+                    delete element.dataset.ownIcon;
+                }
+                next.push({ row, control: port.lightControl, decoration: port.lightDecoration, icon: port.lightIcon ?? null });
             }
             const key = next
-                .map(({ row, control }) => `${control.slot}:${row.path}:${row.isSelected}:${row.isExpanded}:${row.isFocused}:${row.name}`)
+                .map(
+                    ({ row, control, icon }) =>
+                        `${control.slot}:${row.path}:${row.isSelected}:${row.isExpanded}:${row.isFocused}:${row.name}:${icon?.slot ?? ''}`
+                )
                 .join('|');
             if (snapshot !== key) {
                 snapshot = key;
@@ -219,6 +279,7 @@ export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, lab
                 queueMicrotask(scan);
             }
         };
+        rescan.current = schedule;
         const shifts = new MutationObserver(position);
         shifts.observe(frame, { attributes: true, attributeFilter: ['style'] });
         const changes = new MutationObserver(schedule);
@@ -227,6 +288,7 @@ export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, lab
         schedule();
         return () => {
             disposed = true;
+            rescan.current = undefined;
             unsubscribe();
             changes.disconnect();
             shifts.disconnect();
@@ -236,6 +298,7 @@ export function useFileTreeSlots(model: FileTree, frame: HTMLElement | null, lab
                 port.rowElement.style.removeProperty('--adecore-tree-control-space');
                 port.rowElement.style.removeProperty('--adecore-tree-decoration-space');
                 port.rowElement.style.removeProperty('--adecore-tree-status-space');
+                delete port.rowElement.dataset.ownIcon;
                 dropPort(port);
             }
         };

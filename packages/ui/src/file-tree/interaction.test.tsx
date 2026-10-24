@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { act, useLayoutEffect, useState, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import i18next from 'i18next';
-import { FileTree, Tree, UIProvider, useFileTree, type FileTreeModel } from '../index.ts';
+import { FolderGit2 } from 'lucide-react';
+import { FileTree, Tree, UIProvider, useFileTree, type FileTreeModel, type FileTreeRootProps } from '../index.ts';
 
 const i18n = i18next.createInstance();
 await i18n.init({ lng: 'en', resources: {}, interpolation: { escapeValue: false } });
@@ -13,8 +14,10 @@ function Harness({
     onContext,
     onDrag,
     resetKey,
+    rowIcon,
     paths = ['src/one.ts', 'src/two.ts', 'README.md']
 }: {
+    rowIcon?: FileTreeRootProps['rowIcon'];
     onActivate?(path: string): void;
     onLoad?(path: string): void;
     onContext?(path: string | null): void;
@@ -37,6 +40,7 @@ function Harness({
             model={model}
             label="Project files"
             resetKey={resetKey}
+            rowIcon={rowIcon}
             onActivate={onActivate}
             onLoadChildren={onLoad}
             onRowContextMenu={(path) => onContext?.(path)}
@@ -362,6 +366,22 @@ describe.skipIf(typeof document === 'undefined')('file tree interaction', () => 
         expect(copied.length).toBeGreaterThan(0);
         // The mounted window and a neighbor on each side, never the 10,001 visible rows.
         expect(Math.max(...copied)).toBeLessThan(100);
+    });
+
+    test('draws the icon a row asks for in place of its glyph, and lets a click through to the row', async () => {
+        await mount(<Harness rowIcon={(row) => (row.kind === 'directory' ? FolderGit2 : undefined)} />);
+        const icons = container.querySelectorAll<HTMLElement>('.adecore-tree-icon');
+        expect(icons).toHaveLength(1);
+        expect(icons[0]!.querySelector('svg')).not.toBeNull();
+        expect(row('src/').dataset.ownIcon).toBe('true');
+        expect(row('src/one.ts').dataset.ownIcon).toBeUndefined();
+        const port = exposed.getFileTreeContainer()!.shadowRoot!.querySelector<HTMLElement>('[data-tree-port="icon"]')!;
+        expect(port.dataset.itemPath).toBe('src/');
+        await change(() => row('src/').dispatchEvent(new MouseEvent('click', { bubbles: true, composed: true })));
+        expect(FileTree.directoryHandle(exposed, 'src/')?.isExpanded()).toBe(false);
+        await mount(<Harness />);
+        expect(container.querySelectorAll('.adecore-tree-icon')).toHaveLength(0);
+        expect(row('src/').dataset.ownIcon).toBeUndefined();
     });
 
     test('refreshes port contents after props change and removes slots on unmount', async () => {

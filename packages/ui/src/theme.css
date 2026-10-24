@@ -687,6 +687,11 @@
     .adecore-tree-decoration {
         font-variant-numeric: tabular-nums;
     }
+    /* A row's own icon in place of the tree's glyph, in the glyph's color. */
+    .adecore-tree-icon {
+        display: inline-flex;
+        color: var(--text-muted);
+    }
     /* A tree whose rows slide sideways: every part of a row keeps its width and moves with the shift. */
     .adecore-tree[data-overflow="scroll"] .adecore-tree-row {
         overflow: clip;

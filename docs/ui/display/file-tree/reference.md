@@ -24,6 +24,7 @@ The options create the model once; they are not controlled props. The hook keeps
 | `onRowDragStart` | `(path, targets, event: DragEvent) => void` | | After the engine wrote its drag data. |
 | `renderControl` | `(row: FileTreeVisibleRow) => ReactNode` | | Drawn before the icon. |
 | `renderDecoration` | `(row: FileTreeVisibleRow) => ReactNode` | | Drawn after the name. |
+| `rowIcon` | `(row: FileTreeVisibleRow) => LucideIcon \| undefined` | | A 14 pixel icon in place of the row's file icon or chevron; `undefined` keeps it. |
 | `decorationOrder` | `'before-status' \| 'after-status'` | `'before-status'` | Whether the decoration comes before or after the git status column. |
 | `treeProps` | engine React props without `model` | | For the engine's own tree element, such as its header or context menu rendering. |
 | `render` | `RenderProp` | | Another element to be the frame. |

@@ -55,6 +55,12 @@ export function ReviewFiles() {
 
 The decoration here counts every viewed file, not the ones in that directory. A checkbox for a whole directory computes `checked` and `indeterminate` from your own set of descendants, and needs a rule for directories that are not fully loaded.
 
+`rowIcon` gives a row a Lucide icon of its own in place of its file icon, or of a directory's chevron, such as a repository icon on the directory of a checkout. Return `undefined` for every row that keeps its glyph. The icon lets clicks through, so a directory with one still opens and folds on a click, on Enter and on the arrow keys, and its `aria-expanded` still says which it is; only the chevron is gone.
+
+```tsx
+<FileTree.Root model={model} label="Changes" rowIcon={(row) => (repositories.has(row.path) ? FolderGit2 : undefined)} />
+```
+
 When the model has git status, the engine draws it in a column of its own after the name, and the decoration sits between the name and that column. `decorationOrder="after-status"` moves the decoration after the column instead, for a row whose status reads first and a label of its own, such as a branch, follows it.
 
 `FileTree.Checkbox` is [`Tree.Checkbox`](/ui/display/tree/reference#controls). Tab reaches it and Space toggles it, and checking it never selects, activates or folds the row. Wrap any other control in `FileTree.Control`, and put counts and status in `FileTree.Decoration`, written with the [formatters](/ui/formatting/).
