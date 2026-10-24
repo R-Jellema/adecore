@@ -77,13 +77,13 @@ export function parentIds(rows: readonly TimelineTreeRow<TimelineSpan>[]): strin
     return rows.flatMap((row) => (row.children > 0 ? [row.span.id] : []));
 }
 
-/* The earliest start and the time from there to the latest end; never zero, so a trace of one instant still has an axis. */
-export function timelineExtent(spans: readonly TimelineSpan[]): { readonly origin: number; readonly total: number } {
+/* The earliest start and the time from there to the latest end or `fixedEnd`; never zero, so a trace of one instant still has an axis. */
+export function timelineExtent(spans: readonly TimelineSpan[], fixedEnd?: number): { readonly origin: number; readonly total: number } {
     if (spans.length === 0) {
         return { origin: 0, total: 1 };
     }
     const origin = Math.min(...spans.map((span) => span.start));
-    const end = Math.max(...spans.map((span) => span.start + span.duration));
+    const end = fixedEnd ?? Math.max(...spans.map((span) => span.start + span.duration));
     return { origin, total: Math.max(end - origin, 0.001) };
 }
 
@@ -125,8 +125,9 @@ export function percentOf(at: number, origin: number, total: number): number {
 }
 
 export function barOf(span: TimelineSpan, origin: number, total: number): TimelineBar {
-    const left = percentOf(span.start, origin, total);
-    const width = Math.max(MIN_WIDTH, (span.duration / total) * 100);
+    const left = Math.min(percentOf(span.start, origin, total), 100 - MIN_WIDTH);
+    // A span that runs past a fixed end is cut off there.
+    const width = Math.max(MIN_WIDTH, Math.min((span.duration / total) * 100, 100 - left));
     return { left, width, label: width > INSIDE_FROM ? 'inside' : left + width > BEFORE_FROM ? 'before' : 'after' };
 }
 

@@ -42,6 +42,12 @@ test('timelineExtent runs from the earliest start to the latest end', () => {
     expect(timelineExtent([{ id: 'x', label: 'x', start: 5, duration: 0 }]).total).toBeGreaterThan(0);
 });
 
+test('a fixed end ends the axis there, and cuts off a span that runs past it', () => {
+    expect(timelineExtent(SPANS, 1340)).toEqual({ origin: 1000, total: 340 });
+    expect(barOf({ id: 'past', label: 'past', start: 1170, duration: 400 }, 1000, 340)).toEqual({ left: 50, width: 50, label: 'inside' });
+    expect(barOf({ id: 'after', label: 'after', start: 1500, duration: 10 }, 1000, 340).left).toBe(99.7);
+});
+
 describe('durationTicks', () => {
     test('takes the smallest round step that gives at most the count', () => {
         expect(durationTicks(340)).toEqual([0, 100, 200, 300]);

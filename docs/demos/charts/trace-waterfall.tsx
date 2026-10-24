@@ -70,7 +70,14 @@ function SpanDetail({ span: detail }: { span: TraceSpan }) {
 export default function TraceWaterfallDemo() {
     return (
         <div className="w-full overflow-hidden rounded-lg border border-border">
-            <Timeline.Root data={SPANS} kinds={KINDS} label="Spans of GET /api/orders/1842" defaultValue="d1" defaultExpanded={['a1', 'c1']}>
+            <Timeline.Root
+                data={SPANS}
+                kinds={KINDS}
+                label="Spans of GET /api/orders/1842"
+                end={START + TOTAL}
+                defaultValue="d1"
+                defaultExpanded={['a1', 'c1']}
+            >
                 <Timeline.Legend />
                 <Timeline.Axis heading="Span">
                     <Timeline.Moment at={TIMEOUT} label="SHOP-212 Payment status timed out" />
