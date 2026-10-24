@@ -39,6 +39,7 @@ Columns stand on whole pixels. A column is never narrower than 2px, and by defau
 | `radius` | `number` | `2` | The corners of a column that stands alone, at most a quarter of its width. |
 | `rounded` | `'all' \| 'end'` | `'all'` | Which corners `radius` rounds: all four, or only the end away from the ground, so the column stands flat on it. |
 | `minHeight` | `number` | | The least height of a column that stands alone, in pixels. A zero gets it too, so a run that took no time still shows as a stub; a missing value draws nothing. Pass `?? 0` in `value` where a missing value should be a stub as well. |
+| `animate` | `boolean` | `false` | The columns grow from the ground once, when they first draw. Not for a person who asks for reduced motion. |
 | `valueLabels` | `boolean \| (value, row, index) => string` | | Writes each column's value over it, see [value labels](#value-labels). |
 | `valueLabelSize` | `'2xs' \| 'xs'` | `'2xs'` | The type size of the value labels. |
 

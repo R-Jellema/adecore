@@ -630,6 +630,18 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(reports).toEqual([false]);
     });
 
+    test('columns that animate grow from the ground, and stay as they are under reduced motion', async () => {
+        await mount(
+            <Chart.Root data={SCORES} x="key" label="Scores">
+                <Chart.Bar value="score" label="Score" animate />
+            </Chart.Root>
+        );
+        const group = columns()[0]!.parentElement!;
+        expect(group.getAttribute('class')).toContain('starting:scale-y-0');
+        expect(group.getAttribute('class')).toContain('motion-reduce:transition-none');
+        expect(group.style.transformOrigin).toBe('0px 200px');
+    });
+
     test('a second x axis writes its row under the first', async () => {
         await mount(
             <Chart.Root data={SCORES} x="key" label="Scores">

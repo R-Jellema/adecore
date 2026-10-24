@@ -71,6 +71,8 @@ export interface ChartBarProps<Row> {
     readonly minHeight?: number;
     /* Writes each column's value over it, as the y axis writes it or through the function; labels that would collide move up a row. */
     readonly valueLabels?: boolean | ((value: number, row: Row, index: number) => string);
+    /* The columns grow from the ground when they first draw; not for a person who asks for reduced motion. */
+    readonly animate?: boolean;
     /* The type size of the value labels: `2xs` beside a dense row of columns, `xs` over a few wide ones. */
     readonly valueLabelSize?: '2xs' | 'xs';
     readonly className?: string;
@@ -335,6 +337,7 @@ export function ChartBar<Row>({
     rounded = 'all',
     valueLabels,
     valueLabelSize = '2xs',
+    animate = false,
     className,
     ref
 }: ChartBarProps<Row>) {
@@ -413,20 +416,25 @@ export function ChartBar<Row>({
 
     return (
         <g ref={ref} className={clsx('pointer-events-none', className)}>
-            {drawn.map(({ index, column, y, height, alpha }) => {
-                const corner = bars?.stack === true ? 0 : Math.min(radius, Math.floor(column.width / 4));
-                const fill = rowColors?.[index] ?? color ?? fallback;
-                return rounded === 'end' && corner > 0 ? (
-                    <path
-                        key={index}
-                        d={endRoundedColumn(column.x, y, column.width, height, corner, (values[index] ?? 0) >= 0)}
-                        opacity={alpha}
-                        style={{ fill }}
-                    />
-                ) : (
-                    <rect key={index} x={column.x} y={y} width={column.width} height={height} rx={corner} opacity={alpha} style={{ fill }} />
-                );
-            })}
+            <g
+                className={animate ? 'transition-[scale] duration-400 ease-out starting:scale-y-0 motion-reduce:transition-none' : undefined}
+                style={animate ? { transformOrigin: `0px ${chart.pixelOfY(Math.max(chart.y.domain[0], 0)) ?? chart.plot.bottom}px` } : undefined}
+            >
+                {drawn.map(({ index, column, y, height, alpha }) => {
+                    const corner = bars?.stack === true ? 0 : Math.min(radius, Math.floor(column.width / 4));
+                    const fill = rowColors?.[index] ?? color ?? fallback;
+                    return rounded === 'end' && corner > 0 ? (
+                        <path
+                            key={index}
+                            d={endRoundedColumn(column.x, y, column.width, height, corner, (values[index] ?? 0) >= 0)}
+                            opacity={alpha}
+                            style={{ fill }}
+                        />
+                    ) : (
+                        <rect key={index} x={column.x} y={y} width={column.width} height={height} rx={corner} opacity={alpha} style={{ fill }} />
+                    );
+                })}
+            </g>
             <g ref={labels}>
                 {valueLabels !== undefined &&
                     valueLabels !== false &&
