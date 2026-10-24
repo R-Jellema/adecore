@@ -81,7 +81,7 @@ A rule holds for every bucket, so the tooltip does not repeat it; a screen reade
 
 ## Tooltip, legend and table
 
-On a time scale the cursor takes the bucket under the pointer, the same bucket a marker there is named in; where a row is missing it shows nothing. On a linear scale it snaps to the nearest point. On a time or linear scale it draws a line with a dot on every series; on a band scale it lights the bucket. Leaving the chart clears it; with `activeX` controlled it calls `onActiveXChange(null)` instead.
+On a time scale the cursor takes the bucket under the pointer, the same bucket a marker there is named in; where a row is missing it shows nothing. On a linear scale it snaps to the nearest point. On a time or linear scale it draws a line with a dot on every series; on a band scale it lights the bucket. Leaving the chart clears it; with `activeX` controlled it calls `onActiveXChange(null)` instead. `onActiveXChange` hears the x of a bucket, once each time the pointer enters another one, and `null` over a missing row.
 
 `Chart.Tooltip` is the card at the cursor: the x of the bucket, a row per series (with `-` where the series has no value), then its markers and bands. It hangs on the side of the cursor with the most room. `total` adds the sum of the series as "Total", or under the name it is given (`total="Runs"`), and `format` writes the values of the card. `children` takes the bucket (`ChartBucket`, with a `ChartBucketValue` per series) and draws the card's contents instead.
 

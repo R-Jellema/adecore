@@ -4,7 +4,7 @@ import type { Root } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import i18next from 'i18next';
 import { UIProvider } from '@adecore/ui';
-import { Chart, SeriesLegend } from './index.ts';
+import { Chart, SeriesLegend, type ChartX } from './index.ts';
 import { CHARTS_NAMESPACE, CHARTS_RESOURCES } from './locales.ts';
 
 const i18n = i18next.createInstance();
@@ -196,6 +196,23 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         );
         // Four hours across 600px: the columns stand in the slots of hour 0, 1 and 3.
         expect(columns().map((column) => Math.floor(Number(column.getAttribute('x')) / 150))).toEqual([0, 1, 3]);
+    });
+
+    test('the pointer on a time scale hands on the x of a bucket, once per bucket it enters', async () => {
+        const hours = [0, 1, 3].map((hour) => ({ at: hour * 3_600_000, count: hour + 1 }));
+        const changes: (ChartX | null)[] = [];
+        const plot = await mount(
+            <Chart.Root data={hours} x="at" xScale="time" step={3_600_000} label="Per hour" onActiveXChange={(x) => changes.push(x)}>
+                <Chart.Bar value="count" label="Count" />
+            </Chart.Root>
+        );
+        for (const clientX of [10, 40, 140, 160, 200, 320, 340, 500]) {
+            await act(async () => {
+                plot.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX, clientY: 50 }));
+            });
+        }
+        // Hour 2 has no row, so the pointer over its slot is on no bucket.
+        expect(changes).toEqual([0, 3_600_000, null, 10_800_000]);
     });
 
     test('a second x axis writes its row under the first', async () => {

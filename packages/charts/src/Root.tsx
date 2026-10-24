@@ -384,7 +384,11 @@ export function ChartRoot<Row>({
         if (continuous !== null) {
             const pixel = e.clientX - e.currentTarget.getBoundingClientRect().left;
             // The end of the last bucket is the start of none, so the pointer stops a pixel short of it.
-            setActiveX(continuous.invert(Math.min(plot.right - 1, Math.max(plot.left, pixel))));
+            const index = snapIndex(xs, xScale, continuous.invert(Math.min(plot.right - 1, Math.max(plot.left, pixel))), bucketStep);
+            const value = index < 0 ? null : xs[index]!;
+            if (value !== cursorX) {
+                setActiveX(value);
+            }
             return;
         }
         const index = indexAtPointer(e);
