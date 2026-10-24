@@ -70,7 +70,7 @@ function ActionButton({ action }: { action: ToastAction }) {
 function ToastCard<T extends Toast>({ toast, footer, onDismiss }: { toast: T; footer?: (toast: T) => ReactNode; onDismiss(): void }) {
     const { t } = useTranslation('ui');
     // A toast that goes by itself keeps its close button out of sight until the pointer or the keyboard is on it.
-    const leaves = toast.kind === 'deleted' || (toast.kind === 'success' && toast.persist !== true);
+    const leaves = toast.deadline !== undefined;
     const actions = [...(toast.action === undefined ? [] : [toast.action]), ...(toast.actions ?? [])];
     // An offer that runs out shows how long it has left instead.
     const countdown = actions.length > 0 ? toast.deadline : undefined;
