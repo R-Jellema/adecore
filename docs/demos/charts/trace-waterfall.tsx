@@ -1,5 +1,5 @@
 import { Timeline, type TimelineKind, type TimelineSpan } from '@adecore/charts';
-import { formatNumber, formatPreciseDuration } from '@adecore/ui/format';
+import { formatPercent, formatPreciseDuration } from '@adecore/ui/format';
 
 interface TraceSpan extends TimelineSpan {
     readonly op: string;
@@ -48,7 +48,7 @@ function SpanDetail({ span: detail }: { span: TraceSpan }) {
     const facts = [
         { name: 'Operation', value: detail.op },
         { name: 'Starts at', value: `+${formatPreciseDuration(detail.start - START)}` },
-        { name: 'Duration', value: `${formatPreciseDuration(detail.duration)},${formatNumber((detail.duration / TOTAL) * 100)}% of the trace` },
+        { name: 'Duration', value: `${formatPreciseDuration(detail.duration)}, ${formatPercent((detail.duration / TOTAL) * 100)} of the trace` },
         { name: 'Status', value: detail.ok ? 'OK' : 'Failed' },
         { name: 'Span id', value: detail.id }
     ];
