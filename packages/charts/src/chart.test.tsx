@@ -478,6 +478,22 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         await mount(<Chart.Root data={SCORES} x="key" label="Scores" />);
     });
 
+    test('the label under a column dims with it and stands out while it is picked', async () => {
+        await mount(
+            <Chart.Root data={SCORES} x="key" selected={['a-high']} dimmed={(row) => row.model === 'Beta'} label="Scores">
+                <Chart.XAxis thin={false} />
+                <Chart.Bar value="score" label="Score" dimOpacity={0.3} />
+            </Chart.Root>
+        );
+        const labels = [...container.querySelectorAll('text')].filter((text) => text.closest('[visibility="hidden"]') === null);
+        expect(labels.map((text) => [text.textContent, text.getAttribute('opacity'), text.getAttribute('class')?.split(' ')[0]])).toEqual([
+            ['a-low', '0.3', 'fill-text-faint'],
+            ['a-high', null, 'fill-text'],
+            ['b-low', '0.3', 'fill-text-faint'],
+            ['b-mid', '0.3', 'fill-text-faint']
+        ]);
+    });
+
     test('a second x axis writes its row under the first', async () => {
         await mount(
             <Chart.Root data={SCORES} x="key" label="Scores">

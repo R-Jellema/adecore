@@ -121,7 +121,7 @@ The key of a group is its identity, which need not be what a person reads, such 
 
 ## Picking columns
 
-With `onActivate`, the buckets become pressable: Enter, Space and a click call it with the row. The buckets in `selected` stay highlighted, are pressed for a screen reader, and the other columns dim. What a pick means, such as a reference to compare against, stays with the app. `dimmed` takes a function of the row and dims every column the app does not want in focus, such as the other models while one is highlighted.
+With `onActivate`, the buckets become pressable: Enter, Space and a click call it with the row. The buckets in `selected` stay highlighted, are pressed for a screen reader, and the other columns dim. What a pick means, such as a reference to compare against, stays with the app. `dimmed` takes a function of the row and dims every column the app does not want in focus, such as the other models while one is highlighted. The labels under a column follow it: they dim with it, at its `dimOpacity`, and are written in `--text` while it is under the cursor or picked.
 
 The demo above draws a [`Chart.Rule`](/charts/series#rules) at the score of each pick, A solid and B dashed, so the other columns read against them:
 

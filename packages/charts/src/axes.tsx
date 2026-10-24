@@ -199,7 +199,7 @@ export function ChartXAxis({ format, ticks, angle = 0, thin = true, align = 'tic
     useBeforePaint(() => () => store.setXAxis(id, null), [store, id]);
 
     const inward = (x: number): number => Math.min(Math.max(x, widest / 2 - chart.leftAxis), chart.width - widest / 2);
-    let placed: { key: string; x: number; text: string; end?: boolean }[];
+    let placed: { key: string; x: number; text: string; end?: boolean; index?: number }[];
     const buckets = align === 'bucket' && chart.xScale === 'time' && !chart.points ? chart.bucketAt(0) : null;
     if (continuous !== null && xs.length === 0) {
         placed = [];
@@ -239,7 +239,7 @@ export function ChartXAxis({ format, ticks, angle = 0, thin = true, align = 'tic
                 return [];
             }
             const center = chart.centerOf(index);
-            return [{ key: String(key), x: angle === 0 ? inward(center) : center, text: write(key) }];
+            return [{ key: String(key), x: angle === 0 ? inward(center) : center, text: write(key), index }];
         });
     } else {
         placed = [];
@@ -257,15 +257,18 @@ export function ChartXAxis({ format, ticks, angle = 0, thin = true, align = 'tic
                 </g>
             )}
             <g ref={labels}>
-                {placed.map((tick) =>
-                    angle === 0 ? (
+                {placed.map((tick) => {
+                    const focus = tick.index === undefined ? null : (chart.labelFocus[tick.index] ?? null);
+                    const opacity = focus === 'dim' ? chart.labelDim : undefined;
+                    return angle === 0 ? (
                         <text
                             key={tick.key}
                             x={Math.round(tick.x)}
                             y={baseline}
                             dy="0.8em"
                             textAnchor="middle"
-                            className="fill-text-faint text-xs tabular-nums"
+                            opacity={opacity}
+                            className={clsx(focus === 'strong' ? 'fill-text' : 'fill-text-faint', 'text-xs tabular-nums')}
                         >
                             {tick.text}
                         </text>
@@ -275,12 +278,13 @@ export function ChartXAxis({ format, ticks, angle = 0, thin = true, align = 'tic
                             transform={`translate(${Math.round(tick.x) + 4},${baseline}) rotate(${angle})`}
                             dy="0.8em"
                             textAnchor="end"
-                            className="fill-text-muted text-xs"
+                            opacity={opacity}
+                            className={clsx(focus === 'strong' ? 'fill-text' : 'fill-text-muted', 'text-xs')}
                         >
                             {tick.text}
                         </text>
-                    )
-                )}
+                    );
+                })}
             </g>
             {title !== undefined && (
                 <text

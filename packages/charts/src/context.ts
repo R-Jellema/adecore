@@ -45,6 +45,10 @@ export interface ChartContextValue {
     readonly ownsCursor: boolean;
     readonly selected: readonly boolean[];
     readonly dimmed: readonly boolean[];
+    /* Per bucket, whether the labels under it stand out with their column (`strong`), dim with it (`dim`) or neither. */
+    readonly labelFocus: readonly ('strong' | 'dim' | null)[];
+    /* The opacity a dimmed label takes, the same as its columns. */
+    readonly labelDim: number;
     readonly elements: ChartSlots;
     /* The scroll of the plot, which the tooltip subtracts to stay at the cursor. */
     readonly scroll: number;

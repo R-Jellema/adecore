@@ -17,6 +17,8 @@ export interface SeriesEntry {
     readonly icon: IconProps['icon'] | null;
     /* Columns that write their value over them, which need a row of room above the plot. */
     readonly valueLabels: boolean;
+    /* What a column dims to when it is out of focus, which the labels under it follow; columns only. */
+    readonly dimOpacity?: number;
 }
 
 export interface RuleEntry {

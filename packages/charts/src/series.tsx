@@ -355,7 +355,8 @@ export function ChartBar<Row>({
         bars: bars?.id ?? null,
         curve: 'linear',
         icon: icon ?? null,
-        valueLabels: valueLabels !== undefined && valueLabels !== false
+        valueLabels: valueLabels !== undefined && valueLabels !== false,
+        dimOpacity
     });
     // A time scale learns how long a bucket is from the distance between two rows, so one row alone has no slot.
     const noSlot = chart.xScale === 'time' && chart.data.length > 0 && chart.bucketAt(0) === null;

@@ -374,6 +374,15 @@ export function ChartRoot<Row>({
     const selectedRows = (keys ?? xs).map((key) => picked.has(String(key)));
     const dimmedRows = data.map((row, index) => dimmed?.(row, index) ?? false);
     const dimmedGroups = new Set(pointGroups.filter((run) => run.indexes.every((index) => dimmedRows[index])).map((run) => run.key));
+    // A label under a column follows it: dimmed with it, and stronger while it is under the cursor or picked.
+    const anyPicked = selectedRows.some(Boolean);
+    const columnDim = [...series.values()].find((entry) => entry.kind === 'bar')?.dimOpacity ?? null;
+    const labelFocus = xs.map((_, index): 'strong' | 'dim' | null => {
+        if (index === activeIndex || selectedRows[index]) {
+            return 'strong';
+        }
+        return dimmedRows[index] || anyPicked ? 'dim' : null;
+    });
 
     const describe = (index: number): string => {
         const parts = (
@@ -501,6 +510,8 @@ export function ChartRoot<Row>({
         ownsCursor,
         selected: selectedRows,
         dimmed: dimmedRows,
+        labelFocus,
+        labelDim: columnDim ?? 0.4,
         elements: { legend: legendSlot, table: tableSlot, tooltip: tooltipSlot, groups: groupsSlot, left: leftSlot, right: rightSlot, rules: rulesSlot },
         scroll,
         box: size.width,
