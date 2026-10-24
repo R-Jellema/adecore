@@ -11,15 +11,14 @@ describe('a banner', () => {
         expect(classes).toEqual(expect.arrayContaining(['absolute', 'inset-x-0', 'top-3']));
     });
 
-    test('lets a className replace the overlay position when it names no placement', () => {
-        const classes = rootClasses(renderToStaticMarkup(<Banner icon={CircleAlert} tone="error" message="Failed." className="w-full" />));
-        expect(classes).toContain('w-full');
-        expect(classes).not.toContain('absolute');
-    });
-
-    test('keeps the overlay position under a className when the placement is overlay', () => {
-        const classes = rootClasses(renderToStaticMarkup(<Banner placement="overlay" icon={CircleAlert} tone="error" message="Failed." className="pt-1" />));
-        expect(classes).toEqual(expect.arrayContaining(['absolute', 'pt-1']));
+    test('lets a className replace the overlay position, with or without the placement named', () => {
+        for (const placement of [undefined, 'overlay'] as const) {
+            const classes = rootClasses(
+                renderToStaticMarkup(<Banner placement={placement} icon={CircleAlert} tone="error" message="Failed." className="w-full" />)
+            );
+            expect(classes).toContain('w-full');
+            expect(classes).not.toContain('absolute');
+        }
     });
 
     test('stands in the flow as one bordered row when inline', () => {

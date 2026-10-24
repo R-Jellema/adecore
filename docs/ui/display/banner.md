@@ -16,7 +16,7 @@ With `placement="inline"` the banner is a notice that belongs to the page, such 
 
 <Demo src="display/banner-inline" />
 
-Without `placement`, a `className` replaces the overlay position instead of adding to it, and the strip keeps its centered shape. Pass `placement="overlay"` to add classes to the floating position.
+On the overlay, a `className` replaces the floating position instead of adding to it, and the strip keeps its centered shape.
 
 ## Props
 
@@ -27,7 +27,7 @@ Without `placement`, a `className` replaces the overlay position instead of addi
 | `message` | `ReactNode` | | Required. |
 | `children` | `ReactNode` | | The buttons. |
 | `placement` | `'overlay' \| 'inline'` | `'overlay'` | Floats over the view, or stands in the flow and fills its row. |
-| `className` | `string` | | Without `placement`, replaces the overlay position. |
+| `className` | `string` | | On the overlay, replaces its position. |
 | `ref` | `Ref<HTMLDivElement>` | | |
 
 `BannerProps` and `BannerTone` are exported types.

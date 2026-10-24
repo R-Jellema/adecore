@@ -23,8 +23,8 @@ export interface BannerProps {
     children?: ReactNode;
     /*
      * `overlay` floats the glass strip centered along the top of the positioned parent; `inline` stands
-     * in the flow and fills its row. Left out, a `className` replaces the overlay position instead of
-     * adding to it.
+     * in the flow and fills its row. Under `overlay` a `className` replaces the overlay position instead
+     * of adding to it, so its utilities never meet the component's own.
      */
     placement?: 'overlay' | 'inline';
     className?: string;
@@ -37,7 +37,7 @@ export interface BannerProps {
  * and a decision has to be where the eyes already are. One at a time: the slot is one row and the
  * caller picks what stands in it. Inline, it is a notice that belongs to the page it stands in.
  */
-export function Banner({ icon, tone, message, children, placement, className, ref }: BannerProps) {
+export function Banner({ icon, tone, message, children, placement = 'overlay', className, ref }: BannerProps) {
     const line = (
         <>
             <Icon icon={icon} size={16} className={clsx('shrink-0', TONE[tone])} />
@@ -59,10 +59,8 @@ export function Banner({ icon, tone, message, children, placement, className, re
         );
     }
 
-    const position = placement === undefined && className !== undefined ? className : clsx(OVERLAY, className);
-
     return (
-        <div ref={ref} className={clsx('pointer-events-auto flex justify-center px-4', position)} role="status" aria-live="polite">
+        <div ref={ref} className={clsx('pointer-events-auto flex justify-center px-4', className ?? OVERLAY)} role="status" aria-live="polite">
             <Surface className="flex max-w-[640px] items-center gap-3 rounded-lg px-3 py-2 text-sm text-text">{line}</Surface>
         </div>
     );
