@@ -44,6 +44,8 @@ export interface SeriesLegendProps<Item extends SeriesLegendItem> {
     readonly search?: string | false;
     /* What the list says when the search finds nothing. */
     readonly empty?: string;
+    /* The height of a row: `sm` 28px, `md` 36px for a touch screen. */
+    readonly size?: 'sm' | 'md';
     readonly className?: string;
     readonly ref?: Ref<HTMLDivElement>;
 }
@@ -65,6 +67,7 @@ export function SeriesLegend<Item extends SeriesLegendItem>({
     onQueryChange,
     search,
     empty,
+    size = 'sm',
     className,
     ref
 }: SeriesLegendProps<Item>) {
@@ -129,7 +132,8 @@ export function SeriesLegend<Item extends SeriesLegendItem>({
                                             aria-describedby={item.status === undefined ? undefined : statusId}
                                             disabled={item.disabled === true}
                                             className={clsx(
-                                                'flex min-h-7 w-full items-center gap-2 rounded px-1 text-left text-xs enabled:hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-accent',
+                                                'flex w-full items-center gap-2 rounded px-1 text-left text-xs enabled:hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-accent',
+                                                size === 'md' ? 'min-h-9' : 'min-h-7',
                                                 on ? 'text-text' : 'text-text-faint'
                                             )}
                                             onClick={() => toggle(item.key)}

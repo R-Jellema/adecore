@@ -37,7 +37,7 @@ const CostChart = createChart<ModelCost>();
             </>
         )}
     </CostChart.EndLabels>
-</CostChart.Root>
+</CostChart.Root>;
 ```
 
 ## Points
@@ -92,15 +92,16 @@ Its children get a `ChartPointSeries` (`key`, `label`, `rows` and `color`) and r
 />
 ```
 
-| Prop | Type | Default | |
-| --- | --- | --- | --- |
-| `items`, `label` | `SeriesLegendItem[]`, `string` | | Required. The series, and the name of the list for a screen reader. |
-| `hidden`, `onHiddenChange` | `string[]` | | Required. The keys of the series that are off. |
-| `highlighted`, `onHighlightedChange` | `string \| null` | | The series under the pointer or the focus. A series that is off is never highlighted. |
-| `groups` | `SeriesLegendGroup[]` | | The groups in their order, each with a button that turns its series on or off together. An item whose `group` is not among them is left out. |
-| `mark` | `(item) => ReactNode` | | Drawn before the name in the color of the item. |
-| `search` | `string \| false` | "Search" | The placeholder and the name of the search field; `false` leaves it out. |
-| `query`, `onQueryChange` | `string` | | Controls the search, so an app can clear it with the rest of its filters. |
-| `empty` | `string` | "Nothing matches." | What the list says when the search finds nothing. |
+| Prop                                 | Type                           | Default            |                                                                                                                                              |
+| ------------------------------------ | ------------------------------ | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `items`, `label`                     | `SeriesLegendItem[]`, `string` |                    | Required. The series, and the name of the list for a screen reader.                                                                          |
+| `hidden`, `onHiddenChange`           | `string[]`                     |                    | Required. The keys of the series that are off.                                                                                               |
+| `highlighted`, `onHighlightedChange` | `string \| null`               |                    | The series under the pointer or the focus. A series that is off is never highlighted.                                                        |
+| `groups`                             | `SeriesLegendGroup[]`          |                    | The groups in their order, each with a button that turns its series on or off together. An item whose `group` is not among them is left out. |
+| `mark`                               | `(item) => ReactNode`          |                    | Drawn before the name in the color of the item.                                                                                              |
+| `search`                             | `string \| false`              | "Search"           | The placeholder and the name of the search field; `false` leaves it out.                                                                     |
+| `query`, `onQueryChange`             | `string`                       |                    | Controls the search, so an app can clear it with the rest of its filters.                                                                    |
+| `empty`                              | `string`                       | "Nothing matches." | What the list says when the search finds nothing.                                                                                            |
+| `size`                               | `'sm' \| 'md'`                 | `'sm'`             | The height of a row: 28px, or 36px for a touch screen.                                                                                       |
 
 A `SeriesLegendItem` has a `key`, a `label`, and optionally a `group`, a `color`, `disabled` for a series with nothing to show, and a `status` that says why a series shows less than it could ("Turned off"), under its name and in its hint. The props are `SeriesLegendProps`.
