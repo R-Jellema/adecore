@@ -1,6 +1,6 @@
 # Columns and groups
 
-`Chart.Bar` draws a column per bucket, on a `band` scale. Tokens per day, input and output stacked, with the total in the tooltip:
+`Chart.Bar` draws a column per bucket, on a `band` scale or on a `time` scale. Tokens per day, input and output stacked, with the total in the tooltip:
 
 <Demo src="charts/tokens-per-day" />
 
@@ -27,6 +27,30 @@ const UsageChart = createChart<TokenDay>();
 Columns stand on whole pixels. A column is never narrower than 2px, and keeps at least 1px of air to the next bucket. While the cursor is on a bucket, the columns of the others dim.
 
 `tone` takes a tone, `{ color }`, or a function of the row for a color per column: `tone={(row) => runTone(row.status)}`. `opacity` is a function of the row and its index in its group, for columns that grow stronger inside one. The props are `ChartBarsProps` and `ChartBarProps`, and `ChartBarTone` is the type of `tone`.
+
+## Columns over time
+
+On a `time` scale each bucket lasts one `step` from its x, and its columns stand in that slot. A marker or a band at any moment then lands where it happened, between the columns or across them, and a row that is missing leaves its slot empty:
+
+<Demo src="charts/columns-over-time" />
+
+```tsx
+<Chart.Root data={buckets} x="at" xScale="time" step={HOUR} y={{ integer: true }} label="Events per hour" height={220}>
+    <Chart.Grid />
+    <Chart.Band from={gap.start} to={gap.end} label="No data from the collector" />
+    <Chart.XAxis />
+    <Chart.YAxis />
+    <Chart.Bars stack>
+        <Chart.Bar value="errors" label="Errors" tone="error" />
+        <Chart.Bar value="warnings" label="Warnings" tone="needsYou" />
+    </Chart.Bars>
+    <Chart.Marker at={deploy.at} label={`Deploy ${deploy.version}`} tone="accent" />
+    <Chart.Tooltip total />
+    <Chart.Legend />
+</Chart.Root>
+```
+
+`step` defaults to the smallest distance between two rows; give it when the first rows may be missing. A `band` scale of days or hours draws the same columns, but there a marker needs the key of a bucket.
 
 ## Groups
 

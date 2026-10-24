@@ -23,8 +23,8 @@ Values per bucket on a shared x axis: a moment, a number or a category. Errors a
 
 Each row of `data` is one bucket. `x` names its position, as a key of the row or a function of it. `xScale` says what the position is:
 
-- `band` (the default): a category per row, such as a day or a model, with the buckets side by side. Columns only stand on this scale.
-- `time`: a moment, as a `Date` or in milliseconds. The rows run from the earliest to the latest. Each row is a bucket that starts at its x and lasts one `step`, the smallest distance between two rows unless the root gets one; its point stands in the middle of it, where a column would.
+- `band` (the default): a category per row, such as a day or a model, with the buckets side by side.
+- `time`: a moment, as a `Date` or in milliseconds. The rows run from the earliest to the latest. Each row is a bucket that starts at its x and lasts one `step`, the smallest distance between two rows unless the root gets one; its point stands in the middle of it, where a column would. Columns stand on this scale and on `band`, not on `linear`.
 - `linear`: a number, the rows from low to high.
 
 The value axis is `linear` or `log` (`yScale`). It covers every series, stacked ones at their top, starts at zero on a linear scale and rounds its ends out to a tick. `y` fixes the ends (`{ min, max }`), and `{ integer: true }` keeps the ticks of a count on whole numbers.
@@ -66,7 +66,7 @@ The props are `ChartLineProps` and `ChartAreaProps`; `tone` is a `ChartColor`, a
 
 ## Markers and bands
 
-`Chart.Marker` draws a dashed vertical line at a moment, `at`, with a dot on top. Its `label` is named in the tooltip of the bucket the moment falls in, so a deploy at 14:37 shows under the bucket of 14:00. `Chart.Band` shades a range from `from` to `to` with a hatch, named in the tooltip of every bucket inside it. Both are muted unless they get a `tone`. The props are `ChartMarkerProps` and `ChartBandProps`.
+`Chart.Marker` draws a dashed vertical line at a moment, `at`, with a dot on top. Its `label` is named in the tooltip of the bucket the moment falls in, so a deploy at 14:37 shows under the bucket of 14:00. `Chart.Band` shades a range from `from` to `to` with a hatch, named in the tooltip of every bucket it touches. Both are muted unless they get a `tone`. On a band scale `at`, `from` and `to` are keys of buckets; a moment between two buckets needs a time scale, which takes [columns](/charts/columns#columns-over-time) too. The props are `ChartMarkerProps` and `ChartBandProps`.
 
 ## Tooltip, legend and table
 

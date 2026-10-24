@@ -46,6 +46,8 @@ export interface ChartContextValue {
     readonly box: number;
     readonly leftAxis: number;
     readonly centerOf: (index: number) => number;
+    /* The span of a bucket a column stands in: on a band scale, or on a time scale with a step. */
+    readonly bucketAt: (index: number) => { readonly left: number; readonly width: number } | null;
     readonly pixelOfX: (x: ChartX) => number | null;
     readonly pixelOfY: (value: number) => number | null;
     readonly setActiveX: (x: ChartX | null) => void;

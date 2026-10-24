@@ -149,6 +149,16 @@ export function ChartRoot<Row>({
         }
         return continuous!.at((xs[index] as number) + bucketStep / 2);
     };
+    const bucketAt = (index: number): { left: number; width: number } | null => {
+        if (layout !== null) {
+            return { left: plot.left + (layout.lefts[index] ?? 0), width: layout.bucket };
+        }
+        if (bucketStep <= 0 || xs[index] === undefined) {
+            return null;
+        }
+        const left = continuous!.at(xs[index] as number);
+        return { left, width: continuous!.at((xs[index] as number) + bucketStep) - left };
+    };
     const pixelOfX = (value: ChartX): number | null => {
         if (layout !== null) {
             const index = xs.findIndex((key) => String(key) === String(value));
@@ -327,6 +337,7 @@ export function ChartRoot<Row>({
         box: size.width,
         leftAxis,
         centerOf,
+        bucketAt,
         pixelOfX,
         pixelOfY,
         setActiveX,

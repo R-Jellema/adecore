@@ -163,7 +163,7 @@ export function ChartBars({ stack = false, children, className, ref }: ChartBars
     );
 }
 
-/* Columns, one per bucket. Only on a `band` scale. */
+/* Columns, one per bucket: on a `band` scale, or on a `time` scale whose buckets last one step. */
 export function ChartBar<Row>({ value, label, tone, opacity, className, ref }: ChartBarProps<Row>) {
     const [chart, id, values] = useSeriesValues('Chart.Bar', value);
     const bars = useContext(BarsContext);
@@ -180,15 +180,11 @@ export function ChartBar<Row>({ value, label, tone, opacity, className, ref }: C
         bars: bars?.id ?? null,
         curve: 'linear'
     });
-    const layout = chart.band;
-    if (layout === null) {
-        return null;
-    }
     const { slot, count } = chart.slots.get(id) ?? { slot: 0, count: 1 };
     const stacked = chart.stacked.get(id);
     const fallback = chart.colors.get(id) ?? seriesColor(0);
     const anySelected = chart.selected.some(Boolean);
-    const firstOfGroup = (index: number): number => layout.groups.find((run) => index >= run.first && index <= run.last)?.first ?? 0;
+    const firstOfGroup = (index: number): number => chart.band?.groups.find((run) => index >= run.first && index <= run.last)?.first ?? 0;
     return (
         <g ref={ref} className={clsx('pointer-events-none', className)}>
             {values.map((amount, index) => {
@@ -196,10 +192,11 @@ export function ChartBar<Row>({ value, label, tone, opacity, className, ref }: C
                 const base = stacked?.base[index] ?? 0;
                 const topPixel = top === null || top === undefined ? null : chart.pixelOfY(top);
                 const basePixel = chart.pixelOfY(base) ?? chart.plot.bottom;
-                if (amount === null || topPixel === null) {
+                const bucket = chart.bucketAt(index);
+                if (amount === null || topPixel === null || bucket === null) {
                     return null;
                 }
-                const column = columnsIn(chart.plot.left + layout.lefts[index]!, layout.bucket, count)[slot]!;
+                const column = columnsIn(bucket.left, bucket.width, count)[slot]!;
                 const { y, height } = segmentOf(topPixel, basePixel, base === 0, amount);
                 const focused = index === chart.activeIndex || chart.selected[index] === true;
                 let alpha = focused ? 1 : (opacity?.(rows[index]!, index - firstOfGroup(index)) ?? 1);
