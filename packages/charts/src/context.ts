@@ -37,6 +37,8 @@ export interface ChartContextValue {
     readonly bands: ReadonlyMap<string, BandEntry>;
     readonly groupKeys: readonly string[] | null;
     readonly activeIndex: number;
+    /* False in a chart that draws the cursor of another chart of its group, which shows the tooltip itself. */
+    readonly ownsCursor: boolean;
     readonly selected: readonly boolean[];
     readonly dimmed: readonly boolean[];
     readonly elements: ChartSlots;
@@ -69,5 +71,12 @@ export function useChartContext(part: string): ChartContextValue {
 /* The `Chart.Bars` a `Chart.Bar` is drawn in. */
 export const BarsContext = createContext<{ id: string; stack: boolean } | null>(null);
 
-/* The x under the pointer of every chart in a `Chart.Group`. */
-export const GroupContext = createContext<{ x: ChartX | null; setX: (x: ChartX | null) => void; widths: AxisWidths } | null>(null);
+export interface GroupCursor {
+    readonly x: ChartX | null;
+    /* The chart the pointer or the keyboard is in, the one that shows its tooltip. */
+    readonly owner: string | null;
+    readonly setX: (x: ChartX | null, owner: string) => void;
+}
+
+/* What the charts of a `Chart.Group` share: the cursor, the widths of their y axes, or both. */
+export const GroupContext = createContext<{ cursor: GroupCursor | null; widths: AxisWidths | null } | null>(null);

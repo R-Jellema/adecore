@@ -70,7 +70,7 @@ export function ChartTooltip<Row>({ total = false, format, children, className, 
     const chart = useChartContext('Chart.Tooltip');
     const { t } = useTranslation('charts');
     const { activeIndex, elements } = chart;
-    if (activeIndex < 0 || elements.tooltip === null) {
+    if (activeIndex < 0 || elements.tooltip === null || !chart.ownsCursor) {
         return null;
     }
     const bucket = bucketOf<Row>(chart, activeIndex);

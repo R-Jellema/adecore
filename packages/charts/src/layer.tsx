@@ -10,6 +10,10 @@ export interface ChartLayerProps {
 }
 
 export interface ChartGroupProps {
+    /* One cursor for every chart inside: the pointer over one draws it in all, with the tooltip only in that one. */
+    readonly shareCursor?: boolean;
+    /* The y axes take the width of the widest on each side, so the plots start and end at the same pixel. */
+    readonly alignAxes?: boolean;
     readonly children?: ReactNode;
     readonly className?: string;
     readonly ref?: Ref<HTMLDivElement>;
@@ -25,12 +29,13 @@ export function ChartLayer({ children, className, ref }: ChartLayerProps) {
     );
 }
 
-/* Charts inside share the x under the pointer, and each takes its own bucket at it. Their y axes take the width of the widest, so the plots line up. */
-export function ChartGroup({ children, className, ref }: ChartGroupProps) {
-    const [x, setX] = useState<ChartX | null>(null);
+/* Charts that share the x under the pointer, each taking its own bucket at it, and line up their plots. */
+export function ChartGroup({ shareCursor = true, alignAxes = true, children, className, ref }: ChartGroupProps) {
+    const [cursor, setCursor] = useState<{ x: ChartX | null; owner: string | null }>({ x: null, owner: null });
     const [widths] = useState(createAxisWidths);
+    const setX = (x: ChartX | null, owner: string): void => setCursor({ x, owner: x === null ? null : owner });
     return (
-        <GroupContext value={{ x, setX, widths }}>
+        <GroupContext value={{ cursor: shareCursor ? { ...cursor, setX } : null, widths: alignAxes ? widths : null }}>
             <div ref={ref} className={className}>
                 {children}
             </div>

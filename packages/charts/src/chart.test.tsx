@@ -157,6 +157,25 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(columns().map((column) => Math.floor(Number(column.getAttribute('x')) / 150))).toEqual([0, 1, 3]);
     });
 
+    test('in a group every chart draws the cursor and only the chart that moved it shows its tooltip', async () => {
+        const plot = await mount(
+            <Chart.Group>
+                <Chart.Root data={SCORES} x="key" label="Scores">
+                    <Chart.Bar value="score" label="Score" />
+                    <Chart.Tooltip />
+                </Chart.Root>
+                <Chart.Root data={SCORES} x="key" label="Scores again">
+                    <Chart.Bar value="score" label="Score" />
+                    <Chart.Tooltip />
+                </Chart.Root>
+            </Chart.Group>
+        );
+        await press(plot, 'ArrowRight');
+        const tooltips = [...container.querySelectorAll('.inset-0')].map((slot) => slot.childElementCount);
+        expect(tooltips).toEqual([1, 0]);
+        expect(container.querySelectorAll('rect.fill-surface-hover')).toHaveLength(2);
+    });
+
     test('a selected bucket is pressed, and Escape clears the cursor', async () => {
         const plot = await mount();
         expect(container.querySelectorAll('[aria-pressed="true"]')).toHaveLength(1);

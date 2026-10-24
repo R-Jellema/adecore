@@ -94,7 +94,8 @@ export function ChartRoot<Row>({
     const markers = useSyncExternalStore(store.subscribe, store.markers, store.markers);
     const bands = useSyncExternalStore(store.subscribe, store.bands, store.bands);
     const formats = useSyncExternalStore(store.subscribe, store.formats, store.formats);
-    const sharedCursor = useContext(GroupContext);
+    const chartGroup = useContext(GroupContext);
+    const sharedCursor = chartGroup?.cursor ?? null;
     const [ownX, setOwnX] = useState<ChartX | null>(null);
     const [legendSlot, setLegendSlot] = useState<HTMLElement | null>(null);
     const [tableSlot, setTableSlot] = useState<HTMLElement | null>(null);
@@ -110,7 +111,7 @@ export function ChartRoot<Row>({
     const band = xScale === 'band';
     const xs = data.map((row, index) => xOf(readValue(x, row, index)));
     const groupKeys = band && group !== undefined ? data.map((row, index) => String(readValue(group, row, index))) : null;
-    const [leftAxis, rightAxis] = useAlignedAxes(sharedCursor?.widths ?? null, axes.left ?? 0, axes.right ?? 0);
+    const [leftAxis, rightAxis] = useAlignedAxes(chartGroup?.widths ?? null, axes.left ?? 0, axes.right ?? 0);
     const room = Math.max(0, size.width - leftAxis - rightAxis);
     // A bucket of a time scale runs from its x for one step and its point stands in the middle, as a column would.
     const bucketStep = xScale === 'time' ? (stepProp ?? bucketStepOf(xs as number[])) : 0;
@@ -215,10 +216,11 @@ export function ChartRoot<Row>({
     const controlled = activeX !== undefined;
     const cursorX = controlled ? activeX : sharedCursor !== null ? sharedCursor.x : ownX;
     const activeIndex = snapIndex(xs, xScale, cursorX, bucketStep);
+    const ownsCursor = controlled || sharedCursor === null || sharedCursor.owner === id;
     const setActiveX = (value: ChartX | null): void => {
         if (!controlled) {
             if (sharedCursor !== null) {
-                sharedCursor.setX(value);
+                sharedCursor.setX(value, id);
             } else {
                 setOwnX(value);
             }
@@ -330,6 +332,7 @@ export function ChartRoot<Row>({
         bands,
         groupKeys,
         activeIndex,
+        ownsCursor,
         selected: selectedRows,
         dimmed: dimmedRows,
         elements: { legend: legendSlot, table: tableSlot, tooltip: tooltipSlot, groups: groupsSlot, left: leftSlot, right: rightSlot },
