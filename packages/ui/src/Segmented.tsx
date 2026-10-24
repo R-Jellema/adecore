@@ -69,7 +69,7 @@ export function Segmented<T extends string>({
         <div
             ref={ref}
             className={clsx(
-                'flex bg-surface-sunken p-0.5 text-xs font-medium dark:bg-field',
+                'flex bg-surface-sunken p-0.5 text-xs font-medium dark:bg-surface-idle',
                 sizing.track,
                 vertical ? 'w-full flex-col items-stretch gap-0.5' : clsx(sizing.row, 'w-fit items-center'),
                 className
@@ -91,7 +91,7 @@ export function Segmented<T extends string>({
                         className={clsx(
                             'flex items-center transition-colors disabled:opacity-50',
                             square ? clsx(sizing.square, 'justify-center') : clsx(sizing.option, 'gap-1.5 text-left'),
-                            value === option.id ? 'bg-surface-raised text-text shadow-raised dark:bg-surface-active' : 'text-text-muted enabled:hover:text-text'
+                            value === option.id ? 'bg-surface-raised text-text shadow-raised' : 'text-text-muted enabled:hover:text-text'
                         )}
                         onClick={() => onValueChange(option.id)}
                         onKeyDown={(event) => move(event, index)}
