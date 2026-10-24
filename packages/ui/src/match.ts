@@ -25,9 +25,10 @@ const lettersInOrder = (text: string, query: string): boolean => {
 };
 
 /*
- * How well `text` answers to what a person typed, ignoring case: 4 when it starts with the query,
- * 3 when one of its words does, 2 when every typed word is in it in any order, 1 when the letters
- * are in it in order, and `null` when it does not match. An empty query matches everything with 0.
+ * How well `text` answers to what a person typed, ignoring case: 5 when it starts with the query,
+ * 4 when one of its words does, 3 when every typed word is in it and it starts with the first,
+ * 2 when every typed word is in it in any order, 1 when the letters are in it in order, and `null`
+ * when it does not match. An empty query matches everything with 0.
  */
 export function matchScore(text: string, query: string): number | null {
     const wanted = query.trim().toLowerCase();
@@ -36,13 +37,14 @@ export function matchScore(text: string, query: string): number | null {
     }
     const haystack = text.toLowerCase();
     if (haystack.startsWith(wanted)) {
-        return 4;
+        return 5;
     }
     if (startsWord(haystack, wanted)) {
-        return 3;
+        return 4;
     }
-    if (wanted.split(/\s+/).every((word) => haystack.includes(word))) {
-        return 2;
+    const words = wanted.split(/\s+/);
+    if (words.every((word) => haystack.includes(word))) {
+        return haystack.startsWith(words[0]!) ? 3 : 2;
     }
     return lettersInOrder(haystack, wanted) ? 1 : null;
 }
