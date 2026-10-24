@@ -27,6 +27,8 @@ Each row of `data` is one bucket. `x` names its position, as a key of the row or
 - `time`: a moment, as a `Date` or in milliseconds. The rows run from the earliest to the latest. Each row is a bucket that starts at its x and lasts one `step`, the smallest distance between two rows unless the root gets one; its point stands in the middle of it, where a column would. Columns stand on this scale and on `band`, not on `linear`.
 - `linear`: a number, the rows from low to high.
 
+Rows that are samples at a moment, not buckets that last a while, take `step={0}`: each point stands at its own x and the cursor takes the nearest sample. `xOptions` (`{ min, max }`, a `ChartXOptions`) fixes the ends of a time or linear axis, such as the last five minutes up to the newest sample, so the plot does not stretch while the first samples come in. Rows outside the ends are drawn past them; leave them out of `data`.
+
 The value axis is `linear` or `log` (`yScale`). It covers every series, stacked ones at their top, starts at zero on a linear scale and rounds its ends out to a tick. `y` fixes the ends (`{ min, max }`), and `{ integer: true }` keeps the ticks of a count on whole numbers. `{ include: [1] }` makes the axis cover a value the data may not reach and still round out above it, so a share that stays near zero does not fill the plot; larger data still raises the top.
 
 The width follows the container; `height` (200 by default) is the height of the plot and the x axis together.
@@ -37,7 +39,8 @@ The width follows the container; `height` (200 by default) is the height of the 
 | `x` | `keyof Row \| (row, index) => ChartXInput` | | Required. |
 | `label` | `string` | | Required. The name a screen reader reads, and the caption of the table. |
 | `xScale` | `'band' \| 'time' \| 'linear'` | `'band'` | |
-| `step` | `number` | | The length of a bucket on a time scale, in milliseconds. Set it when rows may be missing at the start, and for columns, which one row cannot draw without it. |
+| `step` | `number` | | The length of a bucket on a time scale, in milliseconds. Set it when rows may be missing at the start, and for columns, which one row cannot draw without it. `0` for samples. |
+| `xOptions` | `ChartXOptions` | | The ends of a time or linear x axis. |
 | `yScale` | `'linear' \| 'log'` | `'linear'` | |
 | `y` | `ChartYOptions` | `{}` | `min`, `max` and `integer`. |
 | `height` | `number` | `200` | Pixels. |

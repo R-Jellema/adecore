@@ -32,7 +32,7 @@ export interface ChartYOptions {
     readonly step?: number;
 }
 
-/* The ends of the x axis of a point chart; without them it covers the points and rounds out to a tick. */
+/* The ends of a continuous x axis; without them it covers the rows, and on a point chart rounds out to a tick. */
 export interface ChartXOptions {
     readonly min?: number;
     readonly max?: number;

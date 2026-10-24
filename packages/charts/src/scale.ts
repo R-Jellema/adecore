@@ -220,17 +220,23 @@ export function pointXScale(kind: 'time' | 'linear' | 'log', xs: readonly number
     return { domain, at: (value) => scale(value), invert: (pixel) => scale.invert(pixel), ticks: (count) => scale.ticks(count) };
 }
 
-/* A time, linear or log x axis over the buckets, from the first to the end of the last, which is `step` long. */
-export function continuousXScale(kind: 'time' | 'linear' | 'log', xs: readonly number[], range: [number, number], step = 0): ContinuousXScale {
+/* A time, linear or log x axis over the buckets, from the first to the end of the last, which is `step` long, or between the ends the caller fixed. */
+export function continuousXScale(
+    kind: 'time' | 'linear' | 'log',
+    xs: readonly number[],
+    range: [number, number],
+    step = 0,
+    options: ChartXOptions = {}
+): ContinuousXScale {
     if (kind === 'log') {
         return logXScale(xs, range);
     }
-    let low = xs.length === 0 ? 0 : Math.min(...xs);
-    let high = xs.length === 0 ? 1 : Math.max(...xs) + step;
-    if (high === low) {
+    let low = options.min ?? (xs.length === 0 ? 0 : Math.min(...xs));
+    let high = options.max ?? (xs.length === 0 ? 1 : Math.max(...xs) + step);
+    if (high <= low) {
         const pad = kind === 'time' ? 30 * 60 * 1000 : 1;
+        high = low + pad;
         low -= pad;
-        high += pad;
     }
     if (kind === 'time') {
         const scale = scaleTime().domain([low, high]).range(range);

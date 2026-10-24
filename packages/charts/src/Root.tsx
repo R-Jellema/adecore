@@ -43,9 +43,12 @@ export interface ChartRootProps<Row> {
     readonly rowKey?: ChartAccessor<Row, string>;
     /* What a person reads for a point beside its group, such as the effort of a model. */
     readonly rowLabel?: ChartAccessor<Row, string>;
-    /* Fixed ends of the x axis of a point chart. */
+    /* Fixed ends of a time, linear or log x axis, such as a window that ends now. */
     readonly xOptions?: ChartXOptions;
-    /* The length of a bucket on a time scale, in milliseconds; the smallest distance between two rows by default. */
+    /*
+     * The length of a bucket on a time scale, in milliseconds; the smallest distance between two rows by default.
+     * 0 makes every row a sample at its moment: its point stands at its x and the cursor takes the nearest.
+     */
     readonly step?: number;
     readonly yScale?: ChartYScale;
     /* Fixed ends of the value axis; without them it covers every series and rounds out to a tick. */
@@ -180,7 +183,7 @@ export function ChartRoot<Row>({
         ? null
         : points
           ? pointXScale(continuousKind, xs as number[], [plot.left, plot.right], xOptions)
-          : continuousXScale(continuousKind, xs as number[], [plot.left, plot.right], bucketStep);
+          : continuousXScale(continuousKind, xs as number[], [plot.left, plot.right], bucketStep, xOptions);
 
     const stackInput = [...series].map(([seriesId, entry]) => ({ id: seriesId, values: entry.values, stack: entry.stack }));
     const stacked = stackSeries(stackInput, xs.length);

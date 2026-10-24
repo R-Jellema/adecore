@@ -255,6 +255,31 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(changes).toEqual([0, 3_600_000, null, 10_800_000]);
     });
 
+    test('samples with no step stand at their moment in a window the app fixed, and the pointer takes the nearest', async () => {
+        const samples = [250, 500, 750].map((at) => ({ at, load: 1 }));
+        const changes: (ChartX | null)[] = [];
+        const plot = await mount(
+            <Chart.Root
+                data={samples}
+                x="at"
+                xScale="time"
+                step={0}
+                xOptions={{ min: 0, max: 1000 }}
+                margin={{ left: 0, right: 0 }}
+                label="Load"
+                onActiveXChange={(x) => changes.push(x)}
+            >
+                <Chart.Line value="load" label="Load" />
+            </Chart.Root>
+        );
+        const line = container.querySelector('path[fill="none"]')!.getAttribute('d')!;
+        expect([...line.matchAll(/[ML](-?[\d.]+),/g)].map((match) => Number(match[1]))).toEqual([150, 300, 450]);
+        await act(async () => {
+            plot.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 260, clientY: 50 }));
+        });
+        expect(changes).toEqual([500]);
+    });
+
     test('a second x axis writes its row under the first', async () => {
         await mount(
             <Chart.Root data={SCORES} x="key" label="Scores">
