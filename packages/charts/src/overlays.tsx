@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Button, Icon, Surface } from '@adecore/ui';
 import { useChartContext, type ChartContextValue } from './context.ts';
 import type { SeriesEntry } from './store.ts';
-import type { ChartX } from './types.ts';
+import type { ChartNote, ChartX } from './types.ts';
 
 export interface ChartBucketValue {
     readonly label: string;
@@ -24,7 +24,7 @@ export interface ChartBucket<Row> {
     readonly groupLabel: string | null;
     readonly values: readonly ChartBucketValue[];
     /* The markers and bands of the bucket. */
-    readonly notes: readonly string[];
+    readonly notes: readonly ChartNote[];
 }
 
 export interface ChartTooltipProps<Row> {
@@ -81,6 +81,17 @@ function Swatch({ color, entry, size }: { color: string; entry: SeriesEntry; siz
     return <span className={clsx('shrink-0', entry.kind === 'bar' ? 'size-2 rounded-xs' : 'h-0.5 w-3 rounded-full')} style={{ background: color }} />;
 }
 
+/* A dashed stroke for a marker, a square for a band, in their color. */
+function NoteSwatch({ note }: { note: ChartNote }) {
+    return note.kind === 'marker' ? (
+        <span className="flex w-2 shrink-0 justify-center">
+            <span className="h-2.5 border-l border-dashed" style={{ borderColor: note.color }} />
+        </span>
+    ) : (
+        <span className="size-2 shrink-0 rounded-xs" style={{ background: note.color }} />
+    );
+}
+
 /* The card at the cursor: the x of the bucket, a row per series, then its markers and bands. */
 export function ChartTooltip<Row>({ total = false, format, children, className, ref }: ChartTooltipProps<Row>) {
     const chart = useChartContext('Chart.Tooltip');
@@ -102,7 +113,7 @@ export function ChartTooltip<Row>({ total = false, format, children, className, 
     // A point names its series and itself; its x is a value like the others, under the title of its axis.
     const heading = chart.points
         ? [bucket.groupLabel, chart.rowLabels?.[activeIndex]].filter(Boolean).join(' · ') || chart.formatX(bucket.x)
-        : [bucket.groupLabel, chart.formatX(bucket.x)].filter(Boolean).join(' · ');
+        : [bucket.groupLabel, chart.rowLabels?.[activeIndex] ?? chart.formatX(bucket.x)].filter(Boolean).join(' · ');
     return createPortal(
         <Surface
             ref={ref}
@@ -139,9 +150,13 @@ export function ChartTooltip<Row>({ total = false, format, children, className, 
                         </p>
                     )}
                     {bucket.notes.map((note) => (
-                        <p key={note} className="text-text-faint">
-                            {note}
-                        </p>
+                        <div key={`${note.kind}:${note.label}`} className="border-t border-border-soft pt-1">
+                            <p className="flex items-center gap-2 text-text">
+                                <NoteSwatch note={note} />
+                                {note.label}
+                            </p>
+                            {note.detail !== null && <p className="pl-4 text-text-muted">{note.detail}</p>}
+                        </div>
                     ))}
                 </>
             )}
@@ -225,7 +240,7 @@ export function ChartTable({ className, ref }: ChartTableProps) {
                                 <tr key={chart.keys?.[index] ?? String(key)} className={shown ? 'border-t border-border-soft' : undefined}>
                                     {grouped && <td className={shown ? 'h-8 px-2 text-text-muted' : undefined}>{chart.groupLabels![index]}</td>}
                                     <th scope="row" className={shown ? 'h-8 px-2 text-left font-normal whitespace-nowrap text-text-muted' : undefined}>
-                                        {xColumn ? chart.rowLabels![index] : chart.formatX(key)}
+                                        {chart.rowLabels?.[index] ?? chart.formatX(key)}
                                     </th>
                                     {xColumn && <td className={cell}>{Number.isFinite(key) ? chart.formatX(key) : ''}</td>}
                                     {series.map(([seriesId, entry]) => {

@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import type { IconProps } from '@adecore/ui';
 import { area, curveLinear, curveMonotoneX, curveStepAfter, line } from 'd3-shape';
 import { numberOf, readValue, warnOnce } from './access.ts';
-import { columnsIn, guessLabelWidth, LABEL_LIFT, placeValueLabels, segmentOf } from './band.ts';
+import { columnsIn, endRoundedColumn, guessLabelWidth, LABEL_LIFT, placeValueLabels, segmentOf } from './band.ts';
 import { colorOf, seriesColor } from './color.ts';
 import { BarsContext, useChartContext, type ChartContextValue } from './context.ts';
 import { useBeforePaint, useKeyCheck, useRegistration } from './register.ts';
@@ -21,14 +21,20 @@ export interface ChartLineProps<Row> {
     readonly dashed?: boolean;
     /* A dot on every value. Without it only a value with no neighbor gets one, so it does not vanish. */
     readonly dots?: boolean;
+    /* The thickness of the line in pixels; 1 for a small chart beside others. */
+    readonly width?: 1 | 2;
     readonly className?: string;
     readonly ref?: Ref<SVGGElement>;
 }
 
-export interface ChartAreaProps<Row> extends Omit<ChartLineProps<Row>, 'tone'> {
+export interface ChartAreaProps<Row> extends Omit<ChartLineProps<Row>, 'tone' | 'width'> {
     readonly tone?: ChartColor;
     /* Piles the area on the stacked areas before it instead of on zero. */
     readonly stack?: boolean;
+    /* The line along its top in pixels; 0 draws the area alone. */
+    readonly width?: 0 | 1 | 2;
+    /* A gradient that fades toward the ground, or one flat tint, as a stacked area always has. */
+    readonly fill?: 'gradient' | 'flat';
 }
 
 export interface ChartPointProps<Row> {
@@ -59,8 +65,14 @@ export interface ChartBarProps<Row> {
     readonly columnWidth?: (bucket: number) => number;
     /* The corner radius of a column that stands alone; stacked segments stay square. */
     readonly radius?: number;
+    /* `end` rounds only the end away from the ground, so the column stands flat on it. */
+    readonly rounded?: 'all' | 'end';
+    /* The least height of a column that stands alone, in pixels, also for a zero; a missing value still draws nothing. */
+    readonly minHeight?: number;
     /* Writes each column's value over it, as the y axis writes it or through the function; labels that would collide move up a row. */
     readonly valueLabels?: boolean | ((value: number, row: Row, index: number) => string);
+    /* The type size of the value labels: `2xs` beside a dense row of columns, `xs` over a few wide ones. */
+    readonly valueLabelSize?: '2xs' | 'xs';
     readonly className?: string;
     readonly ref?: Ref<SVGGElement>;
 }
@@ -81,6 +93,8 @@ const HOVER_DIM = 0.55;
 const OUT_OF_FOCUS = 0.4;
 /* A dimmed point or series of a point chart; its full color keeps it readable lower than a light column. */
 export const DIMMED_POINT = 0.25;
+/* A flat area, also one stacked on another, where the line over it still stands out. */
+const FLAT_FILL = 0.28;
 
 type Point = readonly [number, number] | null;
 
@@ -91,10 +105,8 @@ const pointsOf = (chart: ChartContextValue, values: readonly (number | null)[]):
     });
 
 /* A value between two gaps is no line at all, so it gets a dot of its own. */
-const lonePoints = (points: readonly Point[]): [number, number][] =>
-    points.flatMap((point, index) =>
-        point !== null && points[index - 1] == null && points[index + 1] == null ? [[point[0], point[1]] as [number, number]] : []
-    );
+const lonePoints = (points: readonly Point[]): number[] =>
+    points.flatMap((point, index) => (point !== null && points[index - 1] == null && points[index + 1] == null ? [index] : []));
 
 function useSeriesValues<Row>(part: string, value: ChartAccessor<Row, number | null | undefined>): [ChartContextValue, string, (number | null)[]] {
     const chart = useChartContext(part);
@@ -103,13 +115,29 @@ function useSeriesValues<Row>(part: string, value: ChartAccessor<Row, number | n
     return [chart, id, (chart.data as Row[]).map((row, index) => numberOf(readValue(value, row, index)))];
 }
 
-function LinePath({ points, curve, dashed, dots }: { points: readonly Point[]; curve: ChartCurve; dashed: boolean; dots: boolean }) {
+function LinePath({
+    points,
+    curve,
+    dashed,
+    dots,
+    width = 2
+}: {
+    points: readonly Point[];
+    curve: ChartCurve;
+    dashed: boolean;
+    dots: boolean;
+    width?: 0 | 1 | 2;
+}) {
+    if (width === 0) {
+        return null;
+    }
     const path = line<Point>()
         .defined((point) => point !== null)
         .x((point) => point![0])
         .y((point) => point![1])
         .curve(CURVES[curve])(points);
-    const marked = dots ? points.filter((point): point is [number, number] => point !== null) : lonePoints(points);
+    // Keyed by index: before the chart is measured every point stands at the same x.
+    const marked = dots ? points.flatMap((point, index) => (point === null ? [] : [index])) : lonePoints(points);
     return (
         <>
             {path !== null && (
@@ -117,14 +145,14 @@ function LinePath({ points, curve, dashed, dots }: { points: readonly Point[]; c
                     d={path}
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth={2}
+                    strokeWidth={width}
                     strokeLinejoin="round"
                     strokeLinecap="round"
                     strokeDasharray={dashed ? '4 4' : undefined}
                 />
             )}
-            {marked.map(([x, y]) => (
-                <circle key={x} cx={x} cy={y} r={2.5} fill="currentColor" />
+            {marked.map((index) => (
+                <circle key={index} cx={points[index]![0]} cy={points[index]![1]} r={2.5} fill="currentColor" />
             ))}
         </>
     );
@@ -138,7 +166,7 @@ function tonesOf<Row>(chart: ChartContextValue, tone: ChartBarTone<Row> | undefi
 }
 
 /* A line through the values. A missing value breaks it. On a point chart a line per series, through its points in the order of the data. */
-export function ChartLine<Row>({ value, label, tone, icon, curve = 'linear', dashed = false, dots = false, className, ref }: ChartLineProps<Row>) {
+export function ChartLine<Row>({ value, label, tone, icon, curve = 'linear', dashed = false, dots = false, width = 2, className, ref }: ChartLineProps<Row>) {
     const [chart, id, values] = useSeriesValues('Chart.Line', value);
     const [color, rowColors] = tonesOf(chart, tone);
     useRegistration(chart.store, 'series', id, {
@@ -169,7 +197,7 @@ export function ChartLine<Row>({ value, label, tone, icon, curve = 'linear', das
                             opacity={chart.dimmedGroups.has(run.key) ? DIMMED_POINT : 1}
                             style={{ color: rowColors?.[first] ?? color ?? chart.groupColorOf(first) }}
                         >
-                            <LinePath points={placed} curve={curve} dashed={dashed} dots={false} />
+                            <LinePath points={placed} curve={curve} dashed={dashed} dots={false} width={width} />
                         </g>
                     );
                 })}
@@ -178,7 +206,7 @@ export function ChartLine<Row>({ value, label, tone, icon, curve = 'linear', das
     }
     return (
         <g ref={ref} className={clsx('pointer-events-none', className)} style={{ color: chart.colors.get(id) ?? color ?? seriesColor(0) }}>
-            <LinePath points={pointsOf(chart, values)} curve={curve} dashed={dashed} dots={dots} />
+            <LinePath points={pointsOf(chart, values)} curve={curve} dashed={dashed} dots={dots} width={width} />
         </g>
     );
 }
@@ -216,7 +244,7 @@ export function ChartPoint<Row>({ value, label, tone, icon, className, ref }: Ch
                 const fill = rowColors?.[index] ?? color ?? (chart.points ? chart.groupColorOf(index) : fallback);
                 return (
                     <g key={chart.keys?.[index] ?? index} opacity={chart.dimmed[index] === true ? DIMMED_POINT : 1}>
-                        <circle cx={left} cy={pixel} r={active || picked ? 5 : 4} className="stroke-surface" strokeWidth={1} style={{ fill }} />
+                        <circle cx={left} cy={pixel} r={active || picked ? 5 : 4} strokeWidth={1} style={{ fill, stroke: chart.halo }} />
                         {(picked || (active && chart.byKeyboard)) && <circle cx={left} cy={pixel} r={8} fill="none" className="stroke-text" strokeWidth={2} />}
                     </g>
                 );
@@ -235,10 +263,13 @@ export function ChartArea<Row>({
     dashed = false,
     dots = false,
     stack = false,
+    width = 2,
+    fill: fillKind = 'gradient',
     className,
     ref
 }: ChartAreaProps<Row>) {
     const [chart, id, values] = useSeriesValues('Chart.Area', value);
+    const flat = stack || fillKind === 'flat';
     const gradient = `chart-area-${id.replace(/[^\w-]/g, '')}`;
     useRegistration(chart.store, 'series', id, {
         kind: 'area',
@@ -263,7 +294,7 @@ export function ChartArea<Row>({
         .curve(CURVES[curve])(tops.map((_, index) => index));
     return (
         <g ref={ref} className={clsx('pointer-events-none', className)} style={{ color: chart.colors.get(id) ?? colorOf(tone) ?? seriesColor(0) }}>
-            {stack ? null : (
+            {flat ? null : (
                 <defs>
                     <linearGradient id={gradient} x1={0} x2={0} y1={0} y2={1}>
                         <stop offset="0%" stopColor="currentColor" stopOpacity={0.24} />
@@ -271,8 +302,8 @@ export function ChartArea<Row>({
                     </linearGradient>
                 </defs>
             )}
-            {fill !== null && <path d={fill} fill={stack ? 'currentColor' : `url(#${gradient})`} fillOpacity={stack ? 0.32 : 1} />}
-            <LinePath points={tops} curve={curve} dashed={dashed} dots={dots} />
+            {fill !== null && <path d={fill} fill={flat ? 'currentColor' : `url(#${gradient})`} fillOpacity={flat ? FLAT_FILL : 1} />}
+            <LinePath points={tops} curve={curve} dashed={dashed} dots={dots} width={width} />
         </g>
     );
 }
@@ -300,7 +331,10 @@ export function ChartBar<Row>({
     dimOpacity = OUT_OF_FOCUS,
     columnWidth,
     radius = 2,
+    minHeight = 0,
+    rounded = 'all',
     valueLabels,
+    valueLabelSize = '2xs',
     className,
     ref
 }: ChartBarProps<Row>) {
@@ -347,7 +381,7 @@ export function ChartBar<Row>({
             return [];
         }
         const column = columnsIn(bucket.left, bucket.width, count, columnWidth)[slot]!;
-        const { y, height } = segmentOf(topPixel, basePixel, base === 0, amount);
+        const { y, height } = segmentOf(topPixel, basePixel, base === 0, amount, bars?.stack === true ? 0 : minHeight);
         const focused = index === chart.activeIndex || chart.selected[index] === true;
         const outOfFocus = chart.dimmed[index] === true || (anySelected && !focused);
         const run = groupOf(index);
@@ -361,7 +395,8 @@ export function ChartBar<Row>({
         return [{ index, column, y, height, alpha, outOfFocus, text }];
     });
     const labelTops = placeValueLabels(
-        drawn.map(({ column, y, text }) => ({ center: column.x + column.width / 2, top: y, width: widths.get(text) ?? guessLabelWidth(text) }))
+        drawn.map(({ column, y, text }) => ({ center: column.x + column.width / 2, top: y, width: widths.get(text) ?? guessLabelWidth(text, valueLabelSize) })),
+        valueLabelSize
     );
 
     useBeforePaint(() => {
@@ -377,18 +412,20 @@ export function ChartBar<Row>({
 
     return (
         <g ref={ref} className={clsx('pointer-events-none', className)}>
-            {drawn.map(({ index, column, y, height, alpha }) => (
-                <rect
-                    key={index}
-                    x={column.x}
-                    y={y}
-                    width={column.width}
-                    height={height}
-                    rx={stacked !== undefined && bars?.stack === true ? 0 : Math.min(radius, Math.floor(column.width / 4))}
-                    opacity={alpha}
-                    style={{ fill: rowColors?.[index] ?? color ?? fallback }}
-                />
-            ))}
+            {drawn.map(({ index, column, y, height, alpha }) => {
+                const corner = bars?.stack === true ? 0 : Math.min(radius, Math.floor(column.width / 4));
+                const fill = rowColors?.[index] ?? color ?? fallback;
+                return rounded === 'end' && corner > 0 ? (
+                    <path
+                        key={index}
+                        d={endRoundedColumn(column.x, y, column.width, height, corner, (values[index] ?? 0) >= 0)}
+                        opacity={alpha}
+                        style={{ fill }}
+                    />
+                ) : (
+                    <rect key={index} x={column.x} y={y} width={column.width} height={height} rx={corner} opacity={alpha} style={{ fill }} />
+                );
+            })}
             <g ref={labels}>
                 {valueLabels !== undefined &&
                     valueLabels !== false &&
@@ -406,7 +443,8 @@ export function ChartBar<Row>({
                                     textAnchor="middle"
                                     strokeWidth={3}
                                     paintOrder="stroke"
-                                    className="fill-text stroke-surface text-2xs tabular-nums"
+                                    style={{ stroke: chart.halo }}
+                                    className={clsx('fill-text tabular-nums', valueLabelSize === 'xs' ? 'text-xs' : 'text-2xs')}
                                 >
                                     {text}
                                 </text>

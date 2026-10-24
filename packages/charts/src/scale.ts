@@ -128,9 +128,17 @@ export function yScaleOf(
     if (options.integer === true && options.max === undefined) {
         high = Math.max(high, low + 1);
     }
+    const top = high;
     const scale = scaleLinear().domain([low, high]).range(range);
     scale.nice(count);
     [low, high] = scale.domain() as [number, number];
+    if (options.max === undefined && options.headroom === 'none') {
+        high = top;
+    } else if (options.max === undefined && options.headroom === 'step' && top > 0 && high === top) {
+        // The highest value lands on a tick, so the axis goes one tick further to keep air over it.
+        const ticked = scale.ticks(count);
+        high += ticked.length > 1 ? ticked[1]! - ticked[0]! : top;
+    }
     const domain: [number, number] = [options.min ?? low, options.max ?? high];
     scale.domain(domain);
     let ticks = scale.ticks(count);
@@ -227,17 +235,23 @@ export function pointXScale(kind: 'time' | 'linear' | 'log', xs: readonly number
     return { domain, at: (value) => scale(value), invert: (pixel) => scale.invert(pixel), ticks: (count) => scale.ticks(count) };
 }
 
-/* A time, linear or log x axis over the buckets, from the first to the end of the last, which is `step` long. */
-export function continuousXScale(kind: 'time' | 'linear' | 'log', xs: readonly number[], range: [number, number], step = 0): ContinuousXScale {
+/* A time, linear or log x axis over the buckets, from the first to the end of the last, which is `step` long, or between the ends the caller fixed. */
+export function continuousXScale(
+    kind: 'time' | 'linear' | 'log',
+    xs: readonly number[],
+    range: [number, number],
+    step = 0,
+    options: ChartXOptions = {}
+): ContinuousXScale {
     if (kind === 'log') {
         return logXScale(xs, range);
     }
-    let low = xs.length === 0 ? 0 : Math.min(...xs);
-    let high = xs.length === 0 ? 1 : Math.max(...xs) + step;
-    if (high === low) {
+    let low = options.min ?? (xs.length === 0 ? 0 : Math.min(...xs));
+    let high = options.max ?? (xs.length === 0 ? 1 : Math.max(...xs) + step);
+    if (high <= low) {
         const pad = kind === 'time' ? 30 * 60 * 1000 : 1;
+        high = low + pad;
         low -= pad;
-        high += pad;
     }
     if (kind === 'time') {
         const scale = scaleTime().domain([low, high]).range(range);

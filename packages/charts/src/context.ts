@@ -3,7 +3,7 @@ import type { BandLayout } from './band.ts';
 import type { AxisWidths } from './group-axes.ts';
 import type { ContinuousXScale, Stacked, YAxisScale } from './scale.ts';
 import type { BandEntry, ChartStore, MarkerEntry, SeriesEntry } from './store.ts';
-import type { ChartRect, ChartX, ChartXScale } from './types.ts';
+import type { ChartNote, ChartRect, ChartX, ChartXScale } from './types.ts';
 
 export interface ChartSlots {
     readonly legend: HTMLElement | null;
@@ -59,7 +59,9 @@ export interface ChartContextValue {
     readonly setActiveX: (x: ChartX | null) => void;
     readonly formatX: (x: ChartX) => string;
     readonly formatY: (value: number) => string;
-    readonly notesAt: (index: number) => string[];
+    /* The format of the root, which a y axis without one writes its ticks in; null without one. */
+    readonly valueFormat: ((value: number) => string) | null;
+    readonly notesAt: (index: number) => ChartNote[];
     /* A chart whose rows are points, not buckets. */
     readonly points: boolean;
     /* The key of every row of a point chart; null for buckets. */
@@ -80,6 +82,8 @@ export interface ChartContextValue {
     readonly xTitle: string | null;
     /* The series a person reads in a bucket or a point: on a point chart one per label. */
     readonly readable: readonly (readonly [string, SeriesEntry])[];
+    /* The surface under the chart, which the halo around a label and the ring of a point are drawn in. */
+    readonly halo: string;
     /* The keyboard moved the cursor last, not the pointer. */
     readonly byKeyboard: boolean;
 }

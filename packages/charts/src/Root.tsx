@@ -26,7 +26,7 @@ import { movePoint, nearestPoint, type PlacedPoint } from './points.ts';
 import { bucketStepOf, continuousXScale, extentOf, pointXScale, stackSeries, tickCount, yScaleOf } from './scale.ts';
 import { createChartStore } from './store.ts';
 import { formatTime, timeLabelOf } from './time-format.ts';
-import type { ChartAccessor, ChartRows, ChartX, ChartXInput, ChartXOptions, ChartXScale, ChartYOptions, ChartYScale } from './types.ts';
+import type { ChartAccessor, ChartMargin, ChartNote, ChartRows, ChartX, ChartXInput, ChartXOptions, ChartXScale, ChartYOptions, ChartYScale } from './types.ts';
 
 export interface ChartRootProps<Row> {
     /* One row per bucket. On a time or linear scale the rows run from the lowest x to the highest; points come in any order. */
@@ -41,11 +41,19 @@ export interface ChartRootProps<Row> {
     readonly rows?: ChartRows;
     /* The key of a row of a point chart, for `selected`, `activeX` and `onActiveXChange`; its index by default. */
     readonly rowKey?: ChartAccessor<Row, string>;
-    /* What a person reads for a point beside its group, such as the effort of a model. */
+    /*
+     * What a person reads for a row: beside its group on a point chart, such as the effort of a model, and in place of
+     * the x of a bucket in the tooltip, the live region and the table, such as "Low" under an axis that writes "L".
+     */
     readonly rowLabel?: ChartAccessor<Row, string>;
-    /* Fixed ends of the x axis of a point chart. */
+    /* Writes a value in the tooltip, the live region and the table, and on a y axis without a format of its own. */
+    readonly format?: (value: number) => string;
+    /* Fixed ends of a time, linear or log x axis, such as a window that ends now. */
     readonly xOptions?: ChartXOptions;
-    /* The length of a bucket on a time scale, in milliseconds; the smallest distance between two rows by default. */
+    /*
+     * The length of a bucket on a time scale, in milliseconds; the smallest distance between two rows by default.
+     * 0 makes every row a sample at its moment: its point stands at its x and the cursor takes the nearest.
+     */
     readonly step?: number;
     readonly yScale?: ChartYScale;
     /* Fixed ends of the value axis; without them it covers every series and rounds out to a tick. */
@@ -57,8 +65,13 @@ export interface ChartRootProps<Row> {
     /* Controls the cursor. Leaving the chart calls `onActiveXChange(null)` and leaves the cursor to the app. */
     readonly activeX?: ChartX | null;
     readonly onActiveXChange?: (x: ChartX | null) => void;
-    /* Pixels above the plot, for something drawn over it such as a unit; at least 24 with value labels over columns. */
-    readonly marginTop?: number;
+    /*
+     * Room around the plot. `top` (8) is for something drawn over it, at least 24 with value labels over columns; `bottom`
+     * is 4; `left` and `right` are 6 on a continuous scale without buckets, so the dot at the end of a line keeps its edge.
+     */
+    readonly margin?: ChartMargin;
+    /* The surface the chart stands on, such as `raised` in a dialog, which the halo around its labels and the ring of a point take. */
+    readonly surface?: 'base' | 'raised';
     /* Puts the buckets of a band scale into runs of the same key, with a gap between them, or the points into series. */
     readonly group?: ChartAccessor<Row, string>;
     /* What the tooltip, the live region and the table call a group, read from its rows; its key by default. */
@@ -83,7 +96,7 @@ const INSET = 6;
 const Y_TICK_SPACING = 40;
 /* How far from a point the pointer may be and still take it. */
 const POINT_REACH = 16;
-/* One row of value labels over the tallest column; labels pushed up a row further need a larger `marginTop`. */
+/* One row of value labels over the tallest column; labels pushed up a row further need a larger `margin.top`. */
 const VALUE_LABEL_ROOM = 24;
 
 const defaultValue = (value: number): string => (Number.isInteger(value) ? formatNumber(value) : formatRounded(value, 2));
@@ -96,13 +109,15 @@ export function ChartRoot<Row>({
     rows = 'buckets',
     rowKey,
     rowLabel,
+    format,
     xOptions,
     step: stepProp,
     yScale = 'linear',
     y = {},
     label,
     height = 200,
-    marginTop = 8,
+    margin = {},
+    surface = 'base',
     activeX,
     onActiveXChange,
     group,
@@ -149,7 +164,7 @@ export function ChartRoot<Row>({
         return value === null || value === undefined ? Number.NaN : xOf(value);
     });
     const keys = points ? data.map((row, index) => (rowKey === undefined ? String(index) : String(readValue(rowKey, row, index)))) : null;
-    const rowLabels = points && rowLabel !== undefined ? data.map((row, index) => String(readValue(rowLabel, row, index))) : null;
+    const rowLabels = rowLabel !== undefined ? data.map((row, index) => String(readValue(rowLabel, row, index))) : null;
     const groupKeys = (band || points) && group !== undefined ? data.map((row, index) => String(readValue(group, row, index))) : null;
     const groupLabels = groupKeys === null ? null : groupLabel === undefined ? groupKeys : data.map((row, index) => String(readValue(groupLabel, row, index)));
     const leftY = yAxes.get('left');
@@ -159,23 +174,25 @@ export function ChartRoot<Row>({
     // A bucket of a time scale runs from its x for one step and its point stands in the middle, as a column would.
     const bucketStep = xScale === 'time' && !points ? (stepProp ?? bucketStepOf(xs as number[])) : 0;
     const inset = band || bucketStep > 0 ? 0 : INSET;
-    const layout = band ? bandLayout(xs.length, groupKeys, room, minBucketWidth, groupGap) : null;
-    const width = layout === null ? room : Math.max(room, Math.ceil(layout.width));
+    const marginLeft = margin.left ?? inset;
+    const marginRight = margin.right ?? inset;
+    const layout = band ? bandLayout(xs.length, groupKeys, Math.max(0, room - marginLeft - marginRight), minBucketWidth, groupGap) : null;
+    const width = layout === null ? room : Math.max(room, Math.ceil(layout.width + marginLeft + marginRight));
     const scrolls = layout !== null && width > room;
     // A scrolling plot clips what hangs out of its first buckets, such as a value label or a slanted name, so the
     // scroller reaches over the y axis by its width and gives that back as padding: the plot stays where it was.
     const overhang = scrolls ? leftAxis : 0;
     const xRows = [...xAxes.values()];
-    const bottom = height - 4 - (xRows.length === 0 ? 0 : X_AXIS_GAP + xRows.reduce((sum, row) => sum + row.room, 0));
-    const top = Math.max(marginTop, leftY?.top ?? 0, rightY?.top ?? 0, [...series.values()].some((entry) => entry.valueLabels) ? VALUE_LABEL_ROOM : 0);
-    const right = width - inset - (axes.end ?? 0);
-    const plot = { left: inset, top, right, bottom, width: Math.max(0, right - inset), height: Math.max(0, bottom - top) };
+    const bottom = height - (xRows.length === 0 ? (margin.bottom ?? 0) : (margin.bottom ?? 4) + X_AXIS_GAP + xRows.reduce((sum, row) => sum + row.room, 0));
+    const top = Math.max(margin.top ?? 8, leftY?.top ?? 0, rightY?.top ?? 0, [...series.values()].some((entry) => entry.valueLabels) ? VALUE_LABEL_ROOM : 0);
+    const right = width - marginRight - (axes.end ?? 0);
+    const plot = { left: marginLeft, top, right, bottom, width: Math.max(0, right - marginLeft), height: Math.max(0, bottom - top) };
     const continuousKind = xScale === 'band' ? 'linear' : xScale;
     const continuous = band
         ? null
         : points
           ? pointXScale(continuousKind, xs as number[], [plot.left, plot.right], xOptions)
-          : continuousXScale(continuousKind, xs as number[], [plot.left, plot.right], bucketStep);
+          : continuousXScale(continuousKind, xs as number[], [plot.left, plot.right], bucketStep, xOptions);
 
     const stackInput = [...series].map(([seriesId, entry]) => ({ id: seriesId, values: entry.values, stack: entry.stack }));
     const stacked = stackSeries(stackInput, xs.length);
@@ -285,26 +302,26 @@ export function ChartRoot<Row>({
         return typeof value === 'number' ? defaultValue(value) : value;
     };
     // Both axes share one scale, so the tooltip, the live region and the table write a value as the left one does.
-    const formatY = leftY?.format ?? rightY?.format ?? defaultValue;
+    const formatY = format ?? leftY?.format ?? rightY?.format ?? defaultValue;
     /* The x of a point with the title of its axis, as a person reads it out: "Cost per task $0.12". */
     const xValueOf = (index: number): string => {
         const text = formatX(xs[index]!);
         return points && formats.xTitle !== undefined ? `${formats.xTitle} ${text}` : text;
     };
 
-    const notesAt = (index: number): string[] => {
+    const notesAt = (index: number): ChartNote[] => {
         const at = xs[index];
         if (at === undefined) {
             return [];
         }
-        const notes: string[] = [];
+        const notes: ChartNote[] = [];
         for (const marker of markers.values()) {
             // The points of a chart stand in no order, so a moment belongs to none of them.
             const inside = band
                 ? String(marker.at) === String(at)
                 : !points && typeof marker.at === 'number' && containingIndex(xs as number[], marker.at, bucketStep || undefined) === index;
             if (inside) {
-                notes.push(marker.label);
+                notes.push({ kind: 'marker', label: marker.label, detail: marker.detail, color: marker.color });
             }
         }
         for (const range of bands.values()) {
@@ -319,7 +336,7 @@ export function ChartRoot<Row>({
                 inside = (at as number) >= (range.from as number) && (at as number) < (range.to as number);
             }
             if (inside) {
-                notes.push(range.label);
+                notes.push({ kind: 'band', label: range.label, detail: range.detail, color: range.color });
             }
         }
         return notes;
@@ -347,14 +364,16 @@ export function ChartRoot<Row>({
     const dimmedGroups = new Set(pointGroups.filter((run) => run.indexes.every((index) => dimmedRows[index])).map((run) => run.key));
 
     const describe = (index: number): string => {
-        const parts = [groupLabels?.[index], rowLabels?.[index], xValueOf(index)].filter((part): part is string => part !== undefined);
+        const parts = (
+            points ? [groupLabels?.[index], rowLabels?.[index], xValueOf(index)] : [groupLabels?.[index], rowLabels?.[index] ?? xValueOf(index)]
+        ).filter((part): part is string => part !== undefined);
         for (const [, entry] of readable) {
             const value = entry.values[index];
             if (value !== null && value !== undefined) {
                 parts.push(`${entry.label} ${formatY(value)}`);
             }
         }
-        return [...parts, ...notesAt(index)].join(', ');
+        return [...parts, ...notesAt(index).map((note) => (note.detail === null ? note.label : `${note.label}, ${note.detail}`))].join(', ');
     };
 
     useEffect(() => {
@@ -481,6 +500,7 @@ export function ChartRoot<Row>({
         setActiveX,
         formatX,
         formatY,
+        valueFormat: format ?? null,
         notesAt,
         points,
         keys,
@@ -493,7 +513,8 @@ export function ChartRoot<Row>({
         xValueOf,
         xTitle: formats.xTitle ?? null,
         readable,
-        byKeyboard: announce
+        byKeyboard: announce,
+        halo: surface === 'raised' ? 'var(--surface-raised)' : 'var(--surface)'
     };
 
     // A reference line holds for every bucket, so a screen reader hears it once with the chart instead of in every bucket.
@@ -512,9 +533,10 @@ export function ChartRoot<Row>({
         <ChartContext value={context}>
             <div ref={ref} className={clsx('flex min-w-0 flex-col gap-3', className)}>
                 <div ref={setLegendSlot} className="empty:hidden" />
-                <div ref={measure} className="focus-ring-within relative flex rounded-md">
+                {/* The ring stands outside the box, where it clears the labels at the edges of the axes. */}
+                <div ref={measure} className="focus-ring-within relative flex rounded-md" style={{ outlineOffset: 4 }}>
                     <svg width={leftAxis} height={height} aria-hidden className="shrink-0 overflow-visible">
-                        <g ref={setLeftSlot} />
+                        <g ref={setLeftSlot} tabIndex={-1} />
                     </svg>
                     <div
                         ref={scroller}
@@ -565,7 +587,7 @@ export function ChartRoot<Row>({
                                     />
                                 ))}
                             {children}
-                            <g ref={setRulesSlot} />
+                            <g ref={setRulesSlot} tabIndex={-1} />
                             {continuous !== null && !points && activeIndex >= 0 && <Crosshair context={context} />}
                             {points && <Guides context={context} />}
                             {pressable &&
@@ -616,7 +638,7 @@ export function ChartRoot<Row>({
                         <div ref={setGroupsSlot} className="empty:hidden" style={{ width }} />
                     </div>
                     <svg width={rightAxis} height={height} aria-hidden className="shrink-0 overflow-visible">
-                        <g ref={setRightSlot} />
+                        <g ref={setRightSlot} tabIndex={-1} />
                     </svg>
                     <div ref={setTooltipSlot} className="pointer-events-none absolute inset-0" />
                 </div>
@@ -649,9 +671,8 @@ function Crosshair({ context }: { context: ChartContextValue }) {
                         cx={left}
                         cy={Math.round(pixel)}
                         r={4}
-                        className="stroke-surface"
                         strokeWidth={2}
-                        style={{ fill: colors.get(seriesId) }}
+                        style={{ fill: colors.get(seriesId), stroke: context.halo }}
                     />
                 );
             })}
@@ -686,12 +707,21 @@ function Guides({ context }: { context: ChartContextValue }) {
                             y={plot.bottom + X_AXIS_GAP}
                             dy="0.8em"
                             textAnchor="middle"
-                            className="fill-text stroke-surface text-xs tabular-nums"
+                            className="fill-text text-xs tabular-nums"
+                            style={{ stroke: context.halo }}
                             {...HALO}
                         >
                             {formatX(xs[index]!)}
                         </text>
-                        <text x={-X_AXIS_GAP} y={y} dy="0.32em" textAnchor="end" className="fill-text stroke-surface text-xs tabular-nums" {...HALO}>
+                        <text
+                            x={-X_AXIS_GAP}
+                            y={y}
+                            dy="0.32em"
+                            textAnchor="end"
+                            className="fill-text text-xs tabular-nums"
+                            style={{ stroke: context.halo }}
+                            {...HALO}
+                        >
                             {formatY(placing.values[index]!)}
                         </text>
                     </g>

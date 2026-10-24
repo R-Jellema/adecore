@@ -255,6 +255,182 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(changes).toEqual([0, 3_600_000, null, 10_800_000]);
     });
 
+    test('samples with no step stand at their moment in a window the app fixed, and the pointer takes the nearest', async () => {
+        const samples = [250, 500, 750].map((at) => ({ at, load: 1 }));
+        const changes: (ChartX | null)[] = [];
+        const plot = await mount(
+            <Chart.Root
+                data={samples}
+                x="at"
+                xScale="time"
+                step={0}
+                xOptions={{ min: 0, max: 1000 }}
+                margin={{ left: 0, right: 0 }}
+                label="Load"
+                onActiveXChange={(x) => changes.push(x)}
+            >
+                <Chart.Line value="load" label="Load" />
+            </Chart.Root>
+        );
+        const line = container.querySelector('path[fill="none"]')!.getAttribute('d')!;
+        expect([...line.matchAll(/[ML](-?[\d.]+),/g)].map((match) => Number(match[1]))).toEqual([150, 300, 450]);
+        await act(async () => {
+            plot.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 260, clientY: 50 }));
+        });
+        expect(changes).toEqual([500]);
+    });
+
+    test('a line takes its width, and an area a flat fill with no line over it', async () => {
+        await mount(
+            <Chart.Root data={SCORES} x="key" label="Scores">
+                <Chart.Area value="score" label="Share" width={0} fill="flat" />
+                <Chart.Line value="score" label="Score" width={1} />
+            </Chart.Root>
+        );
+        const paths = [...container.querySelectorAll('path')];
+        expect(paths.map((path) => path.getAttribute('fill'))).toEqual(['currentColor', 'none']);
+        expect(paths[0]!.getAttribute('fill-opacity')).toBe('0.28');
+        expect(paths[1]!.getAttribute('stroke-width')).toBe('1');
+        expect(container.querySelector('linearGradient')).toBeNull();
+    });
+
+    test('the grid draws its ground heavier than the other lines, or the ground alone', async () => {
+        const grid = async (lines?: 'all' | 'ground'): Promise<string[]> => {
+            await mount(
+                <Chart.Root data={SCORES} x="key" y={{ max: 60 }} label="Scores">
+                    <Chart.Grid lines={lines} />
+                    <Chart.Bar value="score" label="Score" />
+                </Chart.Root>
+            );
+            const classes = [...container.querySelectorAll('line')].map((line) => line.getAttribute('class') ?? '');
+            await act(async () => root.unmount());
+            return classes;
+        };
+        const all = await grid();
+        expect(all.filter((name) => name === 'stroke-border-strong')).toHaveLength(1);
+        expect(all.filter((name) => name === 'stroke-border-soft').length).toBeGreaterThan(1);
+        expect(await grid('ground')).toEqual(['stroke-border-strong']);
+        await mount(<Chart.Root data={SCORES} x="key" label="Scores" />);
+    });
+
+    test('on a raised surface the halo around labels takes that surface', async () => {
+        await mount(
+            <Chart.Root data={SCORES} x="key" surface="raised" label="Scores">
+                <Chart.Bar value="score" label="Score" valueLabels />
+                <Chart.Rule value={45} label="A" />
+            </Chart.Root>
+        );
+        const halos = [...container.querySelectorAll<SVGTextElement>('text[paint-order]')].map((text) => text.style.stroke);
+        expect(halos).toHaveLength(5);
+        expect(new Set(halos)).toEqual(new Set(['var(--surface-raised)']));
+    });
+
+    test('a line with dots draws one per value, also when its first render had no width', async () => {
+        const error = spyOn(console, 'error').mockImplementation(() => {});
+        try {
+            await mount(
+                <Chart.Root data={SCORES} x="key" label="Scores">
+                    <Chart.Line value="score" label="Score" dots />
+                </Chart.Root>
+            );
+            expect(container.querySelectorAll('circle')).toHaveLength(SCORES.length);
+            expect(error.mock.calls.some((call) => String(call[0]).includes('same key'))).toBe(false);
+        } finally {
+            error.mockRestore();
+        }
+    });
+
+    test('an x axis keeps its labels apart, writes none without rows, and can stand under the middle of a bucket', async () => {
+        const visibleLabels = (): SVGTextElement[] =>
+            [...container.querySelectorAll<SVGTextElement>('text')].filter(
+                (text) => text.closest('[visibility="hidden"]') === null && text.textContent !== 'No data'
+            );
+        const hours = Array.from({ length: 48 }, (_, index) => ({ at: index * 3_600_000, count: index }));
+        await mount(
+            <Chart.Root data={hours} x="at" xScale="linear" label="Per hour">
+                <Chart.XAxis ticks={40} format={(x) => `t ${Number(x) / 3_600_000}`} />
+                <Chart.Line value="count" label="Count" />
+            </Chart.Root>
+        );
+        const xs = visibleLabels().map((text) => Number(text.getAttribute('x')));
+        const widest = Math.max(...visibleLabels().map((text) => (text.textContent?.length ?? 0) * 7));
+        expect(xs.length).toBeGreaterThan(2);
+        expect(xs.slice(1).every((x, index) => x - xs[index]! >= widest + 8)).toBe(true);
+        await act(async () => root.unmount());
+
+        await mount(
+            <Chart.Root data={[] as { at: number; count: number }[]} x="at" xScale="time" label="Per hour">
+                <Chart.XAxis />
+                <Chart.Line value="count" label="Count" />
+            </Chart.Root>
+        );
+        expect(visibleLabels()).toHaveLength(0);
+        await act(async () => root.unmount());
+
+        const days = [0, 1, 2].map((day) => ({ at: day * 86_400_000, count: day + 1 }));
+        await mount(
+            <Chart.Root data={days} x="at" xScale="time" step={86_400_000} label="Per day">
+                <Chart.XAxis align="bucket" format={(x) => `d${Number(x) / 86_400_000}`} />
+                <Chart.Bar value="count" label="Count" />
+            </Chart.Root>
+        );
+        const centers = columns().map((column) => Number(column.getAttribute('x')) + Number(column.getAttribute('width')) / 2);
+        expect(visibleLabels().map((text) => text.textContent)).toEqual(['d0', 'd1', 'd2']);
+        expect(visibleLabels().map((text) => Number(text.getAttribute('x')))).toEqual(centers.map(Math.round));
+    });
+
+    test('markers and bands name themselves in the tooltip with a swatch, and stay off the plot outside the axis', async () => {
+        const hours = [0, 1, 2, 3].map((hour) => ({ at: hour * 3_600_000, count: hour + 1 }));
+        const plot = await mount(
+            <Chart.Root data={hours} x="at" xScale="time" step={3_600_000} label="Per hour">
+                <Chart.Bar value="count" label="Count" />
+                <Chart.Marker at={-86_400_000} label="Deploy 1.0" />
+                <Chart.Marker at={1_800_000} label="Deploy 1.1" tone="accent" />
+                <Chart.Band from={2_000_000} to={2_020_000} label="Collector down" detail="Data may be missing." />
+                <Chart.Tooltip />
+            </Chart.Root>
+        );
+        expect(container.querySelectorAll('circle')).toHaveLength(1);
+        const hatch = [...container.querySelectorAll('rect')].find((rect) => rect.getAttribute('fill')?.startsWith('url('));
+        expect(Number(hatch!.getAttribute('width'))).toBe(4);
+        await press(plot, 'Home');
+        const card = container.querySelector('[aria-hidden].absolute')!;
+        expect(card.textContent).toContain('Deploy 1.1');
+        expect(card.textContent).toContain('Collector downData may be missing.');
+        expect(card.textContent).not.toContain('Deploy 1.0');
+        expect(card.querySelectorAll('.border-dashed')).toHaveLength(1);
+        expect(live()).toBe('12:00 AM, Count 1, Deploy 1.1, Collector down, Data may be missing.');
+    });
+
+    test('a column reads by its row label and the format of the root, apart from what its axes write', async () => {
+        const plot = await mount(
+            <Chart.Root data={SCORES} x="key" rowLabel={(row) => `${row.model} ${row.effort}`} format={(value) => `${value} pts`} label="Scores">
+                <Chart.XAxis format={(key) => String(key).slice(-1)} />
+                <Chart.YAxis />
+                <Chart.Bar value="score" label="Score" />
+                <Chart.Table />
+            </Chart.Root>
+        );
+        await press(plot, 'ArrowRight');
+        expect(live()).toBe('Alpha low, Score 40 pts');
+        const texts = [...container.querySelectorAll('text')].map((text) => text.textContent);
+        expect(texts).toContain('w');
+        expect(texts).toContain('20 pts');
+        expect([...container.querySelectorAll('th[scope="row"]')].map((cell) => cell.textContent)).toEqual(['Alpha low', 'Alpha high', 'Beta low', 'Beta mid']);
+    });
+
+    test('an x axis names its x apart from its title, and writes its own word for a log scale', async () => {
+        const plot = await mount(
+            <Chart.Root data={[{ key: 'a', cost: 0.5, score: 40 }]} x="cost" xScale="log" rows="points" rowKey="key" label="Cost">
+                <Chart.XAxis title="Cost per task (USD, lower is better)" label="Cost" logLabel="log scale" />
+                <Chart.Point value="score" label="Score" />
+            </Chart.Root>
+        );
+        expect([...container.querySelectorAll('text')].some((text) => text.textContent === 'Cost per task (USD, lower is better) · log scale')).toBe(true);
+        await press(plot, 'ArrowRight');
+        expect(live()).toStartWith('Cost 0.5');
+    });
+
     test('a second x axis writes its row under the first', async () => {
         await mount(
             <Chart.Root data={SCORES} x="key" label="Scores">
@@ -279,7 +455,7 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
             </Chart.Root>
         );
         const bottoms = columns().map((column) => Number(column.getAttribute('y')) + Number(column.getAttribute('height')));
-        expect(Math.max(...bottoms)).toBe(196);
+        expect(Math.max(...bottoms)).toBe(200);
     });
 
     test('a rule draws above the series at its value, which the axis covers, and the chart names it once', async () => {
@@ -296,6 +472,10 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(column.compareDocumentPosition(label) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         expect([...container.querySelectorAll('text')].some((text) => text.textContent === '80')).toBe(true);
         expect(container.querySelector('[id$="-hint"]')!.textContent).toStartWith('A 70.');
+        // The label ends where the line ends, 7px over it.
+        const line = label.previousElementSibling!;
+        expect(label.getAttribute('x')).toBe(line.getAttribute('x2'));
+        expect(Number(label.getAttribute('y'))).toBe(Number(line.getAttribute('y1')) - 7.5);
     });
 
     test('value labels write each column over it, through the function when given, with room above the plot', async () => {
@@ -309,6 +489,28 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         // The tallest column reaches the top of the plot, and its label still stands inside the svg.
         const tallest = Math.min(...columns().map((column) => Number(column.getAttribute('y'))));
         expect(tallest).toBe(24);
+    });
+
+    test('the margin keeps room beside the plot and lets a chart reach its bottom edge', async () => {
+        await mount(
+            <Chart.Root data={SCORES} x="key" margin={{ right: 16, bottom: 0 }} label="Scores">
+                <Chart.Bar value="score" label="Score" />
+            </Chart.Root>
+        );
+        const drawn = columns();
+        // Four buckets share the 584px left of the margin, and every column stands on the bottom of the svg.
+        expect(Math.max(...drawn.map((column) => Number(column.getAttribute('x')) + Number(column.getAttribute('width'))))).toBeLessThanOrEqual(584);
+        expect(Math.max(...drawn.map((column) => Number(column.getAttribute('x'))))).toBeGreaterThan(438);
+        expect(drawn.map((column) => Number(column.getAttribute('y')) + Number(column.getAttribute('height')))).toEqual([200, 200, 200, 200]);
+        await act(async () => root.unmount());
+        await mount(
+            <Chart.Root data={SCORES} x="key" label="Scores">
+                <Chart.XAxis />
+                <Chart.Bar value="score" label="Score" />
+            </Chart.Root>
+        );
+        // Under an x axis the plot keeps 4px below its labels; without one it reaches the bottom by default.
+        expect(Math.max(...columns().map((column) => Number(column.getAttribute('y')) + Number(column.getAttribute('height'))))).toBeLessThan(200 - 16);
     });
 
     test('a scrolling plot keeps room over the y axis for what hangs out of its first bucket', async () => {

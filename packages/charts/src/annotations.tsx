@@ -11,6 +11,8 @@ export interface ChartMarkerProps {
     readonly at: ChartXInput;
     /* Named in the tooltip of the bucket the moment falls in. */
     readonly label: string;
+    /* A second line under the label in the tooltip. */
+    readonly detail?: string;
     readonly tone?: ChartColor;
     readonly className?: string;
     readonly ref?: Ref<SVGGElement>;
@@ -21,6 +23,8 @@ export interface ChartBandProps {
     readonly to: ChartXInput;
     /* Named in the tooltip of every bucket inside the range. */
     readonly label: string;
+    /* A second line under the label in the tooltip, such as what the range means for the data. */
+    readonly detail?: string;
     readonly tone?: ChartColor;
     readonly className?: string;
     readonly ref?: Ref<SVGGElement>;
@@ -37,8 +41,12 @@ export interface ChartRuleProps {
     readonly ref?: Ref<SVGGElement>;
 }
 
+const MIN_BAND = 4;
+
 /* Room a label needs above its line before it moves under it instead. */
 const RULE_LABEL = 18;
+/* Between the line and the label it carries, above it or below it. */
+const RULE_GAP = 7;
 
 /* A horizontal line at a value across the plot, such as a reference to compare against, drawn above the series. */
 export function ChartRule({ value, label, tone = 'muted', dashed = false, className, ref }: ChartRuleProps) {
@@ -56,13 +64,14 @@ export function ChartRule({ value, label, tone = 'muted', dashed = false, classN
         <g ref={ref} className={clsx('pointer-events-none', className)} style={{ color: colorOf(tone)! }} aria-hidden>
             <line x1={chart.plot.left} x2={chart.plot.right} y1={top} y2={top} stroke="currentColor" strokeDasharray={dashed ? '4 4' : undefined} />
             <text
-                x={Math.round(chart.plot.right) - 4}
-                y={Math.round(below ? top + 6 : top - 6)}
+                x={Math.round(chart.plot.right)}
+                y={Math.round(pixel) + (below ? RULE_GAP : -RULE_GAP)}
                 dy={below ? '0.8em' : undefined}
                 textAnchor="end"
                 strokeWidth={4}
                 paintOrder="stroke"
-                className="fill-text stroke-surface text-xs font-medium tabular-nums"
+                className="fill-text text-xs font-medium tabular-nums"
+                style={{ stroke: chart.halo }}
             >
                 {`${label} · ${chart.formatY(value)}`}
             </text>
@@ -72,34 +81,35 @@ export function ChartRule({ value, label, tone = 'muted', dashed = false, classN
 }
 
 /* A dashed vertical line at a moment, with a dot on top. */
-export function ChartMarker({ at, label, tone = 'muted', className, ref }: ChartMarkerProps) {
+export function ChartMarker({ at, label, detail, tone = 'muted', className, ref }: ChartMarkerProps) {
     const chart = useChartContext('Chart.Marker');
     const id = useId();
     const color = colorOf(tone)!;
     const x = xOf(at);
-    useRegistration(chart.store, 'marker', id, { at: x, label, color });
+    useRegistration(chart.store, 'marker', id, { at: x, label, detail: detail ?? null, color });
     const pixel = chart.pixelOfX(x);
-    if (pixel === null) {
+    // A moment outside the axis, such as a deploy before the first bucket, has no place on the plot.
+    if (pixel === null || pixel < chart.plot.left || pixel > chart.plot.right) {
         return null;
     }
     const left = Math.round(pixel) + 0.5;
     return (
         <g ref={ref} className={clsx('pointer-events-none', className)} style={{ color }} aria-hidden>
-            <line x1={left} x2={left} y1={chart.plot.top} y2={chart.plot.bottom} stroke="currentColor" strokeDasharray="3 3" />
-            <circle cx={left} cy={chart.plot.top} r={3} fill="currentColor" />
+            <line x1={left} x2={left} y1={chart.plot.top} y2={chart.plot.bottom} stroke="currentColor" strokeDasharray="3 3" opacity={0.7} />
+            <circle cx={left} cy={chart.plot.top} r={2.5} fill="currentColor" />
         </g>
     );
 }
 
 /* A hatched range, such as a stretch without data. */
-export function ChartBand({ from, to, label, tone = 'muted', className, ref }: ChartBandProps) {
+export function ChartBand({ from, to, label, detail, tone = 'muted', className, ref }: ChartBandProps) {
     const chart = useChartContext('Chart.Band');
     const id = useId();
     const color = colorOf(tone)!;
     const start = xOf(from);
     const end = xOf(to);
     const pattern = `chart-band-${id.replace(/[^\w-]/g, '')}`;
-    useRegistration(chart.store, 'band', id, { from: start, to: end, label, color });
+    useRegistration(chart.store, 'band', id, { from: start, to: end, label, detail: detail ?? null, color });
     const { plot, band, continuous } = chart;
     let left: number | null = null;
     let right: number | null = null;
@@ -118,15 +128,17 @@ export function ChartBand({ from, to, label, tone = 'muted', className, ref }: C
         return null;
     }
     const x = Math.round(left);
+    // A short range still reads as a band, not as a line like a marker.
+    const width = Math.max(MIN_BAND, Math.round(right) - x);
     return (
         <g ref={ref} className={clsx('pointer-events-none', className)} style={{ color }} aria-hidden>
             <defs>
                 <pattern id={pattern} width={6} height={6} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                    <line x1={0} x2={0} y1={0} y2={6} stroke="currentColor" strokeWidth={2} strokeOpacity={0.22} />
+                    <line x1={0} x2={0} y1={0} y2={6} stroke="currentColor" strokeWidth={2} strokeOpacity={0.3} />
                 </pattern>
             </defs>
-            <rect x={x} y={plot.top} width={Math.max(1, Math.round(right) - x)} height={plot.height} fill="currentColor" fillOpacity={0.05} />
-            <rect x={x} y={plot.top} width={Math.max(1, Math.round(right) - x)} height={plot.height} fill={`url(#${pattern})`} />
+            <rect x={x} y={plot.top} width={width} height={plot.height} fill="currentColor" fillOpacity={0.08} />
+            <rect x={x} y={plot.top} width={width} height={plot.height} fill={`url(#${pattern})`} />
         </g>
     );
 }

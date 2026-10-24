@@ -30,12 +30,25 @@ export interface ChartYOptions {
     readonly integer?: boolean;
     /* A tick every this much, with the ends rounded out to it; a linear axis only. */
     readonly step?: number;
+    /*
+     * What a linear axis leaves above the highest value: up to the next tick (`tick`, the default), a whole step more
+     * when the value lands on a tick (`step`), or nothing (`none`), so the highest column fills the plot.
+     */
+    readonly headroom?: 'tick' | 'step' | 'none';
 }
 
-/* The ends of the x axis of a point chart; without them it covers the points and rounds out to a tick. */
+/* The ends of a continuous x axis; without them it covers the rows, and on a point chart rounds out to a tick. */
 export interface ChartXOptions {
     readonly min?: number;
     readonly max?: number;
+}
+
+/* Pixels between the edge of the chart and its plot, beside what the axes take. */
+export interface ChartMargin {
+    readonly top?: number;
+    readonly right?: number;
+    readonly bottom?: number;
+    readonly left?: number;
 }
 
 export type ChartCurve = 'linear' | 'monotone' | 'step';
@@ -47,4 +60,14 @@ export interface ChartRect {
     readonly bottom: number;
     readonly width: number;
     readonly height: number;
+}
+
+/* A marker or a band in a bucket, as the tooltip writes it under the values. */
+export interface ChartNote {
+    readonly kind: 'marker' | 'band';
+    readonly label: string;
+    /* A second line under the label, such as what a gap means; null without one. */
+    readonly detail: string | null;
+    /* The CSS color of its swatch. */
+    readonly color: string;
 }
