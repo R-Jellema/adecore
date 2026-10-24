@@ -105,10 +105,8 @@ const pointsOf = (chart: ChartContextValue, values: readonly (number | null)[]):
     });
 
 /* A value between two gaps is no line at all, so it gets a dot of its own. */
-const lonePoints = (points: readonly Point[]): [number, number][] =>
-    points.flatMap((point, index) =>
-        point !== null && points[index - 1] == null && points[index + 1] == null ? [[point[0], point[1]] as [number, number]] : []
-    );
+const lonePoints = (points: readonly Point[]): number[] =>
+    points.flatMap((point, index) => (point !== null && points[index - 1] == null && points[index + 1] == null ? [index] : []));
 
 function useSeriesValues<Row>(part: string, value: ChartAccessor<Row, number | null | undefined>): [ChartContextValue, string, (number | null)[]] {
     const chart = useChartContext(part);
@@ -138,7 +136,8 @@ function LinePath({
         .x((point) => point![0])
         .y((point) => point![1])
         .curve(CURVES[curve])(points);
-    const marked = dots ? points.filter((point): point is [number, number] => point !== null) : lonePoints(points);
+    // Keyed by index: before the chart is measured every point stands at the same x.
+    const marked = dots ? points.flatMap((point, index) => (point === null ? [] : [index])) : lonePoints(points);
     return (
         <>
             {path !== null && (
@@ -152,8 +151,8 @@ function LinePath({
                     strokeDasharray={dashed ? '4 4' : undefined}
                 />
             )}
-            {marked.map(([x, y]) => (
-                <circle key={x} cx={x} cy={y} r={2.5} fill="currentColor" />
+            {marked.map((index) => (
+                <circle key={index} cx={points[index]![0]} cy={points[index]![1]} r={2.5} fill="currentColor" />
             ))}
         </>
     );

@@ -325,6 +325,21 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(new Set(halos)).toEqual(new Set(['var(--surface-raised)']));
     });
 
+    test('a line with dots draws one per value, also when its first render had no width', async () => {
+        const error = spyOn(console, 'error').mockImplementation(() => {});
+        try {
+            await mount(
+                <Chart.Root data={SCORES} x="key" label="Scores">
+                    <Chart.Line value="score" label="Score" dots />
+                </Chart.Root>
+            );
+            expect(container.querySelectorAll('circle')).toHaveLength(SCORES.length);
+            expect(error.mock.calls.some((call) => String(call[0]).includes('same key'))).toBe(false);
+        } finally {
+            error.mockRestore();
+        }
+    });
+
     test('a second x axis writes its row under the first', async () => {
         await mount(
             <Chart.Root data={SCORES} x="key" label="Scores">
