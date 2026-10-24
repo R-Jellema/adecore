@@ -36,7 +36,7 @@ export function Stepper({ value, onValueChange, min, max, step, decimals = place
         onValueChange(Math.min(max, Math.max(min, next)));
     };
     return (
-        <ButtonGroup ref={ref} className={clsx('shrink-0 rounded-lg bg-surface-sunken p-0.5', className)} role="group" aria-label={label}>
+        <ButtonGroup ref={ref} className={clsx('shrink-0 rounded-lg border border-field-border bg-field bg-clip-padding p-px', className)} role="group" aria-label={label}>
             <IconButton
                 icon={Minus}
                 size="sm"
