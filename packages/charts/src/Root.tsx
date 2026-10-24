@@ -157,6 +157,8 @@ export function ChartRoot<Row>({
     const chartGroup = useContext(GroupContext);
     const sharedCursor = chartGroup?.cursor ?? null;
     const [ownX, setOwnX] = useState<ChartX | null>(null);
+    // Where the keyboard left the cursor, which it returns to when the pointer passes over and leaves again.
+    const [keyX, setKeyX] = useState<ChartX | null>(null);
     const [legendSlot, setLegendSlot] = useState<HTMLElement | null>(null);
     const [tableSlot, setTableSlot] = useState<HTMLElement | null>(null);
     const [tooltipSlot, setTooltipSlot] = useState<HTMLElement | null>(null);
@@ -358,6 +360,9 @@ export function ChartRoot<Row>({
     const cursorX = controlled ? activeX : sharedCursor !== null ? sharedCursor.x : ownX;
     const pointIndex = keys === null || cursorX === null ? -1 : keys.indexOf(String(cursorX));
     const activeIndex = points ? (positions[pointIndex] == null ? -1 : pointIndex) : snapIndex(xs, xScale, cursorX, bucketStep);
+    const keyPoint = keys === null || keyX === null ? -1 : keys.indexOf(String(keyX));
+    const keyIndex = points ? (positions[keyPoint] == null ? -1 : keyPoint) : snapIndex(xs, xScale, keyX, bucketStep);
+    const from = keyIndex >= 0 ? keyIndex : activeIndex;
     const ownsCursor = controlled || sharedCursor === null || sharedCursor.owner === id;
     const setActiveX = (value: ChartX | null): void => {
         if (!controlled) {
@@ -449,18 +454,18 @@ export function ChartRoot<Row>({
     };
 
     const onKeyDown = (e: KeyboardEvent<SVGSVGElement>): void => {
-        if (pressable && activeIndex >= 0 && (e.key === 'Enter' || e.key === ' ')) {
+        if (pressable && from >= 0 && (e.key === 'Enter' || e.key === ' ')) {
             e.preventDefault();
-            activate(activeIndex);
+            activate(from);
             return;
         }
         const groupStarts = layout?.groups.map((run) => run.first) ?? [];
         const target =
             keys === null
-                ? moveIndex(e.key, activeIndex, xs.length, groupStarts)
+                ? moveIndex(e.key, from, xs.length, groupStarts)
                 : movePoint(
                       pointGroups.map((run) => run.indexes.filter((index) => positions[index] !== null)),
-                      activeIndex,
+                      from,
                       e.key
                   );
         if (target === undefined) {
@@ -470,10 +475,12 @@ export function ChartRoot<Row>({
         if (target === null) {
             // A dialog around the chart closes on an Escape that reaches the document, whether or not it was prevented.
             e.stopPropagation();
+            setKeyX(null);
             setActiveX(null);
             return;
         }
         setAnnounce(true);
+        setKeyX(keys === null ? xs[target]! : keys[target]!);
         setActiveX(keys === null ? xs[target]! : keys[target]!);
         const box = scroller.current;
         if (box !== null && box.scrollWidth > box.clientWidth) {
@@ -537,6 +544,7 @@ export function ChartRoot<Row>({
         xTitle: formats.xTitle ?? null,
         readable,
         byKeyboard: announce,
+        keyIndex,
         halo: surface === 'raised' ? 'var(--surface-raised)' : 'var(--surface)'
     };
 
@@ -584,14 +592,15 @@ export function ChartRoot<Row>({
                             aria-roledescription={interactive ? t('chart') : undefined}
                             aria-label={label}
                             aria-describedby={interactive ? `${id}-hint` : undefined}
-                            aria-activedescendant={pressable && activeIndex >= 0 ? `${id}-${activeIndex}` : undefined}
+                            aria-activedescendant={pressable && from >= 0 ? `${id}-${from}` : undefined}
                             className={clsx('block overflow-visible outline-none', pressable && 'cursor-pointer')}
                             onPointerMove={onPointerMove}
-                            onPointerLeave={() => setActiveX(null)}
+                            onPointerLeave={() => setActiveX(keyX)}
                             onClick={pressable ? (e) => activate(indexAtPointer(e)) : undefined}
                             onKeyDown={interactive ? onKeyDown : undefined}
                             onBlur={() => {
                                 setAnnounce(false);
+                                setKeyX(null);
                                 // A bucket the keyboard left, or any point, keeps no preview open where the focus went on.
                                 if (activeIndex >= 0 && (points || announce)) {
                                     setActiveX(null);

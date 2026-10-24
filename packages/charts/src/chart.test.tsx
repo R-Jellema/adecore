@@ -494,6 +494,28 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         ]);
     });
 
+    test('the pointer passes over another bucket and leaves the keyboard where it was', async () => {
+        const changes: (ChartX | null)[] = [];
+        const plot = await mount(
+            <Chart.Root data={SCORES} x="key" label="Scores" onActivate={(row: Score) => activated.push(row.key)} onActiveXChange={(x) => changes.push(x)}>
+                <Chart.Bar value="score" label="Score" />
+            </Chart.Root>
+        );
+        await press(plot, 'End');
+        await act(async () => {
+            plot.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, clientX: 10, clientY: 50 }));
+        });
+        expect(active(plot)).toBe('b-mid, Score 38');
+        await act(async () => {
+            plot.dispatchEvent(new PointerEvent('pointerout', { bubbles: true, clientX: 10, clientY: 50 }));
+            plot.dispatchEvent(new PointerEvent('pointerleave', { bubbles: false, clientX: 10, clientY: 50 }));
+        });
+        expect(changes).toEqual(['b-mid', 'a-low', 'b-mid']);
+        await press(plot, 'ArrowLeft');
+        await press(plot, 'Enter');
+        expect(activated).toEqual(['b-low']);
+    });
+
     test('a second x axis writes its row under the first', async () => {
         await mount(
             <Chart.Root data={SCORES} x="key" label="Scores">

@@ -86,6 +86,8 @@ The plot is one tab stop, a `group` with the role description "chart" and `label
 
 A scatter moves between points instead; see [cursor, keyboard and picks](/charts/scatter#cursor-keyboard-and-picks).
 
+The keyboard and the pointer each keep their own place. While the pointer passes over the chart the cursor follows it, and when it leaves the cursor goes back to the bucket the keyboard was on; the arrow keys, Enter and the active descendant go on from there.
+
 A polite live region reads each bucket the keyboard moves to: the group, the x, then every series ("14:00, Errors 12, Warnings 3"). With `onActivate` every bucket is a button with the same words as its name, reached as the active descendant, and the live region stays quiet so nothing is read twice. `Chart.Table` makes every value readable without moving the cursor at all.
 
 An Escape that clears the cursor stops at the chart, so a dialog around it stays open; a second Escape reaches the dialog. An app that wants one Escape to clear its own state too, such as a pinned comparison, listens for it on an element around the chart.

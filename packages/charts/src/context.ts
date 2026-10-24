@@ -90,6 +90,8 @@ export interface ChartContextValue {
     readonly halo: string;
     /* The keyboard moved the cursor last, not the pointer. */
     readonly byKeyboard: boolean;
+    /* The bucket or point the keyboard is on, apart from one the pointer passes over; -1 for none. */
+    readonly keyIndex: number;
 }
 
 export const ChartContext = createContext<ChartContextValue | null>(null);

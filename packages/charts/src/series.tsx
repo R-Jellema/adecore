@@ -245,7 +245,7 @@ export function ChartPoint<Row>({ value, label, tone, icon, className, ref }: Ch
                 return (
                     <g key={chart.keys?.[index] ?? index} opacity={chart.dimmed[index] === true ? DIMMED_POINT : 1}>
                         <circle cx={left} cy={pixel} r={active || picked ? 5 : 4} strokeWidth={1} style={{ fill, stroke: chart.halo }} />
-                        {(picked || (active && chart.byKeyboard)) && <circle cx={left} cy={pixel} r={8} fill="none" className="stroke-text" strokeWidth={2} />}
+                        {(picked || index === chart.keyIndex) && <circle cx={left} cy={pixel} r={8} fill="none" className="stroke-text" strokeWidth={2} />}
                     </g>
                 );
             })}
