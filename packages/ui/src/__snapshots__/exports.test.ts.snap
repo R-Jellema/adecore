@@ -324,6 +324,7 @@ exports[`the public API ./format exports these names 1`] = `
   "formatNumeral",
   "formatNumericDate",
   "formatPercent",
+  "formatPreciseDuration",
   "formatRegionFrom",
   "formatRounded",
   "formatTokens",

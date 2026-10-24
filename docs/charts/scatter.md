@@ -48,7 +48,7 @@ const CostChart = createChart<ModelCost>();
 - `group` puts the rows in series, in the order a key first appears, and `groupLabel` names them. Without `group` all points are one series.
 - `rowKey` is the key of a row for `selected`, `activeX` and `onActiveXChange`, its index by default. `rowLabel` names a point beside its series, such as the effort of a model.
 - A linear value axis covers the points and leaves zero out, since a point needs no ground. `step: 10` in `y` puts a tick every 10, with the ends rounded out to it, on a column chart too.
-- `xScale` is `'linear'`, `'log'` or `'time'`. `xOptions` (a `ChartXOptions`) fixes the ends of the x axis: `{ min: 0 }` lets a linear cost start at nothing. A `log` axis runs over whole decades and ticks on each of them; where they do not fit, it keeps both ends and every other decade between them.
+- `xScale` is `'linear'`, `'log'` or `'time'`. `xOptions` (a `ChartXOptions`) fixes the ends of a linear x axis: `{ min: 0 }` lets a linear cost start at nothing. On a `log` axis it only widens the range, to the whole decades around it: `{ min: 0.05, max: 5 }` runs from 0.01 to 10. A `log` axis runs over whole decades and ticks on each of them; where they do not fit, it keeps both ends and ticks on every second, third or later decade between them, as long as the ticks stay evenly apart. Where no such stride fits, only the ends keep a tick.
 
 `Chart.Point` draws a dot per point. Without a `tone` each series takes the next chart color; `tone` also takes a function of the row, as on a column. The point under the cursor and every picked point grow, a picked point gets a ring, and so does the point the keyboard is on. `Chart.Line` takes the same function of the row, and colors each series by its first row. The props are `ChartPointProps`.
 
@@ -70,7 +70,7 @@ With `onActivate` every point is a `role="button"` with `aria-pressed`, reached 
 
 ## End labels
 
-`Chart.EndLabels` writes a label right of the plot at the last point of each series, with a thin line in the color of the series back to its point. Labels that would come nearer than 24px push apart, up and down, and stay inside the plot. The plot gives up `width` pixels on the right for them: 118, or 156 in a chart wider than 750px.
+`Chart.EndLabels` writes a label right of the plot at the last point of each series, with a thin line in the color of the series back to its point. Labels that would come nearer than 24px push apart, up and down, and stay inside the plot; where there is no room for all of them at 24px, they come closer. The plot gives up `width` pixels on the right for them: 118, or 156 in a chart wider than 750px.
 
 Its children get a `ChartPointSeries` (`key`, `label`, `rows` and `color`) and return what the label holds, such as a logo and a name. The label is HTML and takes the color of the series as `currentColor`. Without children it writes the label of the series. The props are `ChartEndLabelsProps`.
 
@@ -102,5 +102,6 @@ Its children get a `ChartPointSeries` (`key`, `label`, `rows` and `color`) and r
 | `search` | `string \| false` | "Search" | The placeholder and the name of the search field; `false` leaves it out. |
 | `query`, `onQueryChange` | `string` | | Controls the search, so an app can clear it with the rest of its filters. |
 | `empty` | `string` | "Nothing matches." | What the list says when the search finds nothing. |
+| `size` | `'sm' \| 'md'` | `'sm'` | The height of a row: 28px, or 36px for a touch screen. |
 
 A `SeriesLegendItem` has a `key`, a `label`, and optionally a `group`, a `color`, `disabled` for a series with nothing to show, and a `status` that says why a series shows less than it could ("Turned off"), under its name and in its hint. The props are `SeriesLegendProps`.

@@ -60,7 +60,7 @@ The axis runs from the earliest start to the latest end. `kinds` lists what a sp
 | `kinds` | `readonly TimelineKind[]` | `[]` | |
 | `value`, `defaultValue`, `onValueChange` | `string \| null` | `null` | The selected span, which shows its detail. Selecting it again clears it. |
 | `expanded`, `defaultExpanded`, `onExpandedChange` | `readonly string[]` | every span with children | The spans that show their children. |
-| `format` | `(ms: number) => string` | | Writes every duration: `0.4 ms`, `123 ms` and `1.42 s`, and from a minute on as `formatDuration` of `@adecore/ui/format` does. |
+| `format` | `(ms: number) => string` | `formatPreciseDuration` | Writes every duration. The default of `@adecore/ui/format` writes `0.4 ms`, `123 ms` and `1.42 s`, and from a minute on as `formatDuration` does. |
 | `ticks` | `number` | `5` | The most steps on the axis. |
 | `className`, `ref` | | | On the outer box. |
 

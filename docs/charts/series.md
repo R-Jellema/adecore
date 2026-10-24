@@ -95,7 +95,7 @@ On a time scale the cursor takes the bucket under the pointer, the same bucket a
 
 ## Durations and runs of an endpoint
 
-Two charts of one endpoint over a day in buckets of 30 minutes, with the two deploys that slowed it down and fixed it again. The durations are lines with a format of the app's own on the axis and in the tooltip:
+Two charts of one endpoint over a day in buckets of 30 minutes, with the two deploys that slowed it down and fixed it again. The durations are lines with `formatPreciseDuration` of `@adecore/ui/format` on the axis and in the tooltip:
 
 <Demo src="charts/transaction-duration" />
 
@@ -103,7 +103,7 @@ Two charts of one endpoint over a day in buckets of 30 minutes, with the two dep
 <Chart.Root data={buckets} x="at" xScale="time" step={HALF_HOUR} label="p50 and p95 duration over time">
     <Chart.Grid />
     <Chart.XAxis />
-    <Chart.YAxis format={formatSpan} />
+    <Chart.YAxis format={formatPreciseDuration} />
     <Chart.Line value="p50" label="p50" />
     <Chart.Line value="p95" label="p95" />
     {deploys.map((deploy) => (

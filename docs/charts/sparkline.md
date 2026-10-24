@@ -13,7 +13,7 @@ import { Sparkline } from '@adecore/charts';
 <Sparkline values={tokens} label="Tokens in 14 days" tone="running" format={formatTokens} width={160} />
 ```
 
-`kind="bars"` draws a rounded column per value, 2px apart, as wide as the width allows: 14 values in 82px make columns of 4px. The smallest count stays 2px taller than its column is wide, so it reads as a bar rather than a dot, and a zero is a one-pixel baseline in `--border-strong` so a quiet day still shows; `kind="line"` (the default) draws a line, broken by a missing value. It is one tab stop, so the tooltip opens on the keyboard too.
+`kind="bars"` draws a rounded column per value, 2px apart, as wide as the width allows: 14 values in 82px make columns of 4px. A column is rounded by half its width, at most 2px, and the smallest count stays 2px taller than its two round ends, so it reads as a bar rather than a dot, and a zero is a one-pixel baseline in `--border-strong` so a quiet day still shows; `kind="line"` (the default) draws a line, broken by a missing value. It is one tab stop, so the tooltip opens on the keyboard too.
 
 | Prop | Type | Default | |
 | --- | --- | --- | --- |

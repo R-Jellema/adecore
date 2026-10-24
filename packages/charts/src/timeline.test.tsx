@@ -36,6 +36,20 @@ test('a row is named by its label, kind, start and duration', () => {
     expect(markup).toContain('aria-label="SELECT orders, Database, starts at +12 ms, takes 40 ms"');
 });
 
+test('the keyboard hint stands beside the tree, where it is no item of it', () => {
+    const markup = renderToStaticMarkup(
+        wrap(
+            <Timeline.Root data={SPANS} kinds={KINDS} label="Spans">
+                <Timeline.Rows />
+            </Timeline.Root>
+        )
+    );
+    const hintId = /role="tree"[^>]*aria-describedby="([^"]+)"/.exec(markup)![1]!;
+    const tree = markup.slice(markup.indexOf('role="tree"'), markup.lastIndexOf('role="treeitem"'));
+    expect(tree).not.toContain(`id="${hintId}"`);
+    expect(markup).toContain(`id="${hintId}"`);
+});
+
 // Runs with the DOM preload: `bun test --preload ./packages/ui/src/file-tree/testing/preload.ts packages/charts/src/timeline.test.tsx`.
 describe.skipIf(typeof document === 'undefined')('a mounted timeline', () => {
     let container: HTMLDivElement;

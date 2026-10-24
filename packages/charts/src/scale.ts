@@ -183,13 +183,20 @@ export function decadesOf(values: readonly number[]): { readonly low: number; re
     return { low, high: high > low ? high : low + 1 };
 }
 
-/* At most `count` intervals out of the ticks, spread evenly and keeping both ends, so a narrow axis drops every other decade. */
+/*
+ * At most `count` intervals out of the ticks, every second, third or later one, keeping both ends. The stride divides
+ * the axis, so the ticks stay evenly apart; where none does within `count`, only the ends are left.
+ */
 export function thinTicks(ticks: readonly number[], count: number): number[] {
-    const intervals = Math.max(1, Math.min(ticks.length - 1, count));
-    if (ticks.length <= 2 || intervals >= ticks.length - 1) {
+    const intervals = ticks.length - 1;
+    if (intervals <= 1 || intervals <= count) {
         return [...ticks];
     }
-    return Array.from({ length: intervals + 1 }, (_, i) => ticks[Math.round((i * (ticks.length - 1)) / intervals)]!);
+    let stride = Math.ceil(intervals / Math.max(1, count));
+    while (intervals % stride !== 0) {
+        stride++;
+    }
+    return ticks.filter((_, i) => i % stride === 0);
 }
 
 /* A log axis in decades, ticking on each decade as far as they fit. */

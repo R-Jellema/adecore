@@ -71,6 +71,10 @@ describe('end labels', () => {
         expect(spreadLabels([195, 198], 24, 0, 192)).toEqual([168, 192]);
         expect(spreadLabels([2], 24, 10, 192)).toEqual([10]);
     });
+
+    test('come closer than the gap where they do not fit, and stay inside the plot', () => {
+        expect(spreadLabels([50, 50, 50, 50, 50], 24, 0, 60)).toEqual([0, 15, 30, 45, 60]);
+    });
 });
 
 describe('the series legend', () => {

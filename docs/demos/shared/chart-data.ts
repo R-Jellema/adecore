@@ -1,5 +1,5 @@
 /* Data for the chart demos: made up, but shaped like what a service reports. Seeded, so every render draws the same. */
-import { formatNumber, formatRounded } from '@adecore/ui/format';
+import { formatRounded } from '@adecore/ui/format';
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -90,11 +90,6 @@ export function transactionPerHalfHour(): TransactionBucket[] {
         const p95 = p50 * (2.6 + noise(slot + 200) * 0.6) + (slow ? 520 : 0);
         return { at, p50: Math.round(p50), p95: Math.round(p95), succeeded: runs - failed, failed };
     });
-}
-
-/* A duration with the precision a request needs: `86 ms`, `1.24 s`. */
-export function formatSpan(milliseconds: number): string {
-    return milliseconds < 1000 ? `${formatNumber(Math.round(milliseconds))} ms` : `${formatRounded(milliseconds / 1000, 2)} s`;
 }
 
 export interface LatencyBucket {
