@@ -9,14 +9,19 @@ describe('the buckets of a band scale', () => {
         expect(layout.width).toBe(400);
     });
 
-    test('leave a gap between groups, and a group holds as many buckets as it has rows', () => {
-        const layout = bandLayout(5, ['a', 'a', 'b', 'b', 'b'], 100 * 5 + GROUP_GAP);
+    test('leave a gap between groups and half of one at the ends, and a group holds as many buckets as it has rows', () => {
+        const layout = bandLayout(5, ['a', 'a', 'b', 'b', 'b'], 100 * 5 + 2 * GROUP_GAP);
+        const half = GROUP_GAP / 2;
         expect(layout.bucket).toBe(100);
-        expect(layout.lefts).toEqual([0, 100, 200 + GROUP_GAP, 300 + GROUP_GAP, 400 + GROUP_GAP]);
+        expect(layout.lefts).toEqual([half, 100 + half, 200 + 3 * half, 300 + 3 * half, 400 + 3 * half]);
         expect(layout.groups.map(({ key, first, last }) => [key, first, last])).toEqual([
             ['a', 0, 1],
             ['b', 2, 4]
         ]);
+    });
+
+    test('take the gap the chart asks for', () => {
+        expect(bandLayout(2, ['a', 'b'], 240, 0, 20).lefts).toEqual([10, 130]);
     });
 
     test('a key that comes back later starts a group of its own', () => {
@@ -41,6 +46,14 @@ describe('columns', () => {
     test('are never narrower than 2px', () => {
         expect(columnsIn(0, 1.5, 1)[0]!.width).toBe(2);
         expect(columnsIn(0, 4, 3).every((column) => column.width === 2)).toBe(true);
+    });
+
+    test('take the width the chart gives them, within the bucket and never under 2px', () => {
+        const slotMinusFour = (bucket: number): number => Math.max(6, Math.min(44, Math.floor(bucket) - 4));
+        expect(columnsIn(0, 30, 1, slotMinusFour)[0]!.width).toBe(26);
+        expect(columnsIn(0, 100, 1, slotMinusFour)[0]!.width).toBe(44);
+        expect(columnsIn(0, 4, 1, slotMinusFour)[0]!.width).toBe(4);
+        expect(columnsIn(0, 30, 1, () => 0)[0]!.width).toBe(2);
     });
 
     test('side by side keep 1px between them', () => {

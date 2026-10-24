@@ -41,8 +41,9 @@ The width follows the container; `height` (200 by default) is the height of the 
 | `yScale` | `'linear' \| 'log'` | `'linear'` | |
 | `y` | `ChartYOptions` | `{}` | `min`, `max` and `integer`. |
 | `height` | `number` | `200` | Pixels. |
+| `marginTop` | `number` | `8` | Pixels above the plot, for something drawn over it. |
 | `activeX`, `onActiveXChange` | `ChartX \| null` | | The cursor, controlled. Leaving the chart calls `onActiveXChange(null)`; the app decides whether the cursor goes. |
-| `group`, `minBucketWidth` | | | Groups of columns, see [Columns and groups](/charts/columns). |
+| `group`, `groupGap`, `minBucketWidth` | | | Groups of columns, see [Columns and groups](/charts/columns). |
 | `selected`, `onActivate`, `dimmed` | | | Columns a person picks, see [Columns and groups](/charts/columns#picking-columns). |
 | `className`, `ref` | | | On the outer box. |
 
@@ -50,11 +51,11 @@ A `ChartX` is a number (a moment in milliseconds) or the key of a category; a `C
 
 ## Grid and axes
 
-`Chart.Grid` draws a line on every tick of the value axis in `--border-soft`, with the ground in `--border`. `axis` takes `'y'` (the default), `'x'` or `'both'`.
+`Chart.Grid` draws a line on every tick of the value axis in `--border-soft`, with the ground in `--border`. `axis` takes `'y'` (the default), `'x'` or `'both'`. `dashed` dashes every line but the ground, in `--border` so the dashes still read as a line.
 
 `Chart.YAxis` writes the ticks beside the plot, on the `left` or the `right` (`side`). It measures its widest label and gives the plot the rest of the width. `Chart.XAxis` writes them under it. On a time scale the labels are the clock within a day, the day once the ticks are a day apart, and both in between, from `@adecore/ui/format`. Labels that would overlap thin out, and a label that would hang past the end of the chart is left out.
 
-`format` writes a value or an x. The format of an axis is also how the tooltip, the live region and the table write it. `ticks` asks for a number of ticks. `ChartGridProps`, `ChartXAxisProps` and `ChartYAxisProps` are the props.
+`format` writes a value or an x. The format of an axis is also how the tooltip, the live region and the table write it. `ticks` asks for a number of ticks. A second `Chart.XAxis` writes its row under the first, and `thin={false}` keeps every label of a band scale; see [a ranked row](/charts/columns#a-ranked-row). `ChartGridProps`, `ChartXAxisProps` and `ChartYAxisProps` are the props.
 
 ## Lines and areas
 

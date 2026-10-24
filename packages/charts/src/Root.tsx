@@ -16,7 +16,8 @@ import { useTranslation } from 'react-i18next';
 import { useContentSize } from '@adecore/ui';
 import { formatNumber, formatRounded } from '@adecore/ui/format';
 import { readValue, warnMissingKey, xOf } from './access.ts';
-import { bandLayout } from './band.ts';
+import { LABEL_GAP as X_AXIS_GAP } from './axes.tsx';
+import { bandLayout, GROUP_GAP } from './band.ts';
 import { seriesColor } from './color.ts';
 import { ChartContext, GroupContext, type ChartContextValue } from './context.ts';
 import { containingIndex, moveIndex, nearestIndex, snapIndex } from './cursor.ts';
@@ -43,8 +44,12 @@ export interface ChartRootProps<Row> {
     /* Controls the cursor. Leaving the chart calls `onActiveXChange(null)` and leaves the cursor to the app. */
     readonly activeX?: ChartX | null;
     readonly onActiveXChange?: (x: ChartX | null) => void;
+    /* Pixels above the plot, for something drawn over it such as a unit. */
+    readonly marginTop?: number;
     /* Puts the buckets of a band scale into runs of the same key, with a gap between them. */
     readonly group?: ChartAccessor<Row, string>;
+    /* The pixels between two groups; the first and the last group keep half of it to the edge. */
+    readonly groupGap?: number;
     /* The narrowest a bucket of a band scale may be; below that the plot scrolls sideways under a y axis that stays. */
     readonly minBucketWidth?: number;
     /* The x of every bucket that is picked, which stays highlighted and is pressed for a screen reader. */
@@ -58,7 +63,6 @@ export interface ChartRootProps<Row> {
     readonly ref?: Ref<HTMLDivElement>;
 }
 
-const TOP = 8;
 /* Room for the dot at the end of a line on a continuous scale, which would otherwise stand on the edge. */
 const INSET = 6;
 const Y_TICK_SPACING = 40;
@@ -75,9 +79,11 @@ export function ChartRoot<Row>({
     y = {},
     label,
     height = 200,
+    marginTop = 8,
     activeX,
     onActiveXChange,
     group,
+    groupGap = GROUP_GAP,
     minBucketWidth = 0,
     selected,
     onActivate,
@@ -91,6 +97,7 @@ export function ChartRoot<Row>({
     const [store] = useState(createChartStore);
     const series = useSyncExternalStore(store.subscribe, store.series, store.series);
     const axes = useSyncExternalStore(store.subscribe, store.axes, store.axes);
+    const xAxes = useSyncExternalStore(store.subscribe, store.xAxes, store.xAxes);
     const markers = useSyncExternalStore(store.subscribe, store.markers, store.markers);
     const bands = useSyncExternalStore(store.subscribe, store.bands, store.bands);
     const formats = useSyncExternalStore(store.subscribe, store.formats, store.formats);
@@ -116,10 +123,12 @@ export function ChartRoot<Row>({
     // A bucket of a time scale runs from its x for one step and its point stands in the middle, as a column would.
     const bucketStep = xScale === 'time' ? (stepProp ?? bucketStepOf(xs as number[])) : 0;
     const inset = band || bucketStep > 0 ? 0 : INSET;
-    const layout = band ? bandLayout(xs.length, groupKeys, room, minBucketWidth) : null;
+    const layout = band ? bandLayout(xs.length, groupKeys, room, minBucketWidth, groupGap) : null;
     const width = layout === null ? room : Math.max(room, Math.ceil(layout.width));
-    const bottom = height - (axes.x ?? 4);
-    const plot = { left: inset, top: TOP, right: width - inset, bottom, width: Math.max(0, width - 2 * inset), height: Math.max(0, bottom - TOP) };
+    const xRows = [...xAxes.values()];
+    const bottom = height - 4 - (xRows.length === 0 ? 0 : X_AXIS_GAP + xRows.reduce((sum, row) => sum + row.room, 0));
+    const top = marginTop;
+    const plot = { left: inset, top, right: width - inset, bottom, width: Math.max(0, width - 2 * inset), height: Math.max(0, bottom - top) };
     const continuous = band ? null : continuousXScale(xScale, xs as number[], [plot.left, plot.right], bucketStep);
 
     const stackInput = [...series].map(([seriesId, entry]) => ({ id: seriesId, values: entry.values, stack: entry.stack }));
@@ -170,9 +179,11 @@ export function ChartRoot<Row>({
     const pixelOfY = (value: number): number | null => scaleY.at(value);
 
     const span = continuous === null ? 0 : continuous.domain[1] - continuous.domain[0];
+    // A row under another names something wider, such as the model under its effort, so a bucket reads from the bottom row up.
+    const rowFormats = xRows.flatMap((row) => (row.format === undefined ? [] : [row.format])).toReversed();
     const formatX = (value: ChartX): string => {
-        if (formats.x !== undefined) {
-            return formats.x(value);
+        if (rowFormats.length > 0) {
+            return rowFormats.map((format) => format(value)).join(', ');
         }
         if (xScale === 'time' && typeof value === 'number') {
             return formatTime(value, timeLabelOf(span, bucketStep));

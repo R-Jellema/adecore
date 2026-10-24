@@ -34,7 +34,15 @@ export interface ChartBarProps<Row> {
     readonly label: string;
     readonly tone?: ChartBarTone<Row>;
     /* The opacity of a column by its place in its group, for columns that grow stronger inside one. */
-    readonly opacity?: (row: Row, indexInGroup: number) => number;
+    readonly opacity?: (row: Row, indexInGroup: number, groupSize: number) => number;
+    /* The opacity of the other columns while the cursor is on a bucket; 1 leaves them as they are. */
+    readonly hoverOpacity?: number;
+    /* The opacity of a column the root dims, or that is not picked while another is. */
+    readonly dimOpacity?: number;
+    /* The pixels the columns of a bucket take together, from the width of the bucket; 72% of it by default, at most 56px a column. */
+    readonly columnWidth?: (bucket: number) => number;
+    /* The corner radius of a column that stands alone; stacked segments stay square. */
+    readonly radius?: number;
     readonly className?: string;
     readonly ref?: Ref<SVGGElement>;
 }
@@ -51,6 +59,7 @@ const CURVES = { linear: curveLinear, monotone: curveMonotoneX, step: curveStepA
 
 /* Columns outside the bucket under the cursor still read as their own color at this. */
 const HOVER_DIM = 0.55;
+/* At 0.3, times the opacity a column has in its group, a dimmed column nearly vanishes in the dark theme. */
 const OUT_OF_FOCUS = 0.4;
 
 type Point = readonly [number, number] | null;
@@ -164,7 +173,18 @@ export function ChartBars({ stack = false, children, className, ref }: ChartBars
 }
 
 /* Columns, one per bucket: on a `band` scale, or on a `time` scale whose buckets last one step. */
-export function ChartBar<Row>({ value, label, tone, opacity, className, ref }: ChartBarProps<Row>) {
+export function ChartBar<Row>({
+    value,
+    label,
+    tone,
+    opacity,
+    hoverOpacity = HOVER_DIM,
+    dimOpacity = OUT_OF_FOCUS,
+    columnWidth,
+    radius = 2,
+    className,
+    ref
+}: ChartBarProps<Row>) {
     const [chart, id, values] = useSeriesValues('Chart.Bar', value);
     const bars = useContext(BarsContext);
     const rows = chart.data as Row[];
@@ -184,7 +204,8 @@ export function ChartBar<Row>({ value, label, tone, opacity, className, ref }: C
     const stacked = chart.stacked.get(id);
     const fallback = chart.colors.get(id) ?? seriesColor(0);
     const anySelected = chart.selected.some(Boolean);
-    const firstOfGroup = (index: number): number => chart.band?.groups.find((run) => index >= run.first && index <= run.last)?.first ?? 0;
+    const groupOf = (index: number): { first: number; last: number } =>
+        chart.band?.groups.find((run) => index >= run.first && index <= run.last) ?? { first: 0, last: values.length - 1 };
     return (
         <g ref={ref} className={clsx('pointer-events-none', className)}>
             {values.map((amount, index) => {
@@ -196,14 +217,15 @@ export function ChartBar<Row>({ value, label, tone, opacity, className, ref }: C
                 if (amount === null || topPixel === null || bucket === null) {
                     return null;
                 }
-                const column = columnsIn(bucket.left, bucket.width, count)[slot]!;
+                const column = columnsIn(bucket.left, bucket.width, count, columnWidth)[slot]!;
                 const { y, height } = segmentOf(topPixel, basePixel, base === 0, amount);
                 const focused = index === chart.activeIndex || chart.selected[index] === true;
-                let alpha = focused ? 1 : (opacity?.(rows[index]!, index - firstOfGroup(index)) ?? 1);
+                const run = groupOf(index);
+                let alpha = focused ? 1 : (opacity?.(rows[index]!, index - run.first, run.last - run.first + 1) ?? 1);
                 if (chart.dimmed[index] === true || (anySelected && !focused)) {
-                    alpha *= OUT_OF_FOCUS;
+                    alpha *= dimOpacity;
                 } else if (chart.activeIndex >= 0 && !focused) {
-                    alpha *= HOVER_DIM;
+                    alpha *= hoverOpacity;
                 }
                 return (
                     <rect
@@ -212,7 +234,7 @@ export function ChartBar<Row>({ value, label, tone, opacity, className, ref }: C
                         y={y}
                         width={column.width}
                         height={height}
-                        rx={stacked !== undefined && bars?.stack === true ? 0 : Math.min(2, Math.floor(column.width / 4))}
+                        rx={stacked !== undefined && bars?.stack === true ? 0 : Math.min(radius, Math.floor(column.width / 4))}
                         opacity={alpha}
                         style={{ fill: rowColors?.[index] ?? color ?? fallback }}
                     />

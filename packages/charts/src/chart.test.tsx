@@ -157,6 +157,23 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(columns().map((column) => Math.floor(Number(column.getAttribute('x')) / 150))).toEqual([0, 1, 3]);
     });
 
+    test('a second x axis writes its row under the first', async () => {
+        await mount(
+            <Chart.Root data={SCORES} x="key" label="Scores">
+                <Chart.XAxis format={(key) => SCORES.find((score) => score.key === key)!.effort} />
+                <Chart.XAxis format={(key) => SCORES.find((score) => score.key === key)!.model} thin={false} />
+                <Chart.Bar value="score" label="Score" />
+            </Chart.Root>
+        );
+        const rows = [...container.querySelectorAll('text')].filter((text) => text.closest('[visibility="hidden"]') === null);
+        const baselines = [...new Set(rows.map((text) => Number(text.getAttribute('y'))))];
+        expect(baselines).toHaveLength(2);
+        expect(baselines[1]! - baselines[0]!).toBe(16);
+        expect(rows.map((text) => text.textContent)).toEqual(['low', 'high', 'low', 'mid', 'Alpha', 'Alpha', 'Beta', 'Beta']);
+        await press(container.querySelector('svg[role="group"]')!, 'ArrowRight');
+        expect(live()).toBe('Alpha, low, Score 40');
+    });
+
     test('in a group every chart draws the cursor and only the chart that moved it shows its tooltip', async () => {
         const plot = await mount(
             <Chart.Group>

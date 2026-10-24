@@ -1,27 +1,30 @@
-import { useRef, useSyncExternalStore, type ReactNode, type Ref } from 'react';
+import { useId, useRef, useSyncExternalStore, type ReactNode, type Ref } from 'react';
 import { createPortal } from 'react-dom';
 import clsx from 'clsx';
 import { formatRounded } from '@adecore/ui/format';
 import { useChartContext } from './context.ts';
 import { decimalsOf, tickCount } from './scale.ts';
 import { useBeforePaint } from './register.ts';
-import type { AxisSizes, ChartStore } from './store.ts';
 import { formatTime, timeLabelOf } from './time-format.ts';
 import type { ChartX } from './types.ts';
 
 export interface ChartGridProps {
     readonly axis?: 'y' | 'x' | 'both';
+    /* Dashes every line but the ground, in the color of the ground so the dashes still read as a line. */
+    readonly dashed?: boolean;
     readonly className?: string;
     readonly ref?: Ref<SVGGElement>;
 }
 
 export interface ChartXAxisProps {
-    /* Writes a bucket's x, here and in the tooltip, the live region and the table. */
+    /* Writes a bucket's x in this row. The tooltip, the live region and the table name a bucket by every row, the lowest first. */
     readonly format?: (x: ChartX) => string;
     /* A target count of ticks on a continuous scale; the axis drops ticks whose labels would not fit. */
     readonly ticks?: number;
     /* Slants the labels, for long names under every column of a ranked row. */
     readonly angle?: 0 | -40;
+    /* Leaves labels of a band scale out where they would overlap; false writes one under every bucket. */
+    readonly thin?: boolean;
     readonly className?: string;
     readonly ref?: Ref<SVGGElement>;
 }
@@ -51,7 +54,7 @@ export interface ChartGroupAxisProps<Row> {
 }
 
 /* Between the end of a label and the plot, and between two labels on the x axis. */
-const LABEL_GAP = 8;
+export const LABEL_GAP = 8;
 /* Labels of a category sit under their own column, so they need less air between them than round ticks do. */
 const BAND_LABEL_GAP = 4;
 const X_LABEL_LINE = 16;
@@ -59,6 +62,10 @@ const X_TICK_SPACING = 96;
 /* What a label is taken to measure before it has been drawn once. */
 const GUESS = 48;
 const SLANT = (40 * Math.PI) / 180;
+const DASH = '2 5';
+
+/* The height a row of labels takes under the plot, more for a slanted one. */
+const roomOf = (widest: number, angle: number): number => Math.ceil(angle === 0 ? X_LABEL_LINE : widest * Math.sin(SLANT) + X_LABEL_LINE * Math.cos(SLANT));
 
 const textWidth = (node: SVGTextElement): number =>
     typeof node.getComputedTextLength === 'function' ? node.getComputedTextLength() : (node.textContent?.length ?? 0) * 7;
@@ -69,7 +76,7 @@ const widestIn = (group: SVGGElement | null): number => Math.max(0, ...[...(grou
 const crisp = (pixel: number): number => Math.round(pixel) + 0.5;
 
 /* Gridlines on the ticks, a heavier one on the ground. */
-export function ChartGrid({ axis = 'y', className, ref }: ChartGridProps) {
+export function ChartGrid({ axis = 'y', dashed = false, className, ref }: ChartGridProps) {
     const chart = useChartContext('Chart.Grid');
     const { plot, y, continuous, band } = chart;
     const ground = y.domain[0] <= 0 && y.domain[1] >= 0 ? 0 : y.domain[0];
@@ -89,28 +96,48 @@ export function ChartGrid({ axis = 'y', className, ref }: ChartGridProps) {
                             x2={plot.right}
                             y1={crisp(pixel)}
                             y2={crisp(pixel)}
-                            className={tick === ground ? 'stroke-border' : 'stroke-border-soft'}
+                            strokeDasharray={dashed && tick !== ground ? DASH : undefined}
+                            className={tick === ground || dashed ? 'stroke-border' : 'stroke-border-soft'}
                         />
                     );
                 })}
             {axis !== 'y' &&
                 (band === null || chart.xs.length > 0) &&
-                columns.map((pixel) => <line key={pixel} x1={crisp(pixel)} x2={crisp(pixel)} y1={plot.top} y2={plot.bottom} className="stroke-border-soft" />)}
+                columns.map((pixel) => (
+                    <line
+                        key={pixel}
+                        x1={crisp(pixel)}
+                        x2={crisp(pixel)}
+                        y1={plot.top}
+                        y2={plot.bottom}
+                        strokeDasharray={dashed ? DASH : undefined}
+                        className={dashed ? 'stroke-border' : 'stroke-border-soft'}
+                    />
+                ))}
         </g>
     );
 }
 
 /* The labels under the plot: one per bucket on a band scale as far as they fit, round ticks on a continuous one. */
-export function ChartXAxis({ format, ticks, angle = 0, className, ref }: ChartXAxisProps) {
+export function ChartXAxis({ format, ticks, angle = 0, thin = true, className, ref }: ChartXAxisProps) {
     const chart = useChartContext('Chart.XAxis');
     const { store, plot, continuous, band, xs } = chart;
+    const id = useId();
     const labels = useRef<SVGGElement>(null);
     const candidates = useRef<SVGGElement>(null);
     const grown = useRef({ key: '', width: 0 });
-    const widest = useStoreAxis(chart.store, 'xLabel') ?? GUESS;
-    const room = Math.ceil(angle === 0 ? X_LABEL_LINE : widest * Math.sin(SLANT) + X_LABEL_LINE * Math.cos(SLANT));
-    const baseline = plot.bottom + LABEL_GAP;
+    const rows = useSyncExternalStore(store.subscribe, store.xAxes, store.xAxes);
+    const widest = rows.get(id)?.widest ?? GUESS;
+    let above = 0;
+    for (const [rowId, row] of rows) {
+        if (rowId === id) {
+            break;
+        }
+        above += row.room;
+    }
+    const baseline = plot.bottom + LABEL_GAP + above;
     const domainKey = continuous === null ? '' : `${continuous.domain.join(':')}:${Math.round(plot.width)}`;
+    const write = format ?? chart.formatX;
 
     useBeforePaint(() => {
         // How many labels are placed depends on the widest, so measuring only the placed ones can flip between two sets
@@ -120,18 +147,9 @@ export function ChartXAxis({ format, ticks, angle = 0, className, ref }: ChartXA
             width = grown.current.key === domainKey ? Math.max(width, grown.current.width) : width;
             grown.current = { key: domainKey, width };
         }
-        store.setAxis('xLabel', width);
-        store.setAxis('x', room + LABEL_GAP + 4);
-        store.setFormat('x', format);
+        store.setXAxis(id, { widest: width, room: roomOf(width, angle), format });
     });
-    useBeforePaint(
-        () => () => {
-            store.setAxis('x', null);
-            store.setAxis('xLabel', null);
-            store.setFormat('x', undefined);
-        },
-        [store]
-    );
+    useBeforePaint(() => () => store.setXAxis(id, null), [store, id]);
 
     let placed: { key: string; x: number; text: string }[];
     if (continuous !== null) {
@@ -148,14 +166,14 @@ export function ChartXAxis({ format, ticks, angle = 0, className, ref }: ChartXA
             // A label that would hang past the end of the chart is left out rather than moved off its tick.
             .filter((tick) => tick.x - widest / 2 >= -chart.leftAxis && tick.x + widest / 2 <= chart.width + 1);
     } else if (band !== null && band.bucket > 0) {
-        const every = Math.max(1, Math.ceil((angle === 0 ? widest + BAND_LABEL_GAP : X_LABEL_LINE) / band.bucket));
+        const every = thin ? Math.max(1, Math.ceil((angle === 0 ? widest + BAND_LABEL_GAP : X_LABEL_LINE) / band.bucket)) : 1;
         placed = xs.flatMap((key, index) => {
             if (index % every !== 0) {
                 return [];
             }
             const center = chart.centerOf(index);
             const x = angle === 0 ? Math.min(Math.max(center, widest / 2 - chart.leftAxis), chart.width - widest / 2) : center;
-            return [{ key: String(key), x, text: chart.formatX(key) }];
+            return [{ key: String(key), x, text: write(key) }];
         });
     } else {
         placed = [];
@@ -167,7 +185,7 @@ export function ChartXAxis({ format, ticks, angle = 0, className, ref }: ChartXA
                 <g ref={candidates} visibility="hidden">
                     {xs.map((key) => (
                         <text key={String(key)} className="text-xs tabular-nums">
-                            {chart.formatX(key)}
+                            {write(key)}
                         </text>
                     ))}
                 </g>
@@ -274,13 +292,5 @@ export function ChartGroupAxis<Row>({ children, className, ref }: ChartGroupAxis
             ))}
         </div>,
         target
-    );
-}
-
-function useStoreAxis(store: ChartStore, axis: keyof AxisSizes): number | null {
-    return useSyncExternalStore(
-        store.subscribe,
-        () => store.axes()[axis],
-        () => store.axes()[axis]
     );
 }

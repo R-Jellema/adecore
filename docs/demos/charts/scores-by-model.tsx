@@ -29,6 +29,7 @@ export default function ScoresByModelDemo() {
             data={scores}
             x="key"
             group="model"
+            groupGap={20}
             label="Scores per model and effort"
             y={{ min: 0, max: 80 }}
             height={240}
@@ -37,14 +38,17 @@ export default function ScoresByModelDemo() {
             onActivate={toggle}
             className="w-full"
         >
-            <ScoreChart.Grid />
+            <ScoreChart.Grid dashed />
             <ScoreChart.YAxis ticks={4} />
-            <ScoreChart.XAxis format={(key) => SHORT_EFFORTS[String(key).split(':')[1]!]!} />
+            <ScoreChart.XAxis format={(key) => SHORT_EFFORTS[String(key).split(':')[1]!]!} thin={false} />
             <ScoreChart.Bar
                 value="score"
                 label="Intelligence"
                 tone={(row) => ({ color: LAB_COLORS[row.lab]! })}
-                opacity={(_, indexInGroup) => 0.55 + indexInGroup * 0.15}
+                opacity={(_, indexInGroup, groupSize) => 0.6 + (indexInGroup / Math.max(groupSize - 1, 1)) * 0.4}
+                hoverOpacity={1}
+                columnWidth={(bucket) => Math.max(6, Math.min(44, Math.floor(bucket) - 4))}
+                radius={3}
             />
             <ScoreChart.GroupAxis>
                 {(group) => (

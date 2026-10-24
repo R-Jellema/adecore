@@ -28,18 +28,22 @@ export interface BandEntry {
 }
 
 export interface AxisSizes {
-    /* The height under the plot the x axis takes, null without one. */
-    readonly x: number | null;
     readonly left: number | null;
     readonly right: number | null;
-    /* The widest label the x axis drew, which decides how many fit. */
-    readonly xLabel: number | null;
     /* The number of ticks the y axis asks for. */
     readonly yTicks: number | null;
 }
 
+/* One row of labels under the plot; the rows stack in the order of the children. */
+export interface XAxisEntry {
+    /* The height of the row. */
+    readonly room: number;
+    /* The widest label, which decides how many fit; null before the row has been measured. */
+    readonly widest: number | null;
+    readonly format: ((x: ChartX) => string) | undefined;
+}
+
 export interface ChartFormats {
-    readonly x?: (x: ChartX) => string;
     readonly y?: (value: number) => string;
 }
 
@@ -47,11 +51,13 @@ export interface ChartStore {
     subscribe(listener: () => void): () => void;
     series(): ReadonlyMap<string, SeriesEntry>;
     axes(): AxisSizes;
+    xAxes(): ReadonlyMap<string, XAxisEntry>;
     markers(): ReadonlyMap<string, MarkerEntry>;
     bands(): ReadonlyMap<string, BandEntry>;
     formats(): ChartFormats;
     setSeries(id: string, entry: SeriesEntry | null): void;
     setAxis(axis: keyof AxisSizes, size: number | null): void;
+    setXAxis(id: string, entry: XAxisEntry | null): void;
     setMarker(id: string, entry: MarkerEntry | null): void;
     setBand(id: string, entry: BandEntry | null): void;
     setFormat<Axis extends keyof ChartFormats>(axis: Axis, format: ChartFormats[Axis]): void;
@@ -75,7 +81,8 @@ const sameEntry = (one: object | undefined, other: object): boolean =>
 export function createChartStore(): ChartStore {
     const listeners = new Set<() => void>();
     let series: ReadonlyMap<string, SeriesEntry> = new Map();
-    let axes: AxisSizes = { x: null, left: null, right: null, xLabel: null, yTicks: null };
+    let axes: AxisSizes = { left: null, right: null, yTicks: null };
+    let xAxes: ReadonlyMap<string, XAxisEntry> = new Map();
     let markers: ReadonlyMap<string, MarkerEntry> = new Map();
     let bands: ReadonlyMap<string, BandEntry> = new Map();
     let formats: ChartFormats = {};
@@ -109,6 +116,7 @@ export function createChartStore(): ChartStore {
         },
         series: () => series,
         axes: () => axes,
+        xAxes: () => xAxes,
         markers: () => markers,
         bands: () => bands,
         formats: () => formats,
@@ -122,6 +130,13 @@ export function createChartStore(): ChartStore {
         setAxis(axis, size) {
             if (axes[axis] !== size) {
                 axes = { ...axes, [axis]: size };
+                emit();
+            }
+        },
+        setXAxis(id, entry) {
+            const next = updated(xAxes, id, entry);
+            if (next !== null) {
+                xAxes = next;
                 emit();
             }
         },

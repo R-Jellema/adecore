@@ -39,10 +39,13 @@ export function groupRuns(keys: readonly string[]): { key: string; first: number
     return runs;
 }
 
-/* The buckets of a band scale across the room, a gap between groups, and no narrower than `minBucketWidth`. */
-export function bandLayout(count: number, groupKeys: readonly string[] | null, room: number, minBucketWidth = 0): BandLayout {
+/*
+ * The buckets of a band scale across the room, no narrower than `minBucketWidth`. Groups get a gap between them and
+ * half of one at both ends, so the first and the last group stand as far from the edge as from their neighbors.
+ */
+export function bandLayout(count: number, groupKeys: readonly string[] | null, room: number, minBucketWidth = 0, groupGap = GROUP_GAP): BandLayout {
     const runs = groupKeys === null ? [] : groupRuns(groupKeys);
-    const gaps = Math.max(0, runs.length - 1) * GROUP_GAP;
+    const gaps = runs.length * groupGap;
     if (count === 0) {
         return { bucket: 0, width: Math.max(0, room), lefts: [], groups: [] };
     }
@@ -58,7 +61,7 @@ export function bandLayout(count: number, groupKeys: readonly string[] | null, r
     }
     runs.forEach((run, groupIndex) => {
         for (let i = run.first; i <= run.last; i++) {
-            lefts.push(i * bucket + groupIndex * GROUP_GAP);
+            lefts.push(i * bucket + (groupIndex + 0.5) * groupGap);
         }
         groups.push({ ...run, left: lefts[run.first]!, right: lefts[run.last]! + bucket });
     });
@@ -72,13 +75,15 @@ export interface Column {
 
 /*
  * The columns side by side in one bucket, on whole pixels: never narrower than 2px, with 1px between
- * neighbors, and at least 1px of air to the next bucket when the bucket has room for it.
+ * neighbors, and at least 1px of air to the next bucket when the bucket has room for it. `widthOf` gives the width
+ * the columns of a bucket take together instead, at most the bucket.
  */
-export function columnsIn(left: number, bucket: number, count: number): Column[] {
+export function columnsIn(left: number, bucket: number, count: number, widthOf?: (bucket: number) => number): Column[] {
     if (count <= 0) {
         return [];
     }
-    const room = Math.min(bucket - Math.max(1, bucket * (1 - COLUMN_SHARE)), MAX_COLUMN * count + count - 1);
+    const room =
+        widthOf !== undefined ? Math.min(bucket, widthOf(bucket)) : Math.min(bucket - Math.max(1, bucket * (1 - COLUMN_SHARE)), MAX_COLUMN * count + count - 1);
     const width = Math.max(2, Math.floor((room - (count - 1)) / count));
     const total = width * count + count - 1;
     const start = Math.round(left + (bucket - total) / 2);

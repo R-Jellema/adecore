@@ -24,9 +24,19 @@ const UsageChart = createChart<TokenDay>();
 
 `Chart.Bars` holds the `Chart.Bar` that share the width of a bucket. Without `stack` they stand side by side, with `stack` they pile up in the order of the children, with 1px of ground between two segments. A `Chart.Bar` outside `Chart.Bars` stands beside the others outside it.
 
-Columns stand on whole pixels. A column is never narrower than 2px, and keeps at least 1px of air to the next bucket. While the cursor is on a bucket, the columns of the others dim.
+Columns stand on whole pixels. A column is never narrower than 2px, and by default takes 72% of its bucket, at most 56px, which leaves at least 1px of air to the next bucket. While the cursor is on a bucket, the columns of the others dim to 55%.
 
-`tone` takes a tone, `{ color }`, or a function of the row for a color per column: `tone={(row) => runTone(row.status)}`. `opacity` is a function of the row and its index in its group, for columns that grow stronger inside one. The props are `ChartBarsProps` and `ChartBarProps`, and `ChartBarTone` is the type of `tone`.
+`tone` takes a tone, `{ color }`, or a function of the row for a color per column: `tone={(row) => runTone(row.status)}`. `opacity` is a function of the row, its index in its group and the size of the group, for columns that grow stronger inside one. The props are `ChartBarsProps` and `ChartBarProps`, and `ChartBarTone` is the type of `tone`.
+
+| Prop | Type | Default | |
+| --- | --- | --- | --- |
+| `value`, `label` | | | Required. What the column reads, and its name in the tooltip, the legend and the table. |
+| `tone` | `ChartBarTone` | the next chart color | |
+| `opacity` | `(row, indexInGroup, groupSize) => number` | | |
+| `hoverOpacity` | `number` | `0.55` | The other columns while the cursor is on a bucket; `1` leaves them be. |
+| `dimOpacity` | `number` | `0.4` | A column the root dims, or one not picked while another is. Below 0.4 a column that is already light nearly vanishes in the dark theme. |
+| `columnWidth` | `(bucket: number) => number` | | The pixels the columns of a bucket take together, at most the bucket. |
+| `radius` | `number` | `2` | The corners of a column that stands alone, at most a quarter of its width. |
 
 ## Columns over time
 
@@ -54,7 +64,7 @@ On a `time` scale each bucket lasts one `step` from its x, and its columns stand
 
 ## Groups
 
-`group` on the root puts the buckets into groups by a key, in the order of `data`, with a gap between them. Each row is one bucket, so a group holds as many columns as it has rows. Scores per model and effort, two to four efforts per model:
+`group` on the root puts the buckets into groups by a key, in the order of `data`, with a gap of `groupGap` pixels between them (16 by default) and half of one at both ends. Each row is one bucket, so a group holds as many columns as it has rows. Scores per model and effort, two to four efforts per model, on a dashed grid, with wider columns that stay as they are while the cursor is elsewhere:
 
 <Demo src="charts/scores-by-model" />
 
@@ -65,20 +75,24 @@ const ScoreChart = createChart<ModelScore>();
     data={scores}
     x="key"
     group="model"
+    groupGap={20}
     label="Scores per model and effort"
     y={{ min: 0, max: 80 }}
     minBucketWidth={28}
     selected={picked}
     onActivate={toggle}
 >
-    <ScoreChart.Grid />
+    <ScoreChart.Grid dashed />
     <ScoreChart.YAxis ticks={4} />
-    <ScoreChart.XAxis format={(key) => effortOf(key)} />
+    <ScoreChart.XAxis format={(key) => effortOf(key)} thin={false} />
     <ScoreChart.Bar
         value="score"
         label="Intelligence"
         tone={(row) => ({ color: labColor(row.lab) })}
-        opacity={(row, indexInGroup) => 0.55 + indexInGroup * 0.15}
+        opacity={(row, indexInGroup, groupSize) => 0.6 + (indexInGroup / Math.max(groupSize - 1, 1)) * 0.4}
+        hoverOpacity={1}
+        columnWidth={(bucket) => Math.max(6, Math.min(44, Math.floor(bucket) - 4))}
+        radius={3}
     />
     <ScoreChart.GroupAxis>
         {(group) => (
@@ -104,18 +118,21 @@ With `onActivate`, the buckets become pressable: Enter, Space and a click call i
 
 ## A ranked row
 
-Without `group`, every column stands in one row. `angle={-40}` on `Chart.XAxis` slants the labels, for long names under every column:
+Without `group`, every column stands in one row. A second `Chart.XAxis` writes a row of labels under the first, and `angle={-40}` slants them, for long names under every column:
 
 <Demo src="charts/scores-ranked" />
 
 ```tsx
-<ScoreChart.Root data={ranked} x="key" label="Scores, ranked" y={{ min: 0, max: 80 }} height={280} minBucketWidth={24}>
+<ScoreChart.Root data={ranked} x="key" label="Scores, ranked" y={{ min: 0, max: 80 }} height={300} minBucketWidth={28}>
     <ScoreChart.Grid />
     <ScoreChart.YAxis ticks={4} />
+    <ScoreChart.XAxis format={(key) => effortOf(key)} thin={false} />
     <ScoreChart.XAxis angle={-40} format={(key) => nameOf(key)} />
     <ScoreChart.Bar value="score" label="Intelligence" tone={(row) => ({ color: labColor(row.lab) })} />
     <ScoreChart.Tooltip />
 </ScoreChart.Root>
 ```
+
+The rows stack in the order of the children. The tooltip, the live region and the table name a bucket by every row, the lowest first ("Atlas 5, high"). A row of a band scale leaves labels out where they would overlap; `thin={false}` writes one under every column.
 
 There are no value labels on top of the columns; the tooltip, the live region and the table carry the numbers. A drawing of the app's own can add them through [`Chart.Layer`](/charts/use-chart).
