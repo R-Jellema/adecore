@@ -50,6 +50,7 @@ import {
 import { SettingsDialog, SettingsRow, SettingsSection, TopIcon } from '@adecore/ui/settings';
 import ChatDemo from '../../../../docs/demos/agents/chat.tsx';
 import { Section, Specimen } from '../layout.tsx';
+import { HELD } from '../held.ts';
 import { usePinned } from '../pinned.ts';
 
 const ignore = (): void => {};
@@ -308,6 +309,25 @@ const SETTINGS_FOOTER = [{ id: 'about', icon: Info, label: 'About', description:
 function OpenSettings() {
     const { slot, popup } = usePinned();
     const [section, setSection] = useState('general');
+    const [open, setOpen] = useState(false);
+    if (!HELD) {
+        return (
+            <>
+                <Button variant="secondary" onClick={() => setOpen(true)}>
+                    Open settings
+                </Button>
+                <SettingsDialog
+                    open={open}
+                    onOpenChange={setOpen}
+                    section={section}
+                    onNavigate={(next) => setSection(next.section)}
+                    groups={SETTINGS_GROUPS}
+                    footer={SETTINGS_FOOTER}
+                    search={{ find: () => [], hint: '⌘F' }}
+                />
+            </>
+        );
+    }
     return (
         <div ref={slot} className="h-[800px] w-full">
             <SettingsDialog

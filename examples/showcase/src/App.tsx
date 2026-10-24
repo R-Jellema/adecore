@@ -1,3 +1,4 @@
+import { HELD } from './held.ts';
 import { CompositionSection } from './sections/Compositions.tsx';
 import { DemoSections } from './sections/Demos.tsx';
 import { MatrixSection } from './sections/Matrix.tsx';
@@ -12,7 +13,7 @@ export function App({ theme }: { theme: 'dark' | 'light' }) {
             </header>
             <CompositionSection />
             <MatrixSection />
-            <OverlaySection />
+            {HELD && <OverlaySection />}
             <DemoSections folders={['actions', 'inputs', 'display', 'overlays', 'settings', 'layout', 'formatting', 'utilities', 'hooks', 'agents']} />
         </main>
     );
