@@ -17,6 +17,11 @@ export interface SeriesEntry {
     readonly icon: IconProps['icon'] | null;
 }
 
+export interface RuleEntry {
+    readonly value: number;
+    readonly label: string;
+}
+
 export interface MarkerEntry {
     readonly at: ChartX;
     readonly label: string;
@@ -57,11 +62,13 @@ export interface ChartStore {
     xAxes(): ReadonlyMap<string, XAxisEntry>;
     markers(): ReadonlyMap<string, MarkerEntry>;
     bands(): ReadonlyMap<string, BandEntry>;
+    rules(): ReadonlyMap<string, RuleEntry>;
     formats(): ChartFormats;
     setSeries(id: string, entry: SeriesEntry | null): void;
     setAxis(axis: keyof AxisSizes, size: number | null): void;
     setXAxis(id: string, entry: XAxisEntry | null): void;
     setMarker(id: string, entry: MarkerEntry | null): void;
+    setRule(id: string, entry: RuleEntry | null): void;
     setBand(id: string, entry: BandEntry | null): void;
     setFormat<Axis extends keyof ChartFormats>(axis: Axis, format: ChartFormats[Axis]): void;
 }
@@ -87,6 +94,7 @@ export function createChartStore(): ChartStore {
     let axes: AxisSizes = { left: null, right: null, yTicks: null };
     let xAxes: ReadonlyMap<string, XAxisEntry> = new Map();
     let markers: ReadonlyMap<string, MarkerEntry> = new Map();
+    let rules: ReadonlyMap<string, RuleEntry> = new Map();
     let bands: ReadonlyMap<string, BandEntry> = new Map();
     let formats: ChartFormats = {};
 
@@ -121,6 +129,7 @@ export function createChartStore(): ChartStore {
         axes: () => axes,
         xAxes: () => xAxes,
         markers: () => markers,
+        rules: () => rules,
         bands: () => bands,
         formats: () => formats,
         setSeries(id, entry) {
@@ -140,6 +149,13 @@ export function createChartStore(): ChartStore {
             const next = updated(xAxes, id, entry);
             if (next !== null) {
                 xAxes = next;
+                emit();
+            }
+        },
+        setRule(id, entry) {
+            const next = updated(rules, id, entry);
+            if (next !== null) {
+                rules = next;
                 emit();
             }
         },

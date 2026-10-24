@@ -1,4 +1,5 @@
 import { useId, type Ref } from 'react';
+import { createPortal } from 'react-dom';
 import clsx from 'clsx';
 import { xOf } from './access.ts';
 import { colorOf } from './color.ts';
@@ -23,6 +24,51 @@ export interface ChartBandProps {
     readonly tone?: ChartColor;
     readonly className?: string;
     readonly ref?: Ref<SVGGElement>;
+}
+
+export interface ChartRuleProps {
+    /* Where the line crosses the value axis. */
+    readonly value: number;
+    /* Written at the right end of the line with the value, such as "A · 71". */
+    readonly label: string;
+    readonly tone?: ChartColor;
+    readonly dashed?: boolean;
+    readonly className?: string;
+    readonly ref?: Ref<SVGGElement>;
+}
+
+/* Room a label needs above its line before it moves under it instead. */
+const RULE_LABEL = 18;
+
+/* A horizontal line at a value across the plot, such as a reference to compare against, drawn above the series. */
+export function ChartRule({ value, label, tone = 'muted', dashed = false, className, ref }: ChartRuleProps) {
+    const chart = useChartContext('Chart.Rule');
+    const id = useId();
+    useRegistration(chart.store, 'rule', id, { value, label });
+    const pixel = chart.pixelOfY(value);
+    const target = chart.elements.rules;
+    if (pixel === null || target === null) {
+        return null;
+    }
+    const top = Math.round(pixel) + 0.5;
+    const below = top - RULE_LABEL < 0;
+    return createPortal(
+        <g ref={ref} className={clsx('pointer-events-none', className)} style={{ color: colorOf(tone)! }} aria-hidden>
+            <line x1={chart.plot.left} x2={chart.plot.right} y1={top} y2={top} stroke="currentColor" strokeDasharray={dashed ? '4 4' : undefined} />
+            <text
+                x={Math.round(chart.plot.right) - 4}
+                y={Math.round(below ? top + 6 : top - 6)}
+                dy={below ? '0.8em' : undefined}
+                textAnchor="end"
+                strokeWidth={4}
+                paintOrder="stroke"
+                className="fill-text stroke-surface text-xs font-medium tabular-nums"
+            >
+                {`${label} · ${chart.formatY(value)}`}
+            </text>
+        </g>,
+        target
+    );
 }
 
 /* A dashed vertical line at a moment, with a dot on top. */

@@ -1,6 +1,6 @@
 export * as Chart from './index.parts.ts';
 
-export type { ChartBandProps, ChartMarkerProps } from './annotations.tsx';
+export type { ChartBandProps, ChartMarkerProps, ChartRuleProps } from './annotations.tsx';
 export type { ChartBucketGroup, ChartGridProps, ChartGroupAxisProps, ChartXAxisProps, ChartYAxisProps } from './axes.tsx';
 export { createChart, type TypedChart } from './create-chart.ts';
 export type { ChartGroupProps, ChartLayerProps } from './layer.tsx';

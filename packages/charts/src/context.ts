@@ -12,6 +12,8 @@ export interface ChartSlots {
     readonly groups: HTMLElement | null;
     readonly left: SVGGElement | null;
     readonly right: SVGGElement | null;
+    /* Above the series in the plot, where `Chart.Rule` draws whatever its place among the children. */
+    readonly rules: SVGGElement | null;
 }
 
 export interface ChartContextValue {

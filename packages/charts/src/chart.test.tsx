@@ -211,6 +211,22 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(Math.max(...bottoms)).toBe(196);
     });
 
+    test('a rule draws above the series at its value, which the axis covers, and the chart names it once', async () => {
+        await mount(
+            <Chart.Root data={SCORES} x="key" label="Scores">
+                <Chart.Rule value={70} label="A" />
+                <Chart.YAxis />
+                <Chart.Bar value="score" label="Score" />
+            </Chart.Root>
+        );
+        const label = [...container.querySelectorAll('text')].find((text) => text.textContent === 'A · 70')!;
+        expect(label).toBeDefined();
+        const column = columns()[0]!;
+        expect(column.compareDocumentPosition(label) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect([...container.querySelectorAll('text')].some((text) => text.textContent === '80')).toBe(true);
+        expect(container.querySelector('[id$="-hint"]')!.textContent).toStartWith('A 70.');
+    });
+
     test('the tooltip keeps a row for a series without a value in the bucket', async () => {
         const hours = [
             { at: 0, errors: null, warnings: 3 },

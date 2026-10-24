@@ -42,6 +42,7 @@ A chart is a compound component, like `Menu` and `Dialog` in `@adecore/ui`. `Cha
 | [`Chart.Line`, `Chart.Area`](/charts/series#lines-and-areas) | A line, and a line with its area filled. |
 | [`Chart.Bars`, `Chart.Bar`](/charts/columns) | Columns, side by side or stacked. |
 | [`Chart.Marker`, `Chart.Band`](/charts/series#markers-and-bands) | A moment and a range, named in the tooltip. |
+| [`Chart.Rule`](/charts/series#rules) | A line at a value, such as a reference, above the series. |
 | [`Chart.Tooltip`](/charts/series#tooltip-legend-and-table) | The card at the cursor. |
 | [`Chart.Legend`](/charts/series#tooltip-legend-and-table) | The series with their color. |
 | [`Chart.Table`](/charts/series#tooltip-legend-and-table) | A toggle that shows every value as a table. |

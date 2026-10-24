@@ -20,7 +20,7 @@ function LabMark({ lab }: { lab: string }) {
 }
 
 export default function ScoresByModelDemo() {
-    const [picked, setPicked] = useState<string[]>(['Lumen Pro:high']);
+    const [picked, setPicked] = useState<string[]>(['Lumen Pro:high', 'Atlas 5 mini:high']);
     const toggle = (row: ModelScore): void =>
         setPicked((current) => (current.includes(row.key) ? current.filter((key) => key !== row.key) : [...current.slice(-1), row.key]));
 
@@ -50,6 +50,9 @@ export default function ScoresByModelDemo() {
                 columnWidth={(bucket) => Math.max(6, Math.min(44, Math.floor(bucket) - 4))}
                 radius={3}
             />
+            {picked.map((key, index) => (
+                <ScoreChart.Rule key={key} value={scores.find((row) => row.key === key)!.score} label={index === 0 ? 'A' : 'B'} dashed={index > 0} />
+            ))}
             <ScoreChart.GroupAxis>
                 {(group) => (
                     <>

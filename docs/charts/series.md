@@ -69,6 +69,16 @@ A `ChartX` is a number (a moment in milliseconds) or the key of a category; a `C
 
 `Chart.Marker` draws a dashed vertical line at a moment, `at`, with a dot on top. Its `label` is named in the tooltip of the bucket the moment falls in, so a deploy at 14:37 shows under the bucket of 14:00. `Chart.Band` shades a range from `from` to `to` with a hatch, named in the tooltip of every bucket it touches. Both are muted unless they get a `tone`. On a band scale `at`, `from` and `to` are keys of buckets; a moment between two buckets needs a time scale, which takes [columns](/charts/columns#columns-over-time) too. The props are `ChartMarkerProps` and `ChartBandProps`.
 
+## Rules
+
+`Chart.Rule` draws a horizontal line across the plot at `value`, such as a budget or a column picked as a reference, with its `label` and the value at its right end ("A · 71"). It draws above the series whatever its place among the children, and the value axis covers it, also where the data stays below it. `tone` colors it (muted by default) and `dashed` dashes it.
+
+A rule holds for every bucket, so the tooltip does not repeat it; a screen reader hears it once, with the description of the chart. The props are `ChartRuleProps`.
+
+```tsx
+<Chart.Rule value={300} label="Budget" tone="error" dashed />
+```
+
 ## Tooltip, legend and table
 
 On a time scale the cursor takes the bucket under the pointer, the same bucket a marker there is named in; where a row is missing it shows nothing. On a linear scale it snaps to the nearest point. On a time or linear scale it draws a line with a dot on every series; on a band scale it lights the bucket. Leaving the chart clears it; with `activeX` controlled it calls `onActiveXChange(null)` instead.

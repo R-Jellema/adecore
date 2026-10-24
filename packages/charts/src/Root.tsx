@@ -103,6 +103,7 @@ export function ChartRoot<Row>({
     const xAxes = useSyncExternalStore(store.subscribe, store.xAxes, store.xAxes);
     const markers = useSyncExternalStore(store.subscribe, store.markers, store.markers);
     const bands = useSyncExternalStore(store.subscribe, store.bands, store.bands);
+    const rules = useSyncExternalStore(store.subscribe, store.rules, store.rules);
     const formats = useSyncExternalStore(store.subscribe, store.formats, store.formats);
     const chartGroup = useContext(GroupContext);
     const sharedCursor = chartGroup?.cursor ?? null;
@@ -113,6 +114,7 @@ export function ChartRoot<Row>({
     const [groupsSlot, setGroupsSlot] = useState<HTMLElement | null>(null);
     const [leftSlot, setLeftSlot] = useState<SVGGElement | null>(null);
     const [rightSlot, setRightSlot] = useState<SVGGElement | null>(null);
+    const [rulesSlot, setRulesSlot] = useState<SVGGElement | null>(null);
     const [scroll, setScroll] = useState(0);
     const [announce, setAnnounce] = useState(false);
     const [measure, size] = useContentSize();
@@ -137,7 +139,16 @@ export function ChartRoot<Row>({
 
     const stackInput = [...series].map(([seriesId, entry]) => ({ id: seriesId, values: entry.values, stack: entry.stack }));
     const stacked = stackSeries(stackInput, xs.length);
-    const scaleY = yScaleOf(yScale, extentOf(stacked.values(), yScale), y, [plot.bottom, plot.top], axes.yTicks ?? tickCount(plot.height, Y_TICK_SPACING));
+    // A reference line stays on the plot, also where the data does not reach it.
+    const ruleValues = [...rules.values()].map((rule) => rule.value);
+    const yOptions = ruleValues.length === 0 ? y : { ...y, include: [...(y.include ?? []), ...ruleValues] };
+    const scaleY = yScaleOf(
+        yScale,
+        extentOf(stacked.values(), yScale),
+        yOptions,
+        [plot.bottom, plot.top],
+        axes.yTicks ?? tickCount(plot.height, Y_TICK_SPACING)
+    );
     const yStep = scaleY.ticks.length > 1 ? scaleY.ticks[1]! - scaleY.ticks[0]! : 1;
 
     const colors = new Map<string, string>();
@@ -345,7 +356,7 @@ export function ChartRoot<Row>({
         ownsCursor,
         selected: selectedRows,
         dimmed: dimmedRows,
-        elements: { legend: legendSlot, table: tableSlot, tooltip: tooltipSlot, groups: groupsSlot, left: leftSlot, right: rightSlot },
+        elements: { legend: legendSlot, table: tableSlot, tooltip: tooltipSlot, groups: groupsSlot, left: leftSlot, right: rightSlot, rules: rulesSlot },
         scroll,
         box: size.width,
         leftAxis,
@@ -361,7 +372,14 @@ export function ChartRoot<Row>({
 
     const pressable = onActivate !== undefined && layout !== null;
     const scrolls = layout !== null && width > room;
-    const hint = [t('keyboard.move'), layout !== null && layout.groups.length > 0 ? t('keyboard.groups') : null, pressable ? t('keyboard.activate') : null]
+    // A reference line holds for every bucket, so a screen reader hears it once with the chart instead of in every bucket.
+    const ruleText = rules.size === 0 ? null : `${[...rules.values()].map((rule) => `${rule.label} ${formatY(rule.value)}`).join(', ')}.`;
+    const hint = [
+        ruleText,
+        t('keyboard.move'),
+        layout !== null && layout.groups.length > 0 ? t('keyboard.groups') : null,
+        pressable ? t('keyboard.activate') : null
+    ]
         .filter(Boolean)
         .join(' ');
     const highlighted = layout === null ? [] : xs.flatMap((_, index) => (index === activeIndex || selectedRows[index] ? [index] : []));
@@ -407,6 +425,7 @@ export function ChartRoot<Row>({
                                     />
                                 ))}
                             {children}
+                            <g ref={setRulesSlot} />
                             {continuous !== null && activeIndex >= 0 && <Crosshair context={context} />}
                             {pressable &&
                                 xs.map((key, index) => (

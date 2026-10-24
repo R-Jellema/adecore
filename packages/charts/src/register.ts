@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect } from 'react';
 import { warnMissingKey } from './access.ts';
-import type { BandEntry, ChartStore, MarkerEntry, SeriesEntry } from './store.ts';
+import type { BandEntry, ChartStore, MarkerEntry, RuleEntry, SeriesEntry } from './store.ts';
 
 /* Before paint on a page, and a plain effect on the server, where a layout effect has nothing to wait for. */
 export const useBeforePaint = typeof document === 'undefined' ? useEffect : useLayoutEffect;
@@ -9,6 +9,7 @@ interface Entries {
     series: SeriesEntry;
     marker: MarkerEntry;
     band: BandEntry;
+    rule: RuleEntry;
 }
 
 const write = <Kind extends keyof Entries>(store: ChartStore, kind: Kind, id: string, entry: Entries[Kind] | null): void => {
@@ -16,6 +17,8 @@ const write = <Kind extends keyof Entries>(store: ChartStore, kind: Kind, id: st
         store.setSeries(id, entry as SeriesEntry | null);
     } else if (kind === 'marker') {
         store.setMarker(id, entry as MarkerEntry | null);
+    } else if (kind === 'rule') {
+        store.setRule(id, entry as RuleEntry | null);
     } else {
         store.setBand(id, entry as BandEntry | null);
     }

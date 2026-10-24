@@ -118,6 +118,14 @@ The key of a group is its identity, which need not be what a person reads, such 
 
 With `onActivate`, the buckets become pressable: Enter, Space and a click call it with the row. The buckets in `selected` stay highlighted, are pressed for a screen reader, and the other columns dim. What a pick means, such as a reference to compare against, stays with the app. `dimmed` takes a function of the row and dims every column the app does not want in focus, such as the other models while one is highlighted.
 
+The demo above draws a [`Chart.Rule`](/charts/series#rules) at the score of each pick, A solid and B dashed, so the other columns read against them:
+
+```tsx
+{picked.map((key, index) => (
+    <ScoreChart.Rule key={key} value={scoreOf(key)} label={index === 0 ? 'A' : 'B'} dashed={index > 0} />
+))}
+```
+
 ## A ranked row
 
 Without `group`, every column stands in one row. A second `Chart.XAxis` writes a row of labels under the first, and `angle={-40}` slants them, for long names under every column:

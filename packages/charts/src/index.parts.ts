@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ChartBand, ChartMarker } from './annotations.tsx';
+import { ChartBand, ChartMarker, ChartRule } from './annotations.tsx';
 import { ChartGrid, ChartGroupAxis, ChartXAxis, ChartYAxis, type ChartGroupAxisProps } from './axes.tsx';
 import { ChartGroup, ChartLayer } from './layer.tsx';
 import { ChartLegend, ChartTable, ChartTooltip, type ChartTooltipProps } from './overlays.tsx';
@@ -21,6 +21,7 @@ export const Bars = ChartBars;
 export const Bar: (props: ChartBarProps<AnyRow>) => ReactNode = ChartBar;
 export const Marker = ChartMarker;
 export const Band = ChartBand;
+export const Rule = ChartRule;
 export const Tooltip: (props: ChartTooltipProps<AnyRow>) => ReactNode = ChartTooltip;
 export const Legend = ChartLegend;
 export const Table = ChartTable;

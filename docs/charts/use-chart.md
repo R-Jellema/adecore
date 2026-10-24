@@ -1,6 +1,6 @@
 # useChart
 
-`useChart()` reads the chart around it: the plot, the scales, the data and the cursor. Together with `Chart.Layer`, a `<g>` in the plot, it lets an app draw on the same axes before the package has a part for it, such as a budget line, a frontier or value labels over columns.
+`useChart()` reads the chart around it: the plot, the scales, the data and the cursor. Together with `Chart.Layer`, a `<g>` in the plot, it lets an app draw on the same axes before the package has a part for it, such as a frontier through a scatter of points. The demo draws a budget line by hand to show how; [`Chart.Rule`](/charts/series#rules) draws one ready-made.
 
 <Demo src="charts/use-chart" />
 
