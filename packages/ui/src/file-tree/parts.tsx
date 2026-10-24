@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useRender } from '@base-ui/react/use-render';
 import { FileTree as PierreFileTree, type FileTreeProps as PierreProps } from '@pierre/trees/react';
@@ -29,6 +29,8 @@ export type FileTreeRootProps = useRender.ComponentProps<'div'> & {
     decorationOrder?: FileTreeDecorationOrder;
     /* A Lucide icon in place of the row's own glyph (the file icon, or a directory's chevron); undefined keeps that glyph. */
     rowIcon?(row: FileTreeVisibleRow): LucideIcon | undefined;
+    /* As tall as its rows, up to the height its container leaves it, instead of filling that container. */
+    fitContent?: boolean;
     treeProps?: Omit<PierreProps, 'model'>;
 };
 
@@ -51,6 +53,7 @@ export function FileTreeRoot({
     renderDecoration,
     decorationOrder = 'before-status',
     rowIcon,
+    fitContent = false,
     treeProps,
     render,
     className,
@@ -58,6 +61,7 @@ export function FileTreeRoot({
     children,
     onClick,
     onKeyDownCapture,
+    style,
     ...props
 }: FileTreeRootProps) {
     const { t } = useTranslation('ui');
@@ -68,6 +72,9 @@ export function FileTreeRoot({
         attach(node as HTMLElement | null);
         mergeRefs<Element>(ref)(node);
     };
+    const subscribeToRows = (listener: () => void): (() => void) => (fitContent ? model.subscribe(listener) : () => {});
+    const countRows = (): number => model.getVisibleCount();
+    const rowCount = useSyncExternalStore(subscribeToRows, countRows, countRows);
     const slots = useFileTreeSlots(model, frame, label ?? t('tree.label'), decorationOrder, rowIcon);
     const latestLoads = useRef({ onLoadChildren, onExpandedPathsChange });
     useLayoutEffect(() => {
@@ -186,6 +193,7 @@ export function FileTreeRoot({
         props: {
             ...props,
             className: clsx('adecore-tree adecore-file-tree', className),
+            style: fitContent ? { ...style, height: rowCount * model.getItemHeight(), maxHeight: '100%' } : style,
             onClick,
             onKeyDownCapture,
             children: (

@@ -15,8 +15,10 @@ function Harness({
     onDrag,
     resetKey,
     rowIcon,
+    fitContent,
     paths = ['src/one.ts', 'src/two.ts', 'README.md']
 }: {
+    fitContent?: boolean;
     rowIcon?: FileTreeRootProps['rowIcon'];
     onActivate?(path: string): void;
     onLoad?(path: string): void;
@@ -41,6 +43,7 @@ function Harness({
             label="Project files"
             resetKey={resetKey}
             rowIcon={rowIcon}
+            fitContent={fitContent}
             onActivate={onActivate}
             onLoadChildren={onLoad}
             onRowContextMenu={(path) => onContext?.(path)}
@@ -382,6 +385,17 @@ describe.skipIf(typeof document === 'undefined')('file tree interaction', () => 
         await mount(<Harness />);
         expect(container.querySelectorAll('.adecore-tree-icon')).toHaveLength(0);
         expect(row('src/').dataset.ownIcon).toBeUndefined();
+    });
+
+    test('grows and shrinks with its rows when it fits its content', async () => {
+        await mount(<Harness fitContent />);
+        const frame = container.querySelector<HTMLElement>('.adecore-file-tree')!;
+        expect(frame.style.height).toBe('100px');
+        expect(frame.style.maxHeight).toBe('100%');
+        await change(() => FileTree.directoryHandle(exposed, 'src/')?.collapse());
+        expect(frame.style.height).toBe('50px');
+        await mount(<Harness />);
+        expect(container.querySelector<HTMLElement>('.adecore-file-tree')!.style.height).toBe('');
     });
 
     test('refreshes port contents after props change and removes slots on unmount', async () => {

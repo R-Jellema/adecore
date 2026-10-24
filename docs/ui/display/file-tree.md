@@ -34,7 +34,7 @@ export function ProjectFiles() {
 
 Paths are POSIX and relative to a root you choose. A directory path ends in `/`, a file path does not, and the model derives the parent directories from the paths. Keep absolute filesystem paths and permission checks in your own code.
 
-The view virtualizes, so it needs a height to scroll in. Without `label` the tree is named "Files" (`tree.label`); give it a name that says which files it holds.
+The view virtualizes, so it needs a height to scroll in. With `fitContent` it takes the height of its rows instead and follows them as directories open and close, so what you place after it sits right under its last row. It never grows past its container (`max-height: 100%`), and in a flex column it gives up height when space runs out and scrolls; do not give it a height of your own then. Without `label` the tree is named "Files" (`tree.label`); give it a name that says which files it holds.
 
 ## Defaults and ownership
 
