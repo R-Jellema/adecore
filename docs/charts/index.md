@@ -1,9 +1,9 @@
 # @adecore/charts
 
-Charts in the theme of `@adecore/ui`: a series over time or per category as lines, areas and columns, and a sparkline for a row or a tile. A chart takes its width from its container, draws on whole pixels, and is one stop for the keyboard that a screen reader reads bucket by bucket. `d3-scale` and `d3-shape` do the math; the package draws everything itself.
+Charts in the theme of `@adecore/ui`: a series over time or per category as lines, areas and columns, a sparkline for a row or a tile, and a [heatmap](/charts/heatmap) of rows by columns. A chart takes its width from its container, draws on whole pixels, and is one stop for the keyboard that a screen reader reads bucket by bucket. `d3-scale` and `d3-shape` do the math; the package draws everything itself.
 
 ```tsx
-import { Chart, Sparkline, createChart, useChart } from '@adecore/charts';
+import { Chart, Heatmap, Sparkline, createChart, useChart } from '@adecore/charts';
 ```
 
 <Demo src="charts/errors-per-hour" />

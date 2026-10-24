@@ -12,5 +12,12 @@ export default {
         move: 'Pijltjestoetsen gaan langs de waarden, Home en End naar het begin en het eind, Escape wist.',
         groups: 'Page Up en Page Down gaan naar de vorige of volgende groep.',
         activate: 'Enter of spatie kiest een waarde.'
+    },
+    heatmap: {
+        name: 'heatmap',
+        less: 'Minder',
+        more: 'Meer',
+        keyboard:
+            'Pijltjestoetsen gaan langs de cellen, Home en End naar het begin en het eind van een rij, met Control naar de eerste en de laatste cel, Escape wist.'
     }
 };
