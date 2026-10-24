@@ -340,6 +340,45 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         }
     });
 
+    test('an x axis keeps its labels apart, writes none without rows, and can stand under the middle of a bucket', async () => {
+        const visibleLabels = (): SVGTextElement[] =>
+            [...container.querySelectorAll<SVGTextElement>('text')].filter(
+                (text) => text.closest('[visibility="hidden"]') === null && text.textContent !== 'No data'
+            );
+        const hours = Array.from({ length: 48 }, (_, index) => ({ at: index * 3_600_000, count: index }));
+        await mount(
+            <Chart.Root data={hours} x="at" xScale="linear" label="Per hour">
+                <Chart.XAxis ticks={40} format={(x) => `t ${Number(x) / 3_600_000}`} />
+                <Chart.Line value="count" label="Count" />
+            </Chart.Root>
+        );
+        const xs = visibleLabels().map((text) => Number(text.getAttribute('x')));
+        const widest = Math.max(...visibleLabels().map((text) => (text.textContent?.length ?? 0) * 7));
+        expect(xs.length).toBeGreaterThan(2);
+        expect(xs.slice(1).every((x, index) => x - xs[index]! >= widest + 8)).toBe(true);
+        await act(async () => root.unmount());
+
+        await mount(
+            <Chart.Root data={[] as { at: number; count: number }[]} x="at" xScale="time" label="Per hour">
+                <Chart.XAxis />
+                <Chart.Line value="count" label="Count" />
+            </Chart.Root>
+        );
+        expect(visibleLabels()).toHaveLength(0);
+        await act(async () => root.unmount());
+
+        const days = [0, 1, 2].map((day) => ({ at: day * 86_400_000, count: day + 1 }));
+        await mount(
+            <Chart.Root data={days} x="at" xScale="time" step={86_400_000} label="Per day">
+                <Chart.XAxis align="bucket" format={(x) => `d${Number(x) / 86_400_000}`} />
+                <Chart.Bar value="count" label="Count" />
+            </Chart.Root>
+        );
+        const centers = columns().map((column) => Number(column.getAttribute('x')) + Number(column.getAttribute('width')) / 2);
+        expect(visibleLabels().map((text) => text.textContent)).toEqual(['d0', 'd1', 'd2']);
+        expect(visibleLabels().map((text) => Number(text.getAttribute('x')))).toEqual(centers.map(Math.round));
+    });
+
     test('a second x axis writes its row under the first', async () => {
         await mount(
             <Chart.Root data={SCORES} x="key" label="Scores">

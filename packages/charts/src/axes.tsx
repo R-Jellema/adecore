@@ -28,6 +28,8 @@ export interface ChartXAxisProps {
     readonly angle?: 0 | -40;
     /* Leaves labels of a band scale out where they would overlap; false writes one under every bucket. */
     readonly thin?: boolean;
+    /* On a time scale of buckets, `bucket` writes the start of each bucket under its middle instead of round moments on their tick, as columns per day read. */
+    readonly align?: 'tick' | 'bucket';
     /* What the axis measures, centered under its labels; a log scale adds that it is one. A point chart reads it out with each x. */
     readonly title?: string;
     readonly className?: string;
@@ -89,6 +91,23 @@ const widestIn = (group: SVGGElement | null): number => Math.max(0, ...[...(grou
 /* A line sits on the middle of a pixel, so one pixel wide stays one pixel wide. */
 const crisp = (pixel: number): number => Math.round(pixel) + 0.5;
 
+/*
+ * The labels, from left to right, with every one left out that comes nearer to the one before it than `spacing`.
+ * A label on an end of the axis wins over its neighbor, so both ends stay named.
+ */
+const apart = <Label extends { readonly x: number; readonly end?: boolean }>(labels: readonly Label[], spacing: number): Label[] => {
+    const kept: Label[] = [];
+    for (const label of labels) {
+        const last = kept.at(-1);
+        if (last === undefined || label.x - last.x >= spacing) {
+            kept.push(label);
+        } else if (label.end === true && last.end !== true) {
+            kept[kept.length - 1] = label;
+        }
+    }
+    return kept;
+};
+
 /* Gridlines on the ticks, a heavier one on the ground. */
 export function ChartGrid({ axis = 'y', dashed = false, lines = 'all', className, ref }: ChartGridProps) {
     const chart = useChartContext('Chart.Grid');
@@ -141,7 +160,7 @@ export function ChartGrid({ axis = 'y', dashed = false, lines = 'all', className
 }
 
 /* The labels under the plot: one per bucket on a band scale as far as they fit, round ticks on a continuous one. */
-export function ChartXAxis({ format, ticks, angle = 0, thin = true, title, className, ref }: ChartXAxisProps) {
+export function ChartXAxis({ format, ticks, angle = 0, thin = true, align = 'tick', title, className, ref }: ChartXAxisProps) {
     const chart = useChartContext('Chart.XAxis');
     const { t } = useTranslation('charts');
     const { store, plot, continuous, band, xs } = chart;
@@ -175,22 +194,40 @@ export function ChartXAxis({ format, ticks, angle = 0, thin = true, title, class
     });
     useBeforePaint(() => () => store.setXAxis(id, null), [store, id]);
 
-    let placed: { key: string; x: number; text: string }[];
-    if (continuous !== null) {
+    const inward = (x: number): number => Math.min(Math.max(x, widest / 2 - chart.leftAxis), chart.width - widest / 2);
+    let placed: { key: string; x: number; text: string; end?: boolean }[];
+    const buckets = align === 'bucket' && chart.xScale === 'time' && !chart.points ? chart.bucketAt(0) : null;
+    if (continuous !== null && xs.length === 0) {
+        placed = [];
+    } else if (continuous !== null && buckets !== null && buckets.width > 0) {
+        // The start of a bucket under its middle, as columns of days read, every bucket as far as the labels fit.
+        const span = continuous.domain[1] - continuous.domain[0];
+        const label = timeLabelOf(span, (buckets.width / Math.max(1, plot.width)) * span);
+        const every = thin ? Math.max(1, Math.ceil((widest + BAND_LABEL_GAP) / buckets.width)) : 1;
+        placed = xs.flatMap((key, index) =>
+            index % every !== 0
+                ? []
+                : [{ key: String(key), x: inward(chart.centerOf(index)), text: format !== undefined ? format(key) : formatTime(key as number, label) }]
+        );
+    } else if (continuous !== null) {
         const values = continuous.ticks(ticks ?? tickCount(plot.width, widest + 3 * LABEL_GAP));
         const step = values.length > 1 ? values[1]! - values[0]! : continuous.domain[1] - continuous.domain[0];
         const label = timeLabelOf(continuous.domain[1] - continuous.domain[0], step);
         const decimals = decimalsOf(step);
-        const inward = (x: number): number => Math.min(Math.max(x, widest / 2 - chart.leftAxis), chart.width - widest / 2);
         placed = values
-            .map((tick) => ({
-                key: String(tick),
+            .map((tick) => {
                 // A tick on an end of the axis, such as the last decade of a log scale, still names that end when moved in.
-                x: tick === continuous.domain[0] || tick === continuous.domain[1] ? inward(continuous.at(tick)) : continuous.at(tick),
-                text: format !== undefined ? format(tick) : chart.xScale === 'time' ? formatTime(tick, label) : formatRounded(tick, decimals)
-            }))
+                const end = tick === continuous.domain[0] || tick === continuous.domain[1];
+                return {
+                    key: String(tick),
+                    x: end ? inward(continuous.at(tick)) : continuous.at(tick),
+                    text: format !== undefined ? format(tick) : chart.xScale === 'time' ? formatTime(tick, label) : formatRounded(tick, decimals),
+                    end
+                };
+            })
             // Any other label that would hang past the end of the chart is left out rather than moved off its tick.
             .filter((tick) => tick.x - widest / 2 >= -chart.leftAxis && tick.x + widest / 2 <= chart.width + 1);
+        placed = apart(placed, widest + LABEL_GAP);
     } else if (band !== null && band.bucket > 0) {
         const every = thin ? Math.max(1, Math.ceil((angle === 0 ? widest + BAND_LABEL_GAP : X_LABEL_LINE) / band.bucket)) : 1;
         placed = xs.flatMap((key, index) => {
@@ -198,8 +235,7 @@ export function ChartXAxis({ format, ticks, angle = 0, thin = true, title, class
                 return [];
             }
             const center = chart.centerOf(index);
-            const x = angle === 0 ? Math.min(Math.max(center, widest / 2 - chart.leftAxis), chart.width - widest / 2) : center;
-            return [{ key: String(key), x, text: write(key) }];
+            return [{ key: String(key), x: angle === 0 ? inward(center) : center, text: write(key) }];
         });
     } else {
         placed = [];
