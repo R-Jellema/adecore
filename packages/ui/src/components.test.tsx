@@ -658,4 +658,20 @@ describe('the toasts', () => {
         const markup = render(<Toasts store={store} />);
         expect(markup).toMatch(/<button type="button" class="[^"]*\bh-6\b[^"]*">Retry<\/button>/);
     });
+
+    test('count down a failure that goes by itself, and hide the close button of one without an action', () => {
+        const deadline = { start: 0, end: 10_000 };
+        const store = create<ToastStore>(() => ({
+            toasts: [
+                { id: 'ping', kind: 'error', title: 'New issue', action: { label: 'Open', run: () => {} }, deadline },
+                { id: 'quiet', kind: 'error', title: 'Back again', deadline }
+            ],
+            show: () => 'ping',
+            update: () => {},
+            dismiss: () => {}
+        }));
+        const markup = render(<Toasts store={store} />);
+        expect(markup.match(/toast-timer-arc/g)).toHaveLength(1);
+        expect(classesIn(markup)).toContainEqual(expect.arrayContaining(['opacity-0', 'group-hover:opacity-100']));
+    });
 });

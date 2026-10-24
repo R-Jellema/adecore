@@ -38,6 +38,8 @@ export interface Toast {
     actions?: ToastAction[];
     /* A success that waits to be dismissed, for news that lands while nobody is looking yet. */
     persist?: boolean;
+    /* Milliseconds until the toast takes itself away, whatever its kind; over the kind's own lifetime and `persist`. */
+    lifetime?: number;
     /* Runs once the toast is gone, whether it ran out or was dismissed. */
     onClose?: () => void;
     /* Set by the store from the timer that takes the toast away, so what counts down on screen is that timer. */
@@ -72,10 +74,14 @@ export const createToastStore = <T extends Toast = Toast>(): ToastStoreHook<T> =
             timers.delete(id);
         };
 
-        /* A toast that went well takes itself away, and so does the offer to undo; a failure and a running action stay. */
-        const schedule = (id: string, kind: ToastKind, persist: boolean): ToastDeadline | undefined => {
+        /*
+         * A toast that went well takes itself away, and so does the offer to undo; a failure and a running
+         * action stay, unless the toast names a lifetime of its own.
+         */
+        const schedule = (id: string, toast: Pick<Toast, 'kind' | 'persist' | 'lifetime'>): ToastDeadline | undefined => {
             stop(id);
-            const lifetime = kind === 'deleted' ? UNDO_MS : kind === 'success' && !persist ? SUCCESS_MS : null;
+            const { kind, persist } = toast;
+            const lifetime = toast.lifetime ?? (kind === 'deleted' ? UNDO_MS : kind === 'success' && persist !== true ? SUCCESS_MS : null);
             if (lifetime === null) {
                 return undefined;
             }
@@ -95,7 +101,7 @@ export const createToastStore = <T extends Toast = Toast>(): ToastStoreHook<T> =
             show(toast) {
                 counter += 1;
                 const id = toast.id ?? `toast-${counter}`;
-                const next = { ...toast, id, deadline: schedule(id, toast.kind, toast.persist === true) } as T;
+                const next = { ...toast, id, deadline: schedule(id, toast) } as T;
                 const toasts = get().toasts;
                 set({ toasts: toasts.some((entry) => entry.id === id) ? toasts.map((entry) => (entry.id === id ? next : entry)) : [...toasts, next] });
                 return id;
@@ -106,7 +112,7 @@ export const createToastStore = <T extends Toast = Toast>(): ToastStoreHook<T> =
                     return;
                 }
                 const merged: T = { ...current, ...patch };
-                const next: T = { ...merged, deadline: schedule(id, merged.kind, merged.persist === true) };
+                const next: T = { ...merged, deadline: schedule(id, merged) };
                 set({ toasts: get().toasts.map((entry) => (entry.id === id ? next : entry)) });
             },
             dismiss(id) {
