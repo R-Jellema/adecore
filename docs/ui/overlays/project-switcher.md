@@ -25,7 +25,13 @@ Each `ProjectSwitcherItem` has an `id`, unique within its list, and a `name`. Th
 
 `onSelect(project, event)` receives the original item and the click event. `ProjectSwitcherProps<Item>` keeps the type of an item with fields of your own. The event carries the modifier keys, so the app can open a project in a new window on Cmd-click or Ctrl-click.
 
-`current` gives the trigger its name and icon, and need not be in either list. With `current={null}` the trigger reads "Projects" (`projectSwitcher.label`). `leading` adds a node before the current icon, such as a machine indicator with its own tooltip.
+`current` gives the trigger its name and icon, and need not be in either list. `leading` adds a node before the current icon, such as a machine indicator with its own tooltip.
+
+## Without a current project
+
+With `current={null}` the trigger reads its `label`, so an app whose list holds something other than projects names it in its own words. Without a `label` it reads "Projects" (`projectSwitcher.label`). A screen reader hears the same words the trigger shows.
+
+<Demo src="overlays/project-switcher-empty" />
 
 ## Groups
 
@@ -55,7 +61,7 @@ Keyboard, typeahead and submenus come from [Menu](/ui/overlays/menu). Typeahead 
 | `leading` | `ReactNode` | | |
 | `before` | `ReactNode` | | Menu items between the projects and Recent projects. |
 | `children` | `ReactNode` | | Menu items in the group of Recent projects. |
-| `label` | `string` | the current name | The trigger's accessible name. |
+| `label` | `string` | the current name | The trigger's accessible name, and its text while `current` is null. |
 | `disabled` | `boolean` | | |
 | `open`, `defaultOpen`, `onOpenChange` | | | As on `Menu.Root`. |
 | `className` | `string` | | On the trigger. |

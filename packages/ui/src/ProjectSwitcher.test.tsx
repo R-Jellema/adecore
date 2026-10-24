@@ -23,11 +23,17 @@ describe('a project switcher', () => {
         expect(markup).toContain('aria-haspopup="menu"');
     });
 
-    test('has a name without a current project and accepts an accessible label and disabled state', () => {
-        const markup = render(<ProjectSwitcher current={null} projects={[]} label="Switch workspace" disabled onSelect={() => {}} />);
-        expect(markup).toContain('>Projects</span>');
-        expect(markup).toContain('aria-label="Switch workspace"');
+    test('reads its label without a current project, to the eye and to a screen reader, and can be disabled', () => {
+        const markup = render(<ProjectSwitcher current={null} projects={[]} label="Product" disabled onSelect={() => {}} />);
+        expect(markup).toContain('>Product</span>');
+        expect(markup).toContain('aria-label="Product"');
         expect(markup).toContain('disabled=""');
+    });
+
+    test('names the current project in the trigger while the label names it for a screen reader', () => {
+        const markup = render(<ProjectSwitcher current={project} projects={[]} label="Product" onSelect={() => {}} />);
+        expect(markup).toContain('>Studio</span>');
+        expect(markup).toContain('aria-label="Product"');
     });
 
     test('accepts app-specific fields without exposing them on the trigger', () => {

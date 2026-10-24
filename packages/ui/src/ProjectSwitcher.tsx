@@ -32,6 +32,7 @@ export interface ProjectSwitcherProps<Item extends ProjectSwitcherItem = Project
     before?: ReactNode;
     /* Menu items in one group with Recent projects, such as opening a folder or creating a project. */
     children?: ReactNode;
+    /* The trigger's accessible name, and what it reads while `current` is null. */
     label?: string;
     disabled?: boolean;
     open?: boolean;
@@ -58,18 +59,14 @@ export function ProjectSwitcher<Item extends ProjectSwitcherItem>({
     ref
 }: ProjectSwitcherProps<Item>) {
     const { t } = useTranslation('ui');
+    const empty = label ?? t('projectSwitcher.label');
 
     return (
         <Menu.Root open={open} defaultOpen={defaultOpen} onOpenChange={onOpenChange}>
-            <Menu.Trigger
-                ref={ref}
-                disabled={disabled}
-                aria-label={label ?? current?.name ?? t('projectSwitcher.label')}
-                className={clsx('project-switcher-trigger', className)}
-            >
+            <Menu.Trigger ref={ref} disabled={disabled} aria-label={label ?? current?.name ?? empty} className={clsx('project-switcher-trigger', className)}>
                 {leading}
                 {current?.icon}
-                <span className="truncate text-sm font-medium text-text">{current?.name ?? t('projectSwitcher.label')}</span>
+                <span className="truncate text-sm font-medium text-text">{current?.name ?? empty}</span>
                 <Icon icon={ChevronDown} size={14} className="shrink-0 text-text-muted" />
             </Menu.Trigger>
             <Menu.Popup className="min-w-60">
