@@ -4,6 +4,7 @@ import { BUDGETS, measure, release, type Budget } from './view.keystroke.fixture
 afterEach(release);
 
 describe('a keystroke in a document of 100,000 lines', () => {
+    // This gate bounds work, not wall time; fixture setup shares CI CPUs with the other test worker.
     for (const name of ['code', 'flat'] as const) {
         for (const wrap of [false, true]) {
             test(`stays within its budget in the ${name} document${wrap ? ', wrapped' : ''}`, async () => {
@@ -30,7 +31,7 @@ describe('a keystroke in a document of 100,000 lines', () => {
                 expect(most('getLine')).toBeLessThanOrEqual(budget.getLine);
                 expect(most('charactersRead')).toBeLessThanOrEqual(budget.charactersRead);
                 expect(most('elementsCreated')).toBeLessThanOrEqual(budget.elementsCreated);
-            });
+            }, 15_000);
         }
     }
 });
