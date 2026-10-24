@@ -422,6 +422,24 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(Math.min(...tops)).toBeGreaterThanOrEqual(28);
     });
 
+    test('a y axis on each side keeps its own format, title and ticks', async () => {
+        const plot = await mount(
+            <Chart.Root data={SCORES} x="key" label="Scores">
+                <Chart.YAxis format={(value) => `${value} pt`} />
+                <Chart.YAxis side="right" title="Index points" ticks={10} />
+                <Chart.Bar value="score" label="Score" />
+            </Chart.Root>
+        );
+        const texts = [...container.querySelectorAll('text')].map((text) => text.textContent ?? '');
+        expect(texts).toContain('Index points');
+        const right = texts.filter((text) => /^\d+$/.test(text));
+        expect(right).toEqual(['0', '5', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55']);
+        expect(texts.filter((text) => text.endsWith(' pt'))).toEqual(right.map((text) => `${text} pt`));
+        expect(Math.min(...columns().map((column) => Number(column.getAttribute('y'))))).toBeGreaterThanOrEqual(28);
+        await press(plot, 'ArrowRight');
+        expect(live()).toBe('a-low, Score 40 pt');
+    });
+
     test('the series legend toggles a series, highlights the one under the pointer and finds by name', async () => {
         const hidden: string[][] = [];
         const highlighted: (string | null)[] = [];

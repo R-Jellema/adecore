@@ -122,6 +122,7 @@ export function ChartRoot<Row>({
     const series = useSyncExternalStore(store.subscribe, store.series, store.series);
     const axes = useSyncExternalStore(store.subscribe, store.axes, store.axes);
     const xAxes = useSyncExternalStore(store.subscribe, store.xAxes, store.xAxes);
+    const yAxes = useSyncExternalStore(store.subscribe, store.yAxes, store.yAxes);
     const markers = useSyncExternalStore(store.subscribe, store.markers, store.markers);
     const bands = useSyncExternalStore(store.subscribe, store.bands, store.bands);
     const rules = useSyncExternalStore(store.subscribe, store.rules, store.rules);
@@ -151,7 +152,9 @@ export function ChartRoot<Row>({
     const rowLabels = points && rowLabel !== undefined ? data.map((row, index) => String(readValue(rowLabel, row, index))) : null;
     const groupKeys = (band || points) && group !== undefined ? data.map((row, index) => String(readValue(group, row, index))) : null;
     const groupLabels = groupKeys === null ? null : groupLabel === undefined ? groupKeys : data.map((row, index) => String(readValue(groupLabel, row, index)));
-    const [leftAxis, rightAxis] = useAlignedAxes(chartGroup?.widths ?? null, axes.left ?? 0, axes.right ?? 0);
+    const leftY = yAxes.get('left');
+    const rightY = yAxes.get('right');
+    const [leftAxis, rightAxis] = useAlignedAxes(chartGroup?.widths ?? null, leftY?.width ?? 0, rightY?.width ?? 0);
     const room = Math.max(0, size.width - leftAxis - rightAxis);
     // A bucket of a time scale runs from its x for one step and its point stands in the middle, as a column would.
     const bucketStep = xScale === 'time' && !points ? (stepProp ?? bucketStepOf(xs as number[])) : 0;
@@ -164,7 +167,7 @@ export function ChartRoot<Row>({
     const overhang = scrolls ? leftAxis : 0;
     const xRows = [...xAxes.values()];
     const bottom = height - 4 - (xRows.length === 0 ? 0 : X_AXIS_GAP + xRows.reduce((sum, row) => sum + row.room, 0));
-    const top = Math.max(marginTop, axes.top ?? 0, [...series.values()].some((entry) => entry.valueLabels) ? VALUE_LABEL_ROOM : 0);
+    const top = Math.max(marginTop, leftY?.top ?? 0, rightY?.top ?? 0, [...series.values()].some((entry) => entry.valueLabels) ? VALUE_LABEL_ROOM : 0);
     const right = width - inset - (axes.end ?? 0);
     const plot = { left: inset, top, right, bottom, width: Math.max(0, right - inset), height: Math.max(0, bottom - top) };
     const continuousKind = xScale === 'band' ? 'linear' : xScale;
@@ -184,7 +187,7 @@ export function ChartRoot<Row>({
         extentOf(stacked.values(), yScale, !points),
         yOptions,
         [plot.bottom, plot.top],
-        axes.yTicks ?? tickCount(plot.height, Y_TICK_SPACING),
+        leftY?.ticks ?? rightY?.ticks ?? tickCount(plot.height, Y_TICK_SPACING),
         !points
     );
     const yStep = scaleY.ticks.length > 1 ? scaleY.ticks[1]! - scaleY.ticks[0]! : 1;
@@ -277,7 +280,8 @@ export function ChartRoot<Row>({
         }
         return typeof value === 'number' ? defaultValue(value) : value;
     };
-    const formatY = formats.y ?? defaultValue;
+    // Both axes share one scale, so the tooltip, the live region and the table write a value as the left one does.
+    const formatY = leftY?.format ?? rightY?.format ?? defaultValue;
     /* The x of a point with the title of its axis, as a person reads it out: "Cost per task $0.12". */
     const xValueOf = (index: number): string => {
         const text = formatX(xs[index]!);

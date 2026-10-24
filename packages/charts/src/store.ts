@@ -38,14 +38,20 @@ export interface BandEntry {
 }
 
 export interface AxisSizes {
-    readonly left: number | null;
-    readonly right: number | null;
-    /* The number of ticks the y axis asks for. */
-    readonly yTicks: number | null;
-    /* The room a title over the y axis needs above the plot. */
-    readonly top: number | null;
     /* The room end labels take right of the plot, inside its svg. */
     readonly end: number | null;
+}
+
+export type YAxisSide = 'left' | 'right';
+
+/* A y axis on one side. Both sides read the one value scale, so each keeps its own ticks, title and format. */
+export interface YAxisEntry {
+    /* Null before its labels have been measured. */
+    readonly width: number | null;
+    readonly ticks: number | null;
+    /* The room its title needs above the plot, null without one. */
+    readonly top: number | null;
+    readonly format: ((value: number) => string) | undefined;
 }
 
 /* One row of labels under the plot; the rows stack in the order of the children. */
@@ -58,10 +64,8 @@ export interface XAxisEntry {
 }
 
 export interface ChartFormats {
-    readonly y?: (value: number) => string;
-    /* The titles of the axes, which name a value where a point is read out. */
+    /* The title of the x axis, which names the x where a point is read out. */
     readonly xTitle?: string;
-    readonly yTitle?: string;
 }
 
 export interface ChartStore {
@@ -69,6 +73,7 @@ export interface ChartStore {
     series(): ReadonlyMap<string, SeriesEntry>;
     axes(): AxisSizes;
     xAxes(): ReadonlyMap<string, XAxisEntry>;
+    yAxes(): ReadonlyMap<YAxisSide, YAxisEntry>;
     markers(): ReadonlyMap<string, MarkerEntry>;
     bands(): ReadonlyMap<string, BandEntry>;
     rules(): ReadonlyMap<string, RuleEntry>;
@@ -76,6 +81,7 @@ export interface ChartStore {
     setSeries(id: string, entry: SeriesEntry | null): void;
     setAxis(axis: keyof AxisSizes, size: number | null): void;
     setXAxis(id: string, entry: XAxisEntry | null): void;
+    setYAxis(side: YAxisSide, entry: YAxisEntry | null): void;
     setMarker(id: string, entry: MarkerEntry | null): void;
     setRule(id: string, entry: RuleEntry | null): void;
     setBand(id: string, entry: BandEntry | null): void;
@@ -100,8 +106,9 @@ const sameEntry = (one: object | undefined, other: object): boolean =>
 export function createChartStore(): ChartStore {
     const listeners = new Set<() => void>();
     let series: ReadonlyMap<string, SeriesEntry> = new Map();
-    let axes: AxisSizes = { left: null, right: null, yTicks: null, top: null, end: null };
+    let axes: AxisSizes = { end: null };
     let xAxes: ReadonlyMap<string, XAxisEntry> = new Map();
+    let yAxes: ReadonlyMap<YAxisSide, YAxisEntry> = new Map();
     let markers: ReadonlyMap<string, MarkerEntry> = new Map();
     let rules: ReadonlyMap<string, RuleEntry> = new Map();
     let bands: ReadonlyMap<string, BandEntry> = new Map();
@@ -113,7 +120,7 @@ export function createChartStore(): ChartStore {
         }
     };
 
-    const updated = <Entry extends object>(map: ReadonlyMap<string, Entry>, id: string, entry: Entry | null): ReadonlyMap<string, Entry> | null => {
+    const updated = <Key, Entry extends object>(map: ReadonlyMap<Key, Entry>, id: Key, entry: Entry | null): ReadonlyMap<Key, Entry> | null => {
         if (entry === null) {
             if (!map.has(id)) {
                 return null;
@@ -137,6 +144,7 @@ export function createChartStore(): ChartStore {
         series: () => series,
         axes: () => axes,
         xAxes: () => xAxes,
+        yAxes: () => yAxes,
         markers: () => markers,
         rules: () => rules,
         bands: () => bands,
@@ -158,6 +166,13 @@ export function createChartStore(): ChartStore {
             const next = updated(xAxes, id, entry);
             if (next !== null) {
                 xAxes = next;
+                emit();
+            }
+        },
+        setYAxis(side, entry) {
+            const next = updated(yAxes, side, entry);
+            if (next !== null) {
+                yAxes = next;
                 emit();
             }
         },

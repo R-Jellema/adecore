@@ -136,7 +136,7 @@ export function ChartXAxis({ format, ticks, angle = 0, thin = true, title, class
     const { t } = useTranslation('charts');
     const { store, plot, continuous, band, xs } = chart;
     const id = useId();
-    useAxisTitle('xTitle', title);
+    useAxisTitle(title);
     const labels = useRef<SVGGElement>(null);
     const candidates = useRef<SVGGElement>(null);
     const grown = useRef({ key: '', width: 0 });
@@ -244,21 +244,21 @@ export function ChartXAxis({ format, ticks, angle = 0, thin = true, title, class
     );
 }
 
-/* Tells the root the title of an axis, which a point chart reads out with each value; an axis without one says nothing. */
-function useAxisTitle(axis: 'xTitle' | 'yTitle', title: string | undefined): void {
+/* Tells the root the title of the x axis, which a point chart reads out with each x; an axis without one says nothing. */
+function useAxisTitle(title: string | undefined): void {
     const { store } = useChartContext('Chart.XAxis');
     useBeforePaint(() => {
         if (title !== undefined) {
-            store.setFormat(axis, title);
+            store.setFormat('xTitle', title);
         }
     });
     useBeforePaint(
         () => () => {
             if (title !== undefined) {
-                store.setFormat(axis, undefined);
+                store.setFormat('xTitle', undefined);
             }
         },
-        [store, axis, title]
+        [store, title]
     );
 }
 
@@ -268,25 +268,16 @@ export function ChartYAxis({ format, ticks, side = 'left', title, className, ref
     const { store, y, yStep } = chart;
     const labels = useRef<SVGGElement>(null);
     const target = side === 'left' ? chart.elements.left : chart.elements.right;
-    useAxisTitle('yTitle', title);
 
     useBeforePaint(() => {
-        if (labels.current !== null) {
-            store.setAxis(side, Math.ceil(widestIn(labels.current)) + LABEL_GAP);
-        }
-        store.setAxis('yTicks', ticks ?? null);
-        store.setAxis('top', title === undefined ? null : Y_TITLE_ROOM);
-        store.setFormat('y', format);
+        store.setYAxis(side, {
+            width: labels.current === null ? (store.yAxes().get(side)?.width ?? null) : Math.ceil(widestIn(labels.current)) + LABEL_GAP,
+            ticks: ticks ?? null,
+            top: title === undefined ? null : Y_TITLE_ROOM,
+            format
+        });
     });
-    useBeforePaint(
-        () => () => {
-            store.setAxis(side, null);
-            store.setAxis('yTicks', null);
-            store.setAxis('top', null);
-            store.setFormat('y', undefined);
-        },
-        [store, side]
-    );
+    useBeforePaint(() => () => store.setYAxis(side, null), [store, side]);
 
     if (target === null) {
         return null;
