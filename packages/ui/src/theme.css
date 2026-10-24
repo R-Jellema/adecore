@@ -121,7 +121,7 @@
     --surface-active: #28282e;
     /* Derived, so an app that tints its surfaces tints its fields along. */
     --field: color-mix(in srgb, var(--surface) 40%, var(--surface-hover));
-    --field-border: rgb(255 255 255 / 0.07);
+    --field-border: rgb(255 255 255 / 0.1);
     /* White at a low alpha, which is what gives a dark surface its lifted edge. */
     --border: rgb(255 255 255 / 0.07);
     --separator: oklch(0.236 0.006 285.956);
@@ -348,7 +348,7 @@
         padding: 0 10px;
         border-radius: 8px;
         border: 1px solid var(--field-border);
-        background: var(--field);
+        background-color: var(--field);
         color: var(--text);
         font-size: var(--text-sm);
         outline: none;

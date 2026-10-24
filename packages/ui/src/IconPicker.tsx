@@ -114,14 +114,14 @@ export function IconPicker({
                         <Tooltip label={t('iconPicker.none')}>
                             <Button
                                 variant="secondary"
-                                className="w-8 shrink-0 px-0"
+                                className="w-8 shrink-0 px-0!"
                                 aria-label={t('iconPicker.none')}
                                 onClick={() => {
                                     onClear();
                                     trigger.current?.focus();
                                 }}
                             >
-                                <Icon icon={X} size={24} />
+                                <Icon icon={X} size={16} />
                             </Button>
                         </Tooltip>
                     )}
