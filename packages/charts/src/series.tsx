@@ -71,6 +71,8 @@ export interface ChartBarProps<Row> {
     readonly minHeight?: number;
     /* Writes each column's value over it, as the y axis writes it or through the function; labels that would collide move up a row. */
     readonly valueLabels?: boolean | ((value: number, row: Row, index: number) => string);
+    /* The type size of the value labels: `2xs` beside a dense row of columns, `xs` over a few wide ones. */
+    readonly valueLabelSize?: '2xs' | 'xs';
     readonly className?: string;
     readonly ref?: Ref<SVGGElement>;
 }
@@ -333,6 +335,7 @@ export function ChartBar<Row>({
     minHeight = 0,
     rounded = 'all',
     valueLabels,
+    valueLabelSize = '2xs',
     className,
     ref
 }: ChartBarProps<Row>) {
@@ -393,7 +396,8 @@ export function ChartBar<Row>({
         return [{ index, column, y, height, alpha, outOfFocus, text }];
     });
     const labelTops = placeValueLabels(
-        drawn.map(({ column, y, text }) => ({ center: column.x + column.width / 2, top: y, width: widths.get(text) ?? guessLabelWidth(text) }))
+        drawn.map(({ column, y, text }) => ({ center: column.x + column.width / 2, top: y, width: widths.get(text) ?? guessLabelWidth(text, valueLabelSize) })),
+        valueLabelSize
     );
 
     useBeforePaint(() => {
@@ -440,7 +444,7 @@ export function ChartBar<Row>({
                                     textAnchor="middle"
                                     strokeWidth={3}
                                     paintOrder="stroke"
-                                    className="fill-text stroke-surface text-2xs tabular-nums"
+                                    className={clsx('fill-text stroke-surface tabular-nums', valueLabelSize === 'xs' ? 'text-xs' : 'text-2xs')}
                                 >
                                     {text}
                                 </text>

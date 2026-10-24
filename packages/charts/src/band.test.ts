@@ -98,4 +98,15 @@ describe('value labels', () => {
         expect(third).toBe(101 - LABEL_LIFT);
         expect(fourth).toBe(102 - LABEL_LIFT);
     });
+
+    test('of the larger size move up by a taller row', () => {
+        const columns = [
+            { center: 10, top: 100, width: 28 },
+            { center: 30, top: 100, width: 28 }
+        ];
+        const [small, smallAbove] = placeValueLabels(columns);
+        const [large, largeAbove] = placeValueLabels(columns, 'xs');
+        expect(large).toBe(small);
+        expect(large! - largeAbove!).toBeGreaterThan(small! - smallAbove!);
+    });
 });

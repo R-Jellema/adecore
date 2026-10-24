@@ -40,6 +40,7 @@ Columns stand on whole pixels. A column is never narrower than 2px, and by defau
 | `rounded` | `'all' \| 'end'` | `'all'` | Which corners `radius` rounds: all four, or only the end away from the ground, so the column stands flat on it. |
 | `minHeight` | `number` | | The least height of a column that stands alone, in pixels. A zero gets it too, so a run that took no time still shows as a stub; a missing value draws nothing. Pass `?? 0` in `value` where a missing value should be a stub as well. |
 | `valueLabels` | `boolean \| (value, row, index) => string` | | Writes each column's value over it, see [value labels](#value-labels). |
+| `valueLabelSize` | `'2xs' \| 'xs'` | `'2xs'` | The type size of the value labels. |
 
 ## Columns over time
 
@@ -151,6 +152,6 @@ The rows stack in the order of the children. The tooltip, the live region and th
 
 ## Value labels
 
-`valueLabels` on `Chart.Bar` writes each column's value over it, as the y axis writes values, or through a function of the value, the row and its index: `valueLabels={(value, row) => row.summary}`. The labels are in `text-2xs`, 10px over their column. Where two labels would collide by their measured width, the later one moves up over the other, with a thin line down to its column once it has moved a row. A label dims with its column when the column is dimmed or another is picked, and stays as it is while the cursor is elsewhere. The scores per model above write theirs.
+`valueLabels` on `Chart.Bar` writes each column's value over it, as the y axis writes values, or through a function of the value, the row and its index: `valueLabels={(value, row) => row.summary}`. The labels are in `text-2xs`, 10px over their column, which suits a dense row; `valueLabelSize="xs"` writes them a size larger, for a few wide columns that carry no axis. Where two labels would collide by their measured width, the later one moves up over the other, with a thin line down to its column once it has moved a row. A label dims with its column when the column is dimmed or another is picked, and stays as it is while the cursor is elsewhere. The scores per model above write theirs.
 
 The root keeps 24px above the plot for one row of labels over the tallest column. Labels that move up further need more: set `top` in `margin`. The labels are drawn for the eye; the tooltip, the live region and the table carry the same numbers for a screen reader.

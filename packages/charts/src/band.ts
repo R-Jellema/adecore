@@ -126,19 +126,21 @@ export function endRoundedColumn(x: number, y: number, width: number, height: nu
 
 /* Between the top of a column and the baseline of its value. */
 export const LABEL_LIFT = 10;
-const LABEL_ROW = 16;
-/* What a label of the `text-2xs` size is taken to measure per character until it has been drawn once. */
-const LABEL_CHAR = 8;
+/* The height of a row of labels and what a label is taken to measure per character until it has been drawn once, per size. */
+const LABEL_SIZES = { '2xs': { row: 16, char: 8 }, xs: { row: 18, char: 9 } } as const;
+
+export type ValueLabelSize = keyof typeof LABEL_SIZES;
 const LABEL_AIR = 3;
 
 /* The width a value label is taken to have before it is measured. */
-export const guessLabelWidth = (text: string): number => text.length * LABEL_CHAR;
+export const guessLabelWidth = (text: string, size: ValueLabelSize = '2xs'): number => text.length * LABEL_SIZES[size].char;
 
 /*
  * The baseline of each column's value label: just over its column, or over every label in the way, in the order of the
  * columns. A label's width depends on its text only, so measuring it never feeds back into where the labels go.
  */
-export function placeValueLabels(columns: readonly { center: number; top: number; width: number }[]): number[] {
+export function placeValueLabels(columns: readonly { center: number; top: number; width: number }[], size: ValueLabelSize = '2xs'): number[] {
+    const row = LABEL_SIZES[size].row;
     const boxes: { left: number; right: number; top: number; bottom: number }[] = [];
     return columns.map(({ center, top, width }) => {
         const half = width / 2;
@@ -149,12 +151,12 @@ export function placeValueLabels(columns: readonly { center: number; top: number
                     box.left < center + half + LABEL_AIR &&
                     box.right > center - half - LABEL_AIR &&
                     box.top < baseline + LABEL_AIR &&
-                    box.bottom > baseline - LABEL_ROW
+                    box.bottom > baseline - row
             );
         for (let box = blocking(); box !== undefined; box = blocking()) {
             baseline = box.top - LABEL_AIR;
         }
-        boxes.push({ left: center - half, right: center + half, top: baseline - LABEL_ROW, bottom: baseline + LABEL_AIR });
+        boxes.push({ left: center - half, right: center + half, top: baseline - row, bottom: baseline + LABEL_AIR });
         return baseline;
     });
 }
