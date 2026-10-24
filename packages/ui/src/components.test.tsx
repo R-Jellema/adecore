@@ -308,6 +308,11 @@ describe('a field', () => {
         expect(classesIn(render(<TextArea aria-label="Draft" size="sm" resize="vertical" />))).toContainEqual(expect.arrayContaining(['field-sm', 'resize-y']));
     });
 
+    test('leaves the edge and the focus to the card around a bare text area', () => {
+        expect(classesIn(render(<TextArea aria-label="Message" variant="bare" />))).toContainEqual(expect.arrayContaining(['field', 'field-bare']));
+        expect(render(<TextArea aria-label="Note" />)).not.toContain('field-bare');
+    });
+
     test('draws an icon in front of the text inside the box of the field, and keeps the field on the input', () => {
         const markup = render(
             <Field label="Search">
