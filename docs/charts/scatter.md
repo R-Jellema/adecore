@@ -82,7 +82,7 @@ Its children get a `ChartPointSeries` (`key`, `label`, `rows` and `color`) and r
 <SeriesLegend
     label="Models"
     search="Find models"
-    items={models.map((model) => ({ key: model.id, label: model.name, group: model.lab, color: model.color }))}
+    items={models.map((model) => ({ key: model.id, label: model.shortName, name: model.name, group: model.lab, color: model.color }))}
     groups={labs.map((lab) => ({ key: lab.id, label: lab.name }))}
     hidden={hidden}
     onHiddenChange={setHidden}
@@ -104,4 +104,4 @@ Its children get a `ChartPointSeries` (`key`, `label`, `rows` and `color`) and r
 | `empty` | `string` | "Nothing matches." | What the list says when the search finds nothing. |
 | `size` | `'sm' \| 'md'` | `'sm'` | The height of a row: 28px, or 36px for a touch screen. |
 
-A `SeriesLegendItem` has a `key`, a `label`, and optionally a `group`, a `color`, `disabled` for a series with nothing to show, and a `status` that says why a series shows less than it could ("Turned off"), under its name and in its hint. The props are `SeriesLegendProps`.
+A `SeriesLegendItem` has a `key`, a `label`, and optionally a `name`, a `group`, a `color`, `disabled` for a series with nothing to show, and a `status` that says why a series shows less than it could ("Turned off"), under its name and in its hint. `name` is the full name a screen reader and the hint give where the list shows a short one, such as the model with its lab, and the search finds it too. The props are `SeriesLegendProps`.

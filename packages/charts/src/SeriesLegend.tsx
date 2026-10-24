@@ -8,6 +8,8 @@ import { matchingItems, toggleGroup } from './legend.ts';
 export interface SeriesLegendItem {
     readonly key: string;
     readonly label: string;
+    /* The full name a screen reader and the hint give, such as with the name of its group; `label` by default. */
+    readonly name?: string;
     /* The key of the group it is listed under. */
     readonly group?: string;
     /* A CSS color of the app's own, such as a variable; the mark and the check take it. */
@@ -123,11 +125,12 @@ export function SeriesLegend<Item extends SeriesLegendItem>({
                                 const on = item.disabled !== true && !off.has(item.key);
                                 const statusId = `${id}-${item.key}`;
                                 const color = item.color ?? 'var(--text-muted)';
+                                const name = item.name ?? item.label;
                                 return (
-                                    <Tooltip key={item.key} label={item.status ?? item.label} side="left">
+                                    <Tooltip key={item.key} label={item.status ?? name} side="left">
                                         <button
                                             type="button"
-                                            aria-label={item.label}
+                                            aria-label={name}
                                             aria-pressed={on}
                                             aria-describedby={item.status === undefined ? undefined : statusId}
                                             disabled={item.disabled === true}
