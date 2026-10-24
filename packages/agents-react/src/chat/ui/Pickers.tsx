@@ -13,14 +13,11 @@ import { ModelMarks } from './ModelMarks';
 import { pickerEntriesOf, type PickerEntry } from '../logic/picker-entries';
 import { favoriteModelsOf, toggleFavoriteModel, useChatPreferences } from '../preferences';
 import { forgetStashed, STASH_SHORTCUT, useStash, type StashedPrompt } from '../stash';
-import { Icon, IconButton, Menu, Popover, Tooltip } from '@adecore/ui';
+import { Button, Icon, IconButton, Menu, Popover, Tooltip } from '@adecore/ui';
 import { useHostMachineLabel } from '../../host-hooks';
 
 const triggerClass =
     'flex h-7 shrink-0 items-center gap-1 whitespace-nowrap rounded-md px-2 text-xs text-text-muted hover:bg-surface-hover hover:text-text data-[popup-open]:bg-surface-active data-[popup-open]:text-text';
-
-const chipClass =
-    'flex h-6 min-w-0 shrink items-center gap-1.5 whitespace-nowrap rounded-md bg-surface-hover px-2 text-xs text-text hover:bg-surface-active data-[popup-open]:bg-surface-active';
 
 interface ModelPickerProps {
     /* Whose models may be picked: every installed chat CLI before the first message, the chat's own after it. */
@@ -35,7 +32,7 @@ interface ModelPickerProps {
     kbd?: string | null;
     /* Where the popup opens: over the composer by default, below the trigger in a form. */
     side?: 'top' | 'bottom';
-    /* `chip` names the provider beside the model, on a ground of its own, for a picker that sits in a card or a form. */
+    /* `chip` names the provider beside the model on a secondary button, for a picker that sits in a card or a form. */
     trigger?: 'plain' | 'chip';
     /* Where the focus goes when the popup closes; by default back to the trigger. */
     finalFocus?: RefObject<HTMLElement | null>;
@@ -149,7 +146,7 @@ export function ModelPicker({
         <Popover.Root open={open} onOpenChange={setOpen}>
             <Tooltip label={owner ? `${owner.name} · ${current}` : t('pickers.model.choose')} kbd={kbd ?? undefined}>
                 {trigger === 'chip' ? (
-                    <Popover.Trigger className={chipClass}>
+                    <Popover.Trigger render={<Button variant="secondary" size="sm" className="min-w-0 shrink gap-1.5" />}>
                         {chip.mark === 'logo' ? <ProviderLogo provider={provider as UsageProvider} size={12} /> : <AgentIcon kind={provider} size={12} />}
                         <span className="truncate">{chip.name}</span>
                         <span className="max-w-32 truncate text-text-muted">{chip.model}</span>
