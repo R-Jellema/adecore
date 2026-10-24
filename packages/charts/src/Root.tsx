@@ -60,8 +60,10 @@ export interface ChartRootProps<Row> {
     readonly y?: ChartYOptions;
     /* The name of the chart, for a screen reader and the table of values. */
     readonly label: string;
-    /* In pixels, the x axis included. The width follows the container. */
+    /* In pixels, the x axis included; with `grow` the least height. The width follows the container. */
     readonly height?: number;
+    /* Takes the height its container gives it, never less than `height`, such as a chart that fills a panel. */
+    readonly grow?: boolean;
     /* Controls the cursor. Leaving the chart calls `onActiveXChange(null)` and leaves the cursor to the app. */
     readonly activeX?: ChartX | null;
     readonly onActiveXChange?: (x: ChartX | null) => void;
@@ -125,7 +127,8 @@ export function ChartRoot<Row>({
     yScale = 'linear',
     y = {},
     label,
-    height = 200,
+    height: leastHeight = 200,
+    grow = false,
     margin = {},
     surface = 'base',
     activeX,
@@ -169,6 +172,9 @@ export function ChartRoot<Row>({
     const [scroll, setScroll] = useState(0);
     const [announce, setAnnounce] = useState(false);
     const [measure, size] = useContentSize();
+    const [measureGroups, groupsSize] = useContentSize();
+    // The row of group labels under the plot takes its share of the height a growing chart is given.
+    const height = grow ? Math.max(leastHeight, size.height - groupsSize.height) : leastHeight;
     const scroller = useRef<HTMLDivElement>(null);
 
     const points = rows === 'points';
@@ -562,10 +568,10 @@ export function ChartRoot<Row>({
 
     return (
         <ChartContext value={context}>
-            <div ref={ref} className={clsx('flex min-w-0 flex-col gap-3', className)}>
+            <div ref={ref} className={clsx('flex min-w-0 flex-col gap-3', grow && 'h-full min-h-0', className)}>
                 <div ref={setLegendSlot} className="empty:hidden" />
                 {/* The ring stands outside the box, where it clears the labels at the edges of the axes. */}
-                <div ref={measure} className="focus-ring-within relative flex rounded-md" style={{ outlineOffset: 4 }}>
+                <div ref={measure} className={clsx('focus-ring-within relative flex rounded-md', grow && 'min-h-0 flex-1')} style={{ outlineOffset: 4 }}>
                     <svg width={leftAxis} height={height} aria-hidden className="shrink-0 overflow-visible">
                         <g ref={setLeftSlot} tabIndex={-1} />
                     </svg>
@@ -669,7 +675,14 @@ export function ChartRoot<Row>({
                                 </text>
                             )}
                         </svg>
-                        <div ref={setGroupsSlot} className="empty:hidden" style={{ width }} />
+                        <div
+                            ref={(node) => {
+                                setGroupsSlot(node);
+                                measureGroups(node);
+                            }}
+                            className="empty:hidden"
+                            style={{ width }}
+                        />
                     </div>
                     <svg width={rightAxis} height={height} aria-hidden className="shrink-0 overflow-visible">
                         <g ref={setRightSlot} tabIndex={-1} />

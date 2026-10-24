@@ -516,6 +516,40 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(activated).toEqual(['b-low']);
     });
 
+    test('a growing chart takes the height of its box, never less than its height', async () => {
+        const original = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientHeight');
+        let box = 400;
+        // An empty slot, such as the row of group labels, takes no height.
+        Object.defineProperty(HTMLElement.prototype, 'clientHeight', {
+            configurable: true,
+            get(this: HTMLElement) {
+                return this.childElementCount === 0 ? 0 : box;
+            }
+        });
+        try {
+            await mount(
+                <Chart.Root data={SCORES} x="key" grow height={260} label="Scores">
+                    <Chart.Bar value="score" label="Score" />
+                </Chart.Root>
+            );
+            expect(container.querySelector('svg[role="group"]')!.getAttribute('height')).toBe('400');
+            await act(async () => root.unmount());
+            box = 100;
+            await mount(
+                <Chart.Root data={SCORES} x="key" grow height={260} label="Scores">
+                    <Chart.Bar value="score" label="Score" />
+                </Chart.Root>
+            );
+            expect(container.querySelector('svg[role="group"]')!.getAttribute('height')).toBe('260');
+        } finally {
+            if (original === undefined) {
+                Reflect.deleteProperty(HTMLElement.prototype, 'clientHeight');
+            } else {
+                Object.defineProperty(HTMLElement.prototype, 'clientHeight', original);
+            }
+        }
+    });
+
     test('a second x axis writes its row under the first', async () => {
         await mount(
             <Chart.Root data={SCORES} x="key" label="Scores">
