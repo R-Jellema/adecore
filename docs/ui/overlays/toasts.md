@@ -24,6 +24,16 @@ export const toasts = createToastStore();
 
 A toast with an action that goes by itself, such as the undo of a deletion, shows a ring in place of its close button that counts down to the moment it goes. With reduced motion the ring stays full. A toast that goes by itself without an action keeps its close button hidden until the pointer or the keyboard is on it.
 
+### A lifetime of its own
+
+`lifetime` takes a toast away after that many milliseconds, whatever its kind, for news that should not wait for the person, such as the report of a new failure somewhere else. It goes before the time of the kind and before `persist`. Zero or less is ignored, and a lifetime longer than a timer can hold (about 24 days), `Infinity` too, keeps the toast up. An `update` keeps it; patch `lifetime: undefined` to give the toast the time of its kind again.
+
+<Demo src="overlays/toasts-lifetime" />
+
+```ts
+toasts.getState().show({ kind: 'error', title: 'New issue: WEB-142', lifetime: 10_000, action: { label: 'Open', run: open } });
+```
+
 ## One id from start to end
 
 A long action keeps one toast from progress to outcome, so a person never watches two cards for one thing. `show` returns the toast's id, and `update` moves that toast on:
@@ -51,7 +61,7 @@ try {
 | `update(id, patch)` | Changes a toast that is up and restarts its timer. Takes a `ToastPatch<T>`. |
 | `dismiss(id)` | Takes a toast down. |
 
-A `Toast` is `{ id, title, kind, description?, action?, actions?, persist?, onClose?, deadline? }`. The store sets `deadline` (a `ToastDeadline` of `start` and `end` in epoch milliseconds) from the timer that takes the toast away. A `ToastAction` is `{ label, run, shortcut? }`; the shortcut is only printed, so bind the key yourself. One action sits beside the title. With `actions`, drawn after `action` in order, two or more get a line of their own under the description, so the title keeps its width. An action does not take the toast away; dismiss it in `run` when that is what should happen. `ToastKind` is the union of the four kinds.
+A `Toast` is `{ id, title, kind, description?, action?, actions?, persist?, lifetime?, onClose?, deadline? }`. The store sets `deadline` (a `ToastDeadline` of `start` and `end` in epoch milliseconds) from the timer that takes the toast away. A `ToastAction` is `{ label, run, shortcut? }`; the shortcut is only printed, so bind the key yourself. One action sits beside the title. With `actions`, drawn after `action` in order, two or more get a line of their own under the description, so the title keeps its width. An action does not take the toast away; dismiss it in `run` when that is what should happen. `ToastKind` is the union of the four kinds.
 
 An app that carries more on a toast extends `Toast` and hands its type to the store, then draws the extra fields with `footer`:
 

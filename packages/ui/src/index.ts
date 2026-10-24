@@ -3,6 +3,8 @@
  * `exports.test.ts` turns any change to this list into a diff someone has to accept.
  */
 
+export * as Combobox from './combobox/index.parts.ts';
+export * as CommandPalette from './command-palette/index.parts.ts';
 export * as ContextMenu from './context-menu/index.parts.ts';
 export * as FileTree from './file-tree/index.parts.ts';
 export * as Tree from './tree/index.parts.ts';
@@ -13,6 +15,8 @@ export * as Popover from './popover/index.parts.ts';
 export * as PreviewCard from './preview-card/index.parts.ts';
 export * as Tabs from './tabs/index.parts.ts';
 
+export type { ComboboxInputProps, ComboboxItemProps, ComboboxPopupProps } from './combobox/parts.tsx';
+export type { CommandPaletteFooterProps, CommandPaletteInputProps, CommandPalettePopupProps, CommandPaletteRootProps } from './command-palette/parts.tsx';
 export type { DialogDescriptionProps, DialogFooterProps, DialogPopupProps, DialogTextProps, DialogTitleProps } from './dialog/parts.tsx';
 export type {
     MenuCheckProps,
@@ -35,6 +39,7 @@ export { Checkbox, type CheckboxProps } from './Checkbox.tsx';
 export { ChoiceCards, type Choice, type ChoiceCardsProps } from './ChoiceCards.tsx';
 export { CloseButton, type CloseButtonProps } from './CloseButton.tsx';
 export { ColorSwatch, type ColorSwatchProps } from './ColorSwatch.tsx';
+export { CopyButton, type CopyButtonProps } from './CopyButton.tsx';
 export { ColorWheelPicker, type ColorWheelPickerProps } from './ColorWheelPicker.tsx';
 export { ColumnResizeHandle, type ColumnResizeHandleProps } from './ColumnResizeHandle.tsx';
 export { DisabledReason, type DisabledReasonProps } from './DisabledReason.tsx';
@@ -55,6 +60,7 @@ export { PanelEmpty, type PanelEmptyProps } from './PanelEmpty.tsx';
 export { PanelHeader, type PanelHeaderProps } from './PanelHeader.tsx';
 export { Pill, type PillProps } from './Pill.tsx';
 export { PromptDialog, type PromptDialogProps } from './PromptDialog.tsx';
+export { RelativeTime, type RelativeTimeProps } from './RelativeTime.tsx';
 export { ProjectSwitcher, ProjectSwitcherGroups, type ProjectSwitcherItem, type ProjectSwitcherProps } from './ProjectSwitcher.tsx';
 export { SectionLabel, type SectionLabelProps } from './SectionLabel.tsx';
 export { SegmentBar, type SegmentBarPart, type SegmentBarProps } from './SegmentBar.tsx';
@@ -88,6 +94,7 @@ export type { LazyComponent } from './lazy.tsx';
 export { LazyBoundary } from './LazyBoundary.tsx';
 export type { LazyBoundaryProps } from './LazyBoundary.tsx';
 export { UI_NAMESPACE, UI_RESOURCES } from './locales.ts';
+export { matchScore } from './match.ts';
 export { isApplePlatform } from './platform.ts';
 export { prefetcher, type Loader, type WhenIdle } from './prefetch.ts';
 export { selectAllWithin, selectionWithin } from './selection.ts';

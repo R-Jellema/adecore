@@ -1,13 +1,12 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import clsx from 'clsx';
-import { Copy, RotateCw, TriangleAlert } from 'lucide-react';
+import { RotateCw, TriangleAlert } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Button } from './Button.tsx';
 import { ButtonGroup } from './ButtonGroup.tsx';
-import { copyText } from './clipboard.ts';
+import { CopyButton } from './CopyButton.tsx';
 import { errorMessageOf, errorReport, shouldReset, type ResetKeys } from './error-boundary.ts';
 import { Icon } from './Icon.tsx';
-import { IconButton } from './IconButton.tsx';
 
 export interface ErrorBoundaryProps {
     /* What failed, as the first line of the message: "Could not show this view". */
@@ -61,7 +60,7 @@ function ErrorFallback({ label, error, componentStack, compact, reload, classNam
                         </Button>
                     )}
                     <ButtonGroup>
-                        <IconButton icon={Copy} size="sm" label={t('action.copyError')} onClick={() => copyText(errorReport(label, error, componentStack))} />
+                        <CopyButton text={errorReport(label, error, componentStack)} label={t('action.copyError')} size="sm" />
                     </ButtonGroup>
                 </div>
             </div>

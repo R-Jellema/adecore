@@ -12,16 +12,36 @@ The track is as wide as its options, also in a `Field` or a column that stretche
 
 It is a `radiogroup` and every option a `radio` with `aria-checked`. The group is one stop in the tab order: the picked option, or the first when none is. The arrow keys pick and focus the next or previous option and go around the ends, Home and End pick the first and the last, and Space or a click picks the focused one. A disabled group takes no keys.
 
+## Icons only
+
+With `iconOnly` every option is a square with its icon. The label becomes the option's accessible name and its tooltip, so a screen reader and a hover say the same. Give every option an icon; the setting holds for the whole group, so the squares stay one size. An option without one keeps its label.
+
+<Demo src="inputs/segmented-icons" />
+
+## A disabled option
+
+An option with `disabled: true` is dimmed and cannot be picked. The arrow keys, Home and End pass over it, and the tab stop never lands on it: a picked option that is disabled hands the stop to the first one that is not.
+
+<Demo src="inputs/segmented-disabled" />
+
+## Sizes
+
+`size="md"` is 32 pixels high and `size="sm"` 28, the heights of `Input`, `Select` and `Button` at the same size, so a row of filters lines up. At `sm` the icons are 12 pixels.
+
+<Demo src="inputs/segmented-size" />
+
 ## Props
 
 | Prop | Type | Default | |
 | --- | --- | --- | --- |
 | `value` | `T` | | Required. |
 | `onValueChange` | `(id: T) => void` | | Required. |
-| `options` | `readonly SegmentedOption<T>[]` | | Required. `{ id, label, icon? }`, with a Lucide icon drawn at 14 pixels. |
+| `options` | `readonly SegmentedOption<T>[]` | | Required. `{ id, label, icon?, disabled? }`, with a Lucide icon drawn at 14 pixels, 12 at `sm`. |
 | `label` | `string` | | Required. The accessible name of the group. |
 | `disabled` | `boolean` | | |
 | `orientation` | `'horizontal' \| 'vertical'` | `'horizontal'` | `vertical` stacks the options in a column. |
+| `size` | `'md' \| 'sm'` | `'md'` | 32 or 28 pixels high. |
+| `iconOnly` | `boolean` | `false` | Draws each option with an icon as that icon, with the label as name and tooltip. |
 | `className` | `string` | | |
 | `ref` | `Ref<HTMLDivElement>` | | |
 

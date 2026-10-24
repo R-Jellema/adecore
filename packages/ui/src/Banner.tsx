@@ -13,13 +13,20 @@ const TONE: Record<BannerTone, string> = {
     neutral: 'text-text-muted'
 };
 
+const OVERLAY = 'absolute inset-x-0 top-3 z-20';
+
 export interface BannerProps {
     icon: LucideIcon;
     tone: BannerTone;
     message: ReactNode;
     /* The buttons that answer the line. */
     children?: ReactNode;
-    /* Where the strip stands; by default centered along the top of the positioned parent. */
+    /*
+     * `overlay` floats the glass strip centered along the top of the positioned parent; `inline` stands
+     * in the flow and fills its row. Under `overlay` a `className` replaces the overlay position instead
+     * of adding to it, so its utilities never meet the component's own.
+     */
+    placement?: 'overlay' | 'inline';
     className?: string;
     ref?: Ref<HTMLDivElement>;
 }
@@ -28,16 +35,33 @@ export interface BannerProps {
  * The strip over a view: one line and the buttons that answer it. It is where anything that waits
  * for a person goes (a conflict, a failure, a request), because a corner toast is read after the fact
  * and a decision has to be where the eyes already are. One at a time: the slot is one row and the
- * caller picks what stands in it.
+ * caller picks what stands in it. Inline, it is a notice that belongs to the page it stands in.
  */
-export function Banner({ icon, tone, message, children, className = 'absolute inset-x-0 top-3 z-20', ref }: BannerProps) {
+export function Banner({ icon, tone, message, children, placement = 'overlay', className, ref }: BannerProps) {
+    const line = (
+        <>
+            <Icon icon={icon} size={16} className={clsx('shrink-0', TONE[tone])} />
+            <span className="grow">{message}</span>
+            {children}
+        </>
+    );
+
+    if (placement === 'inline') {
+        return (
+            <div
+                ref={ref}
+                className={clsx('flex items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text', className)}
+                role="status"
+                aria-live="polite"
+            >
+                {line}
+            </div>
+        );
+    }
+
     return (
-        <div ref={ref} className={clsx('pointer-events-auto flex justify-center px-4', className)} role="status" aria-live="polite">
-            <Surface className="flex max-w-[640px] items-center gap-3 rounded-lg px-3 py-2 text-sm text-text">
-                <Icon icon={icon} size={16} className={clsx('shrink-0', TONE[tone])} />
-                <span className="grow">{message}</span>
-                {children}
-            </Surface>
+        <div ref={ref} className={clsx('pointer-events-auto flex justify-center px-4', className ?? OVERLAY)} role="status" aria-live="polite">
+            <Surface className="flex max-w-[640px] items-center gap-3 rounded-lg px-3 py-2 text-sm text-text">{line}</Surface>
         </div>
     );
 }

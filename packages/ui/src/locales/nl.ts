@@ -2,6 +2,7 @@ export default {
     action: {
         cancel: 'Annuleren',
         copy: 'Kopiëren',
+        copied: 'Gekopieerd',
         copyError: 'Fout kopiëren',
         dismiss: 'Sluiten',
         reload: 'Herladen',
@@ -37,6 +38,13 @@ export default {
     select: {
         search: 'Zoeken',
         noMatch: 'Geen resultaat voor “{{query}}”'
+    },
+    combobox: {
+        suggestions: 'Suggesties'
+    },
+    palette: {
+        label: 'Opdrachtenpalet',
+        results: 'Resultaten'
     },
     iconPicker: {
         label: 'Icoon',

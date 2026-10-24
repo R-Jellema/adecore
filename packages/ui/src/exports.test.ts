@@ -62,10 +62,9 @@ describe('the public API', () => {
     test('the compound components have these parts', () => {
         const barrel = MODULES['.']!;
         const parts = Object.fromEntries(
-            ['ContextMenu', 'Dialog', 'FileTree', 'Tree', 'KeyValueList', 'Menu', 'Popover', 'PreviewCard', 'Tabs'].map((name) => [
-                name,
-                Object.keys(barrel[name] as object).sort()
-            ])
+            ['Combobox', 'CommandPalette', 'ContextMenu', 'Dialog', 'FileTree', 'Tree', 'KeyValueList', 'Menu', 'Popover', 'PreviewCard', 'Tabs'].map(
+                (name) => [name, Object.keys(barrel[name] as object).sort()]
+            )
         );
         expect(parts).toMatchSnapshot();
     });

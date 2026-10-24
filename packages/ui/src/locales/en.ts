@@ -2,6 +2,7 @@ export default {
     action: {
         cancel: 'Cancel',
         copy: 'Copy',
+        copied: 'Copied',
         copyError: 'Copy error',
         dismiss: 'Dismiss',
         reload: 'Reload',
@@ -37,6 +38,13 @@ export default {
     select: {
         search: 'Search',
         noMatch: 'No match for “{{query}}”'
+    },
+    combobox: {
+        suggestions: 'Suggestions'
+    },
+    palette: {
+        label: 'Command palette',
+        results: 'Results'
     },
     iconPicker: {
         label: 'Icon',
