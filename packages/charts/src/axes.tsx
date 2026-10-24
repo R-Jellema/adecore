@@ -105,12 +105,22 @@ export function ChartXAxis({ format, ticks, angle = 0, className, ref }: ChartXA
     const chart = useChartContext('Chart.XAxis');
     const { store, plot, continuous, band, xs } = chart;
     const labels = useRef<SVGGElement>(null);
+    const candidates = useRef<SVGGElement>(null);
+    const grown = useRef({ key: '', width: 0 });
     const widest = useStoreAxis(chart.store, 'xLabel') ?? GUESS;
     const room = Math.ceil(angle === 0 ? X_LABEL_LINE : widest * Math.sin(SLANT) + X_LABEL_LINE * Math.cos(SLANT));
     const baseline = plot.bottom + LABEL_GAP;
+    const domainKey = continuous === null ? '' : `${continuous.domain.join(':')}:${Math.round(plot.width)}`;
 
     useBeforePaint(() => {
-        store.setAxis('xLabel', Math.ceil(widestIn(labels.current)));
+        // How many labels are placed depends on the widest, so measuring only the placed ones can flip between two sets
+        // forever. A band scale measures every label; the ticks of a continuous one only let the width grow per domain.
+        let width = Math.ceil(widestIn(continuous === null ? candidates.current : labels.current));
+        if (continuous !== null) {
+            width = grown.current.key === domainKey ? Math.max(width, grown.current.width) : width;
+            grown.current = { key: domainKey, width };
+        }
+        store.setAxis('xLabel', width);
         store.setAxis('x', room + LABEL_GAP + 4);
         store.setFormat('x', format);
     });
@@ -153,6 +163,15 @@ export function ChartXAxis({ format, ticks, angle = 0, className, ref }: ChartXA
 
     return (
         <g ref={ref} className={clsx('pointer-events-none', className)} aria-hidden>
+            {band !== null && (
+                <g ref={candidates} visibility="hidden">
+                    {xs.map((key) => (
+                        <text key={String(key)} className="text-xs tabular-nums">
+                            {chart.formatX(key)}
+                        </text>
+                    ))}
+                </g>
+            )}
             <g ref={labels}>
                 {placed.map((tick) =>
                     angle === 0 ? (

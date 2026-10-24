@@ -110,6 +110,40 @@ describe.skipIf(typeof document === 'undefined')('a chart under the keyboard', (
         expect(activated).toEqual(['b-low']);
     });
 
+    test('x labels of different widths settle on one set instead of flipping between two', async () => {
+        const width = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');
+        const measure = SVGTextElement.prototype.getComputedTextLength;
+        Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => 600 });
+        SVGTextElement.prototype.getComputedTextLength = function (this: SVGTextElement) {
+            return (this.textContent?.length ?? 0) * 7;
+        };
+        // Twelve buckets of 50px: the short labels fit under every bucket, the long ones under every other.
+        const days = Array.from({ length: 12 }, (_, index) => ({ day: index % 2 === 0 ? `d${index}` : `long label ${index}`, value: index }));
+        try {
+            const { createRoot } = await import('react-dom/client');
+            root = createRoot(container);
+            await act(async () => {
+                root.render(
+                    wrap(
+                        <Chart.Root data={days} x="day" label="Days">
+                            <Chart.XAxis />
+                            <Chart.Bar value="value" label="Value" />
+                        </Chart.Root>
+                    )
+                );
+            });
+            const labels = [...container.querySelectorAll('text')].filter((text) => text.closest('[visibility="hidden"]') === null);
+            expect(labels.map((text) => text.textContent)).toEqual(['d0', 'd2', 'd4', 'd6', 'd8', 'd10']);
+        } finally {
+            if (width === undefined) {
+                Reflect.deleteProperty(HTMLElement.prototype, 'clientWidth');
+            } else {
+                Object.defineProperty(HTMLElement.prototype, 'clientWidth', width);
+            }
+            SVGTextElement.prototype.getComputedTextLength = measure;
+        }
+    });
+
     test('a selected bucket is pressed, and Escape clears the cursor', async () => {
         const plot = await mount();
         expect(container.querySelectorAll('[aria-pressed="true"]')).toHaveLength(1);
