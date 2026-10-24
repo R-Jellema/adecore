@@ -1,6 +1,7 @@
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { AGENTS_LOCALES } from '../packages/agents-react/src/locales.ts';
+import charts from '../packages/charts/src/locales/en.ts';
 import ui from '../packages/ui/src/locales/en.ts';
 import { compileReactSource } from './react-compiler.ts';
 
@@ -17,14 +18,14 @@ Bun.plugin({
 Bun.plugin({
     name: 'react-compiler',
     setup(build) {
-        build.onLoad({ filter: /[\\/]packages[\\/](ui|agents-react|editor-react|terminal)[\\/]src[\\/](?!.*\.test\.tsx?$).*\.tsx?$/ }, async (args) => ({
+        build.onLoad({ filter: /[\\/]packages[\\/](ui|agents-react|editor-react|terminal|charts)[\\/]src[\\/](?!.*\.test\.tsx?$).*\.tsx?$/ }, async (args) => ({
             contents: await compileReactSource(await Bun.file(args.path).text(), args.path),
             loader: args.path.endsWith('.tsx') ? 'tsx' : 'ts'
         }));
     }
 });
 
-const resources: Record<string, object> = { ui, ...(await AGENTS_LOCALES.en!()) };
+const resources: Record<string, object> = { ui, charts, ...(await AGENTS_LOCALES.en!()) };
 
 // Pure label helpers share the same initialized English instance as React render tests.
 await i18next.use(initReactI18next).init({

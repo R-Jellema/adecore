@@ -9,6 +9,7 @@ import {
     formatHour,
     formatMoment,
     formatNumericDate,
+    formatWeekday,
     formatWeekdayDay,
     isSameDay
 } from './datetime.ts';
@@ -102,6 +103,14 @@ describe('the language a date is written in', () => {
         inRegion('nl-NL');
         expect(formatDay(AT)).toBe('19 sep');
         expect(formatWeekdayDay(AT)).toBe('za 19 sep');
+    });
+
+    test('names a weekday on its own, short or whole', () => {
+        expect(formatWeekday(AT)).toBe('Sat');
+        expect(formatWeekday(AT, 'long')).toBe('Saturday');
+        inLanguage('nl');
+        expect(formatWeekday(AT)).toBe('za');
+        expect(formatWeekday(AT, 'long')).toBe('zaterdag');
     });
 
     // Following the language is what a fresh client does, so Dutch alone is enough for Dutch dates.

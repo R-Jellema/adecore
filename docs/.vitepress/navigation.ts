@@ -144,6 +144,20 @@ const desktopShell: DefaultTheme.SidebarItem[] = [
 
 const terminal: DefaultTheme.SidebarItem[] = [group('Terminal', [['TerminalView', '/terminal/']])];
 
+const charts: DefaultTheme.SidebarItem[] = [
+    group('Charts', [
+        ['Overview', '/charts/'],
+        ['Series chart', '/charts/series'],
+        ['Columns and groups', '/charts/columns'],
+        ['Scatter and series legend', '/charts/scatter'],
+        ['Shared cursor', '/charts/shared-cursor'],
+        ['Sparkline', '/charts/sparkline'],
+        ['Heatmap', '/charts/heatmap'],
+        ['Timeline', '/charts/timeline'],
+        ['useChart', '/charts/use-chart']
+    ])
+];
+
 const database: DefaultTheme.SidebarItem[] = [
     group('Database', [
         ['Overview', '/database/'],
@@ -176,6 +190,7 @@ export const sidebar: DefaultTheme.SidebarMulti = {
     '/ui/': desktopUi,
     '/shell/': desktopShell,
     '/terminal/': terminal,
+    '/charts/': charts,
     '/database/': database,
     '/agent-contracts/': [
         group('Agent contracts', [

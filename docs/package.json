@@ -12,6 +12,7 @@
     "@adecore/agent-contracts": "workspace:*",
     "@adecore/agents": "workspace:*",
     "@adecore/agents-react": "workspace:*",
+    "@adecore/charts": "workspace:*",
     "@adecore/database": "workspace:*",
     "@adecore/diagram": "workspace:*",
     "@adecore/drawing": "workspace:*",

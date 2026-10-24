@@ -21,6 +21,7 @@ body:
         - agent-contracts
         - agents
         - agents-react
+        - charts
         - database
         - database-darwin-arm64
         - database-linux-arm64

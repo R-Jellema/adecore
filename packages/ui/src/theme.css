@@ -58,6 +58,14 @@
     --status-error: #dc2626;
     --positive: #15803d;
     --positive-text: #ffffff;
+    /* The series of a chart, in order: the accent, then a categorical order checked for color vision
+       deficiency on both grounds: orange, aqua, yellow, magenta, green. */
+    --chart-1: var(--accent);
+    --chart-2: #eb6834;
+    --chart-3: #1baf7a;
+    --chart-4: #eda100;
+    --chart-5: #e87ba4;
+    --chart-6: #008300;
     /* A control drawn over a picture rather than over the interface, the handle of a wipe, so it
        stays the same in both themes. */
     --media-handle: #ffffff;
@@ -122,6 +130,13 @@
     /* Dark on light green: the dark theme's positive is a foreground color, so text sits on it the
        other way round from the light theme, where the same token is a fill deep enough for white. */
     --positive-text: #052e16;
+    /* Repeated so a dark theme nested under a light one resolves its own accent. */
+    --chart-1: var(--accent);
+    --chart-2: #d95926;
+    --chart-3: #199e70;
+    --chart-4: #c98500;
+    --chart-5: #d55181;
+    --chart-6: #008300;
     --file-icon-gray: #adadb1;
     --file-icon-red: #ff6762;
     --file-icon-vermilion: #d5512f;

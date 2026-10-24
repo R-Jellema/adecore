@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test';
-import { formatAgo, formatClockDuration, formatCountdown, formatDuration, formatElapsedShort } from './duration.ts';
+import { formatAgo, formatClockDuration, formatCountdown, formatDuration, formatElapsedShort, formatPreciseDuration } from './duration.ts';
 import { FORMAT_SYSTEM } from './regions.ts';
 import { fakeFormatSource } from '../testing/fake-source.ts';
 import { setFormatSource, type FormatSource } from './locale.ts';
@@ -69,6 +69,25 @@ describe('a stopwatch that is watched while it runs', () => {
     test('floors its seconds and never runs backwards', () => {
         expect(formatClockDuration(14_900)).toBe('00:14');
         expect(formatClockDuration(-1_000)).toBe('00:00');
+    });
+});
+
+describe('how long a short measurement took', () => {
+    test('keeps the precision of each unit, and hands over to formatDuration from a minute', () => {
+        inRegion('en-US');
+        expect(formatPreciseDuration(0.42)).toBe('0.4 ms');
+        expect(formatPreciseDuration(123.4)).toBe('123 ms');
+        expect(formatPreciseDuration(1420)).toBe('1.42 s');
+        expect(formatPreciseDuration(12_340)).toBe('12.3 s');
+        expect(formatPreciseDuration(5 * MINUTE)).toBe('5 min');
+    });
+
+    test('rounds before it picks a unit, so a value at the edge moves up', () => {
+        inRegion('en-US');
+        expect(formatPreciseDuration(9.96)).toBe('10 ms');
+        expect(formatPreciseDuration(999.6)).toBe('1 s');
+        expect(formatPreciseDuration(9_996)).toBe('10 s');
+        expect(formatPreciseDuration(59_990)).toBe('1 min');
     });
 });
 
