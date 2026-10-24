@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test';
 import { act, useState, type ReactNode } from 'react';
+import { List } from 'lucide-react';
 import type { Root } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Segmented, type SegmentedProps } from './Segmented.tsx';
@@ -18,6 +19,20 @@ describe('a segmented control', () => {
         expect([...picked.matchAll(/tabindex="(-?\d)"/g)].map((match) => match[1])).toEqual(['-1', '0', '-1']);
         const none = renderToStaticMarkup(<Segmented label="View" value={'other' as View} onValueChange={() => {}} options={OPTIONS} />);
         expect([...none.matchAll(/tabindex="(-?\d)"/g)].map((match) => match[1])).toEqual(['0', '-1', '-1']);
+    });
+
+    test('never puts the tab stop on a disabled option, also when that option is picked', () => {
+        const options = [{ ...OPTIONS[0], disabled: true }, OPTIONS[1], OPTIONS[2]];
+        const markup = renderToStaticMarkup(<Segmented label="View" value="list" onValueChange={() => {}} options={options} />);
+        expect([...markup.matchAll(/tabindex="(-?\d)"/g)].map((match) => match[1])).toEqual(['-1', '0', '-1']);
+        expect(markup).toMatch(/aria-checked="true"[^>]*disabled=""/);
+    });
+
+    test('names an icon-only option by its label instead of drawing it', () => {
+        const options = OPTIONS.map((option) => ({ ...option, icon: List }));
+        const markup = renderToStaticMarkup(<Segmented label="View" value="list" onValueChange={() => {}} options={options} iconOnly />);
+        expect([...markup.matchAll(/aria-label="(\w+)"/g)].map((match) => match[1])).toEqual(['View', 'List', 'Grid', 'Split']);
+        expect(markup).not.toMatch(/>(List|Grid|Split)</);
     });
 
     test('grows with a label that wraps instead of holding a fixed height, and can stand as a column', () => {
@@ -96,6 +111,20 @@ describe.skipIf(typeof document === 'undefined')('a segmented control under the 
         await press('End');
         expect(changes).toEqual(['grid', 'split', 'list', 'split', 'grid', 'list', 'split']);
         expect(state(radios)).toEqual({ checked: ['false', 'false', 'true'], focus: 2, tabs: [-1, -1, 0] });
+    });
+
+    test('passes over a disabled option with the arrows, Home and End', async () => {
+        const options = [{ ...OPTIONS[0], disabled: true }, OPTIONS[1], { ...OPTIONS[2], disabled: true }, { id: 'board' as View, label: 'Board' }];
+        const radios = await mount(<Harness initial="grid" options={options} />);
+        radios[1]!.focus();
+        await press('ArrowRight');
+        expect(state(radios).focus).toBe(3);
+        await press('ArrowRight');
+        await press('ArrowLeft');
+        await press('Home');
+        await press('End');
+        expect(changes).toEqual(['board', 'grid', 'board', 'grid', 'board']);
+        expect(state(radios)).toEqual({ checked: ['false', 'false', 'false', 'true'], focus: 3, tabs: [-1, -1, -1, 0] });
     });
 
     test('leaves other keys and a disabled group alone', async () => {
