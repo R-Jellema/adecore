@@ -41,7 +41,7 @@ Failed checks per suite and platform, in the error tone, four steps, taller cell
 
 ## Shades
 
-A value falls into one of `steps` shades by its share of `max`, the highest value unless the app gives one. The shade is the color of `tone` mixed over the surface from 15% for the first step to 100% for the last, so the smallest count still stands apart from an empty cell. An empty cell, for a zero, a value below zero or a missing value (`null`), is `--surface-sunken`. The tooltip writes a missing value as `-` and the live region as "No data". Give two heatmaps the same `max` to compare them.
+A value falls into one of `steps` shades by its share of `max`, the highest value unless the app gives one. The shade is the color of `tone` mixed over the surface from 15% for the first step to 100% for the last, so the smallest count still stands apart from an empty cell. An empty cell, for a zero, a value below zero or a missing value (`null`), is `--surface-sunken`. The card and the live region write a missing value as "No data". Give two heatmaps the same `max` to compare them.
 
 The legend under the grid shows the empty cell and every step between "Less" and "More". `legend={false}` leaves it out.
 
