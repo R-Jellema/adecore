@@ -21,6 +21,7 @@ const desktopUi: DefaultTheme.SidebarItem[] = [
         ['Button', '/ui/actions/button'],
         ['IconButton', '/ui/actions/icon-button'],
         ['ButtonGroup', '/ui/actions/button-group'],
+        ['SplitButton', '/ui/actions/split-button'],
         ['CloseButton', '/ui/actions/close-button'],
         ['CopyButton', '/ui/actions/copy-button'],
         ['Pill', '/ui/actions/pill'],
