@@ -185,6 +185,7 @@
         "clsx": "^2.1.1",
         "d3-scale": "^4.0.2",
         "d3-shape": "^3.2.0",
+        "lucide-react": "^1.47.0",
       },
       "devDependencies": {
         "@adecore/ui": "workspace:*",
@@ -194,7 +195,6 @@
         "@types/react": "^19.3.0",
         "@types/react-dom": "^19.3.0",
         "i18next": "^26.4.2",
-        "lucide-react": "^1.47.0",
         "react": "^19.3.0",
         "react-dom": "^19.3.0",
         "react-i18next": "^17.0.15",
@@ -203,7 +203,6 @@
       "peerDependencies": {
         "@adecore/ui": "workspace:*",
         "i18next": "^26.4.2",
-        "lucide-react": "^1.47.0",
         "react": "^19.3.0",
         "react-dom": "^19.3.0",
         "react-i18next": "^17.0.15",
