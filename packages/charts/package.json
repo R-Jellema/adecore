@@ -1,0 +1,63 @@
+{
+  "name": "@adecore/charts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Series charts and sparklines in the theme of @adecore/ui, readable by keyboard and screen reader.",
+  "license": "FSL-1.1-MIT",
+  "author": "Bas Milius",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/basmilius/adecore.git",
+    "directory": "packages/charts"
+  },
+  "bugs": {
+    "url": "https://github.com/basmilius/adecore/issues"
+  },
+  "homepage": "https://adecore.dev/charts/",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "src",
+    "LICENSE",
+    "!src/**/*.test.ts",
+    "!src/**/*.test.tsx"
+  ],
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "bun scripts/build.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "d3-scale": "^4.0.2",
+    "d3-shape": "^3.2.0"
+  },
+  "peerDependencies": {
+    "@adecore/ui": "workspace:*",
+    "i18next": "^26.4.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-i18next": "^17.0.15"
+  },
+  "devDependencies": {
+    "@adecore/ui": "workspace:*",
+    "@types/bun": "^1.4.2",
+    "@types/d3-scale": "^4.0.9",
+    "@types/d3-shape": "^3.2.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "i18next": "^26.4.2",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-i18next": "^17.0.15",
+    "typescript": "^7.0.2"
+  }
+}

@@ -46,6 +46,12 @@ A control drawn over a picture rather than over the interface, such as the handl
 
 <TokenTable group="media" />
 
+## Chart series
+
+The colors of the series of a chart, in order: the accent first, then orange, aqua, yellow, magenta and green, an order checked for color vision deficiency on both grounds. A series without a tone of its own takes the next one, as in [`@adecore/charts`](/charts/).
+
+<TokenTable group="chart" />
+
 ## File icons
 
 The file type palette, which [`FileIcon`](/ui/display/file-icon) colors a file type with. A file icon is the one thing the theme does not tint: TypeScript stays blue wherever the file shows up.

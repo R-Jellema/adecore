@@ -80,7 +80,8 @@ export default defineConfig({
             { text: 'Guide', link: '/guide/', activeMatch: '^/guide/' },
             category('Interface', [
                 ['UI', 'ui'],
-                ['Terminal', 'terminal']
+                ['Terminal', 'terminal'],
+                ['Charts', 'charts']
             ]),
             category('Desktop', [
                 ['Shell', 'shell'],

@@ -80,6 +80,7 @@ const GROUPS: [string, RegExp][] = [
     ['text', /^text/],
     ['accent', /^(accent.*|selection)$/],
     ['status', /^(status-.*|positive.*)$/],
+    ['chart', /^chart-\d$/],
     ['media', /^media-/],
     ['shadow', /-shadow$/],
     ['file-icon', /^file-icon-/],

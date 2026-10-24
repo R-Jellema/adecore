@@ -71,4 +71,4 @@ Run `bun run --cwd packages/agents-react test:visuals` to check the real React f
 
 Colors come out as the engine computes them, so a page's script can parse them. A token the app does not set leaves the page's default for that appearance, and so do `--warning-foreground` and `--info-foreground`, which have no token. `backgroundBehind(layers)` takes the computed backgrounds from the frame outward and answers the first ground that paints, with every translucent one in front of it laid over it.
 
-The theme of the package defines `--chart-1` as the accent and `--chart-2` to `--chart-6` as a categorical series for both grounds, checked for color vision deficiency: orange, aqua, yellow, magenta and green.
+The theme of `@adecore/ui` defines `--chart-1` as the accent and `--chart-2` to `--chart-6` as a categorical series for both grounds, checked for color vision deficiency: orange, aqua, yellow, magenta and green.

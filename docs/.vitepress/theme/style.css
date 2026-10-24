@@ -16,6 +16,7 @@
 
 @source "../../../packages/ui/src";
 @source "../../../packages/terminal/src";
+@source "../../../packages/charts/src";
 @source "../../../packages/database/src";
 @source "../../../packages/agents-react/src";
 @source "../../../packages/editor-react/src";

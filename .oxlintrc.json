@@ -14,7 +14,7 @@
     {
       // The packages whose build runs the React Compiler, held to the Rules of React it relies on. Its `todo`
       // (syntax it cannot compile yet) and `rule-suppression` (a dependency list left short on purpose) are no faults.
-      "files": ["packages/ui/src/**", "packages/agents-react/src/**", "packages/editor-react/src/**", "packages/terminal/src/**"],
+      "files": ["packages/ui/src/**", "packages/agents-react/src/**", "packages/editor-react/src/**", "packages/terminal/src/**", "packages/charts/src/**"],
       "rules": {
         "react/hooks": "error",
         "react/refs": "error",

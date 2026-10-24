@@ -22,13 +22,6 @@
     --chart-context-system: var(--text-faint);
     /* The current hit of a find, which has to stand out from the accent of a bookmark next to it. */
     --chat-find: #facc15;
-    /* The series of a chart in a visual after the first, which is the accent. A categorical order checked
-       for color vision deficiency on both grounds: orange, aqua, yellow, magenta, green. */
-    --chart-2: #eb6834;
-    --chart-3: #1baf7a;
-    --chart-4: #eda100;
-    --chart-5: #e87ba4;
-    --chart-6: #008300;
     /* The two grounds of the map a page draws without tiles. */
     --map-land: #f2f1ed;
     --map-water: #d3dde5;
@@ -54,11 +47,6 @@
     --chart-context-conversation: #6dd08b;
     --chart-context-system: var(--text-faint);
     --chat-find: #f5c542;
-    --chart-2: #d95926;
-    --chart-3: #199e70;
-    --chart-4: #c98500;
-    --chart-5: #d55181;
-    --chart-6: #008300;
     --map-land: #2c3135;
     --map-water: #1a2026;
     --chat-ui-tile: color-mix(in srgb, var(--text) 3%, var(--surface));
@@ -73,7 +61,6 @@
     --chat-output: var(--term-fg, var(--text));
     --chat-added: var(--term-ansi-green, var(--positive));
     --chat-removed: var(--term-ansi-red, var(--status-error));
-    --chart-1: var(--accent);
     /* The number of a place on a map and in its list: the ink on the ground, so it reads on either. */
     --map-marker: var(--text);
     --map-marker-text: var(--surface);

@@ -1,0 +1,105 @@
+/* The space between two groups of columns, wide enough to read as a break and not as a missing column. */
+export const GROUP_GAP = 16;
+
+/* A column wider than this reads as a block rather than as a value. */
+const MAX_COLUMN = 56;
+
+/* Share of a bucket a column takes when it is alone in it; the rest is air between buckets. */
+const COLUMN_SHARE = 0.72;
+
+export interface BandGroup {
+    readonly key: string;
+    readonly first: number;
+    readonly last: number;
+    readonly left: number;
+    readonly right: number;
+}
+
+export interface BandLayout {
+    readonly bucket: number;
+    /* The width the buckets take, wider than the room when `minBucketWidth` does not fit. */
+    readonly width: number;
+    /* The left edge of every bucket, from the left of the plot, unrounded. */
+    readonly lefts: readonly number[];
+    /* Empty without a `group`. */
+    readonly groups: readonly BandGroup[];
+}
+
+/* The run of equal keys each bucket belongs to, in the order of the data; a key that comes back later starts a run of its own. */
+export function groupRuns(keys: readonly string[]): { key: string; first: number; last: number }[] {
+    const runs: { key: string; first: number; last: number }[] = [];
+    keys.forEach((key, index) => {
+        const run = runs.at(-1);
+        if (run !== undefined && run.key === key) {
+            run.last = index;
+        } else {
+            runs.push({ key, first: index, last: index });
+        }
+    });
+    return runs;
+}
+
+/* The buckets of a band scale across the room, a gap between groups, and no narrower than `minBucketWidth`. */
+export function bandLayout(count: number, groupKeys: readonly string[] | null, room: number, minBucketWidth = 0): BandLayout {
+    const runs = groupKeys === null ? [] : groupRuns(groupKeys);
+    const gaps = Math.max(0, runs.length - 1) * GROUP_GAP;
+    if (count === 0) {
+        return { bucket: 0, width: Math.max(0, room), lefts: [], groups: [] };
+    }
+    const bucket = Math.max(minBucketWidth, (room - gaps) / count);
+    const width = Math.max(room, bucket * count + gaps);
+    const lefts: number[] = [];
+    const groups: BandGroup[] = [];
+    if (runs.length === 0) {
+        for (let i = 0; i < count; i++) {
+            lefts.push(i * bucket);
+        }
+        return { bucket, width, lefts, groups };
+    }
+    runs.forEach((run, groupIndex) => {
+        for (let i = run.first; i <= run.last; i++) {
+            lefts.push(i * bucket + groupIndex * GROUP_GAP);
+        }
+        groups.push({ ...run, left: lefts[run.first]!, right: lefts[run.last]! + bucket });
+    });
+    return { bucket, width, lefts, groups };
+}
+
+export interface Column {
+    readonly x: number;
+    readonly width: number;
+}
+
+/*
+ * The columns side by side in one bucket, on whole pixels: never narrower than 2px, with 1px between
+ * neighbors, and at least 1px of air to the next bucket when the bucket has room for it.
+ */
+export function columnsIn(left: number, bucket: number, count: number): Column[] {
+    if (count <= 0) {
+        return [];
+    }
+    const room = Math.min(bucket - Math.max(1, bucket * (1 - COLUMN_SHARE)), MAX_COLUMN * count + count - 1);
+    const width = Math.max(2, Math.floor((room - (count - 1)) / count));
+    const total = width * count + count - 1;
+    const start = Math.round(left + (bucket - total) / 2);
+    return Array.from({ length: count }, (_, i) => ({ x: start + i * (width + 1), width }));
+}
+
+/*
+ * The rectangle of one value of a column, from its base to its top in pixels. A segment stacked on
+ * another leaves 1px of the ground between them, and a value that is not zero never vanishes.
+ */
+export function segmentOf(topPixel: number, basePixel: number, onGround: boolean, value: number): { y: number; height: number } {
+    const upward = topPixel <= basePixel;
+    let top = Math.round(Math.min(topPixel, basePixel));
+    let bottom = Math.round(Math.max(topPixel, basePixel));
+    if (!onGround && upward) {
+        bottom -= 1;
+    } else if (!onGround) {
+        top += 1;
+    }
+    if (value !== 0 && bottom - top < 1) {
+        return upward ? { y: bottom - 1, height: 1 } : { y: top, height: 1 };
+    }
+    return { y: top, height: Math.max(0, bottom - top) };
+}

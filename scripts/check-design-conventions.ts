@@ -40,7 +40,8 @@ const packages: { directory: string; options: DesignOptions }[] = [
             keyListeners: ['definition-link.ts', 'inlay-hints.ts']
         }
     },
-    { directory: 'packages/terminal/src', options: {} }
+    { directory: 'packages/terminal/src', options: {} },
+    { directory: 'packages/charts/src', options: { namespace: 'charts' } }
 ];
 
 let failures = 0;

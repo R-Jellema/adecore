@@ -1,0 +1,155 @@
+/* Data for the chart demos: made up, but shaped like what a service reports. Seeded, so every render draws the same. */
+
+const HOUR = 3_600_000;
+const DAY = 24 * HOUR;
+
+/* The first hour of the day the demos show, in the reader's own time zone. */
+const START = new Date(2026, 9, 23).getTime();
+
+const noise = (seed: number): number => {
+    const value = Math.sin(seed * 12.9898) * 43758.5453;
+    return value - Math.floor(value);
+};
+
+export interface HourBucket {
+    readonly at: number;
+    readonly errors: number | null;
+    readonly warnings: number | null;
+}
+
+/* The stretch the collector was down: no buckets reported between these hours. */
+export const GAP = { start: START + 9 * HOUR, end: START + 12 * HOUR };
+
+export const DEPLOY = { at: START + 14 * HOUR + 37 * 60_000, version: 'v2.4.0' };
+
+/* Errors and warnings per hour over a day: quiet at night, a spike after the deploy, nothing while the collector was down. */
+export function errorsPerHour(): HourBucket[] {
+    return Array.from({ length: 24 }, (_, hour) => {
+        const at = START + hour * HOUR;
+        if (at >= GAP.start && at < GAP.end) {
+            return { at, errors: null, warnings: null };
+        }
+        const day = Math.sin(((hour - 6) / 24) * Math.PI * 2) * 0.5 + 0.5;
+        const spike = hour === 15 ? 38 : hour === 16 ? 21 : hour === 17 ? 9 : 0;
+        return {
+            at,
+            errors: Math.round(4 + day * 14 + noise(hour) * 5 + spike),
+            warnings: Math.round(10 + day * 22 + noise(hour + 40) * 8 + spike / 3)
+        };
+    });
+}
+
+export interface LatencyBucket {
+    readonly at: number;
+    readonly p95: number;
+}
+
+/* The p95 latency every 20 minutes over the same hours, two buckets between every two of the errors. */
+export function latency(): LatencyBucket[] {
+    return Array.from({ length: 70 }, (_, step) => {
+        const at = START + step * 20 * 60_000;
+        const hour = step / 3;
+        const day = Math.sin(((hour - 6) / 24) * Math.PI * 2) * 0.5 + 0.5;
+        const spike = hour >= 14.6 && hour < 16.4 ? 160 : 0;
+        return { at, p95: Math.round(120 + day * 90 + noise(step + 7) * 30 + spike) };
+    });
+}
+
+export interface TokenDay {
+    readonly day: number;
+    readonly input: number;
+    readonly output: number;
+}
+
+/* Tokens per day over two weeks, lighter on the weekend. */
+export function tokensPerDay(): TokenDay[] {
+    return Array.from({ length: 14 }, (_, index) => {
+        const day = START - (13 - index) * DAY;
+        const weekday = new Date(day).getDay();
+        const weekend = weekday === 0 || weekday === 6 ? 0.3 : 1;
+        return {
+            day,
+            input: Math.round((1_400_000 + noise(index) * 900_000) * weekend),
+            output: Math.round((260_000 + noise(index + 20) * 180_000) * weekend)
+        };
+    });
+}
+
+/* Events per day over two weeks for a handful of services, for a row of sparklines. */
+export function eventsPerService(): { name: string; perDay: number[] }[] {
+    return ['api', 'worker', 'scheduler', 'mailer'].map((name, service) => ({
+        name,
+        perDay: Array.from({ length: 14 }, (_, day) => {
+            const quiet = service === 3 && day > 3 && day < 7;
+            return quiet ? 0 : Math.round(noise(day + service * 31) * (40 + service * 25) + (day === 11 && service === 0 ? 120 : 0));
+        })
+    }));
+}
+
+export interface ModelScore {
+    readonly key: string;
+    readonly model: string;
+    readonly lab: string;
+    readonly effort: string;
+    readonly score: number;
+}
+
+/* A color of the app's own per lab, as a CSS value. These borrow the chart series of the theme. */
+export const LAB_COLORS: Record<string, string> = {
+    Northwind: 'var(--chart-1)',
+    Lumen: 'var(--chart-2)',
+    Orbital: 'var(--chart-3)',
+    Fathom: 'var(--chart-5)'
+};
+
+const MODELS: { model: string; lab: string; scores: [string, number][] }[] = [
+    {
+        model: 'Atlas 5',
+        lab: 'Northwind',
+        scores: [
+            ['low', 61],
+            ['medium', 66],
+            ['high', 71],
+            ['max', 73]
+        ]
+    },
+    {
+        model: 'Lumen Pro',
+        lab: 'Lumen',
+        scores: [
+            ['low', 58],
+            ['medium', 63],
+            ['high', 68]
+        ]
+    },
+    {
+        model: 'Orbit 3',
+        lab: 'Orbital',
+        scores: [
+            ['medium', 55],
+            ['high', 62]
+        ]
+    },
+    {
+        model: 'Atlas 5 mini',
+        lab: 'Northwind',
+        scores: [
+            ['low', 47],
+            ['medium', 52],
+            ['high', 57]
+        ]
+    },
+    {
+        model: 'Fathom 2',
+        lab: 'Fathom',
+        scores: [
+            ['low', 41],
+            ['high', 50]
+        ]
+    }
+];
+
+/* One row per model and effort, a model's efforts together, the models by their best score. */
+export function scoresByModel(): ModelScore[] {
+    return MODELS.flatMap(({ model, lab, scores }) => scores.map(([effort, score]) => ({ key: `${model}:${effort}`, model, lab, effort, score })));
+}
