@@ -6,7 +6,7 @@ The theme maps the tokens onto Tailwind utilities (`bg-surface`, `text-text-mute
 
 ## Ground and surfaces
 
-`--bg` is the page behind everything. A panel or a card is a `--surface`, and a popup, a menu or a dialog floats on `--surface-raised`. `--surface-sunken` is the recessed track of a segmented control or a field that should not draw a box. Hover and pressed get a step each, `--surface-hover` lighter than `--surface-active`, so pressed always outranks hover.
+`--bg` is the page behind everything. A panel or a card is a `--surface`, and a popup, a menu or a dialog floats on `--surface-raised`. `--surface-sunken` is the recessed track of a segmented control or a field that should not draw a box. Hover and pressed get a step each, `--surface-hover` lighter than `--surface-active`, so pressed always outranks hover. `--thumb` is the knob of a slider or a switch: white with an edge in the light theme, light gray in the dark theme, so it stands apart from its track in both.
 
 <TokenTable group="ground" />
 
@@ -36,7 +36,7 @@ Four states something can be in (running, waiting on a person, idle, failed) and
 
 ## Shadows
 
-`--float-shadow` lifts everything that floats: menus, dialogs, tooltips, toasts. `--raised-shadow` is the small lift of a switch thumb or a picked segment off its track.
+`--float-shadow` lifts everything that floats: menus, dialogs, tooltips, toasts. `--raised-shadow` is the small lift of a picked segment off its track, and `--thumb-shadow` the edge and lift of a thumb.
 
 <TokenTable group="shadow" />
 

@@ -46,12 +46,19 @@
         0 3px 6px -2px rgb(0 0 0 / 0.07),
         0 8px 16px -8px rgb(0 0 0 / 0.1),
         0 16px 28px -14px rgb(0 0 0 / 0.1);
-    /* The small lift of a thumb or a picked segment off the track it sits in: close to the surface
+    /* The small lift of a picked segment off the track it sits in: close to the surface
        rather than a haze around it. Not named `--shadow-*`, since the theme maps that name onto this. */
     --raised-shadow:
         0 1px 2px rgb(0 0 0 / 0.05),
         0 2px 4px -1px rgb(0 0 0 / 0.05),
         0 6px 12px -6px rgb(0 0 0 / 0.08);
+    /* The knob of a slider or switch. A white knob on a white surface needs an edge of its own,
+       or a disabled slider, whose track has faded, shows no knob at all. */
+    --thumb: #ffffff;
+    --thumb-shadow:
+        0 0 0 1px rgb(0 0 0 / 0.08),
+        0 1px 2px rgb(0 0 0 / 0.1),
+        0 2px 4px -1px rgb(0 0 0 / 0.06);
     --status-running: #2563eb;
     --status-needs-you: #d97706;
     --status-idle: #16a34a;
@@ -122,6 +129,11 @@
         0 1px 2px rgb(0 0 0 / 0.3),
         0 2px 4px rgb(0 0 0 / 0.2),
         0 4px 8px rgb(0 0 0 / 0.12);
+    /* Light rather than raised: a gray knob on a dark track barely stands apart from it. */
+    --thumb: #ececf1;
+    --thumb-shadow:
+        0 1px 2px rgb(0 0 0 / 0.5),
+        0 2px 4px -1px rgb(0 0 0 / 0.4);
     --status-running: #60a5fa;
     --status-needs-you: #fbbf24;
     --status-idle: #4ade80;
@@ -232,6 +244,7 @@
     --color-accent: var(--accent);
     --color-accent-soft: var(--accent-soft);
     --color-accent-text: var(--accent-text);
+    --color-thumb: var(--thumb);
     --color-status-running: var(--status-running);
     --color-status-needs-you: var(--status-needs-you);
     --color-status-idle: var(--status-idle);
@@ -242,6 +255,7 @@
     --color-media-handle-text: var(--media-handle-text);
     --shadow-float: var(--float-shadow);
     --shadow-raised: var(--raised-shadow);
+    --shadow-thumb: var(--thumb-shadow);
     --shadow-media-handle-edge: var(--media-handle-edge);
     --shadow-media-handle: var(--media-handle-shadow);
 }

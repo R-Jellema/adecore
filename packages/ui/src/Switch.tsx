@@ -27,7 +27,7 @@ export function Switch({ checked, onCheckedChange, label, disabled, className, r
                 className
             )}
         >
-            <BaseSwitch.Thumb className="block h-4 w-4 rounded-full bg-surface-raised shadow-raised transition-transform data-checked:translate-x-4" />
+            <BaseSwitch.Thumb className="block h-4 w-4 rounded-full bg-thumb shadow-thumb transition-transform data-checked:translate-x-4" />
         </BaseSwitch.Root>
     );
 }
