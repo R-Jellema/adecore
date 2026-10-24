@@ -254,6 +254,20 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(tallest).toBe(24);
     });
 
+    test('a scrolling plot keeps room over the y axis for what hangs out of its first bucket', async () => {
+        const plot = await mount(
+            <Chart.Root data={SCORES} x="key" minBucketWidth={400} label="Scores">
+                <Chart.YAxis />
+                <Chart.Bar value="score" label="Score" valueLabels />
+            </Chart.Root>
+        );
+        const scroller = plot.parentElement!;
+        const axis = Number(scroller.previousElementSibling!.getAttribute('width'));
+        expect(axis).toBeGreaterThan(0);
+        expect(scroller.style.marginLeft).toBe(`-${axis}px`);
+        expect(scroller.style.paddingLeft).toBe(`${axis}px`);
+    });
+
     test('the tooltip keeps a row for a series without a value in the bucket', async () => {
         const hours = [
             { at: 0, errors: null, warnings: 3 },

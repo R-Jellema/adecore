@@ -114,7 +114,7 @@ The arrow keys keep moving column by column, across the edges of the groups, and
 
 The key of a group is its identity, which need not be what a person reads, such as the id of a model. `groupLabel` on the root reads the name from the rows, as a key or a function: `groupLabel="modelName"`. The tooltip, the live region and the table read it, and `Chart.GroupAxis` hands it to its children as `label`.
 
-`minBucketWidth` is the narrowest a bucket may be. Below it the plot grows wider than its box and scrolls sideways, while the y axis stays in place.
+`minBucketWidth` is the narrowest a bucket may be. Below it the plot grows wider than its box and scrolls sideways, while the y axis stays in place. What hangs out of the first buckets, such as a value label or a slanted name, may run over the y axis until the plot scrolls.
 
 ## Picking columns
 
