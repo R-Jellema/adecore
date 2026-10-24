@@ -419,6 +419,20 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         </Chart.Root>
     );
 
+    test('a log axis names both of its ends, the labels moved inward where they would hang past the chart', async () => {
+        await mount(
+            <Chart.Root data={MEASURED} rows="points" x="cost" xScale="log" label="Cost">
+                <Chart.XAxis format={(value) => `$${value}`} />
+                <Chart.Point value="score" label="Intelligence" />
+            </Chart.Root>
+        );
+        const labels = [...container.querySelectorAll('text')].map((text) => [text.textContent, Number(text.getAttribute('x'))] as const);
+        expect(labels.map(([text]) => text)).toEqual(['$0.01', '$0.1', '$1', '$10']);
+        const [first, last] = [labels[0]![1], labels.at(-1)![1]];
+        // 7px per character: the widest label, "$0.01", is 35px, so an end label stands half that from an edge of 600px.
+        expect([first, last]).toEqual([18, 583]);
+    });
+
     test('a point chart takes the point under the pointer within reach and draws guides to both axes', async () => {
         const changes: unknown[] = [];
         const plot = await mount(scatter({ onActiveXChange: (x) => changes.push(x) }));

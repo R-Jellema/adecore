@@ -171,13 +171,15 @@ export function ChartXAxis({ format, ticks, angle = 0, thin = true, title, class
         const step = values.length > 1 ? values[1]! - values[0]! : continuous.domain[1] - continuous.domain[0];
         const label = timeLabelOf(continuous.domain[1] - continuous.domain[0], step);
         const decimals = decimalsOf(step);
+        const inward = (x: number): number => Math.min(Math.max(x, widest / 2 - chart.leftAxis), chart.width - widest / 2);
         placed = values
             .map((tick) => ({
                 key: String(tick),
-                x: continuous.at(tick),
+                // A tick on an end of the axis, such as the last decade of a log scale, still names that end when moved in.
+                x: tick === continuous.domain[0] || tick === continuous.domain[1] ? inward(continuous.at(tick)) : continuous.at(tick),
                 text: format !== undefined ? format(tick) : chart.xScale === 'time' ? formatTime(tick, label) : formatRounded(tick, decimals)
             }))
-            // A label that would hang past the end of the chart is left out rather than moved off its tick.
+            // Any other label that would hang past the end of the chart is left out rather than moved off its tick.
             .filter((tick) => tick.x - widest / 2 >= -chart.leftAxis && tick.x + widest / 2 <= chart.width + 1);
     } else if (band !== null && band.bucket > 0) {
         const every = thin ? Math.max(1, Math.ceil((angle === 0 ? widest + BAND_LABEL_GAP : X_LABEL_LINE) / band.bucket)) : 1;
