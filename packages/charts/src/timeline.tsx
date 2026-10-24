@@ -327,127 +327,131 @@ export function TimelineRows<Span extends TimelineSpan>({ label, detail, classNa
     }
 
     return (
-        <div
-            ref={ref}
-            role="tree"
-            aria-label={timeline.label}
-            aria-describedby={`${id}-hint`}
-            className={clsx('flex flex-col', className)}
-            onKeyDown={onKeyDown}
-        >
+        <>
+            <div
+                ref={ref}
+                role="tree"
+                aria-label={timeline.label}
+                aria-describedby={`${id}-hint`}
+                className={clsx('flex flex-col', className)}
+                onKeyDown={onKeyDown}
+            >
+                {shown.map((row, index) => {
+                    const { span } = row;
+                    const open = expanded.has(span.id);
+                    const selected = timeline.value === span.id;
+                    const color = colorOf(span.tone) ?? timeline.colorOfKind(span.kind);
+                    const bar = barOf(span, origin, total);
+                    const kind = timeline.kinds.find((entry) => entry.id === span.kind);
+                    const name = [
+                        span.label,
+                        kind?.label,
+                        t('timeline.start', { offset: format(Math.max(0, span.start - origin)) }),
+                        t('timeline.duration', { duration: format(span.duration) })
+                    ]
+                        .filter(Boolean)
+                        .join(', ');
+                    const detailId = `${id}-${index}-detail`;
+                    const shownDetail = selected && detail !== undefined;
+                    return (
+                        <div
+                            key={span.id}
+                            role="treeitem"
+                            data-span={span.id}
+                            tabIndex={index === current ? 0 : -1}
+                            aria-label={name}
+                            aria-level={row.depth + 1}
+                            aria-posinset={row.position}
+                            aria-setsize={row.siblings}
+                            aria-expanded={row.children > 0 ? open : undefined}
+                            aria-selected={selected}
+                            aria-describedby={shownDetail ? detailId : undefined}
+                            className={clsx(
+                                COLUMNS,
+                                'cursor-default outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent',
+                                selected ? 'bg-surface-active' : 'hover:bg-surface-hover'
+                            )}
+                            onFocus={(e) => {
+                                if (e.target === e.currentTarget) {
+                                    setFocusId(span.id);
+                                }
+                            }}
+                            onClick={() => {
+                                setFocusId(span.id);
+                                timeline.select(span.id);
+                            }}
+                        >
+                            <div className="flex min-w-0 items-center gap-1.5 px-4 pt-1 @xl:py-1">
+                                <span aria-hidden className="flex shrink-0 self-stretch">
+                                    {Array.from({ length: Math.min(row.depth, MAX_GUIDES) }, (_, level) => (
+                                        <span key={level} className="w-3 border-l border-border-soft" />
+                                    ))}
+                                </span>
+                                {row.children > 0 ? (
+                                    <Tree.Chevron
+                                        expanded={open}
+                                        onExpandedChange={(next) => timeline.setExpanded(span.id, next)}
+                                        className="rounded-xs text-text-muted hover:bg-surface-active"
+                                    />
+                                ) : (
+                                    <span className="size-4 shrink-0" />
+                                )}
+                                <span aria-hidden className="size-2 shrink-0 rounded-xs" style={{ background: color }} />
+                                {label === undefined ? (
+                                    <span className="min-w-0 truncate text-xs text-text">{span.label}</span>
+                                ) : (
+                                    label(span as Span, { depth: row.depth, children: row.children, expanded: open, color })
+                                )}
+                                {row.children > 0 && !open && (
+                                    <span className="shrink-0 text-xs text-text-muted tabular-nums">+{formatNumber(row.children)}</span>
+                                )}
+                            </div>
+                            <div aria-hidden className="relative mx-4 mb-1 h-5 @xl:mb-0 @xl:ml-0 @xl:h-7">
+                                {ticks.map((tick) => (
+                                    <span
+                                        key={tick}
+                                        className="absolute inset-y-0 w-px bg-border-soft"
+                                        style={{ left: `${percentOf(origin + tick, origin, total)}%` }}
+                                    />
+                                ))}
+                                <span
+                                    className="absolute inset-y-0.5 flex items-center overflow-hidden rounded-xs border-l-2 px-1.5 @xl:inset-y-1"
+                                    style={{
+                                        left: `${bar.left}%`,
+                                        width: `${bar.width}%`,
+                                        borderColor: color,
+                                        background: `color-mix(in srgb, ${color} 22%, transparent)`
+                                    }}
+                                >
+                                    {bar.label === 'inside' && <span className="truncate text-xs text-text tabular-nums">{format(span.duration)}</span>}
+                                </span>
+                                {bar.label !== 'inside' && (
+                                    <span
+                                        className="absolute inset-y-0 flex items-center px-1.5 text-xs whitespace-nowrap text-text-muted tabular-nums"
+                                        style={bar.label === 'after' ? { left: `${bar.left + bar.width}%` } : { right: `${100 - bar.left}%` }}
+                                    >
+                                        {format(span.duration)}
+                                    </span>
+                                )}
+                            </div>
+                            {shownDetail && (
+                                // A press inside the detail, such as on a link or to select its text, does not unselect the row.
+                                // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+                                <div
+                                    id={detailId}
+                                    className="col-span-full cursor-auto border-y border-border-soft bg-surface-sunken px-4 py-3"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    {detail(span as Span)}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
             <p id={`${id}-hint`} className="sr-only">
                 {t('timeline.keyboard')}
             </p>
-            {shown.map((row, index) => {
-                const { span } = row;
-                const open = expanded.has(span.id);
-                const selected = timeline.value === span.id;
-                const color = colorOf(span.tone) ?? timeline.colorOfKind(span.kind);
-                const bar = barOf(span, origin, total);
-                const kind = timeline.kinds.find((entry) => entry.id === span.kind);
-                const name = [
-                    span.label,
-                    kind?.label,
-                    t('timeline.start', { offset: format(Math.max(0, span.start - origin)) }),
-                    t('timeline.duration', { duration: format(span.duration) })
-                ]
-                    .filter(Boolean)
-                    .join(', ');
-                const detailId = `${id}-${index}-detail`;
-                const shownDetail = selected && detail !== undefined;
-                return (
-                    <div
-                        key={span.id}
-                        role="treeitem"
-                        data-span={span.id}
-                        tabIndex={index === current ? 0 : -1}
-                        aria-label={name}
-                        aria-level={row.depth + 1}
-                        aria-posinset={row.position}
-                        aria-setsize={row.siblings}
-                        aria-expanded={row.children > 0 ? open : undefined}
-                        aria-selected={selected}
-                        aria-describedby={shownDetail ? detailId : undefined}
-                        className={clsx(
-                            COLUMNS,
-                            'cursor-default outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent',
-                            selected ? 'bg-surface-active' : 'hover:bg-surface-hover'
-                        )}
-                        onFocus={(e) => {
-                            if (e.target === e.currentTarget) {
-                                setFocusId(span.id);
-                            }
-                        }}
-                        onClick={() => {
-                            setFocusId(span.id);
-                            timeline.select(span.id);
-                        }}
-                    >
-                        <div className="flex min-w-0 items-center gap-1.5 px-4 pt-1 @xl:py-1">
-                            <span aria-hidden className="flex shrink-0 self-stretch">
-                                {Array.from({ length: Math.min(row.depth, MAX_GUIDES) }, (_, level) => (
-                                    <span key={level} className="w-3 border-l border-border-soft" />
-                                ))}
-                            </span>
-                            {row.children > 0 ? (
-                                <Tree.Chevron
-                                    expanded={open}
-                                    onExpandedChange={(next) => timeline.setExpanded(span.id, next)}
-                                    className="rounded-xs text-text-muted hover:bg-surface-active"
-                                />
-                            ) : (
-                                <span className="size-4 shrink-0" />
-                            )}
-                            <span aria-hidden className="size-2 shrink-0 rounded-xs" style={{ background: color }} />
-                            {label === undefined ? (
-                                <span className="min-w-0 truncate text-xs text-text">{span.label}</span>
-                            ) : (
-                                label(span as Span, { depth: row.depth, children: row.children, expanded: open, color })
-                            )}
-                            {row.children > 0 && !open && <span className="shrink-0 text-xs text-text-muted tabular-nums">+{formatNumber(row.children)}</span>}
-                        </div>
-                        <div aria-hidden className="relative mx-4 mb-1 h-5 @xl:mb-0 @xl:ml-0 @xl:h-7">
-                            {ticks.map((tick) => (
-                                <span
-                                    key={tick}
-                                    className="absolute inset-y-0 w-px bg-border-soft"
-                                    style={{ left: `${percentOf(origin + tick, origin, total)}%` }}
-                                />
-                            ))}
-                            <span
-                                className="absolute inset-y-0.5 flex items-center overflow-hidden rounded-xs border-l-2 px-1.5 @xl:inset-y-1"
-                                style={{
-                                    left: `${bar.left}%`,
-                                    width: `${bar.width}%`,
-                                    borderColor: color,
-                                    background: `color-mix(in srgb, ${color} 22%, transparent)`
-                                }}
-                            >
-                                {bar.label === 'inside' && <span className="truncate text-xs text-text tabular-nums">{format(span.duration)}</span>}
-                            </span>
-                            {bar.label !== 'inside' && (
-                                <span
-                                    className="absolute inset-y-0 flex items-center px-1.5 text-xs whitespace-nowrap text-text-muted tabular-nums"
-                                    style={bar.label === 'after' ? { left: `${bar.left + bar.width}%` } : { right: `${100 - bar.left}%` }}
-                                >
-                                    {format(span.duration)}
-                                </span>
-                            )}
-                        </div>
-                        {shownDetail && (
-                            // A press inside the detail, such as on a link or to select its text, does not unselect the row.
-                            // oxlint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
-                            <div
-                                id={detailId}
-                                className="col-span-full cursor-auto border-y border-border-soft bg-surface-sunken px-4 py-3"
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                {detail(span as Span)}
-                            </div>
-                        )}
-                    </div>
-                );
-            })}
-        </div>
+        </>
     );
 }
