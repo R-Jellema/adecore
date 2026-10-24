@@ -27,7 +27,7 @@ export function Checkbox({ checked, onCheckedChange, label, indeterminate = fals
             aria-label={label}
             disabled={disabled}
             className={clsx(
-                'flex size-4 shrink-0 items-center justify-center rounded-sm border border-border-strong bg-surface text-accent-text transition-colors',
+                'flex size-4 shrink-0 items-center justify-center rounded-sm border border-border-strong bg-field text-accent-text transition-colors',
                 'data-checked:border-accent data-checked:bg-accent data-indeterminate:border-accent data-indeterminate:bg-accent data-disabled:opacity-50',
                 className
             )}

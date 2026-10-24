@@ -20,6 +20,8 @@
     /* The pressed step of a toggle. It cannot be `--surface-raised`, which equals `--surface` in the
        light theme, and it has to sit a shade past `--surface-hover` so pressed outranks hover. */
     --surface-active: #dcdce2;
+    /* What a person types or picks in: a step lighter than the ground it stands on in the dark theme, white here. */
+    --field: #ffffff;
     /* Borders carry an alpha rather than a gray of their own, so a line takes the color of whatever
        it is drawn over instead of fighting it. A gray hairline over a tinted surface reads as a
        smudge; the same line in black at a low alpha stays a line. Everything with a surface of its
@@ -112,6 +114,7 @@
     --surface-sunken: #08080a;
     --surface-hover: #202024;
     --surface-active: #28282e;
+    --field: #1b1b1f;
     /* White at a low alpha, which is what gives a dark surface its lifted edge. */
     --border: rgb(255 255 255 / 0.07);
     --separator: oklch(0.236 0.006 285.956);
@@ -238,6 +241,7 @@
     --color-surface-idle: var(--surface-idle);
     --color-surface-hover: var(--surface-hover);
     --color-surface-active: var(--surface-active);
+    --color-field: var(--field);
     --color-border: var(--border);
     --color-separator: var(--separator);
     --color-border-strong: var(--border-strong);
@@ -331,7 +335,7 @@
         padding: 0 10px;
         border-radius: 8px;
         border: 1px solid var(--border);
-        background: var(--surface);
+        background: var(--field);
         color: var(--text);
         font-size: var(--text-sm);
         outline: none;
