@@ -524,9 +524,10 @@ export function ChartRoot<Row>({
         <ChartContext value={context}>
             <div ref={ref} className={clsx('flex min-w-0 flex-col gap-3', className)}>
                 <div ref={setLegendSlot} className="empty:hidden" />
-                <div ref={measure} className="focus-ring-within relative flex rounded-md">
+                {/* The ring stands outside the box, where it clears the labels at the edges of the axes. */}
+                <div ref={measure} className="focus-ring-within relative flex rounded-md" style={{ outlineOffset: 4 }}>
                     <svg width={leftAxis} height={height} aria-hidden className="shrink-0 overflow-visible">
-                        <g ref={setLeftSlot} />
+                        <g ref={setLeftSlot} tabIndex={-1} />
                     </svg>
                     <div
                         ref={scroller}
@@ -628,7 +629,7 @@ export function ChartRoot<Row>({
                         <div ref={setGroupsSlot} className="empty:hidden" style={{ width }} />
                     </div>
                     <svg width={rightAxis} height={height} aria-hidden className="shrink-0 overflow-visible">
-                        <g ref={setRightSlot} />
+                        <g ref={setRightSlot} tabIndex={-1} />
                     </svg>
                     <div ref={setTooltipSlot} className="pointer-events-none absolute inset-0" />
                 </div>
