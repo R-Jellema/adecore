@@ -28,8 +28,8 @@ export interface ChartBucket<Row> {
 }
 
 export interface ChartTooltipProps<Row> {
-    /* A line with the sum of the values under the series. */
-    readonly total?: boolean;
+    /* A line with the sum of the values under the series, named "Total" or by the string given, such as "Runs". */
+    readonly total?: boolean | string;
     /* Writes the values of the card; without it they are written as the y axis writes them. */
     readonly format?: (value: number) => string;
     /* What the card holds in place of its rows. */
@@ -117,9 +117,9 @@ export function ChartTooltip<Row>({ total = false, format, children, className, 
                             </p>
                         );
                     })}
-                    {total && bucket.values.length > 0 && (
+                    {total !== false && bucket.values.length > 0 && (
                         <p className="flex items-center gap-2 border-t border-border pt-1 font-medium text-text">
-                            {t('total')}
+                            {total === true ? t('total') : total}
                             <span className="ml-auto pl-3 tabular-nums">{write(sum)}</span>
                         </p>
                     )}

@@ -39,6 +39,25 @@ export function errorsPerHour(): HourBucket[] {
     });
 }
 
+export interface RunBucket {
+    readonly at: number;
+    readonly succeeded: number | null;
+    readonly failed: number | null;
+}
+
+/* Runs of a job per hour over the same day, and the ones that failed, with more failures right after the deploy. */
+export function runsPerHour(): RunBucket[] {
+    return Array.from({ length: 24 }, (_, hour) => {
+        const at = START + hour * HOUR;
+        if (at >= GAP.start && at < GAP.end) {
+            return { at, succeeded: null, failed: null };
+        }
+        const day = Math.sin(((hour - 6) / 24) * Math.PI * 2) * 0.5 + 0.5;
+        const failed = hour === 15 ? 14 : hour === 16 ? 6 : Math.round(noise(hour + 70) * 3);
+        return { at, succeeded: Math.round(20 + day * 40 + noise(hour + 90) * 10), failed };
+    });
+}
+
 export interface LatencyBucket {
     readonly at: number;
     readonly p95: number;

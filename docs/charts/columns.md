@@ -40,22 +40,22 @@ Columns stand on whole pixels. A column is never narrower than 2px, and by defau
 
 ## Columns over time
 
-On a `time` scale each bucket lasts one `step` from its x, and its columns stand in that slot. A marker or a band at any moment then lands where it happened, between the columns or across them, and a row that is missing leaves its slot empty:
+On a `time` scale each bucket lasts one `step` from its x, and its columns stand in that slot. A marker or a band at any moment then lands where it happened, between the columns or across them, and a row that is missing leaves its slot empty. Runs of a job per hour, the failed ones on top in the error tone, with their sum in the tooltip:
 
 <Demo src="charts/columns-over-time" />
 
 ```tsx
-<Chart.Root data={buckets} x="at" xScale="time" step={HOUR} y={{ integer: true }} label="Events per hour" height={220}>
+<Chart.Root data={runs} x="at" xScale="time" step={HOUR} y={{ integer: true }} label="Runs and failures per hour" height={220}>
     <Chart.Grid />
     <Chart.Band from={gap.start} to={gap.end} label="No data from the collector" />
     <Chart.XAxis />
     <Chart.YAxis />
     <Chart.Bars stack>
-        <Chart.Bar value="errors" label="Errors" tone="error" />
-        <Chart.Bar value="warnings" label="Warnings" tone="needsYou" />
+        <Chart.Bar value="succeeded" label="Succeeded" />
+        <Chart.Bar value="failed" label="Failed" tone="error" />
     </Chart.Bars>
     <Chart.Marker at={deploy.at} label={`Deploy ${deploy.version}`} tone="accent" />
-    <Chart.Tooltip total />
+    <Chart.Tooltip total="Runs" />
     <Chart.Legend />
 </Chart.Root>
 ```
