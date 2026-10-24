@@ -201,7 +201,7 @@ jobs:
       - name: 🔍 Check and test
         run: |
           bun run check
-          bun run test
+          bun run test --parallel=2 --no-isolate
 
       - name: 📚 Check and build the docs
         run: |

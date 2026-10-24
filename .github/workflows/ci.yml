@@ -76,8 +76,9 @@ jobs:
       - name: 🎨 Check the formatting
         run: bun run format:check
 
+      # Each worker keeps its compiled module cache; DOM tests retain their separate processes.
       - name: 🧪 Test
-        run: bun run test
+        run: bun run test --parallel=2 --no-isolate
 
   windows:
     runs-on: windows-latest
@@ -111,7 +112,7 @@ jobs:
         run: bun run check
 
       - name: 🧪 Test
-        run: bun run test
+        run: bun run test --parallel=2 --no-isolate
         env:
           ADECORE_TEST_TASK_SCHEDULER: '1'
 
