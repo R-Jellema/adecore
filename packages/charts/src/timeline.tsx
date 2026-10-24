@@ -37,6 +37,8 @@ export interface TimelineRootProps<Span extends TimelineSpan> {
     readonly format?: (ms: number) => string;
     /* A target count of ticks on the axis. */
     readonly ticks?: number;
+    /* Where the axis ends, on the clock of the spans, such as the end of the root; a span past it is cut off. */
+    readonly end?: number;
     readonly children?: ReactNode;
     readonly className?: string;
     readonly ref?: Ref<HTMLDivElement>;
@@ -125,6 +127,7 @@ export function TimelineRoot<Span extends TimelineSpan>({
     onExpandedChange,
     format = formatPreciseDuration,
     ticks: tickTarget = 5,
+    end,
     children,
     className,
     ref
@@ -138,7 +141,7 @@ export function TimelineRoot<Span extends TimelineSpan>({
     const [ownValue, setOwnValue] = useState<string | null>(defaultValue);
     const expanded = new Set(expandedProp ?? parents.filter((id) => !folded.has(id)));
     const value = valueProp === undefined ? ownValue : valueProp;
-    const { origin, total } = timelineExtent(data);
+    const { origin, total } = timelineExtent(data, end);
     const kindIndex = new Map(kinds.map((kind, index) => [kind.id, index]));
 
     const colorOfKind = (kind: string | undefined): string => {
@@ -367,7 +370,7 @@ export function TimelineRows<Span extends TimelineSpan>({ label, detail, classNa
                             aria-describedby={shownDetail ? detailId : undefined}
                             className={clsx(
                                 COLUMNS,
-                                'cursor-default outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent',
+                                'cursor-default outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-solid focus-visible:outline-accent',
                                 selected ? 'bg-surface-active' : 'hover:bg-surface-hover'
                             )}
                             onFocus={(e) => {

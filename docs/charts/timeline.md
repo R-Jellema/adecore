@@ -51,7 +51,7 @@ The rows follow the tree: every span after its parent, and siblings by start. A 
 
 ## Timeline.Root
 
-The axis runs from the earliest start to the latest end. `kinds` lists what a span can wait on, as `TimelineKind`s (`id`, `label`, `tone`); a kind without a tone takes the next chart color, and a span without a kind the accent.
+The axis runs from the earliest start to the latest end, or to `end` where the app fixes it, such as at the end of the root; a span that runs past `end` is cut off there. `kinds` lists what a span can wait on, as `TimelineKind`s (`id`, `label`, `tone`); a kind without a tone takes the next chart color, and a span without a kind the accent.
 
 | Prop | Type | Default | |
 | --- | --- | --- | --- |
@@ -62,6 +62,7 @@ The axis runs from the earliest start to the latest end. `kinds` lists what a sp
 | `expanded`, `defaultExpanded`, `onExpandedChange` | `readonly string[]` | every span with children | The spans that show their children. |
 | `format` | `(ms: number) => string` | `formatPreciseDuration` | Writes every duration. The default of `@adecore/ui/format` writes `0.4 ms`, `123 ms` and `1.42 s`, and from a minute on as `formatDuration` does. |
 | `ticks` | `number` | `5` | The most steps on the axis. |
+| `end` | `number` | the latest end | Where the axis ends, in milliseconds on the clock of the spans. |
 | `className`, `ref` | | | On the outer box. |
 
 `TimelineRootProps` are the props.

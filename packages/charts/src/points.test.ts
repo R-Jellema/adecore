@@ -81,11 +81,12 @@ describe('the series legend', () => {
     const items = [
         { key: 'a', label: 'Atlas 5', group: 'north' },
         { key: 'b', label: 'Atlas 5 mini', group: 'north' },
-        { key: 'c', label: 'Lumen', group: 'south', disabled: true }
+        { key: 'c', label: 'Lumen', name: 'South Lumen', group: 'south', disabled: true }
     ];
 
-    test('finds the items whose name holds the search, whatever the case', () => {
+    test('finds the items whose label or full name holds the search, whatever the case', () => {
         expect(matchingItems(items, ' MINI ').map((item) => item.key)).toEqual(['b']);
+        expect(matchingItems(items, 'south').map((item) => item.key)).toEqual(['c']);
         expect(matchingItems(items, '')).toHaveLength(3);
     });
 

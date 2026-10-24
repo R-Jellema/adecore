@@ -58,7 +58,7 @@ describe.skipIf(typeof document === 'undefined')('a mounted heatmap', () => {
         });
     };
 
-    const cells = (): HTMLElement[] => [...container.querySelectorAll<HTMLElement>('[data-step]')];
+    const cells = (): HTMLElement[] => [...container.querySelectorAll<HTMLElement>('[data-mix]')];
     const live = (): string => container.querySelector('[aria-live="polite"]')!.textContent ?? '';
 
     beforeEach(() => {
@@ -73,10 +73,17 @@ describe.skipIf(typeof document === 'undefined')('a mounted heatmap', () => {
 
     test('draws an empty cell apart from the lowest count, and the axis only where it has a short label', async () => {
         await mount();
-        expect(cells().map((cell) => cell.dataset.step)).toEqual(['0', '1', '5', '0', '3', '1']);
+        expect(cells().map((cell) => cell.dataset.mix)).toEqual(['0', '16', '100', '0', '58', '18']);
         expect(cells().map((cell) => cell.classList.contains('bg-surface-sunken'))).toEqual([true, false, false, true, false, false]);
         const header = [...container.querySelectorAll('[aria-hidden] > span')].slice(0, 4).map((span) => span.textContent);
         expect(header).toEqual(['', '0', '', '']);
+        expect(container.querySelector('[data-legend="gradient"]')).not.toBeNull();
+    });
+
+    test('falls into shades and draws them in the legend when steps are given', async () => {
+        await mount(<Heatmap rows={ROWS} columns={COLUMNS} values={VALUES} label="Events" valueLabel="Events" steps={5} />);
+        expect(cells().map((cell) => cell.dataset.mix)).toEqual(['0', '15', '100', '0', '58', '15']);
+        expect(container.querySelector('[data-legend="gradient"]')).toBeNull();
     });
 
     test('reads the row, the column and the value of each cell the keyboard moves to', async () => {
@@ -89,6 +96,23 @@ describe.skipIf(typeof document === 'undefined')('a mounted heatmap', () => {
         expect(live()).toBe('Tuesday, 02:00, Events 4');
         await press(group, 'Escape');
         expect(live()).toBe('');
+    });
+
+    test('tells the app which cell the pointer or the keyboard is on, once per change', async () => {
+        const heard: ({ row: number; column: number } | null)[] = [];
+        const group = await mount(
+            <Heatmap rows={ROWS} columns={COLUMNS} values={VALUES} label="Events" valueLabel="Events" onActiveChange={(cell) => heard.push(cell)} />
+        );
+        const hover = async (): Promise<void> => {
+            await act(async () => {
+                cells()[4]!.dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+            });
+        };
+        await hover();
+        await hover();
+        await press(group, 'ArrowRight');
+        await press(group, 'Escape');
+        expect(heard).toEqual([{ row: 1, column: 1 }, { row: 1, column: 2 }, null]);
     });
 
     test('drops the card of the keyboard when the focus leaves', async () => {

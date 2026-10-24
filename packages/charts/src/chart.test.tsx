@@ -944,7 +944,7 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
             <SeriesLegend
                 label="Models"
                 items={[
-                    { key: 'a', label: 'Alpha', group: 'north' },
+                    { key: 'a', label: 'Alpha', name: 'North Alpha', group: 'north' },
                     { key: 'b', label: 'Beta', group: 'north' },
                     { key: 'c', label: 'Gamma', group: 'south', status: 'No data', disabled: true }
                 ]}
@@ -958,12 +958,13 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
             />
         );
         const button = (name: string): HTMLButtonElement => container.querySelector<HTMLButtonElement>(`button[aria-label="${name}"]`)!;
-        expect(button('Alpha').getAttribute('aria-pressed')).toBe('true');
+        expect(button('North Alpha').getAttribute('aria-pressed')).toBe('true');
+        expect(button('North Alpha').textContent).toBe('Alpha');
         expect(button('Beta').getAttribute('aria-pressed')).toBe('false');
         expect(button('Gamma').disabled).toBe(true);
         await act(async () => {
             button('Beta').click();
-            button('Alpha').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
+            button('North Alpha').dispatchEvent(new PointerEvent('pointerover', { bubbles: true }));
         });
         expect(hidden).toEqual([[]]);
         expect(highlighted).toEqual(['a']);
