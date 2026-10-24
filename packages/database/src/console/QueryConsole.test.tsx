@@ -73,7 +73,7 @@ describe('QueryConsole toolbar', () => {
     test('keeps the history closed until it is asked for, behind a button like Run all', () => {
         const markup = render(<QueryConsole connection={connection} />);
         expect(markup).toMatch(/aria-pressed="false"[^>]*>.*History/);
-        expect(markup).toMatch(/<button[^>]*class="[^"]*border-border[^"]*"[^>]*aria-pressed="false"/);
+        expect(markup).toMatch(/<button[^>]*class="[^"]*border-field-border[^"]*"[^>]*aria-pressed="false"/);
         expect(markup).not.toContain('Search history');
     });
 
