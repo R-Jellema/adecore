@@ -75,7 +75,7 @@ A `ChartX` is a number (a moment in milliseconds) or the key of a category; a `C
 
 ## Rules
 
-`Chart.Rule` draws a horizontal line across the plot at `value`, such as a budget or a column picked as a reference, with its `label` and the value at its right end ("A · 71"). It draws above the series whatever its place among the children, and the value axis covers it, also where the data stays below it. `tone` colors it (muted by default) and `dashed` dashes it.
+`Chart.Rule` draws a horizontal line across the plot at `value`, such as a budget or a column picked as a reference, with its `label` and the value over its right end ("A · 71"): right aligned with the end of the line, 7px above it, in a halo of the [surface](#chart-root) so it reads over the columns, and under the line where there is no room above it. It draws above the series whatever its place among the children, and the value axis covers it, also where the data stays below it. `tone` colors it (muted by default) and `dashed` dashes it.
 
 A rule holds for every bucket, so the tooltip does not repeat it; a screen reader hears it once, with the description of the chart. The props are `ChartRuleProps`.
 

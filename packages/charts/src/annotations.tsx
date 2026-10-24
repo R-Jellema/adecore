@@ -39,6 +39,8 @@ export interface ChartRuleProps {
 
 /* Room a label needs above its line before it moves under it instead. */
 const RULE_LABEL = 18;
+/* Between the line and the label it carries, above it or below it. */
+const RULE_GAP = 7;
 
 /* A horizontal line at a value across the plot, such as a reference to compare against, drawn above the series. */
 export function ChartRule({ value, label, tone = 'muted', dashed = false, className, ref }: ChartRuleProps) {
@@ -56,8 +58,8 @@ export function ChartRule({ value, label, tone = 'muted', dashed = false, classN
         <g ref={ref} className={clsx('pointer-events-none', className)} style={{ color: colorOf(tone)! }} aria-hidden>
             <line x1={chart.plot.left} x2={chart.plot.right} y1={top} y2={top} stroke="currentColor" strokeDasharray={dashed ? '4 4' : undefined} />
             <text
-                x={Math.round(chart.plot.right) - 4}
-                y={Math.round(below ? top + 6 : top - 6)}
+                x={Math.round(chart.plot.right)}
+                y={Math.round(pixel) + (below ? RULE_GAP : -RULE_GAP)}
                 dy={below ? '0.8em' : undefined}
                 textAnchor="end"
                 strokeWidth={4}

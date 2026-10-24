@@ -366,6 +366,10 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(column.compareDocumentPosition(label) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         expect([...container.querySelectorAll('text')].some((text) => text.textContent === '80')).toBe(true);
         expect(container.querySelector('[id$="-hint"]')!.textContent).toStartWith('A 70.');
+        // The label ends where the line ends, 7px over it.
+        const line = label.previousElementSibling!;
+        expect(label.getAttribute('x')).toBe(line.getAttribute('x2'));
+        expect(Number(label.getAttribute('y'))).toBe(Number(line.getAttribute('y1')) - 7.5);
     });
 
     test('value labels write each column over it, through the function when given, with room above the plot', async () => {
