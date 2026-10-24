@@ -18,15 +18,22 @@ It keeps its age current while it is on screen, on a clock that ticks every thir
 
 It is a `<time>` with the moment in `dateTime`. Text is no tab stop of its own, so it is one, with the accent outline: the tooltip opens on keyboard focus as it does on hover. A moment that is not known, `null`, `undefined` or an invalid date, is a dash with no tooltip and no tab stop.
 
+Inside a row that has the focus itself, such as an option of a command palette or a menu item, a tab stop of its own would leave the row's keys behind. Pass `tooltip={false}` there: the age still counts on, and the row carries the exact time in its own tooltip or description, written with `formatDayClockWithYear`.
+
+```tsx
+<RelativeTime at={session.updatedAt} tooltip={false} />
+```
+
 Give it the size and the color through `className`. An age inside a sentence ("ended 5m ago") is a string, not this component: write it with `formatAgo` or `formatAge`.
 
 ## Props
 
-| Prop | Type | Default | |
-| --- | --- | --- | --- |
-| `at` | `Date \| number \| null \| undefined` | | Required. A number is milliseconds since the epoch. |
-| `tooltipSide` | `TooltipSide` | `'top'` | |
-| `className` | `string` | | |
-| `ref` | `Ref<HTMLElement>` | | The `<time>`, or the `<span>` of the dash. |
+| Prop          | Type                                  | Default |                                                     |
+| ------------- | ------------------------------------- | ------- | --------------------------------------------------- |
+| `at`          | `Date \| number \| null \| undefined` |         | Required. A number is milliseconds since the epoch. |
+| `tooltip`     | `boolean`                             | `true`  | `false` drops the tooltip and the tab stop.         |
+| `tooltipSide` | `TooltipSide`                         | `'top'` |                                                     |
+| `className`   | `string`                              |         |                                                     |
+| `ref`         | `Ref<HTMLElement>`                    |         | The `<time>`, or the `<span>` of the dash.          |
 
 `RelativeTimeProps` is an exported type.

@@ -10,13 +10,15 @@ const TICK_MS = 30_000;
 export interface RelativeTimeProps {
     /* `null`, `undefined` or an invalid date for a moment that is not known, drawn as a dash. */
     at: Date | number | null | undefined;
+    /* Off inside a row that is the focus target itself: no tab stop of its own, and the row shows the exact time. */
+    tooltip?: boolean;
     tooltipSide?: TooltipSide;
     className?: string;
     ref?: Ref<HTMLElement>;
 }
 
 /* A moment as its age, `3m ago`, counting on while it is on screen, with the exact time on hover and on keyboard focus. */
-export function RelativeTime({ at, tooltipSide, className, ref }: RelativeTimeProps) {
+export function RelativeTime({ at, tooltip = true, tooltipSide, className, ref }: RelativeTimeProps) {
     // The formatters read the locale from a module, not from an input, so a compiled render would keep its first words.
     'use no memo';
     useFormatLocale();
@@ -26,6 +28,13 @@ export function RelativeTime({ at, tooltipSide, className, ref }: RelativeTimePr
             <span ref={ref} className={className}>
                 -
             </span>
+        );
+    }
+    if (!tooltip) {
+        return (
+            <time ref={ref as Ref<HTMLTimeElement>} dateTime={new Date(at).toISOString()} className={clsx('whitespace-nowrap', className)}>
+                {formatAge(at, now)}
+            </time>
         );
     }
     return (
