@@ -32,7 +32,7 @@ With `onClear`, a "No icon" button under the grid clears the icon and closes the
 | `keywords` | `Readonly<Record<string, readonly string[]>>` | | More words a search finds an icon by, by icon name. |
 | `searchable` | `boolean` | `true` for groups | A search field above the grid. |
 | `rows` | `number` | | The height of the scroll area in rows. Without it the grid is as tall as its icons. |
-| `onClear` | `() => void` | | Offers "No icon" under the grid, and a clear button in the trigger while an icon is chosen. |
+| `onClear` | `() => void` | | Offers "No icon" under the grid, and a clear button beside the trigger while an icon is chosen. |
 | `label` | `string` | "Icon" | The label above the trigger. |
 | `hideLabel` | `boolean` | `false` | Keeps the label for assistive technology only, for a settings row that names the control beside it. |
 | `disabled` | `boolean` | `false` | The trigger does not open. |

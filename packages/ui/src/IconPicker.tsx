@@ -96,34 +96,34 @@ export function IconPicker({
                 {name}
             </SectionLabel>
             <PopoverRoot open={open} onOpenChange={setOpen}>
-                {/* The clear button is a sibling over the trigger's end, since a button cannot hold another. */}
-                <div className="relative flex">
+                <div className="flex gap-1.5">
                     <PopoverTrigger
                         ref={trigger}
                         disabled={disabled}
                         aria-labelledby={`${id}-label ${id}-value`}
-                        className={clsx(
-                            'field flex items-center gap-2 text-left hover:bg-surface-hover data-disabled:cursor-default data-disabled:opacity-50 data-disabled:hover:bg-field data-[popup-open]:bg-surface-hover',
-                            clearable && 'pe-12'
-                        )}
+                        className="field flex min-w-0 grow items-center gap-2 text-left hover:bg-surface-hover data-disabled:cursor-default data-disabled:opacity-50 data-disabled:hover:bg-field data-[popup-open]:bg-surface-hover"
                     >
-                        {glyph && <Icon icon={glyph} size={16} className="shrink-0 text-text-muted" />}
-                        <span id={`${id}-value`} className={clsx('min-w-0 truncate', value === null && 'text-text-faint')}>
+                        {glyph && <Icon icon={glyph} size={16} className="shrink-0 text-text" />}
+                        {/* The icon says which it is; its name is there for a screen reader. */}
+                        <span id={`${id}-value`} className={clsx('min-w-0 truncate', glyph ? 'sr-only' : 'text-text-faint')}>
                             {value ?? t('iconPicker.placeholder')}
                         </span>
                         <Icon icon={ChevronDown} size={14} className="ms-auto shrink-0 text-text-faint" />
                     </PopoverTrigger>
                     {clearable && (
-                        <IconButton
-                            icon={X}
-                            size="xs"
-                            label={t('iconPicker.none')}
-                            className="absolute end-7 top-1/2 -translate-y-1/2"
-                            onClick={() => {
-                                onClear();
-                                trigger.current?.focus();
-                            }}
-                        />
+                        <Tooltip label={t('iconPicker.none')}>
+                            <Button
+                                variant="secondary"
+                                className="w-8 shrink-0 px-0"
+                                aria-label={t('iconPicker.none')}
+                                onClick={() => {
+                                    onClear();
+                                    trigger.current?.focus();
+                                }}
+                            >
+                                <Icon icon={X} size={14} />
+                            </Button>
+                        </Tooltip>
                     )}
                 </div>
                 <PopoverPopup
