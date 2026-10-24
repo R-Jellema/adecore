@@ -334,8 +334,7 @@ export function ChartBar<Row>({
         const top = stacked?.top[index];
         const base = stacked?.base[index] ?? 0;
         const topPixel = top === null || top === undefined ? null : chart.pixelOfY(top);
-        // With `y.min` above zero the ground lies under the plot, and a column stops at its edge.
-        const basePixel = Math.min(chart.plot.bottom, Math.max(chart.plot.top, chart.pixelOfY(base) ?? chart.plot.bottom));
+        const basePixel = chart.pixelOfY(base) ?? chart.plot.bottom;
         const bucket = chart.bucketAt(index);
         if (amount === null || topPixel === null || bucket === null) {
             return [];

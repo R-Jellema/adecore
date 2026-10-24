@@ -191,6 +191,11 @@ export function ChartRoot<Row>({
         !points
     );
     const yStep = scaleY.ticks.length > 1 ? scaleY.ticks[1]! - scaleY.ticks[0]! : 1;
+    // A value past `y.max` or `y.min` stops at the edge of the plot, which the svg does not clip.
+    const pixelOfY = (value: number): number | null => {
+        const pixel = scaleY.at(value);
+        return pixel === null ? null : Math.min(plot.bottom, Math.max(plot.top, pixel));
+    };
 
     const colors = new Map<string, string>();
     let next = 0;
@@ -231,7 +236,7 @@ export function ChartRoot<Row>({
     const positions: ([number, number] | null)[] = data.map((_, index) => {
         const value = placing?.values[index];
         const left = continuous === null || !points ? Number.NaN : continuous.at(xs[index] as number);
-        const pixel = value === null || value === undefined ? null : scaleY.at(value);
+        const pixel = value === null || value === undefined ? null : pixelOfY(value);
         if (pixel === null || !Number.isFinite(left)) {
             return null;
         }
@@ -266,7 +271,6 @@ export function ChartRoot<Row>({
         }
         return typeof value === 'number' ? continuous!.at(value) : null;
     };
-    const pixelOfY = (value: number): number | null => scaleY.at(value);
 
     const span = continuous === null ? 0 : continuous.domain[1] - continuous.domain[0];
     // A row under another names something wider, such as the model under its effort, so a bucket reads from the bottom row up.

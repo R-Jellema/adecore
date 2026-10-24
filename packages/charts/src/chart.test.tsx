@@ -198,6 +198,18 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(columns().map((column) => Math.floor(Number(column.getAttribute('x')) / 150))).toEqual([0, 1, 3]);
     });
 
+    test('a value above `y.max` stops at the top of the plot', async () => {
+        await mount(
+            <Chart.Root data={SCORES} x="key" y={{ max: 40 }} label="Scores">
+                <Chart.Bar value="score" label="Score" />
+                <Chart.Line value="score" label="Score" />
+            </Chart.Root>
+        );
+        expect(Math.min(...columns().map((column) => Number(column.getAttribute('y'))))).toBe(8);
+        const line = container.querySelector('path[fill="none"]')!.getAttribute('d')!;
+        expect(Math.min(...[...line.matchAll(/,(-?[\d.]+)/g)].map((match) => Number(match[1])))).toBe(8);
+    });
+
     test('the pointer on a time scale hands on the x of a bucket, once per bucket it enters', async () => {
         const hours = [0, 1, 3].map((hour) => ({ at: hour * 3_600_000, count: hour + 1 }));
         const changes: (ChartX | null)[] = [];
