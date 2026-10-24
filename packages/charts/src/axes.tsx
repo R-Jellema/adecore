@@ -281,13 +281,15 @@ export function ChartGroupAxis<Row>({ children, className, ref }: ChartGroupAxis
         return null;
     }
     const rows = chart.data as Row[];
+    const band = chart.band;
     return createPortal(
         <div ref={ref} aria-hidden className={clsx('grid pt-1 text-xs', className)}>
-            {chart.band.groups.map((run) => (
+            {band.groups.map((run) => (
                 <div
                     key={`${run.key}:${run.first}`}
                     className="col-start-1 row-start-1 flex min-w-0 flex-col items-center gap-1 px-1 text-center"
-                    style={{ marginLeft: Math.round(chart.plot.left + run.left), width: Math.round(run.right - run.left) }}
+                    // The gap belongs to no group, so a name takes half of it on each side before it wraps.
+                    style={{ marginLeft: Math.round(chart.plot.left + run.left - band.gap / 2), width: Math.round(run.right - run.left + band.gap) }}
                 >
                     {children({
                         key: run.key,

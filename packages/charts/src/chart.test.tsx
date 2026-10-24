@@ -151,6 +151,20 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(container.querySelector('.inset-0 p')!.textContent).toBe('Model Alpha · low');
     });
 
+    test('a group label takes its columns and half the gap on each side, so the labels tile the plot', async () => {
+        await mount(
+            <Chart.Root data={SCORES} x="key" group="model" groupGap={20} label="Scores">
+                <Chart.Bar value="score" label="Score" />
+                <Chart.GroupAxis>{(group) => group.label}</Chart.GroupAxis>
+            </Chart.Root>
+        );
+        const boxes = [...container.querySelectorAll<HTMLDivElement>('.col-start-1')].map((box) => [box.style.marginLeft, box.style.width]);
+        expect(boxes).toEqual([
+            ['0px', '300px'],
+            ['300px', '300px']
+        ]);
+    });
+
     test('Page Down goes to the next group and Enter picks the bucket', async () => {
         const plot = await mount();
         await press(plot, 'PageDown');
@@ -238,6 +252,32 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         // The tallest column reaches the top of the plot, and its label still stands inside the svg.
         const tallest = Math.min(...columns().map((column) => Number(column.getAttribute('y'))));
         expect(tallest).toBe(24);
+    });
+
+    test('a scrolling plot keeps room over the y axis for what hangs out of its first bucket', async () => {
+        const plot = await mount(
+            <Chart.Root data={SCORES} x="key" minBucketWidth={400} label="Scores">
+                <Chart.YAxis />
+                <Chart.Bar value="score" label="Score" valueLabels />
+            </Chart.Root>
+        );
+        const scroller = plot.parentElement!;
+        const axis = Number(scroller.previousElementSibling!.getAttribute('width'));
+        expect(axis).toBeGreaterThan(0);
+        expect(scroller.style.marginLeft).toBe(`-${axis}px`);
+        expect(scroller.style.paddingLeft).toBe(`${axis}px`);
+    });
+
+    test('value labels stack by the width they measure, not by an estimate per character', async () => {
+        // Eighteen buckets of 33px; labels of four characters measure 28px here and are estimated at 32px, which would collide.
+        const columns = Array.from({ length: 18 }, (_, index) => ({ key: `c${index}`, value: 10 }));
+        await mount(
+            <Chart.Root data={columns} x="key" label="Columns">
+                <Chart.Bar value="value" label="Value" valueLabels={() => 'abcd'} />
+            </Chart.Root>
+        );
+        const baselines = new Set([...container.querySelectorAll('text')].map((text) => text.getAttribute('y')));
+        expect(baselines.size).toBe(1);
     });
 
     test('the tooltip keeps a row for a series without a value in the bucket', async () => {

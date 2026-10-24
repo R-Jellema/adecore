@@ -23,6 +23,8 @@ export interface BandLayout {
     readonly lefts: readonly number[];
     /* Empty without a `group`. */
     readonly groups: readonly BandGroup[];
+    /* The pixels between two groups, 0 without groups. */
+    readonly gap: number;
 }
 
 /* The run of equal keys each bucket belongs to, in the order of the data; a key that comes back later starts a run of its own. */
@@ -47,7 +49,7 @@ export function bandLayout(count: number, groupKeys: readonly string[] | null, r
     const runs = groupKeys === null ? [] : groupRuns(groupKeys);
     const gaps = runs.length * groupGap;
     if (count === 0) {
-        return { bucket: 0, width: Math.max(0, room), lefts: [], groups: [] };
+        return { bucket: 0, width: Math.max(0, room), lefts: [], groups: [], gap: 0 };
     }
     const bucket = Math.max(minBucketWidth, (room - gaps) / count);
     const width = Math.max(room, bucket * count + gaps);
@@ -57,7 +59,7 @@ export function bandLayout(count: number, groupKeys: readonly string[] | null, r
         for (let i = 0; i < count; i++) {
             lefts.push(i * bucket);
         }
-        return { bucket, width, lefts, groups };
+        return { bucket, width, lefts, groups, gap: 0 };
     }
     runs.forEach((run, groupIndex) => {
         for (let i = run.first; i <= run.last; i++) {
@@ -65,7 +67,7 @@ export function bandLayout(count: number, groupKeys: readonly string[] | null, r
         }
         groups.push({ ...run, left: lefts[run.first]!, right: lefts[run.last]! + bucket });
     });
-    return { bucket, width, lefts, groups };
+    return { bucket, width, lefts, groups, gap: groupGap };
 }
 
 export interface Column {
@@ -110,20 +112,23 @@ export function segmentOf(topPixel: number, basePixel: number, onGround: boolean
 }
 
 /* Between the top of a column and the baseline of its value. */
-export const LABEL_LIFT = 6;
+export const LABEL_LIFT = 10;
 const LABEL_ROW = 16;
-/* Text of the `text-xs` size, read before it is drawn: wide enough for tabular digits, so labels err on the side of air. */
-const LABEL_CHAR = 7;
+/* What a label of the `text-2xs` size is taken to measure per character until it has been drawn once. */
+const LABEL_CHAR = 8;
 const LABEL_AIR = 3;
+
+/* The width a value label is taken to have before it is measured. */
+export const guessLabelWidth = (text: string): number => text.length * LABEL_CHAR;
 
 /*
  * The baseline of each column's value label: just over its column, or over every label in the way, in the order of the
- * columns. The widths are estimated, so no measurement feeds back into where the labels go.
+ * columns. A label's width depends on its text only, so measuring it never feeds back into where the labels go.
  */
-export function placeValueLabels(columns: readonly { center: number; top: number; text: string }[]): number[] {
+export function placeValueLabels(columns: readonly { center: number; top: number; width: number }[]): number[] {
     const boxes: { left: number; right: number; top: number; bottom: number }[] = [];
-    return columns.map(({ center, top, text }) => {
-        const half = (text.length * LABEL_CHAR) / 2;
+    return columns.map(({ center, top, width }) => {
+        const half = width / 2;
         let baseline = top - LABEL_LIFT;
         const blocking = () =>
             boxes.find(
