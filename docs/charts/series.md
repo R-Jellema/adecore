@@ -43,7 +43,7 @@ The width follows the container; `height` (200 by default) is the height of the 
 | `height` | `number` | `200` | Pixels. |
 | `marginTop` | `number` | `8` | Pixels above the plot, for something drawn over it. |
 | `activeX`, `onActiveXChange` | `ChartX \| null` | | The cursor, controlled. Leaving the chart calls `onActiveXChange(null)`; the app decides whether the cursor goes. |
-| `group`, `groupGap`, `minBucketWidth` | | | Groups of columns, see [Columns and groups](/charts/columns). |
+| `group`, `groupLabel`, `groupGap`, `minBucketWidth` | | | Groups of columns, see [Columns and groups](/charts/columns). |
 | `selected`, `onActivate`, `dimmed` | | | Columns a person picks, see [Columns and groups](/charts/columns#picking-columns). |
 | `className`, `ref` | | | On the outer box. |
 

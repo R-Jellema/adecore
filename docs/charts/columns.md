@@ -106,9 +106,11 @@ const ScoreChart = createChart<ModelScore>();
 </ScoreChart.Root>
 ```
 
-`Chart.GroupAxis` is a second row of labels under the x axis, one per group and centered under it. It is HTML, so a mark or a logo fits. Its `children` is a function of the group (`ChartBucketGroup`: its `key`, its `rows` and the index of its `first` and `last` bucket); the props are `ChartGroupAxisProps`.
+`Chart.GroupAxis` is a second row of labels under the x axis, one per group and centered under it. It is HTML, so a mark or a logo fits. Its `children` is a function of the group (`ChartBucketGroup`: its `key`, its `label`, its `rows` and the index of its `first` and `last` bucket); the props are `ChartGroupAxisProps`.
 
 The arrow keys keep moving column by column, across the edges of the groups, and Page Up and Page Down jump to the first column of the previous or the next group. The live region names the group first ("Atlas 5, high, Intelligence 71").
+
+The key of a group is its identity, which need not be what a person reads, such as the id of a model. `groupLabel` on the root reads the name from the rows, as a key or a function: `groupLabel="modelName"`. The tooltip, the live region and the table read it, and `Chart.GroupAxis` hands it to its children as `label`.
 
 `minBucketWidth` is the narrowest a bucket may be. Below it the plot grows wider than its box and scrolls sideways, while the y axis stays in place.
 

@@ -48,6 +48,8 @@ export interface ChartRootProps<Row> {
     readonly marginTop?: number;
     /* Puts the buckets of a band scale into runs of the same key, with a gap between them. */
     readonly group?: ChartAccessor<Row, string>;
+    /* What the tooltip, the live region and the table call a group, read from its rows; its key by default. */
+    readonly groupLabel?: ChartAccessor<Row, string>;
     /* The pixels between two groups; the first and the last group keep half of it to the edge. */
     readonly groupGap?: number;
     /* The narrowest a bucket of a band scale may be; below that the plot scrolls sideways under a y axis that stays. */
@@ -83,6 +85,7 @@ export function ChartRoot<Row>({
     activeX,
     onActiveXChange,
     group,
+    groupLabel,
     groupGap = GROUP_GAP,
     minBucketWidth = 0,
     selected,
@@ -118,6 +121,7 @@ export function ChartRoot<Row>({
     const band = xScale === 'band';
     const xs = data.map((row, index) => xOf(readValue(x, row, index)));
     const groupKeys = band && group !== undefined ? data.map((row, index) => String(readValue(group, row, index))) : null;
+    const groupLabels = groupKeys === null ? null : groupLabel === undefined ? groupKeys : data.map((row, index) => String(readValue(groupLabel, row, index)));
     const [leftAxis, rightAxis] = useAlignedAxes(chartGroup?.widths ?? null, axes.left ?? 0, axes.right ?? 0);
     const room = Math.max(0, size.width - leftAxis - rightAxis);
     // A bucket of a time scale runs from its x for one step and its point stands in the middle, as a column would.
@@ -244,7 +248,7 @@ export function ChartRoot<Row>({
     const dimmedRows = data.map((row, index) => dimmed?.(row, index) ?? false);
 
     const describe = (index: number): string => {
-        const parts = [groupKeys?.[index], formatX(xs[index]!)].filter((part): part is string => part !== undefined);
+        const parts = [groupLabels?.[index], formatX(xs[index]!)].filter((part): part is string => part !== undefined);
         for (const entry of series.values()) {
             const value = entry.values[index];
             if (value !== null && value !== undefined) {
@@ -336,6 +340,7 @@ export function ChartRoot<Row>({
         markers,
         bands,
         groupKeys,
+        groupLabels,
         activeIndex,
         ownsCursor,
         selected: selectedRows,

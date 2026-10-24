@@ -41,6 +41,8 @@ export interface ChartYAxisProps {
 
 export interface ChartBucketGroup<Row> {
     readonly key: string;
+    /* The `groupLabel` of the root for the group's first row, else its key. */
+    readonly label: string;
     readonly rows: readonly Row[];
     /* The index of the group's first and last bucket. */
     readonly first: number;
@@ -287,7 +289,13 @@ export function ChartGroupAxis<Row>({ children, className, ref }: ChartGroupAxis
                     className="col-start-1 row-start-1 flex min-w-0 flex-col items-center gap-1 px-1 text-center"
                     style={{ marginLeft: Math.round(chart.plot.left + run.left), width: Math.round(run.right - run.left) }}
                 >
-                    {children({ key: run.key, rows: rows.slice(run.first, run.last + 1), first: run.first, last: run.last })}
+                    {children({
+                        key: run.key,
+                        label: chart.groupLabels?.[run.first] ?? run.key,
+                        rows: rows.slice(run.first, run.last + 1),
+                        first: run.first,
+                        last: run.last
+                    })}
                 </div>
             ))}
         </div>,

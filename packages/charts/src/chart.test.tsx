@@ -124,6 +124,19 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(live()).toBe('Alpha, high, Score 52');
     });
 
+    test('names a group by its label, apart from its key', async () => {
+        const plot = await mount(
+            <Chart.Root data={SCORES} x="key" group="model" groupLabel={(row: Score) => `Model ${row.model}`} label="Scores">
+                <Chart.XAxis format={(key) => SCORES.find((score) => score.key === key)!.effort} />
+                <Chart.Bar value="score" label="Score" />
+                <Chart.Tooltip />
+            </Chart.Root>
+        );
+        await press(plot, 'ArrowRight');
+        expect(live()).toBe('Model Alpha, low, Score 40');
+        expect(container.querySelector('.inset-0 p')!.textContent).toBe('Model Alpha · low');
+    });
+
     test('Page Down goes to the next group and Enter picks the bucket', async () => {
         const plot = await mount();
         await press(plot, 'PageDown');

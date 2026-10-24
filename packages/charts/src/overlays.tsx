@@ -18,7 +18,10 @@ export interface ChartBucket<Row> {
     readonly index: number;
     readonly x: ChartX;
     readonly row: Row;
+    /* The key of the bucket's group, null without groups. */
     readonly group: string | null;
+    /* What a person reads for the group: `groupLabel` of the root, else the key. */
+    readonly groupLabel: string | null;
     readonly values: readonly ChartBucketValue[];
     /* The markers and bands of the bucket. */
     readonly notes: readonly string[];
@@ -54,6 +57,7 @@ const bucketOf = <Row,>(chart: ChartContextValue, index: number): ChartBucket<Ro
     x: chart.xs[index]!,
     row: chart.data[index] as Row,
     group: chart.groupKeys?.[index] ?? null,
+    groupLabel: chart.groupLabels?.[index] ?? null,
     values: [...chart.series].flatMap(([id, entry]) => {
         const value = entry.values[index];
         return value === null || value === undefined ? [] : [{ label: entry.label, color: entry.rowColors?.[index] ?? chart.colors.get(id)!, value }];
@@ -101,7 +105,7 @@ export function ChartTooltip<Row>({ total = false, format, children, className, 
                 children(bucket)
             ) : (
                 <>
-                    <p className="font-medium text-text">{[bucket.group, chart.formatX(bucket.x)].filter(Boolean).join(' · ')}</p>
+                    <p className="font-medium text-text">{[bucket.groupLabel, chart.formatX(bucket.x)].filter(Boolean).join(' · ')}</p>
                     {[...chart.series].map(([id, entry]) => {
                         const value = entry.values[activeIndex];
                         // A series without a value here still gets its row, so a gap reads as nothing measured.
@@ -187,7 +191,7 @@ export function ChartTable({ className, ref }: ChartTableProps) {
                     <tbody>
                         {chart.xs.map((key, index) => (
                             <tr key={String(key)} className={shown ? 'border-t border-border-soft' : undefined}>
-                                {grouped && <td className={shown ? 'h-8 px-2 text-text-muted' : undefined}>{chart.groupKeys![index]}</td>}
+                                {grouped && <td className={shown ? 'h-8 px-2 text-text-muted' : undefined}>{chart.groupLabels![index]}</td>}
                                 <th scope="row" className={shown ? 'h-8 px-2 text-left font-normal whitespace-nowrap text-text-muted' : undefined}>
                                     {chart.formatX(key)}
                                 </th>

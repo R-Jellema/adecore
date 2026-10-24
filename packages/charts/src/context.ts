@@ -36,6 +36,8 @@ export interface ChartContextValue {
     readonly markers: ReadonlyMap<string, MarkerEntry>;
     readonly bands: ReadonlyMap<string, BandEntry>;
     readonly groupKeys: readonly string[] | null;
+    /* What a person reads for the group of each bucket. */
+    readonly groupLabels: readonly string[] | null;
     readonly activeIndex: number;
     /* False in a chart that draws the cursor of another chart of its group, which shows the tooltip itself. */
     readonly ownsCursor: boolean;
