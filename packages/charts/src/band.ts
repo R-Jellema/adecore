@@ -23,6 +23,8 @@ export interface BandLayout {
     readonly lefts: readonly number[];
     /* Empty without a `group`. */
     readonly groups: readonly BandGroup[];
+    /* The pixels between two groups, 0 without groups. */
+    readonly gap: number;
 }
 
 /* The run of equal keys each bucket belongs to, in the order of the data; a key that comes back later starts a run of its own. */
@@ -47,7 +49,7 @@ export function bandLayout(count: number, groupKeys: readonly string[] | null, r
     const runs = groupKeys === null ? [] : groupRuns(groupKeys);
     const gaps = runs.length * groupGap;
     if (count === 0) {
-        return { bucket: 0, width: Math.max(0, room), lefts: [], groups: [] };
+        return { bucket: 0, width: Math.max(0, room), lefts: [], groups: [], gap: 0 };
     }
     const bucket = Math.max(minBucketWidth, (room - gaps) / count);
     const width = Math.max(room, bucket * count + gaps);
@@ -57,7 +59,7 @@ export function bandLayout(count: number, groupKeys: readonly string[] | null, r
         for (let i = 0; i < count; i++) {
             lefts.push(i * bucket);
         }
-        return { bucket, width, lefts, groups };
+        return { bucket, width, lefts, groups, gap: 0 };
     }
     runs.forEach((run, groupIndex) => {
         for (let i = run.first; i <= run.last; i++) {
@@ -65,7 +67,7 @@ export function bandLayout(count: number, groupKeys: readonly string[] | null, r
         }
         groups.push({ ...run, left: lefts[run.first]!, right: lefts[run.last]! + bucket });
     });
-    return { bucket, width, lefts, groups };
+    return { bucket, width, lefts, groups, gap: groupGap };
 }
 
 export interface Column {

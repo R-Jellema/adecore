@@ -151,6 +151,20 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(container.querySelector('.inset-0 p')!.textContent).toBe('Model Alpha · low');
     });
 
+    test('a group label takes its columns and half the gap on each side, so the labels tile the plot', async () => {
+        await mount(
+            <Chart.Root data={SCORES} x="key" group="model" groupGap={20} label="Scores">
+                <Chart.Bar value="score" label="Score" />
+                <Chart.GroupAxis>{(group) => group.label}</Chart.GroupAxis>
+            </Chart.Root>
+        );
+        const boxes = [...container.querySelectorAll<HTMLDivElement>('.col-start-1')].map((box) => [box.style.marginLeft, box.style.width]);
+        expect(boxes).toEqual([
+            ['0px', '300px'],
+            ['300px', '300px']
+        ]);
+    });
+
     test('Page Down goes to the next group and Enter picks the bucket', async () => {
         const plot = await mount();
         await press(plot, 'PageDown');

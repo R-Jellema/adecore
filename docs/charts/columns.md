@@ -108,7 +108,7 @@ const ScoreChart = createChart<ModelScore>();
 </ScoreChart.Root>
 ```
 
-`Chart.GroupAxis` is a second row of labels under the x axis, one per group and centered under it. It is HTML, so a mark or a logo fits. Its `children` is a function of the group (`ChartBucketGroup`: its `key`, its `label`, its `rows` and the index of its `first` and `last` bucket); the props are `ChartGroupAxisProps`.
+`Chart.GroupAxis` is a second row of labels under the x axis, one per group and centered under it. It is HTML, so a mark or a logo fits. A label takes the width of its columns plus half the gap on each side before it wraps. Its `children` is a function of the group (`ChartBucketGroup`: its `key`, its `label`, its `rows` and the index of its `first` and `last` bucket); the props are `ChartGroupAxisProps`.
 
 The arrow keys keep moving column by column, across the edges of the groups, and Page Up and Page Down jump to the first column of the previous or the next group. The live region names the group first ("Atlas 5, high, Intelligence 71").
 
