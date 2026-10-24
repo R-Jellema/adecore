@@ -21,14 +21,20 @@ export interface ChartLineProps<Row> {
     readonly dashed?: boolean;
     /* A dot on every value. Without it only a value with no neighbor gets one, so it does not vanish. */
     readonly dots?: boolean;
+    /* The thickness of the line in pixels; 1 for a small chart beside others. */
+    readonly width?: 1 | 2;
     readonly className?: string;
     readonly ref?: Ref<SVGGElement>;
 }
 
-export interface ChartAreaProps<Row> extends Omit<ChartLineProps<Row>, 'tone'> {
+export interface ChartAreaProps<Row> extends Omit<ChartLineProps<Row>, 'tone' | 'width'> {
     readonly tone?: ChartColor;
     /* Piles the area on the stacked areas before it instead of on zero. */
     readonly stack?: boolean;
+    /* The line along its top in pixels; 0 draws the area alone. */
+    readonly width?: 0 | 1 | 2;
+    /* A gradient that fades toward the ground, or one flat tint, as a stacked area always has. */
+    readonly fill?: 'gradient' | 'flat';
 }
 
 export interface ChartPointProps<Row> {
@@ -81,6 +87,8 @@ const HOVER_DIM = 0.55;
 const OUT_OF_FOCUS = 0.4;
 /* A dimmed point or series of a point chart; its full color keeps it readable lower than a light column. */
 export const DIMMED_POINT = 0.25;
+/* A flat area, also one stacked on another, where the line over it still stands out. */
+const FLAT_FILL = 0.28;
 
 type Point = readonly [number, number] | null;
 
@@ -103,7 +111,22 @@ function useSeriesValues<Row>(part: string, value: ChartAccessor<Row, number | n
     return [chart, id, (chart.data as Row[]).map((row, index) => numberOf(readValue(value, row, index)))];
 }
 
-function LinePath({ points, curve, dashed, dots }: { points: readonly Point[]; curve: ChartCurve; dashed: boolean; dots: boolean }) {
+function LinePath({
+    points,
+    curve,
+    dashed,
+    dots,
+    width = 2
+}: {
+    points: readonly Point[];
+    curve: ChartCurve;
+    dashed: boolean;
+    dots: boolean;
+    width?: 0 | 1 | 2;
+}) {
+    if (width === 0) {
+        return null;
+    }
     const path = line<Point>()
         .defined((point) => point !== null)
         .x((point) => point![0])
@@ -117,7 +140,7 @@ function LinePath({ points, curve, dashed, dots }: { points: readonly Point[]; c
                     d={path}
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth={2}
+                    strokeWidth={width}
                     strokeLinejoin="round"
                     strokeLinecap="round"
                     strokeDasharray={dashed ? '4 4' : undefined}
@@ -138,7 +161,7 @@ function tonesOf<Row>(chart: ChartContextValue, tone: ChartBarTone<Row> | undefi
 }
 
 /* A line through the values. A missing value breaks it. On a point chart a line per series, through its points in the order of the data. */
-export function ChartLine<Row>({ value, label, tone, icon, curve = 'linear', dashed = false, dots = false, className, ref }: ChartLineProps<Row>) {
+export function ChartLine<Row>({ value, label, tone, icon, curve = 'linear', dashed = false, dots = false, width = 2, className, ref }: ChartLineProps<Row>) {
     const [chart, id, values] = useSeriesValues('Chart.Line', value);
     const [color, rowColors] = tonesOf(chart, tone);
     useRegistration(chart.store, 'series', id, {
@@ -169,7 +192,7 @@ export function ChartLine<Row>({ value, label, tone, icon, curve = 'linear', das
                             opacity={chart.dimmedGroups.has(run.key) ? DIMMED_POINT : 1}
                             style={{ color: rowColors?.[first] ?? color ?? chart.groupColorOf(first) }}
                         >
-                            <LinePath points={placed} curve={curve} dashed={dashed} dots={false} />
+                            <LinePath points={placed} curve={curve} dashed={dashed} dots={false} width={width} />
                         </g>
                     );
                 })}
@@ -178,7 +201,7 @@ export function ChartLine<Row>({ value, label, tone, icon, curve = 'linear', das
     }
     return (
         <g ref={ref} className={clsx('pointer-events-none', className)} style={{ color: chart.colors.get(id) ?? color ?? seriesColor(0) }}>
-            <LinePath points={pointsOf(chart, values)} curve={curve} dashed={dashed} dots={dots} />
+            <LinePath points={pointsOf(chart, values)} curve={curve} dashed={dashed} dots={dots} width={width} />
         </g>
     );
 }
@@ -235,10 +258,13 @@ export function ChartArea<Row>({
     dashed = false,
     dots = false,
     stack = false,
+    width = 2,
+    fill: fillKind = 'gradient',
     className,
     ref
 }: ChartAreaProps<Row>) {
     const [chart, id, values] = useSeriesValues('Chart.Area', value);
+    const flat = stack || fillKind === 'flat';
     const gradient = `chart-area-${id.replace(/[^\w-]/g, '')}`;
     useRegistration(chart.store, 'series', id, {
         kind: 'area',
@@ -263,7 +289,7 @@ export function ChartArea<Row>({
         .curve(CURVES[curve])(tops.map((_, index) => index));
     return (
         <g ref={ref} className={clsx('pointer-events-none', className)} style={{ color: chart.colors.get(id) ?? colorOf(tone) ?? seriesColor(0) }}>
-            {stack ? null : (
+            {flat ? null : (
                 <defs>
                     <linearGradient id={gradient} x1={0} x2={0} y1={0} y2={1}>
                         <stop offset="0%" stopColor="currentColor" stopOpacity={0.24} />
@@ -271,8 +297,8 @@ export function ChartArea<Row>({
                     </linearGradient>
                 </defs>
             )}
-            {fill !== null && <path d={fill} fill={stack ? 'currentColor' : `url(#${gradient})`} fillOpacity={stack ? 0.32 : 1} />}
-            <LinePath points={tops} curve={curve} dashed={dashed} dots={dots} />
+            {fill !== null && <path d={fill} fill={flat ? 'currentColor' : `url(#${gradient})`} fillOpacity={flat ? FLAT_FILL : 1} />}
+            <LinePath points={tops} curve={curve} dashed={dashed} dots={dots} width={width} />
         </g>
     );
 }

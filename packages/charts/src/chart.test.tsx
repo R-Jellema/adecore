@@ -280,6 +280,20 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(changes).toEqual([500]);
     });
 
+    test('a line takes its width, and an area a flat fill with no line over it', async () => {
+        await mount(
+            <Chart.Root data={SCORES} x="key" label="Scores">
+                <Chart.Area value="score" label="Share" width={0} fill="flat" />
+                <Chart.Line value="score" label="Score" width={1} />
+            </Chart.Root>
+        );
+        const paths = [...container.querySelectorAll('path')];
+        expect(paths.map((path) => path.getAttribute('fill'))).toEqual(['currentColor', 'none']);
+        expect(paths[0]!.getAttribute('fill-opacity')).toBe('0.28');
+        expect(paths[1]!.getAttribute('stroke-width')).toBe('1');
+        expect(container.querySelector('linearGradient')).toBeNull();
+    });
+
     test('a second x axis writes its row under the first', async () => {
         await mount(
             <Chart.Root data={SCORES} x="key" label="Scores">

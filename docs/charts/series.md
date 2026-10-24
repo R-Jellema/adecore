@@ -62,9 +62,9 @@ A `ChartX` is a number (a moment in milliseconds) or the key of a category; a `C
 
 ## Lines and areas
 
-`Chart.Line` draws a line through `value`. A missing value (`null`, or anything that is no finite number) breaks the line, and a value with no neighbor gets a dot, so it does not vanish. `curve` is `linear`, `monotone` or `step` (`ChartCurve`); `dashed` dashes the line and `dots` puts a dot on every value.
+`Chart.Line` draws a line through `value`. A missing value (`null`, or anything that is no finite number) breaks the line, and a value with no neighbor gets a dot, so it does not vanish. `curve` is `linear`, `monotone` or `step` (`ChartCurve`); `dashed` dashes the line and `dots` puts a dot on every value. `width` is 2 pixels, or 1 for a small chart beside others.
 
-`Chart.Area` is a line with its area filled down to zero. With `stack` it stands on the stacked areas before it instead, and the value axis covers the top of the pile.
+`Chart.Area` is a line with its area filled down to zero. With `stack` it stands on the stacked areas before it instead, and the value axis covers the top of the pile. Its fill fades toward the ground; `fill="flat"` tints it evenly at 28%, as a stacked area always is. `width` sets the line along its top, and `0` leaves the area alone, such as a share under a line of the whole.
 
 `icon` takes a Lucide icon, as `Icon` of `@adecore/ui` does, and draws it in the color of the series in place of its swatch, in the legend and the tooltip; `Chart.Bar` takes one too. The props are `ChartLineProps` and `ChartAreaProps`; `tone` is a `ChartColor`, a `ChartTone` or `{ color }`.
 
