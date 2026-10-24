@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import type { IconProps } from '@adecore/ui';
 import { area, curveLinear, curveMonotoneX, curveStepAfter, line } from 'd3-shape';
 import { numberOf, readValue, warnOnce } from './access.ts';
-import { columnsIn, guessLabelWidth, LABEL_LIFT, placeValueLabels, segmentOf } from './band.ts';
+import { columnsIn, endRoundedColumn, guessLabelWidth, LABEL_LIFT, placeValueLabels, segmentOf } from './band.ts';
 import { colorOf, seriesColor } from './color.ts';
 import { BarsContext, useChartContext, type ChartContextValue } from './context.ts';
 import { useBeforePaint, useKeyCheck, useRegistration } from './register.ts';
@@ -65,6 +65,8 @@ export interface ChartBarProps<Row> {
     readonly columnWidth?: (bucket: number) => number;
     /* The corner radius of a column that stands alone; stacked segments stay square. */
     readonly radius?: number;
+    /* `end` rounds only the end away from the ground, so the column stands flat on it. */
+    readonly rounded?: 'all' | 'end';
     /* The least height of a column that stands alone, in pixels, also for a zero; a missing value still draws nothing. */
     readonly minHeight?: number;
     /* Writes each column's value over it, as the y axis writes it or through the function; labels that would collide move up a row. */
@@ -329,6 +331,7 @@ export function ChartBar<Row>({
     columnWidth,
     radius = 2,
     minHeight = 0,
+    rounded = 'all',
     valueLabels,
     className,
     ref
@@ -406,18 +409,20 @@ export function ChartBar<Row>({
 
     return (
         <g ref={ref} className={clsx('pointer-events-none', className)}>
-            {drawn.map(({ index, column, y, height, alpha }) => (
-                <rect
-                    key={index}
-                    x={column.x}
-                    y={y}
-                    width={column.width}
-                    height={height}
-                    rx={stacked !== undefined && bars?.stack === true ? 0 : Math.min(radius, Math.floor(column.width / 4))}
-                    opacity={alpha}
-                    style={{ fill: rowColors?.[index] ?? color ?? fallback }}
-                />
-            ))}
+            {drawn.map(({ index, column, y, height, alpha }) => {
+                const corner = bars?.stack === true ? 0 : Math.min(radius, Math.floor(column.width / 4));
+                const fill = rowColors?.[index] ?? color ?? fallback;
+                return rounded === 'end' && corner > 0 ? (
+                    <path
+                        key={index}
+                        d={endRoundedColumn(column.x, y, column.width, height, corner, (values[index] ?? 0) >= 0)}
+                        opacity={alpha}
+                        style={{ fill }}
+                    />
+                ) : (
+                    <rect key={index} x={column.x} y={y} width={column.width} height={height} rx={corner} opacity={alpha} style={{ fill }} />
+                );
+            })}
             <g ref={labels}>
                 {valueLabels !== undefined &&
                     valueLabels !== false &&

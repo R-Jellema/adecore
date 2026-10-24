@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { bandLayout, columnsIn, GROUP_GAP, LABEL_LIFT, placeValueLabels, segmentOf } from './band.ts';
+import { bandLayout, columnsIn, endRoundedColumn, GROUP_GAP, LABEL_LIFT, placeValueLabels, segmentOf } from './band.ts';
 
 describe('the buckets of a band scale', () => {
     test('share the room equally', () => {
@@ -73,6 +73,13 @@ describe('columns', () => {
         expect(segmentOf(99, 100, true, 1, 3)).toEqual({ y: 97, height: 3 });
         expect(segmentOf(101, 100, true, -1, 3)).toEqual({ y: 100, height: 3 });
         expect(segmentOf(40, 100, true, 6, 3)).toEqual({ y: 40, height: 60 });
+    });
+
+    test('a column rounded at its end stays square where it meets the ground, on either side of it', () => {
+        expect(endRoundedColumn(10, 20, 16, 40, 4, true)).toBe('M10,60V24A4,4 0 0 1 14,20H22A4,4 0 0 1 26,24V60Z');
+        expect(endRoundedColumn(10, 20, 16, 40, 4, false)).toBe('M10,20H26V56A4,4 0 0 1 22,60H14A4,4 0 0 1 10,56Z');
+        // A column lower than its radius rounds no deeper than it is tall.
+        expect(endRoundedColumn(0, 0, 16, 2, 4, true)).toStartWith('M0,2V2A2,2');
     });
 });
 

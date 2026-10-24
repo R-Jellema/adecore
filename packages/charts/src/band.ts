@@ -115,6 +115,15 @@ export function segmentOf(topPixel: number, basePixel: number, onGround: boolean
     return { y: top, height: Math.max(0, bottom - top) };
 }
 
+/* The outline of a column rounded only at its end away from the ground: the top for a value upward, else the bottom. */
+export function endRoundedColumn(x: number, y: number, width: number, height: number, radius: number, upward: boolean): string {
+    const corner = Math.max(0, Math.min(radius, height, width / 2));
+    if (upward) {
+        return `M${x},${y + height}V${y + corner}A${corner},${corner} 0 0 1 ${x + corner},${y}H${x + width - corner}A${corner},${corner} 0 0 1 ${x + width},${y + corner}V${y + height}Z`;
+    }
+    return `M${x},${y}H${x + width}V${y + height - corner}A${corner},${corner} 0 0 1 ${x + width - corner},${y + height}H${x + corner}A${corner},${corner} 0 0 1 ${x},${y + height - corner}Z`;
+}
+
 /* Between the top of a column and the baseline of its value. */
 export const LABEL_LIFT = 10;
 const LABEL_ROW = 16;

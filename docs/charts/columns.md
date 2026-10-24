@@ -37,6 +37,7 @@ Columns stand on whole pixels. A column is never narrower than 2px, and by defau
 | `dimOpacity` | `number` | `0.4` | A column the root dims, or one not picked while another is. Below 0.4 a column that is already light nearly vanishes in the dark theme. |
 | `columnWidth` | `(bucket: number) => number` | | The pixels the columns of a bucket take together, at most the bucket. |
 | `radius` | `number` | `2` | The corners of a column that stands alone, at most a quarter of its width. |
+| `rounded` | `'all' \| 'end'` | `'all'` | Which corners `radius` rounds: all four, or only the end away from the ground, so the column stands flat on it. |
 | `minHeight` | `number` | | The least height of a column that stands alone, in pixels. A zero gets it too, so a run that took no time still shows as a stub; a missing value draws nothing. Pass `?? 0` in `value` where a missing value should be a stub as well. |
 | `valueLabels` | `boolean \| (value, row, index) => string` | | Writes each column's value over it, see [value labels](#value-labels). |
 
