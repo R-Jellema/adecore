@@ -40,7 +40,7 @@ export interface ChartRootProps<Row> {
     readonly label: string;
     /* In pixels, the x axis included. The width follows the container. */
     readonly height?: number;
-    /* Controls the cursor. Leaving the chart then leaves it where it is. */
+    /* Controls the cursor. Leaving the chart calls `onActiveXChange(null)` and leaves the cursor to the app. */
     readonly activeX?: ChartX | null;
     readonly onActiveXChange?: (x: ChartX | null) => void;
     /* Puts the buckets of a band scale into runs of the same key, with a gap between them. */
@@ -272,12 +272,6 @@ export function ChartRoot<Row>({
         }
     };
 
-    const onPointerLeave = (): void => {
-        if (!controlled) {
-            setActiveX(null);
-        }
-    };
-
     const activate = (index: number): void => {
         if (onActivate !== undefined && index >= 0) {
             onActivate(data[index]!, index);
@@ -380,7 +374,7 @@ export function ChartRoot<Row>({
                             aria-activedescendant={pressable && activeIndex >= 0 ? `${id}-${activeIndex}` : undefined}
                             className={clsx('block overflow-visible outline-none', pressable && 'cursor-pointer')}
                             onPointerMove={onPointerMove}
-                            onPointerLeave={onPointerLeave}
+                            onPointerLeave={() => setActiveX(null)}
                             onClick={pressable ? (e) => activate(indexAtPointer(e)) : undefined}
                             onKeyDown={onKeyDown}
                             onBlur={() => setAnnounce(false)}

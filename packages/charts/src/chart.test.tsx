@@ -176,6 +176,19 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         expect(container.querySelectorAll('rect.fill-surface-hover')).toHaveLength(2);
     });
 
+    test('a controlled cursor hears that the pointer left', async () => {
+        const changes: unknown[] = [];
+        const plot = await mount(
+            <Chart.Root data={SCORES} x="key" label="Scores" activeX="a-low" onActiveXChange={(x) => changes.push(x)}>
+                <Chart.Bar value="score" label="Score" />
+            </Chart.Root>
+        );
+        await act(async () => {
+            plot.dispatchEvent(new PointerEvent('pointerout', { bubbles: true, relatedTarget: document.body }));
+        });
+        expect(changes).toEqual([null]);
+    });
+
     test('a selected bucket is pressed, and Escape clears the cursor', async () => {
         const plot = await mount();
         expect(container.querySelectorAll('[aria-pressed="true"]')).toHaveLength(1);

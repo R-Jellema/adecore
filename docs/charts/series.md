@@ -41,7 +41,7 @@ The width follows the container; `height` (200 by default) is the height of the 
 | `yScale` | `'linear' \| 'log'` | `'linear'` | |
 | `y` | `ChartYOptions` | `{}` | `min`, `max` and `integer`. |
 | `height` | `number` | `200` | Pixels. |
-| `activeX`, `onActiveXChange` | `ChartX \| null` | | The cursor, controlled. Leaving the chart then leaves it in place. |
+| `activeX`, `onActiveXChange` | `ChartX \| null` | | The cursor, controlled. Leaving the chart calls `onActiveXChange(null)`; the app decides whether the cursor goes. |
 | `group`, `minBucketWidth` | | | Groups of columns, see [Columns and groups](/charts/columns). |
 | `selected`, `onActivate`, `dimmed` | | | Columns a person picks, see [Columns and groups](/charts/columns#picking-columns). |
 | `className`, `ref` | | | On the outer box. |
@@ -70,7 +70,7 @@ The props are `ChartLineProps` and `ChartAreaProps`; `tone` is a `ChartColor`, a
 
 ## Tooltip, legend and table
 
-On a time scale the cursor takes the bucket under the pointer, the same bucket a marker there is named in; where a row is missing it shows nothing. On a linear scale it snaps to the nearest point. On a time or linear scale it draws a line with a dot on every series; on a band scale it lights the bucket. Leaving the chart clears it, unless `activeX` is controlled.
+On a time scale the cursor takes the bucket under the pointer, the same bucket a marker there is named in; where a row is missing it shows nothing. On a linear scale it snaps to the nearest point. On a time or linear scale it draws a line with a dot on every series; on a band scale it lights the bucket. Leaving the chart clears it; with `activeX` controlled it calls `onActiveXChange(null)` instead.
 
 `Chart.Tooltip` is the card at the cursor: the x of the bucket, a row per series, then its markers and bands. It hangs on the side of the cursor with the most room. `total` adds the sum of the series, and `format` writes the values of the card. `children` takes the bucket (`ChartBucket`, with a `ChartBucketValue` per series) and draws the card's contents instead.
 
