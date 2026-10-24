@@ -447,7 +447,8 @@ export function ChartRoot<Row>({
                     {hint}
                 </p>
                 <p aria-live="polite" className="sr-only">
-                    {announce && activeIndex >= 0 ? describe(activeIndex) : ''}
+                    {/* A pressable bucket is read through its button as the active descendant; the live region would say it twice. */}
+                    {announce && activeIndex >= 0 && !pressable ? describe(activeIndex) : ''}
                 </p>
             </div>
         </ChartContext>

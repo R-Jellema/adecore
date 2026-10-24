@@ -78,7 +78,7 @@ The plot is one tab stop, a `group` with the role description "chart" and `label
 | Escape | Clears it |
 | Enter, Space | Picks the bucket, with `onActivate` |
 
-A polite live region reads each bucket the keyboard moves to: the group, the x, then every series ("14:00, Errors 12, Warnings 3"). `Chart.Table` makes every value readable without moving the cursor at all.
+A polite live region reads each bucket the keyboard moves to: the group, the x, then every series ("14:00, Errors 12, Warnings 3"). With `onActivate` every bucket is a button with the same words as its name, reached as the active descendant, and the live region stays quiet so nothing is read twice. `Chart.Table` makes every value readable without moving the cursor at all.
 
 ## Empty and loading
 

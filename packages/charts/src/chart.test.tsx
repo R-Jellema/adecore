@@ -102,6 +102,8 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
     };
 
     const live = (): string => container.querySelector('[aria-live="polite"]')!.textContent ?? '';
+    const active = (plot: SVGSVGElement): string | null =>
+        document.getElementById(plot.getAttribute('aria-activedescendant') ?? '')?.getAttribute('aria-label') ?? null;
 
     beforeEach(() => {
         activated = [];
@@ -117,11 +119,23 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
     });
 
     test('reads each bucket it moves to, the group first', async () => {
-        const plot = await mount();
+        const plot = await mount(
+            <Chart.Root data={SCORES} x="key" group="model" label="Scores">
+                <Chart.XAxis format={(key) => SCORES.find((score) => score.key === key)!.effort} />
+                <Chart.Bar value="score" label="Score" />
+            </Chart.Root>
+        );
         await press(plot, 'ArrowRight');
         expect(live()).toBe('Alpha, low, Score 40');
         await press(plot, 'ArrowRight');
         expect(live()).toBe('Alpha, high, Score 52');
+    });
+
+    test('a pressable bucket is read once, through its button, with the live region left empty', async () => {
+        const plot = await mount();
+        await press(plot, 'ArrowRight');
+        expect(active(plot)).toBe('Alpha, low, Score 40');
+        expect(live()).toBe('');
     });
 
     test('names a group by its label, apart from its key', async () => {
@@ -141,7 +155,7 @@ describe.skipIf(typeof document === 'undefined')('a mounted chart', () => {
         const plot = await mount();
         await press(plot, 'PageDown');
         await press(plot, 'PageDown');
-        expect(live()).toBe('Beta, low, Score 31');
+        expect(active(plot)).toBe('Beta, low, Score 31');
         await press(plot, 'Enter');
         expect(activated).toEqual(['b-low']);
     });
