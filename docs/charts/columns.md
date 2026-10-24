@@ -132,6 +132,63 @@ The demo above draws a [`Chart.Rule`](/charts/series#rules) at the score of each
 ))}
 ```
 
+## Compare two columns
+
+A click pins column A. The column under the pointer or the keyboard then stands in for B, with a dashed rule at its value, until a second click pins it. `onActiveXChange` hears the key of every bucket the pointer or the keyboard moves to, and `null` when the pointer leaves with no keyboard place to go back to; the app keeps A, B and the preview, and picks both through `selected`. Here A is pinned on Atlas 5, high; point at another column:
+
+<Demo src="charts/compare-columns" />
+
+```tsx
+const shown = reference === null ? null : ((preview !== reference ? preview : null) ?? candidate);
+
+<ScoreChart.Root
+    data={scores}
+    x="key"
+    group="model"
+    rowLabel={(row) => `${row.model}, ${effortName(row.effort)}`}
+    margin={{ top: 44, right: 16 }}
+    selected={[reference, shown].filter((key) => key !== null)}
+    onActivate={pick}
+    onActiveXChange={(x) => setPreview(x === null ? null : String(x))}
+>
+    ...
+    {reference !== null && <ScoreChart.Rule value={scoreOf(reference)} label="A" tone={{ color: 'var(--text-muted)' }} />}
+    {shown !== null && <ScoreChart.Rule value={scoreOf(shown)} label="B" tone={{ color: 'var(--text-muted)' }} dashed />}
+</ScoreChart.Root>
+```
+
+`rowLabel` is what a screen reader hears for a column, "Atlas 5, High", while the axis writes "H". In a dialog, `surface="raised"` draws the halo of the rule labels in the dialog's surface. Escape clears the cursor first and stops there; an app that clears its pins on Escape too listens for it on an element around the chart.
+
+## Few wide columns
+
+A handful of columns, each with its value over it, needs no value axis. `lines="ground"` on `Chart.Grid` draws only the line they stand on, `rounded="end"` rounds the top of a column and keeps it flat on that line, `headroom: 'none'` lets the tallest fill the plot, and `minHeight` keeps a short one in sight. The root's `format` writes the values in the labels, the tooltip and the table without a y axis:
+
+<Demo src="charts/weekly-medians" />
+
+```tsx
+<Chart.Root data={weeks} x="start" label="Median time to a first review per week" height={140} y={{ headroom: 'none' }} format={formatDuration}>
+    <Chart.Grid lines="ground" />
+    <Chart.XAxis format={(start) => formatDay(start as number)} />
+    <Chart.Bar value="median" label="Median" radius={4} rounded="end" minHeight={2} valueLabels valueLabelSize="xs" />
+    <Chart.Tooltip />
+</Chart.Root>
+```
+
+## Runs in a row
+
+A column per run of a job, in the color of how it ended. A missed run took no time, so `value` reads it as 0 and `minHeight` keeps it as a stub. The card stays in the top right corner of the plot and moves to the left while the pointer is on a column under it, and `cursor="none"` lights no bucket, so only the other columns dim:
+
+<Demo src="charts/run-durations" />
+
+```tsx
+<Chart.Root data={runs} x="id" label="Duration of the latest runs" height={160} format={formatDuration} cursor="none">
+    <Chart.Grid />
+    <Chart.YAxis ticks={3} format={(ms) => `${formatNumber(ms / 1000)} s`} />
+    <Chart.Bar value={(run) => run.duration ?? 0} label="Duration" tone={(run) => runTone(run.status)} radius={0} minHeight={3} />
+    <Chart.Tooltip placement="top-right" />
+</Chart.Root>
+```
+
 ## A ranked row
 
 Without `group`, every column stands in one row. A second `Chart.XAxis` writes a row of labels under the first, and `angle={-40}` slants them, for long names under every column:

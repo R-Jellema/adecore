@@ -74,6 +74,33 @@ A `ChartX` is a number (a moment in milliseconds) or the key of a category; a `C
 
 `icon` takes a Lucide icon, as `Icon` of `@adecore/ui` does, and draws it in the color of the series in place of its swatch, in the legend and the tooltip; `Chart.Bar` takes one too. The props are `ChartLineProps` and `ChartAreaProps`; `tone` is a `ChartColor`, a `ChartTone` or `{ color }`.
 
+## A small chart of samples
+
+A chart beside a number in a panel: the CPU of the machine as a 1px line and the share of one app as a flat area under it, sampled every ten seconds over the last ten minutes. `step={0}` makes each row a sample at its moment, `xOptions` fixes the window so it ends at the newest sample, and `margin` lets the plot reach its edges. It only decorates the number above it, so it is an image (`interactive={false}`), and `cursor="line"` marks the pointer with a line alone. `onActiveXChange` writes the hovered sample into that number:
+
+<Demo src="charts/process-load" />
+
+```tsx
+<Chart.Root
+    data={samples}
+    x="at"
+    xScale="time"
+    step={0}
+    xOptions={{ min: end - WINDOW, max: end }}
+    y={{ min: 0, max: 100 }}
+    height={44}
+    margin={{ top: 1, right: 0, bottom: 1, left: 0 }}
+    interactive={false}
+    cursor="line"
+    label="CPU of the machine and of this app, the last ten minutes"
+    onActiveXChange={setHovered}
+>
+    <Chart.Grid lines="ground" dashed />
+    <Chart.Area value="app" label="This app" tone="accent" width={0} fill="flat" />
+    <Chart.Line value="machine" label="Machine" tone={{ color: 'var(--text-muted)' }} width={1} />
+</Chart.Root>
+```
+
 ## Markers and bands
 
 `Chart.Marker` draws a dashed vertical line at a moment, `at`, with a dot on top. A moment outside the x axis draws nothing. Its `label` is named in the tooltip of the bucket the moment falls in, so a deploy at 14:37 shows under the bucket of 14:00. `Chart.Band` shades a range from `from` to `to` with a hatch, named in the tooltip of every bucket it touches. A short range is still 4px wide, so it reads as a band and not as a marker. In the tooltip a marker has a dashed swatch and a band a square, both in their color, and `detail` adds a second line under the label, such as "Data may be missing."; the live region reads it too. The tooltip hands them to its `children` as `ChartNote`s. Both are muted unless they get a `tone`. On a band scale `at`, `from` and `to` are keys of buckets; a moment between two buckets needs a time scale, which takes [columns](/charts/columns#columns-over-time) too. The props are `ChartMarkerProps` and `ChartBandProps`.
