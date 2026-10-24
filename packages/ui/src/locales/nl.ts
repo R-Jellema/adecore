@@ -49,6 +49,7 @@ export default {
     iconPicker: {
         label: 'Icoon',
         none: 'Geen icoon',
+        placeholder: 'Geen',
         search: 'Iconen zoeken',
         clear: 'Zoekopdracht wissen',
         noMatch: 'Geen icoon past bij “{{query}}”'

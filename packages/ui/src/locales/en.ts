@@ -49,6 +49,7 @@ export default {
     iconPicker: {
         label: 'Icon',
         none: 'No icon',
+        placeholder: 'None',
         search: 'Search icons',
         clear: 'Clear search',
         noMatch: 'No icon matches “{{query}}”'

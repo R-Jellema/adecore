@@ -1,23 +1,37 @@
 import { useState, type ReactNode } from 'react';
 import {
+    Bot,
+    Braces,
+    Brain,
+    Bug,
     ClipboardPaste,
+    Cloud,
+    Code,
+    Container,
     Copy,
+    Database,
     Ellipsis,
     FileText,
     Folder,
     FolderInput,
     FolderOpen,
     GitBranch,
+    GitMerge,
+    Globe,
     Info,
+    Network,
     NotebookPen,
     Pencil,
     Play,
     Search,
+    Server,
     Settings,
     Settings2,
+    Sparkles,
     Square,
     Terminal,
-    Trash
+    Trash,
+    Wand
 } from 'lucide-react';
 import type { AgentKind, ModelSelection } from '@adecore/agent-contracts';
 import { ModelPicker } from '@adecore/agents-react/chat/ui';
@@ -31,6 +45,7 @@ import {
     Field,
     Icon,
     IconButton,
+    IconPicker,
     Input,
     KEY_SHORTCUTS,
     Kbd,
@@ -43,6 +58,7 @@ import {
     Tooltip,
     createToastStore,
     shortcut,
+    type IconPickerGroup,
     type ProjectSwitcherItem
 } from '@adecore/ui';
 import { PROVIDERS } from '../../../../docs/demos/shared/agents-data.ts';
@@ -161,6 +177,26 @@ function OpenPopover() {
                     </ul>
                 </Popover.Popup>
             </Popover.Root>
+        </Stage>
+    );
+}
+
+const ICON_GROUPS: IconPickerGroup[] = [
+    { id: 'code', label: 'Code', icons: { code: Code, braces: Braces, terminal: Terminal, bug: Bug, 'git-branch': GitBranch, 'git-merge': GitMerge } },
+    { id: 'ai', label: 'AI', icons: { bot: Bot, brain: Brain, sparkles: Sparkles, wand: Wand } },
+    { id: 'infra', label: 'Infrastructure', icons: { server: Server, cloud: Cloud, database: Database, container: Container, network: Network, globe: Globe } }
+];
+
+/* The picker keeps its open state to itself, so the specimen opens it the way a person does, with a click on the trigger. */
+const openOnMount = (element: HTMLDivElement | null): void => {
+    element?.querySelector<HTMLButtonElement>('button[aria-haspopup]')?.click();
+};
+
+function OpenIconPicker() {
+    const [icon, setIcon] = useState<string | null>('database');
+    return (
+        <Stage height={330}>
+            <IconPicker ref={openOnMount} className="w-72" icons={ICON_GROUPS} rows={5} value={icon} onValueChange={setIcon} onClear={() => setIcon(null)} />
         </Stage>
     );
 }
@@ -474,6 +510,9 @@ export function OverlaySection() {
             </Specimen>
             <Specimen name="Popover" caption="variant picker">
                 <OpenPopover />
+            </Specimen>
+            <Specimen name="IconPicker" caption="open, groups, search and no icon">
+                <OpenIconPicker />
             </Specimen>
             <Specimen name="Popover, PreviewCard">
                 <div className="flex w-full flex-col gap-4">
