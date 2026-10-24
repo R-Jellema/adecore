@@ -30,10 +30,10 @@ describe('a project switcher', () => {
         expect(markup).toContain('disabled=""');
     });
 
-    test('names the current project in the trigger while the label names it for a screen reader', () => {
+    test('keeps the current project it shows in the accessible name, after the label', () => {
         const markup = render(<ProjectSwitcher current={project} projects={[]} label="Product" onSelect={() => {}} />);
         expect(markup).toContain('>Studio</span>');
-        expect(markup).toContain('aria-label="Product"');
+        expect(markup).toContain('aria-label="Product: Studio"');
     });
 
     test('accepts app-specific fields without exposing them on the trigger', () => {

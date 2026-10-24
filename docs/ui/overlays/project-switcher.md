@@ -29,7 +29,7 @@ Each `ProjectSwitcherItem` has an `id`, unique within its list, and a `name`. Th
 
 ## Without a current project
 
-With `current={null}` the trigger reads its `label`, so an app whose list holds something other than projects names it in its own words. Without a `label` it reads "Projects" (`projectSwitcher.label`). A screen reader hears the same words the trigger shows.
+With `current={null}` the trigger reads its `label`, so an app whose list holds something other than projects names it in its own words. Without a `label` it reads "Projects" (`projectSwitcher.label`). A screen reader hears the same words the trigger shows. Next to a current project the accessible name joins the two, such as "Product: Studio", so it still holds the name on screen.
 
 <Demo src="overlays/project-switcher-empty" />
 
@@ -61,7 +61,7 @@ Keyboard, typeahead and submenus come from [Menu](/ui/overlays/menu). Typeahead 
 | `leading` | `ReactNode` | | |
 | `before` | `ReactNode` | | Menu items between the projects and Recent projects. |
 | `children` | `ReactNode` | | Menu items in the group of Recent projects. |
-| `label` | `string` | the current name | The trigger's accessible name, and its text while `current` is null. |
+| `label` | `string` | `projectSwitcher.label` | The trigger's text while `current` is null, and the start of its accessible name next to a current project. |
 | `disabled` | `boolean` | | |
 | `open`, `defaultOpen`, `onOpenChange` | | | As on `Menu.Root`. |
 | `className` | `string` | | On the trigger. |
