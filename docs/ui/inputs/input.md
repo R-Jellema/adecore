@@ -16,6 +16,10 @@ A value a person reads but does not type, such as a chosen folder beside the but
 
 <Demo src="inputs/input-icon" />
 
+`end` draws something after the text inside the field, such as a count of matches and an [`IconButton`](/ui/actions/icon-button) of size `xs` that clears the query. Like `icon`, it puts the input in a box that draws the field, and `className` goes to that box. Keep `end` set for as long as the field is on screen, `false` while it has nothing to show, so the input is not mounted again and keeps its focus when the content appears.
+
+<Demo src="inputs/input-end" />
+
 A `TextArea` is at least 64 pixels tall; `rows` makes it taller. `size="sm"` gives it the smaller text and padding of a compact input, for a commit message in a narrow panel. It has no resize handle until `resize="vertical"` gives it one.
 
 `variant="bare"` drops the border, the ground and the focus outline, for a text area inside a card that draws them: a message box with its buttons under the text. The card then shows the focus itself, for example with `has-[textarea:focus-visible]:outline-2 has-[textarea:focus-visible]:-outline-offset-1 has-[textarea:focus-visible]:outline-accent`. The border stays as a transparent line, so the text sits where it would in a field of its own.
@@ -33,6 +37,7 @@ Inside a [`Field`](/ui/inputs/field) both take their `id`, `aria-describedby` an
 | `size` | `'md' \| 'sm'` | `'md'` | |
 | `mono` | `boolean` | `false` | |
 | `icon` | `LucideIcon` | | Drawn in front of the text. |
+| `end` | `ReactNode` | | Drawn after the text, inside the field. |
 
 `TextArea` takes every prop of a `<textarea>`, plus:
 

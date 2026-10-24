@@ -327,6 +327,14 @@ describe('a field', () => {
         expect(render(<Input icon={Search} aria-label="Search" />)).toContain('width="14"');
     });
 
+    test('draws what comes after the text inside the box of the field', () => {
+        const markup = render(<Input aria-label="Filter" size="sm" className="grow" end={<span>3</span>} />);
+        expect(markup).toMatch(
+            /^<span class="field relative flex p-0 field-sm grow"><input [^>]*aria-label="Filter"[^>]*\/><span[^>]*><span>3<\/span><\/span><\/span>$/
+        );
+        expect(markup).not.toContain('<svg');
+    });
+
     test('says what went wrong as an alert', () => {
         expect(render(<FormError>Nope</FormError>)).toMatch(/^<p\b[^>]*role="alert"[^>]*>Nope<\/p>$/);
     });
