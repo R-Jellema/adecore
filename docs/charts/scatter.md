@@ -70,7 +70,7 @@ With `onActivate` every point is a `role="button"` with `aria-pressed`, reached 
 
 ## End labels
 
-`Chart.EndLabels` writes a label right of the plot at the last point of each series, with a thin line in the color of the series back to its point. Labels that would come nearer than 24px push apart, up and down, and stay inside the plot. The plot gives up `width` pixels on the right for them: 118, or 156 in a chart wider than 750px.
+`Chart.EndLabels` writes a label right of the plot at the last point of each series, with a thin line in the color of the series back to its point. Labels that would come nearer than 24px push apart, up and down, and stay inside the plot; where there is no room for all of them at 24px, they come closer. The plot gives up `width` pixels on the right for them: 118, or 156 in a chart wider than 750px.
 
 Its children get a `ChartPointSeries` (`key`, `label`, `rows` and `color`) and return what the label holds, such as a logo and a name. The label is HTML and takes the color of the series as `currentColor`. Without children it writes the label of the series. The props are `ChartEndLabelsProps`.
 

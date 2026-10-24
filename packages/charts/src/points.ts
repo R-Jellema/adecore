@@ -84,11 +84,12 @@ export function frontierOf<Point extends { readonly x: number; readonly y: numbe
 
 /*
  * The centers of labels that stand in a column, as close to their wish as they can without two coming nearer than
- * `gap`, and inside `top` to `bottom`. In the order they were given.
+ * `wanted`, and inside `top` to `bottom`. In the order they were given. Where they do not fit, the gap shrinks until they do.
  */
-export function spreadLabels(wishes: readonly number[], gap: number, top: number, bottom: number): number[] {
+export function spreadLabels(wishes: readonly number[], wanted: number, top: number, bottom: number): number[] {
     const order = wishes.map((wish, index) => ({ wish, index })).sort((one, other) => one.wish - other.wish || one.index - other.index);
     const placed = order.map(({ wish }) => wish);
+    const gap = placed.length > 1 ? Math.min(wanted, Math.max(0, bottom - top) / (placed.length - 1)) : wanted;
     for (let i = 0; i < placed.length; i++) {
         placed[i] = Math.max(top, placed[i]!, i === 0 ? top : placed[i - 1]! + gap);
     }
