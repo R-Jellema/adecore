@@ -24,7 +24,7 @@ Values per bucket on a shared x axis: a moment, a number or a category. Errors a
 Each row of `data` is one bucket. `x` names its position, as a key of the row or a function of it. `xScale` says what the position is:
 
 - `band` (the default): a category per row, such as a day or a model, with the buckets side by side. Columns only stand on this scale.
-- `time`: a moment, as a `Date` or in milliseconds. The rows run from the earliest to the latest.
+- `time`: a moment, as a `Date` or in milliseconds. The rows run from the earliest to the latest. Each row is a bucket that starts at its x and lasts one `step`, the smallest distance between two rows unless the root gets one; its point stands in the middle of it, where a column would.
 - `linear`: a number, the rows from low to high.
 
 The value axis is `linear` or `log` (`yScale`). It covers every series, stacked ones at their top, starts at zero on a linear scale and rounds its ends out to a tick. `y` fixes the ends (`{ min, max }`), and `{ integer: true }` keeps the ticks of a count on whole numbers.
@@ -37,6 +37,7 @@ The width follows the container; `height` (200 by default) is the height of the 
 | `x` | `keyof Row \| (row, index) => ChartXInput` | | Required. |
 | `label` | `string` | | Required. The name a screen reader reads, and the caption of the table. |
 | `xScale` | `'band' \| 'time' \| 'linear'` | `'band'` | |
+| `step` | `number` | | The length of a bucket on a time scale, in milliseconds. Set it when rows may be missing at the start. |
 | `yScale` | `'linear' \| 'log'` | `'linear'` | |
 | `y` | `ChartYOptions` | `{}` | `min`, `max` and `integer`. |
 | `height` | `number` | `200` | Pixels. |
@@ -69,7 +70,7 @@ The props are `ChartLineProps` and `ChartAreaProps`; `tone` is a `ChartColor`, a
 
 ## Tooltip, legend and table
 
-The cursor snaps to the nearest bucket. On a time or linear scale it draws a line with a dot on every series; on a band scale it lights the bucket. Leaving the chart clears it, unless `activeX` is controlled.
+On a time scale the cursor takes the bucket under the pointer, the same bucket a marker there is named in; where a row is missing it shows nothing. On a linear scale it snaps to the nearest point. On a time or linear scale it draws a line with a dot on every series; on a band scale it lights the bucket. Leaving the chart clears it, unless `activeX` is controlled.
 
 `Chart.Tooltip` is the card at the cursor: the x of the bucket, a row per series, then its markers and bands. It hangs on the side of the cursor with the most room. `total` adds the sum of the series, and `format` writes the values of the card. `children` takes the bucket (`ChartBucket`, with a `ChartBucketValue` per series) and draws the card's contents instead.
 

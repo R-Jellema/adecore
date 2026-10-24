@@ -21,12 +21,27 @@ describe('snapping', () => {
         expect(containingIndex(hours, -1)).toBe(-1);
     });
 
+    test('with a step a bucket is that long, so a moment where a row is missing falls in none', () => {
+        const gappy = [0, 1, 3].map((hour) => hour * HOUR);
+        expect(containingIndex(gappy, 1.5 * HOUR, HOUR)).toBe(1);
+        expect(containingIndex(gappy, 2.5 * HOUR, HOUR)).toBe(-1);
+        expect(containingIndex(gappy, 3.9 * HOUR, HOUR)).toBe(2);
+        expect(containingIndex(gappy, 4 * HOUR, HOUR)).toBe(-1);
+    });
+
+    test('on a time scale the cursor takes the bucket the pointer is in, as a marker does', () => {
+        const deploy = 2.62 * HOUR;
+        expect(snapIndex(hours, 'time', deploy, HOUR)).toBe(2);
+        expect(snapIndex(hours, 'time', deploy, HOUR)).toBe(containingIndex(hours, deploy, HOUR));
+    });
+
     test('a shared x snaps to its own buckets in each chart', () => {
         const other = [0, 2, 4].map((hour) => hour * HOUR);
-        expect(snapIndex(hours, false, 2.9 * HOUR)).toBe(3);
-        expect(snapIndex(other, false, 2.9 * HOUR)).toBe(1);
-        expect(snapIndex(['mon', 'tue'], true, 'tue')).toBe(1);
-        expect(snapIndex(hours, false, null)).toBe(-1);
+        expect(snapIndex(hours, 'time', 2.9 * HOUR, HOUR)).toBe(2);
+        expect(snapIndex(other, 'time', 2.9 * HOUR, 2 * HOUR)).toBe(1);
+        expect(snapIndex(hours, 'linear', 2.9 * HOUR)).toBe(3);
+        expect(snapIndex(['mon', 'tue'], 'band', 'tue')).toBe(1);
+        expect(snapIndex(hours, 'time', null, HOUR)).toBe(-1);
     });
 });
 

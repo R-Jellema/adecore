@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { decimalsOf, extentOf, stackSeries, yScaleOf } from './scale.ts';
+import { bucketStepOf, continuousXScale, decimalsOf, extentOf, stackSeries, yScaleOf } from './scale.ts';
 
 describe('stacking', () => {
     test('piles a series on the ones before it in the same stack and leaves the others on zero', () => {
@@ -75,5 +75,20 @@ describe('the value axis', () => {
         expect(decimalsOf(0.5)).toBe(1);
         expect(decimalsOf(0.25)).toBe(2);
         expect(decimalsOf(0.1 + 0.2)).toBe(1);
+    });
+});
+
+describe('the buckets of a time scale', () => {
+    const HOUR = 3_600_000;
+
+    test('are as long as the smallest distance between two rows, so a missing row does not stretch them', () => {
+        expect(bucketStepOf([0, HOUR, 3 * HOUR])).toBe(HOUR);
+        expect(bucketStepOf([5])).toBe(0);
+    });
+
+    test('run the axis to the end of the last bucket, so its point stands in the middle of it', () => {
+        const scale = continuousXScale('time', [0, HOUR], [0, 200], HOUR);
+        expect(scale.domain).toEqual([0, 2 * HOUR]);
+        expect(scale.at(HOUR + HOUR / 2)).toBe(150);
     });
 });

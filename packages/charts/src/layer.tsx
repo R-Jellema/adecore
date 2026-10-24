@@ -25,7 +25,7 @@ export function ChartLayer({ children, className, ref }: ChartLayerProps) {
     );
 }
 
-/* Charts inside share the x under the pointer, and each snaps to its own nearest bucket. Their y axes take the width of the widest, so the plots line up. */
+/* Charts inside share the x under the pointer, and each takes its own bucket at it. Their y axes take the width of the widest, so the plots line up. */
 export function ChartGroup({ children, className, ref }: ChartGroupProps) {
     const [x, setX] = useState<ChartX | null>(null);
     const [widths] = useState(createAxisWidths);

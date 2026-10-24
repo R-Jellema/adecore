@@ -1,4 +1,4 @@
-import type { ChartX } from './types.ts';
+import type { ChartX, ChartXScale } from './types.ts';
 
 /* The bucket closest to `x` on a continuous axis, whose buckets are sorted from low to high; -1 without buckets. */
 export function nearestIndex(xs: readonly number[], x: number): number {
@@ -22,34 +22,44 @@ export function nearestIndex(xs: readonly number[], x: number): number {
 }
 
 /*
- * The bucket a moment falls in, when every bucket starts at its x and runs to the next one: a deploy
- * at 14:37 belongs to the bucket of 14:00. The last bucket is as long as the one before it.
+ * The bucket a moment falls in, when every bucket starts at its x: a deploy at 14:37 belongs to the bucket of 14:00.
+ * With a `step` every bucket is that long, so a moment where a row is missing falls in none. Without one a bucket runs
+ * to the next, and the last is as long as the one before it.
  */
-export function containingIndex(xs: readonly number[], at: number): number {
+export function containingIndex(xs: readonly number[], at: number, step?: number): number {
     if (xs.length === 0 || at < xs[0]!) {
-        return -1;
-    }
-    const last = xs.length - 1;
-    const step = last > 0 ? xs[last]! - xs[last - 1]! : 0;
-    if (at > xs[last]! + step || (step === 0 && at !== xs[last])) {
         return -1;
     }
     let index = nearestIndex(xs, at);
     if (xs[index]! > at) {
         index -= 1;
     }
-    return index;
+    const last = xs.length - 1;
+    if (step === undefined && index < last) {
+        return index;
+    }
+    const length = step ?? (last > 0 ? xs[last]! - xs[last - 1]! : 0);
+    if (length <= 0) {
+        return at === xs[index] ? index : -1;
+    }
+    return at < xs[index]! + length ? index : -1;
 }
 
-/* The bucket the cursor is on: the nearest on a continuous axis, the equal key on a band. */
-export function snapIndex(xs: readonly ChartX[], band: boolean, x: ChartX | null): number {
+/*
+ * The bucket the cursor is on: the equal key on a band scale, the bucket the moment falls in on a time scale with
+ * buckets of `step`, and the nearest otherwise.
+ */
+export function snapIndex(xs: readonly ChartX[], scale: ChartXScale, x: ChartX | null, step = 0): number {
     if (x === null) {
         return -1;
     }
-    if (band) {
+    if (scale === 'band') {
         return xs.findIndex((key) => String(key) === String(x));
     }
-    return typeof x === 'number' ? nearestIndex(xs as number[], x) : -1;
+    if (typeof x !== 'number') {
+        return -1;
+    }
+    return scale === 'time' && step > 0 ? containingIndex(xs as number[], x, step) : nearestIndex(xs as number[], x);
 }
 
 /*

@@ -1,6 +1,6 @@
 # Shared cursor
 
-Charts inside a `Chart.Group` share one cursor: the pointer over one draws the cursor in all of them, at the same moment. The group shares the x under the pointer, not an index, because the data sets need not line up. Each chart snaps to its own nearest bucket: errors per hour above, the latency every 20 minutes under it.
+Charts inside a `Chart.Group` share one cursor: the pointer over one draws the cursor in all of them, at the same moment. The group shares the x under the pointer, not an index, because the data sets need not line up. Each chart takes its own bucket at that moment: errors per hour above, the latency every 20 minutes under it.
 
 <Demo src="charts/shared-cursor" />
 

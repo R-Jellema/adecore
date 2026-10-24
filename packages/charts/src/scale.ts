@@ -120,10 +120,22 @@ export interface ContinuousXScale {
     ticks(count: number): number[];
 }
 
-/* A time or linear x axis over the buckets, from the first to the last. */
-export function continuousXScale(kind: 'time' | 'linear', xs: readonly number[], range: [number, number]): ContinuousXScale {
+/* The smallest distance between two rows, so a row that is missing does not make every bucket twice as long; 0 for one row. */
+export function bucketStepOf(xs: readonly number[]): number {
+    let step = Infinity;
+    for (let i = 1; i < xs.length; i++) {
+        const distance = xs[i]! - xs[i - 1]!;
+        if (distance > 0) {
+            step = Math.min(step, distance);
+        }
+    }
+    return step === Infinity ? 0 : step;
+}
+
+/* A time or linear x axis over the buckets, from the first to the end of the last, which is `step` long. */
+export function continuousXScale(kind: 'time' | 'linear', xs: readonly number[], range: [number, number], step = 0): ContinuousXScale {
     let low = xs.length === 0 ? 0 : Math.min(...xs);
-    let high = xs.length === 0 ? 1 : Math.max(...xs);
+    let high = xs.length === 0 ? 1 : Math.max(...xs) + step;
     if (high === low) {
         const pad = kind === 'time' ? 30 * 60 * 1000 : 1;
         low -= pad;

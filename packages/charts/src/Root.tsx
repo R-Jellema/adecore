@@ -21,7 +21,7 @@ import { seriesColor } from './color.ts';
 import { ChartContext, GroupContext, type ChartContextValue } from './context.ts';
 import { containingIndex, moveIndex, nearestIndex, snapIndex } from './cursor.ts';
 import { useAlignedAxes } from './group-axes.ts';
-import { continuousXScale, extentOf, stackSeries, tickCount, yScaleOf } from './scale.ts';
+import { bucketStepOf, continuousXScale, extentOf, stackSeries, tickCount, yScaleOf } from './scale.ts';
 import { createChartStore } from './store.ts';
 import { formatTime, timeLabelOf } from './time-format.ts';
 import type { ChartAccessor, ChartX, ChartXInput, ChartXScale, ChartYOptions, ChartYScale } from './types.ts';
@@ -31,6 +31,8 @@ export interface ChartRootProps<Row> {
     readonly data: readonly Row[];
     readonly x: ChartAccessor<Row, ChartXInput>;
     readonly xScale?: ChartXScale;
+    /* The length of a bucket on a time scale, in milliseconds; the smallest distance between two rows by default. */
+    readonly step?: number;
     readonly yScale?: ChartYScale;
     /* Fixed ends of the value axis; without them it covers every series and rounds out to a tick. */
     readonly y?: ChartYOptions;
@@ -68,6 +70,7 @@ export function ChartRoot<Row>({
     data,
     x,
     xScale = 'band',
+    step: stepProp,
     yScale = 'linear',
     y = {},
     label,
@@ -109,12 +112,14 @@ export function ChartRoot<Row>({
     const groupKeys = band && group !== undefined ? data.map((row, index) => String(readValue(group, row, index))) : null;
     const [leftAxis, rightAxis] = useAlignedAxes(sharedCursor?.widths ?? null, axes.left ?? 0, axes.right ?? 0);
     const room = Math.max(0, size.width - leftAxis - rightAxis);
-    const inset = band ? 0 : INSET;
+    // A bucket of a time scale runs from its x for one step and its point stands in the middle, as a column would.
+    const bucketStep = xScale === 'time' ? (stepProp ?? bucketStepOf(xs as number[])) : 0;
+    const inset = band || bucketStep > 0 ? 0 : INSET;
     const layout = band ? bandLayout(xs.length, groupKeys, room, minBucketWidth) : null;
     const width = layout === null ? room : Math.max(room, Math.ceil(layout.width));
     const bottom = height - (axes.x ?? 4);
     const plot = { left: inset, top: TOP, right: width - inset, bottom, width: Math.max(0, width - 2 * inset), height: Math.max(0, bottom - TOP) };
-    const continuous = band ? null : continuousXScale(xScale, xs as number[], [plot.left, plot.right]);
+    const continuous = band ? null : continuousXScale(xScale, xs as number[], [plot.left, plot.right], bucketStep);
 
     const stackInput = [...series].map(([seriesId, entry]) => ({ id: seriesId, values: entry.values, stack: entry.stack }));
     const stacked = stackSeries(stackInput, xs.length);
@@ -142,7 +147,7 @@ export function ChartRoot<Row>({
         if (layout !== null) {
             return plot.left + (layout.lefts[index] ?? 0) + layout.bucket / 2;
         }
-        return continuous!.at(xs[index] as number);
+        return continuous!.at((xs[index] as number) + bucketStep / 2);
     };
     const pixelOfX = (value: ChartX): number | null => {
         if (layout !== null) {
@@ -153,7 +158,6 @@ export function ChartRoot<Row>({
     };
     const pixelOfY = (value: number): number | null => scaleY.at(value);
 
-    const bucketStep = !band && xs.length > 1 ? (xs[1] as number) - (xs[0] as number) : 0;
     const span = continuous === null ? 0 : continuous.domain[1] - continuous.domain[0];
     const formatX = (value: ChartX): string => {
         if (formats.x !== undefined) {
@@ -173,7 +177,9 @@ export function ChartRoot<Row>({
         }
         const notes: string[] = [];
         for (const marker of markers.values()) {
-            const inside = band ? String(marker.at) === String(at) : typeof marker.at === 'number' && containingIndex(xs as number[], marker.at) === index;
+            const inside = band
+                ? String(marker.at) === String(at)
+                : typeof marker.at === 'number' && containingIndex(xs as number[], marker.at, bucketStep || undefined) === index;
             if (inside) {
                 notes.push(marker.label);
             }
@@ -184,6 +190,8 @@ export function ChartRoot<Row>({
                 const from = xs.findIndex((key) => String(key) === String(range.from));
                 const to = xs.findIndex((key) => String(key) === String(range.to));
                 inside = from >= 0 && to >= 0 && index >= Math.min(from, to) && index <= Math.max(from, to);
+            } else if (bucketStep > 0) {
+                inside = (at as number) < (range.to as number) && (at as number) + bucketStep > (range.from as number);
             } else {
                 inside = (at as number) >= (range.from as number) && (at as number) < (range.to as number);
             }
@@ -196,7 +204,7 @@ export function ChartRoot<Row>({
 
     const controlled = activeX !== undefined;
     const cursorX = controlled ? activeX : sharedCursor !== null ? sharedCursor.x : ownX;
-    const activeIndex = snapIndex(xs, band, cursorX);
+    const activeIndex = snapIndex(xs, xScale, cursorX, bucketStep);
     const setActiveX = (value: ChartX | null): void => {
         if (!controlled) {
             if (sharedCursor !== null) {
@@ -242,7 +250,8 @@ export function ChartRoot<Row>({
         }
         if (continuous !== null) {
             const pixel = e.clientX - e.currentTarget.getBoundingClientRect().left;
-            setActiveX(continuous.invert(Math.min(plot.right, Math.max(plot.left, pixel))));
+            // The end of the last bucket is the start of none, so the pointer stops a pixel short of it.
+            setActiveX(continuous.invert(Math.min(plot.right - 1, Math.max(plot.left, pixel))));
             return;
         }
         const index = indexAtPointer(e);
